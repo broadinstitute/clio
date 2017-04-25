@@ -1,5 +1,9 @@
 # Clio
 
+Metadata Manager
+
+## Getting Started
+
 ### Build
 
 `sbt compile`
@@ -27,3 +31,7 @@
 ### Run the docker image
 
 `docker run --rm -it -p 8080:8080 broadinstitute/clio:<version>`
+
+## More information
+
+Internal documentation [here](https://broadinstitute.atlassian.net/wiki/pages/viewpage.action?pageId=114531509).

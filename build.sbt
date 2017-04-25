@@ -1,36 +1,32 @@
 // ## sbt settings
+// For more info, see: https://broadinstitute.atlassian.net/wiki/pages/viewpage.action?pageId=114531509
 
 // Set the scala version used by the project. sbt version set in build.properties.
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.2"
 
 // Project name
 name := "clio"
 // Project organization, stored in the assembly jar's META-INF/MANIFEST.MF
 organization := "org.broadinstitute"
 // This version number if this is a release commit, or the upcoming version number if this is a snapshot.
-val clioVersion = "0.0.1"
+val ClioVersion = "0.0.1"
 
 // Common version numbers of dependencies
-val akkaHttpVersion = "10.0.5"
-val circeVersion = "0.7.0"
+val AkkaHttpVersion = "10.0.5"
+val CirceVersion = "0.7.0"
 
 // Dependencies
 libraryDependencies ++= Seq(
-  // Logging api (Version doesn't have to match plugins.sbt, but would be nice to keep in sync.)
+  "com.iheart" %% "ficus" % "1.4.0",
   "org.slf4j" % "slf4j-api" % "1.7.25",
-  // Logging implementation
   "ch.qos.logback" % "logback-classic" % "1.2.3",
-  // Web services api
-  "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
-  // Json serialization
-  "io.circe" %% "circe-core" % circeVersion,
-  "io.circe" %% "circe-generic" % circeVersion,
-  "io.circe" %% "circe-parser" % circeVersion,
-  // Web services json mapping
+  "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
+  "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+  "io.circe" %% "circe-core" % CirceVersion,
+  "io.circe" %% "circe-generic" % CirceVersion,
+  "io.circe" %% "circe-parser" % CirceVersion,
   "de.heikoseeberger" %% "akka-http-circe" % "1.15.0",
-  // Test web services
-  "com.typesafe.akka" %% "akka-http-testkit" % akkaHttpVersion % Test,
-  // Unit testing
+  "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test,
   "org.scalatest" %% "scalatest" % "3.0.1" % Test
 )
 
@@ -76,21 +72,15 @@ resourceGenerators in Compile += Def.task {
 
 // ## sbt-git settings
 
-// WARNING: sbt-git does not work if this project is a submodule. If ./.git is a file and not a directory, sbt-git will
-// then throw "java.util.NoSuchElementException: head of empty stream"
-
 enablePlugins(GitVersioning)
 
-// Base version number. Either the current version if this is a release, or the next upcoming version.
-git.baseVersion := clioVersion
+git.baseVersion := ClioVersion
 
 git.formattedShaVersion := {
   val hash = git.gitHeadCommit.value match {
     case Some(sha) => s"g${sha.take(7)}"
     case None => "UNKNOWN"
   }
-  // For now, obfuscate SNAPSHOTs from sbt's developers: https://github.com/sbt/sbt/issues/2687#issuecomment-236586241
-  // Set the version to <base>-g<hash>-SNAP or <base>-UNKNOWN-SNAP
   Option(s"${git.baseVersion.value}-$hash-SNAP")
 }
 
