@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.clio.dataaccess.AkkaHttpServerDAO
+import org.broadinstitute.clio.dataaccess.{AkkaHttpServerDAO, HttpElasticsearchDAO}
 import org.broadinstitute.clio.service.{ServerService, StatusService}
 import org.broadinstitute.clio.webservice.{ClioWebService, StatusWebService}
 
@@ -29,8 +29,9 @@ object ClioServer
   private val routes = concat(statusRoutes)
 
   private val httpServerDAO = AkkaHttpServerDAO(routes)
+  private val elasticsearchDAO = HttpElasticsearchDAO()
 
-  private val app = new ClioApp(httpServerDAO)
+  private val app = new ClioApp(httpServerDAO, elasticsearchDAO)
 
   private val serverService = ServerService(app)
   override val statusService = StatusService(app)
