@@ -22,9 +22,6 @@ class HttpElasticsearchDAO private[dataaccess](httpHosts: Seq[HttpHost])
     HttpClient.fromRestClient(restClient)
   }
 
-  // See note in wiki as to why we're not using circe here.
-  import com.sksamuel.elastic4s.jackson.ElasticJackson.Implicits._
-
   override def getClusterStatus: Future[ElasticsearchStatusInfo] = {
     getClusterHealth transform {
       case Success(health) =>

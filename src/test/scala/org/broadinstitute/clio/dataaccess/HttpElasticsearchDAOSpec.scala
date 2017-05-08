@@ -45,6 +45,8 @@ class HttpElasticsearchDAOSpec extends AsyncFlatSpec with Matchers with BeforeAn
 
   // TODO: The following tests are demo code, and should be replaced with actual DAO methods/specs.
 
+  case class City(name: String, country: String, continent: String, status: String)
+
   it should "perform various CRUD-like operations" in {
     val clusterHealthDefinition: ClusterHealthDefinition =
       clusterHealth()
@@ -58,19 +60,26 @@ class HttpElasticsearchDAOSpec extends AsyncFlatSpec with Matchers with BeforeAn
         )
       }
 
+    // Enabled circe Indexable and HitReader usage below
+    import com.sksamuel.elastic4s.circe._
+    import io.circe.generic.auto._
+
     val populateDefinition: BulkDefinition =
       bulk(
+        /* Option 1: Fields syntax */
         indexInto("places" / "cities") id "uk" fields(
           "name" -> "London",
           "country" -> "United Kingdom",
           "continent" -> "Europe",
           "status" -> "Awesome"
         ),
-        indexInto("places" / "cities") id "fr" fields(
-          "name" -> "Paris",
-          "country" -> "France",
-          "continent" -> "Europe",
-          "status" -> "Awesome"
+        /* Option 2: Doc syntax */
+        indexInto("places" / "cities") id "fr" doc
+          City(
+            name = "Paris",
+            country = "France",
+            continent = "Europe",
+            status = "Awesome"
         )
       ).refresh(RefreshPolicy.WAIT_UNTIL)
 
@@ -87,8 +96,6 @@ class HttpElasticsearchDAOSpec extends AsyncFlatSpec with Matchers with BeforeAn
 
     lazy val httpClient = httpElasticsearchDAO.httpClient
 
-    // See note in wiki as to why we're not using circe here.
-    import com.sksamuel.elastic4s.jackson.ElasticJackson.Implicits._
     for {
       health <- httpClient execute clusterHealthDefinition
       _ = health.status should be(StatusGreen)
@@ -97,7 +104,15 @@ class HttpElasticsearchDAOSpec extends AsyncFlatSpec with Matchers with BeforeAn
       populate <- httpClient execute populateDefinition
       _ = populate.errors should be(false)
       search <- httpClient execute searchDefinition
-      _ = search.hits.total should be(1)
+      _ = {
+        search.hits.total should be(1)
+        // Example using circe HitReader
+        val city = search.to[City].head
+        city.name should be("London")
+        city.country should be("United Kingdom")
+        city.continent should be("Europe")
+        city.status should be("Awesome")
+      }
       delete <- httpClient execute deleteDefinition
       _ = delete.found should be(true)
       delete <- httpClient execute deleteDefinition

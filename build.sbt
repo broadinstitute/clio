@@ -14,7 +14,7 @@ val ClioVersion = "0.0.1"
 // Common version numbers of dependencies
 val AkkaHttpVersion = "10.0.5"
 val CirceVersion = "0.7.0"
-val Elastic4sVersion = "5.3.2"
+val Elastic4sVersion = "5.4.0"
 
 // Dependencies
 libraryDependencies ++= Seq(
@@ -28,7 +28,7 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-parser" % CirceVersion,
   "de.heikoseeberger" %% "akka-http-circe" % "1.15.0",
   "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
-  "com.sksamuel.elastic4s" %% "elastic4s-jackson" % Elastic4sVersion,
+  "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,
   "com.dimafeng" %% "testcontainers-scala" % "0.5.0" % Test,
   "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion % Test,
   "org.scalatest" %% "scalatest" % "3.0.1" % Test
