@@ -28,6 +28,14 @@ Metadata Manager
 
 `sbt docker`
 
+### Test the built docker image
+
+`sbt testDocker`
+
+### Build and then test the docker image
+
+`sbt docker testDocker`
+
 ### Run the docker image
 
 `docker run --rm -it -p 8080:8080 broadinstitute/clio:<version>`

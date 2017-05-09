@@ -1,0 +1,51 @@
+version: '2'
+
+services:
+  pytest:
+    build:
+      context: ./
+    networks:
+      - clionet
+    environment:
+      CLIO_HTTP_HOST: clio
+    volumes:
+      - ./clio_test.py:/cliointegrationtest/clio_test.py:ro
+    command:
+      - /cliointegrationtest/clio_test.py
+  clio:
+    image: broadinstitute/clio:${CLIO_DOCKER_TAG}
+    networks:
+      - clionet
+      - esnet
+    environment:
+      clio.elasticsearch.http-hosts.0.hostname: elasticsearch1
+  elasticsearch1:
+    extends:
+      file: elasticsearch-compose.yml
+      service: elasticsearch
+    volumes:
+      - esdata1:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+  elasticsearch2:
+    extends:
+      file: elasticsearch-compose.yml
+      service: elasticsearch
+    volumes:
+      - esdata2:/usr/share/elasticsearch/data
+    networks:
+      - esnet
+    environment:
+        discovery.zen.ping.unicast.hosts: elasticsearch1
+
+networks:
+  clionet:
+    driver: bridge
+  esnet:
+    driver: bridge
+
+volumes:
+  esdata1:
+    driver: local
+  esdata2:
+    driver: local

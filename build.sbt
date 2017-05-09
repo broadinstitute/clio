@@ -104,9 +104,9 @@ val dockerOrganization = "broadinstitute"
 imageNames in docker := Seq(
   // Sets a name with a tag that contains the project version
   ImageName(
-    namespace = Some(dockerOrganization),
+    namespace = Option(dockerOrganization),
     repository = name.value,
-    tag = Some("v" + version.value)
+    tag = Option(version.value)
   )
 )
 

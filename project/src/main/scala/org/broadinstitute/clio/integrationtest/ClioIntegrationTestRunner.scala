@@ -1,0 +1,120 @@
+package org.broadinstitute.clio.integrationtest
+
+import com.typesafe.config.ConfigFactory
+import sbt._
+
+import scala.sys.ShutdownHookThread
+import scala.util.{Failure, Success, Try}
+
+class ClioIntegrationTestRunner(testClassesDirectory: File, clioVersion: String, log: Logger) {
+  /** Runs the integration test */
+  def run(): Unit = {
+    // Log directory and environment, such that one may run the compose from the command line with
+    // bash$ cd DIR; ENVKEY=ENVVAL docker-compose up ...
+    log.info(
+      s"""|Starting docker-compose
+          |  directory: $dockerComposeDirectory
+          |  env: ${dockerComposeEnvironement.map({ case (key, value) => s"$key=$value" }).mkString(" ")}
+          |""".stripMargin
+    )
+
+    // Declare a lazy val, such that when it's invoked will run tryDockerComposeCleanup() once and only once
+    // Pass our instance as a thunk to addShutdownHook, that will only evaluate on a shutdown
+    lazy val dockerComposeCleanupInstance = dockerComposeCleanup()
+    val shutdownHook = sys addShutdownHook dockerComposeCleanupInstance
+
+    // Go try and run the docker compose test
+    val triedDockerComposeTest = tryDockerComposeTest()
+
+    // Evaluate our lazy val from above, cleaning up only once
+    // While we're here, try to remove our shutdown hook
+    dockerComposeCleanupInstance
+    tryRemoveShutdownHook(shutdownHook)
+
+    // With cleanup complete, now check our test exit code
+    triedDockerComposeTest match {
+      case Failure(exception) => throw exception
+      case Success(0) => /* ok */
+      case Success(exitCode) => sys.error(s"test failed with exit code $exitCode")
+    }
+  }
+
+  /**
+    * Reads docker configuration settings from the config.
+    * Mimic of ClioConfig that reads config our docker values from the environment.
+    */
+  private val configDocker = {
+    val configEnvironment = ConfigFactory.parseMap(System.getenv)
+    val configFile =
+      ConfigFactory.parseFile(testClassesDirectory / ClioIntegrationTestRunner.DockerImagesConfigFileName)
+    configEnvironment.withFallback(configFile).getConfig("clio.docker")
+  }
+
+  /** Where the docker compose integration tests should be run from. */
+  private val dockerComposeDirectory = testClassesDirectory / ClioIntegrationTestRunner.DockerComposeDirectoryName
+  private val dockerComposeEnvironement = Seq(
+    "CLIO_DOCKER_TAG" -> clioVersion,
+    "ELASTICSEARCH_DOCKER_TAG" -> configDocker.getString("elasticsearch")
+    // TODO: Publish the pytest Dockerfile to Docker Hub, then reference the pushed image here.
+  )
+
+  /**
+    * Runs docker-compose cluster locally, including an integration test, then shuts down.
+    *
+    * @return The exit code of the integration test.
+    */
+  private def tryDockerComposeTest(): Try[Int] = Try {
+    val testCommand = Seq("docker-compose", "up", "--build", "--abort-on-container-exit")
+    val exitCodeScanner = new ExitCodeScanner
+    val exitCode = runCommand(testCommand, dockerComposeDirectory, dockerComposeEnvironement,
+      exitCodeScanner.logAndScan(log))
+    // For now, ignore the exit code from docker-compose, and look for the exit code in stdout.
+    exitCodeScanner.loggedExitCodeOption.getOrElse(sys.error(
+      s"""|
+            |Didn't find an exit code in the standard out, exiting with code $exitCode.
+          |Check the logs above for other errors.
+          |""".stripMargin))
+  }
+
+  /** Runs docker-compose cleanup, ignoring any errors. */
+  private def dockerComposeCleanup(): Unit = {
+    Try {
+      val cleanupCommand = Seq("docker-compose", "down", "--volume", "--rmi", "local")
+      runCommand(cleanupCommand, dockerComposeDirectory, dockerComposeEnvironement, log.info(_))
+    }
+    ()
+  }
+
+  /**
+    * Removes a shutdown hook.
+    *
+    * @param shutdownHook Hook to remove.
+    * @return A boolean result of removing the hook, or a throwable describing an error.
+    */
+  private def tryRemoveShutdownHook(shutdownHook: ShutdownHookThread): Try[Boolean] = Try {
+    shutdownHook.remove()
+  }
+
+  /**
+    * Runs a command using scala.sys.process DSL.
+    *
+    * @param command     The command to run.
+    * @param cwd         Directory to run from.
+    * @param extraEnv    Other environment variables to pass to the command.
+    * @param logFunction A function implementing logging.
+    * @return The exit code of the process.
+    */
+  private def runCommand(command: Seq[String], cwd: File, extraEnv: Seq[(String, String)],
+                         logFunction: String => Unit): Int = {
+    import scala.sys.process._
+    val process = Process(command, cwd, extraEnv: _*)
+    val processLogger = ProcessLogger(logFunction)
+    process ! processLogger
+  }
+}
+
+object ClioIntegrationTestRunner {
+  // Paths within the testClassesDirectory
+  private val DockerComposeDirectoryName = "cliointegrationtest"
+  private val DockerImagesConfigFileName = "clio-docker-images.conf"
+}
