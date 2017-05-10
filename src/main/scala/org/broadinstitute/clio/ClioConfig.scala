@@ -1,6 +1,6 @@
 package org.broadinstitute.clio
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{Config, ConfigFactory}
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 
@@ -10,13 +10,19 @@ import scala.concurrent.duration.FiniteDuration
   * Configuration file accessors.
   */
 object ClioConfig {
-  private val config = {
-    // parse dotted names, unlike ConfigFactory.systemEnvironment
-    val environment = ConfigFactory.parseMap(System.getenv)
-    val default = ConfigFactory.load
-    val root = environment.withFallback(default)
-    root.getConfig("clio")
+  // parse dotted names, unlike ConfigFactory.systemEnvironment
+  private val environment = ConfigFactory.parseMap(System.getenv)
+
+  /**
+    * Enable the passed in config to be overridden via environment variables.
+    *
+    * NOTE: Mimic of this behavior exists within the ClioIntegrationTestRunner also.
+    */
+  def withEnvironment(config: Config) = {
+    environment.withFallback(config).getConfig("clio")
   }
+
+  private val config = withEnvironment(ConfigFactory.load)
 
   object HttpServer {
     private val http = config.getConfig("http-server")
