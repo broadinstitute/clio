@@ -6,8 +6,16 @@ import sbt._
 import scala.sys.ShutdownHookThread
 import scala.util.{Failure, Success, Try}
 
+/**
+  * Runs the clio integration test via docker-compose.
+  *
+  * The the testClassesDirectory contains a sub-directory with a docker-compose.yml. Docker-compose is run from the
+  * directory with the yml. The actual docker images to use are all passed via environment variables. The clio docker
+  * image tag is generated from the version. The other docker image names/tags are read from the config file
+  * clio-docker-images.conf.
+  */
 class ClioIntegrationTestRunner(testClassesDirectory: File, clioVersion: String, log: Logger) {
-  /** Runs the integration test */
+  /** Runs the integration test. */
   def run(): Unit = {
     // Log directory and environment, such that one may run the compose from the command line with
     // bash$ cd DIR; ENVKEY=ENVVAL docker-compose up ...
