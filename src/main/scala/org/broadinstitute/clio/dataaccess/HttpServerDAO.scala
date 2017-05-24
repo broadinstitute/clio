@@ -12,11 +12,6 @@ trait HttpServerDAO {
   def startup(): Future[Unit]
 
   /**
-    * Returns the server status.
-    */
-  def getStatus: Future[String]
-
-  /**
     * Returns the server version.
     */
   def getVersion: Future[String]

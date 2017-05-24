@@ -33,8 +33,6 @@ class AkkaHttpServerDAO private(routes: Route)
     bindingFuture.void
   }
 
-  override def getStatus: Future[String] = Future.successful(AkkaHttpServerDAO.StatusOk)
-
   override def getVersion: Future[String] = Future.successful(ClioConfig.Version.value)
 
   override def shutdown(): Future[Unit] = {
@@ -44,7 +42,7 @@ class AkkaHttpServerDAO private(routes: Route)
           bindingFutureOption match {
             case Some(bindingFuture) =>
               bindingFuture flatMap { binding =>
-                logger.info(s"Server shutting down.")
+                logger.info("Server shutting down.")
                 binding.unbind() // trigger unbinding from the port
               } transformWith { _ =>
                 system.terminate() // and shutdown when done
@@ -67,8 +65,6 @@ class AkkaHttpServerDAO private(routes: Route)
 }
 
 object AkkaHttpServerDAO {
-  val StatusOk = "OK"
-
   def apply(routes: Route)
            (implicit system: ActorSystem, executionContext: ExecutionContext, fm: Materializer): HttpServerDAO = {
     new AkkaHttpServerDAO(routes)

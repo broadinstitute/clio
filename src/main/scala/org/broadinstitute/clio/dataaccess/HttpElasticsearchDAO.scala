@@ -10,6 +10,7 @@ import org.broadinstitute.clio.ClioConfig.Elasticsearch.ElasticsearchHttpHost
 import org.broadinstitute.clio.model.ElasticsearchStatusInfo
 import org.elasticsearch.client.RestClient
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -31,6 +32,25 @@ class HttpElasticsearchDAO private[dataaccess](httpHosts: Seq[HttpHost])
         Success(HttpElasticsearchDAO.StatusError)
     }
   }
+
+  override def isReady: Future[Boolean] = {
+    getClusterHealth transform {
+      case Success(health) =>
+        if (ClioConfig.Elasticsearch.readinessColors.contains(health.status)) {
+          Success(true)
+        } else {
+          logger.debug(s"health.status = ${health.status}, readyColors = ${ClioConfig.Elasticsearch.readinessColors}")
+          Success(false)
+        }
+      case Failure(exception) =>
+        logger.debug(s"Error while getting Elasticsearch cluster status from $hostsString", exception)
+        Success(false)
+    }
+  }
+
+  override val readyRetries: Int = ClioConfig.Elasticsearch.readinessRetries
+
+  override val readyPatience: FiniteDuration = ClioConfig.Elasticsearch.readinessPatience
 
   override def close(): Future[Unit] = {
     Future {

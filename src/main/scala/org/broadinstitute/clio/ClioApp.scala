@@ -1,5 +1,10 @@
 package org.broadinstitute.clio
 
-import org.broadinstitute.clio.dataaccess.{ElasticsearchDAO, HttpServerDAO}
+import org.broadinstitute.clio.dataaccess.{ElasticsearchDAO, HttpServerDAO, ServerStatusDAO}
 
-class ClioApp(val httpServerDAO: HttpServerDAO, val elasticsearchDAO: ElasticsearchDAO)
+class ClioApp
+(
+  val serverStatusDAO: ServerStatusDAO,
+  val httpServerDAO: HttpServerDAO,
+  val elasticsearchDAO: ElasticsearchDAO
+)
