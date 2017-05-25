@@ -40,5 +40,8 @@ object ClioConfig {
 
     private val elasticsearch = config.getConfig("elasticsearch")
     val httpHosts = elasticsearch.as[Seq[ElasticsearchHttpHost]]("http-hosts")
+    val readinessColors = elasticsearch.as[Seq[String]]("readiness.colors")
+    val readinessRetries = elasticsearch.getInt("readiness.retries")
+    val readinessPatience = elasticsearch.as[FiniteDuration]("readiness.patience")
   }
 }

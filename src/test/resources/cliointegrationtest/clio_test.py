@@ -19,11 +19,11 @@ def test_wait_for_clio():
         try:
             r = requests.get(clio_http_uri + '/health')
             js = r.json()
-            clio_status = js['clio']
+            clio_status = js['clio']['status']
             elasticsearch = js['elasticsearch']
             elasticsearch_status = elasticsearch['status']
             elasticsearch_data_nodes = elasticsearch['dataNodes']
-            if clio_status == 'OK' and elasticsearch_status == 'green' and elasticsearch_data_nodes > 1:
+            if clio_status == 'started' and elasticsearch_status == 'green' and elasticsearch_data_nodes > 1:
                 print("connected to clio. Elasticsearch status %s, running %s nodes." %
                       (elasticsearch_status, elasticsearch_data_nodes))
                 return
@@ -42,7 +42,7 @@ def test_version():
 def test_health():
     r = requests.get(clio_http_uri + '/health')
     js = r.json()
-    assert js['clio'] == 'OK'
+    assert js['clio']['status'] == 'started'
     assert js['elasticsearch']['status'] == 'green'
     assert js['elasticsearch']['nodes'] > 1
     assert js['elasticsearch']['dataNodes'] > 1
