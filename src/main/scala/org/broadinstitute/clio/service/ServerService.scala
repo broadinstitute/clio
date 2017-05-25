@@ -2,10 +2,13 @@ package org.broadinstitute.clio.service
 
 import akka.actor.ActorSystem
 import akka.pattern._
+import cats.instances.future._
+import cats.syntax.functor._
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.ClioApp
+import org.broadinstitute.clio.dataaccess.elasticsearch.ElasticsearchIndexDefiners
 import org.broadinstitute.clio.dataaccess.{ElasticsearchDAO, HttpServerDAO, ServerStatusDAO}
-import org.broadinstitute.clio.model.ServerStatusInfo
+import org.broadinstitute.clio.model.{ElasticsearchIndex, ServerStatusInfo}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -51,6 +54,7 @@ class ServerService private(serverStatusDAO: ServerStatusDAO, httpServerDAO: Htt
     for {
       _ <- serverStatusDAO.setStatus(ServerStatusInfo.Starting)
       _ <- waitForElasticsearchReady()
+      _ <- createOrUpdateIndices()
       _ <- httpServerDAO.startup()
       _ <- serverStatusDAO.setStatus(ServerStatusInfo.Started)
       _ = logger.info("Server started")
@@ -96,6 +100,18 @@ class ServerService private(serverStatusDAO: ServerStatusDAO, httpServerDAO: Htt
     }
 
     waitWithRetry(elasticsearchDAO.readyRetries)
+  }
+
+  private[service] def createOrUpdateIndices(): Future[Unit] = {
+    def createOrUpdateIndex(index: ElasticsearchIndex): Future[Unit] = {
+      for {
+        exists <- elasticsearchDAO.existsIndexType(index)
+        _ <- if (exists) Future.successful(()) else elasticsearchDAO.createIndexType(index)
+        _ <- elasticsearchDAO.updateFieldDefinitions(index)
+      } yield ()
+    }
+
+    Future.sequence(ElasticsearchIndexDefiners.All.map(definer => createOrUpdateIndex(definer.indexDefinition))).void
   }
 }
 

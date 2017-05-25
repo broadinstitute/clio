@@ -57,4 +57,12 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") with AsyncFlat
       _ <- serverService.waitForElasticsearchReady()
     } yield succeed
   }
+
+  it should "createOrUpdateIndices" in {
+    val app = MockClioApp()
+    val serverService = ServerService(app)
+    for {
+      _ <- serverService.createOrUpdateIndices()
+    } yield succeed
+  }
 }
