@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.dataaccess
 
+import java.lang.{Boolean => JBoolean, Double => JDouble, Float => JFloat, Integer => JInteger, Long => JLong}
 import java.time.OffsetDateTime
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
@@ -130,12 +131,17 @@ object HttpElasticsearchDAO extends LazyLogging {
   private def fieldDefinition(elasticsearchField: ElasticsearchField): FieldDefinition = {
     val fieldName = elasticsearchField.fieldName
     elasticsearchField.fieldType match {
-      case clazz if clazz == classOf[String] => keywordField(fieldName)
       case clazz if clazz == classOf[Boolean] => booleanField(fieldName)
+      case clazz if clazz == classOf[JBoolean] => booleanField(fieldName)
       case clazz if clazz == classOf[Int] => intField(fieldName)
+      case clazz if clazz == classOf[JInteger] => intField(fieldName)
       case clazz if clazz == classOf[Long] => longField(fieldName)
+      case clazz if clazz == classOf[JLong] => longField(fieldName)
       case clazz if clazz == classOf[Float] => floatField(fieldName)
+      case clazz if clazz == classOf[JFloat] => floatField(fieldName)
       case clazz if clazz == classOf[Double] => doubleField(fieldName)
+      case clazz if clazz == classOf[JDouble] => doubleField(fieldName)
+      case clazz if clazz == classOf[String] => keywordField(fieldName)
       case clazz if clazz == classOf[OffsetDateTime] => dateField(fieldName)
       case clazz => throw new RuntimeException(s"No support for $fieldName: $clazz")
     }

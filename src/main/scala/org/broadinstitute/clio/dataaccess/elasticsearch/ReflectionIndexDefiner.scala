@@ -5,7 +5,7 @@ import java.lang.reflect.Field
 import org.broadinstitute.clio.model.{ElasticsearchField, ElasticsearchIndex}
 
 class ReflectionIndexDefiner[A](indexName: String, indexType: String, indexClass: Class[A])
-  extends ElasticSearchIndexDefiner[A] {
+  extends ElasticsearchIndexDefiner[A] {
   override def indexDefinition: ElasticsearchIndex = ElasticsearchIndex(indexName, indexType, fieldDefinitions)
 
   lazy val fieldDefinitions = indexClass.getDeclaredFields map ReflectionIndexDefiner.getFieldDefinition
