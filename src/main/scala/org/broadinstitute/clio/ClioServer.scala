@@ -7,11 +7,12 @@ import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.dataaccess.{AkkaHttpServerDAO, CachedServerStatusDAO, HttpElasticsearchDAO}
 import org.broadinstitute.clio.service.{ServerService, StatusService}
-import org.broadinstitute.clio.webservice.{ExceptionDirectives, StatusWebService}
+import org.broadinstitute.clio.webservice.{ExceptionDirectives, RejectionDirectives, StatusWebService}
 
 object ClioServer
   extends StatusWebService
     with ExceptionDirectives
+    with RejectionDirectives
     with StrictLogging {
 
   private implicit val system = ActorSystem("clio")
@@ -28,7 +29,7 @@ object ClioServer
   private implicit lazy val materializer = ActorMaterializer(actorMaterializerSettings)
 
   private val wrapperDirectives: Directive0 = {
-    completeWithInternalErrorJson
+    completeWithInternalErrorJson & mapRejectionsToJson
   }
   private val innerRoutes: Route = concat(statusRoutes)
   private val routes = wrapperDirectives(innerRoutes)
