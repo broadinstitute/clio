@@ -8,7 +8,7 @@ import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.cluster.ClusterHealthResponse
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
-import com.typesafe.scalalogging.LazyLogging
+import com.typesafe.scalalogging.StrictLogging
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.ClioConfig
 import org.broadinstitute.clio.ClioConfig.Elasticsearch.ElasticsearchHttpHost
@@ -21,7 +21,7 @@ import scala.util.{Failure, Success}
 
 class HttpElasticsearchDAO private[dataaccess](httpHosts: Seq[HttpHost])
                                               (implicit ec: ExecutionContext)
-  extends ElasticsearchDAO with LazyLogging {
+  extends ElasticsearchDAO with StrictLogging {
 
   private[dataaccess] val httpClient = {
     val restClient = RestClient.builder(httpHosts: _*).build()
@@ -116,7 +116,7 @@ class HttpElasticsearchDAO private[dataaccess](httpHosts: Seq[HttpHost])
   }
 }
 
-object HttpElasticsearchDAO extends LazyLogging {
+object HttpElasticsearchDAO extends StrictLogging {
   val StatusError = ElasticsearchStatusInfo("error", -1, -1)
 
   def apply()(implicit ec: ExecutionContext): ElasticsearchDAO = {

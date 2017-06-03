@@ -5,7 +5,7 @@ import akka.http.scaladsl._
 import akka.http.scaladsl.server.Route
 import akka.stream.Materializer
 import cats.implicits._
-import com.typesafe.scalalogging.LazyLogging
+import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.ClioConfig
 
 import scala.concurrent.duration.Duration
@@ -14,7 +14,7 @@ import scala.util.{Failure, Success}
 
 class AkkaHttpServerDAO private(routes: Route)
                                (implicit system: ActorSystem, executionContext: ExecutionContext, fm: Materializer)
-  extends HttpServerDAO with LazyLogging {
+  extends HttpServerDAO with StrictLogging {
 
   private var bindingFutureOption: Option[Future[Http.ServerBinding]] = None
 

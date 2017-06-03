@@ -3,7 +3,7 @@ package org.broadinstitute.clio
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
-import com.typesafe.scalalogging.LazyLogging
+import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.dataaccess.{AkkaHttpServerDAO, CachedServerStatusDAO, HttpElasticsearchDAO}
 import org.broadinstitute.clio.service.{ServerService, StatusService}
 import org.broadinstitute.clio.webservice.{ClioWebService, StatusWebService}
@@ -11,7 +11,7 @@ import org.broadinstitute.clio.webservice.{ClioWebService, StatusWebService}
 object ClioServer
   extends ClioWebService
     with StatusWebService
-    with LazyLogging {
+    with StrictLogging {
 
   override implicit val system = ActorSystem("clio")
 
