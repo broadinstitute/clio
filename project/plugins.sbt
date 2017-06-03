@@ -1,11 +1,17 @@
 // For more info on these plugins, see https://broadinstitute.atlassian.net/wiki/pages/viewpage.action?pageId=114531509
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.9.2")
-libraryDependencies += "org.slf4j" % "slf4j-nop" % "1.7.25"
+val SbtAssemblyVersion = "0.14.4"
+val SbtGitVersion = "0.9.3"
+val SbtDockerVersion = "1.4.1"
+val Slf4jVersion = "1.7.25"
+val TypesafeConfigVersion = "1.3.1"
 
-addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.4")
+addSbtPlugin("com.typesafe.sbt" % "sbt-git" % SbtGitVersion)
+libraryDependencies += "org.slf4j" % "slf4j-nop" % Slf4jVersion
 
-addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % "1.4.1")
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % SbtAssemblyVersion)
+
+addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % SbtDockerVersion)
 
 // Various compiler tweaks for our ClioIntegrationTestPlugin.
 // More info available via:
@@ -28,4 +34,4 @@ scalacOptions ++= Seq(
   "-Ywarn-value-discard",
   "-Xfatal-warnings"
 )
-libraryDependencies += "com.typesafe" % "config" % "1.3.1"
+libraryDependencies += "com.typesafe" % "config" % TypesafeConfigVersion

@@ -17,7 +17,7 @@ dependencyOverrides ++= Dependencies.OverrideDependencies
 
 scalacOptions ++= Compilation.CompilerSettings
 scalacOptions in(Compile, doc) ++= Compilation.DocSettings
-scalacOptions in(Compile, console) ~= Compilation.filterConsoleSettings
+scalacOptions in(Compile, console) := Compilation.ConsoleSettings
 
 git.baseVersion := Versioning.ClioVersion
 git.formattedShaVersion := Versioning.gitShaVersion.value
