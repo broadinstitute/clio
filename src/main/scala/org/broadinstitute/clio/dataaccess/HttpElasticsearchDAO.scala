@@ -117,12 +117,12 @@ class HttpElasticsearchDAO private[dataaccess](httpHosts: Seq[HttpHost])
 }
 
 object HttpElasticsearchDAO extends StrictLogging {
-  val StatusError = ElasticsearchStatusInfo("error", -1, -1)
-
   def apply()(implicit ec: ExecutionContext): ElasticsearchDAO = {
     val httpHosts = ClioConfig.Elasticsearch.httpHosts.map(toHttpHost)
     new HttpElasticsearchDAO(httpHosts)
   }
+
+  private val StatusError = ElasticsearchStatusInfo("error", -1, -1)
 
   private def toHttpHost(elasticsearchHttpHost: ElasticsearchHttpHost) = {
     new HttpHost(elasticsearchHttpHost.hostname, elasticsearchHttpHost.port, elasticsearchHttpHost.scheme)

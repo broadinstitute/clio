@@ -6,14 +6,13 @@ import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.dataaccess.{AkkaHttpServerDAO, CachedServerStatusDAO, HttpElasticsearchDAO}
 import org.broadinstitute.clio.service.{ServerService, StatusService}
-import org.broadinstitute.clio.webservice.{ClioWebService, StatusWebService}
+import org.broadinstitute.clio.webservice.StatusWebService
 
 object ClioServer
-  extends ClioWebService
-    with StatusWebService
+  extends StatusWebService
     with StrictLogging {
 
-  override implicit val system = ActorSystem("clio")
+  private implicit val system = ActorSystem("clio")
 
   private implicit def executionContext = system.dispatcher
 
@@ -24,7 +23,7 @@ object ClioServer
   }
 
   private lazy val actorMaterializerSettings = ActorMaterializerSettings(system).withSupervisionStrategy(loggingDecider)
-  override implicit lazy val materializer = ActorMaterializer(actorMaterializerSettings)
+  private implicit lazy val materializer = ActorMaterializer(actorMaterializerSettings)
 
   private val routes = concat(statusRoutes)
 
