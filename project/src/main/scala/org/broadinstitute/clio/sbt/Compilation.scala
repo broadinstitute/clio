@@ -3,11 +3,11 @@ package org.broadinstitute.clio.sbt
 object Compilation {
   /**
     * Various compiler tweaks. More info available via:
-    *   http://tpolecat.github.io/2017/04/25/scalac-flags.html
-    *   https://blog.threatstack.com/useful-scalac-options-for-better-scala-development-part-1
-    *   sbt 'set scalacOptions in Compile += "-help"' compile
-    *   sbt 'set scalacOptions in Compile += "-X"' compile
-    *   sbt 'set scalacOptions in Compile += "-Y"' compile
+    * - http://tpolecat.github.io/2017/04/25/scalac-flags.html
+    * - https://blog.threatstack.com/useful-scalac-options-for-better-scala-development-part-1
+    * - sbt 'set scalacOptions in Compile += "-help"' compile
+    * - sbt 'set scalacOptions in Compile += "-X"' compile
+    * - sbt 'set scalacOptions in Compile += "-Y"' compile
     */
   val CompilerSettings = Seq(
     "-deprecation",
@@ -34,15 +34,13 @@ object Compilation {
     "-Ywarn-value-discard"
   )
 
-  /** sbt console on warnings should not be fatal. */
-  def filterConsoleSettings(settings: Seq[String]) = {
-    settings.filterNot(Set(
-      "-Xfatal-warnings",
-      "-Xlint",
-      "-Ywarn-unused",
-      "-Ywarn-unused-import"
-    ))
-  }
+  /** sbt console warnings should not be fatal. */
+  val ConsoleSettings = CompilerSettings filterNot Set(
+    "-Xfatal-warnings",
+    "-Xlint",
+    "-Ywarn-unused",
+    "-Ywarn-unused-import"
+  )
 
   /**
     * Don't generate warnings for missing links.

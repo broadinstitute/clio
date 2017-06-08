@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.pattern._
 import cats.instances.future._
 import cats.syntax.functor._
-import com.typesafe.scalalogging.LazyLogging
+import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.ClioApp
 import org.broadinstitute.clio.dataaccess.elasticsearch.ElasticsearchIndexDefiners
 import org.broadinstitute.clio.dataaccess.{ElasticsearchDAO, HttpServerDAO, ServerStatusDAO}
@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
 
 class ServerService private(serverStatusDAO: ServerStatusDAO, httpServerDAO: HttpServerDAO,
                             elasticsearchDAO: ElasticsearchDAO)
-                           (implicit ec: ExecutionContext, system: ActorSystem) extends LazyLogging {
+                           (implicit ec: ExecutionContext, system: ActorSystem) extends StrictLogging {
   /**
     * Kick off a startup, and return immediately.
     */

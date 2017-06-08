@@ -6,8 +6,6 @@ import io.circe.generic.auto._
 import org.broadinstitute.clio.service.StatusService
 
 trait StatusWebService {
-  this: ClioWebService =>
-
   lazy val statusRoutes = concat(versionRoute, healthRoute)
 
   def statusService: StatusService

@@ -1,19 +1,22 @@
 package org.broadinstitute.clio
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.server.{Directive0, Route}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
-import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.clio.dataaccess.{AkkaHttpServerDAO, CachedServerStatusDAO, HttpElasticsearchDAO}
-import org.broadinstitute.clio.service.{ServerService, StatusService}
-import org.broadinstitute.clio.webservice.{ClioWebService, StatusWebService}
+import com.typesafe.scalalogging.StrictLogging
+import org.broadinstitute.clio.dataaccess.{AkkaHttpServerDAO, CachedServerStatusDAO, HttpElasticsearchDAO, LoggingAuditDAO}
+import org.broadinstitute.clio.service.{AuditService, ServerService, StatusService}
+import org.broadinstitute.clio.webservice.{AuditDirectives, ExceptionDirectives, RejectionDirectives, StatusWebService}
 
 object ClioServer
-  extends ClioWebService
-    with StatusWebService
-    with LazyLogging {
+  extends StatusWebService
+    with AuditDirectives
+    with ExceptionDirectives
+    with RejectionDirectives
+    with StrictLogging {
 
-  override implicit val system = ActorSystem("clio")
+  private implicit val system = ActorSystem("clio")
 
   private implicit def executionContext = system.dispatcher
 
@@ -24,17 +27,23 @@ object ClioServer
   }
 
   private lazy val actorMaterializerSettings = ActorMaterializerSettings(system).withSupervisionStrategy(loggingDecider)
-  override implicit lazy val materializer = ActorMaterializer(actorMaterializerSettings)
+  private implicit lazy val materializer = ActorMaterializer(actorMaterializerSettings)
 
-  private val routes = concat(statusRoutes)
+  private val wrapperDirectives: Directive0 = {
+    auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
+  }
+  private val innerRoutes: Route = concat(statusRoutes)
+  private val routes = wrapperDirectives(innerRoutes)
 
   private val serverStatusDAO = CachedServerStatusDAO()
+  private val auditDAO = LoggingAuditDAO()
   private val httpServerDAO = AkkaHttpServerDAO(routes)
   private val elasticsearchDAO = HttpElasticsearchDAO()
 
-  private val app = new ClioApp(serverStatusDAO, httpServerDAO, elasticsearchDAO)
+  private val app = new ClioApp(serverStatusDAO, auditDAO, httpServerDAO, elasticsearchDAO)
 
   private val serverService = ServerService(app)
+  override val auditService = AuditService(app)
   override val statusService = StatusService(app)
 
   def beginStartup() = serverService.beginStartup()

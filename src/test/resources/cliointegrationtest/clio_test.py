@@ -48,8 +48,24 @@ def test_health():
     assert js['elasticsearch']['dataNodes'] > 1
 
 
+def test_bad_method():
+    r = requests.post(clio_http_uri + '/health')
+    js = r.json()
+    assert r.status_code == requests.codes.method_not_allowed
+    assert js['rejection'] == 'HTTP method not allowed, supported methods: GET'
+
+
+def test_bad_path():
+    r = requests.get(clio_http_uri + '/badpath')
+    js = r.json()
+    assert r.status_code == requests.codes.not_found
+    assert js['rejection'] == 'The requested resource could not be found.'
+
+
 if __name__ == '__main__':
     test_wait_for_clio()
     test_version()
     test_health()
+    test_bad_method()
+    test_bad_path()
     print('tests passed')
