@@ -5,16 +5,13 @@ import akka.http.scaladsl.model.headers.{ModeledCustomHeader, ModeledCustomHeade
 import scala.util.Try
 
 
-abstract class OidcHeader(s: String) extends ModeledCustomHeader[OidcHeader] {
-  override def value = s
-  override val renderInRequests = true
-  override val renderInResponses = true
+trait OidcHeader {
+  def renderInRequests():Boolean = true
+  def renderInResponses():Boolean = true
 }
 
-class OidcAccessToken(s: String) extends ModeledCustomHeader[OidcAccessToken] {
+class OidcAccessToken(s: String) extends ModeledCustomHeader[OidcAccessToken] with OidcHeader {
   override def value: String = s
-  override def renderInRequests(): Boolean = true
-  override def renderInResponses(): Boolean = true
   override val companion = OidcAccessToken
 }
 
@@ -24,10 +21,8 @@ object OidcAccessToken extends ModeledCustomHeaderCompanion[OidcAccessToken] {
 }
 
 
-class OidcClaimExpiresIn(s: String) extends ModeledCustomHeader[OidcClaimExpiresIn] {
+class OidcClaimExpiresIn(s: String) extends ModeledCustomHeader[OidcClaimExpiresIn] with OidcHeader {
   override def value: String = s
-  override def renderInRequests(): Boolean = true
-  override def renderInResponses(): Boolean = true
   override val companion = OidcClaimExpiresIn
 }
 
@@ -37,10 +32,8 @@ object OidcClaimExpiresIn extends ModeledCustomHeaderCompanion[OidcClaimExpiresI
 }
 
 
-class OidcClaimEmail(s: String) extends ModeledCustomHeader[OidcClaimEmail] {
+class OidcClaimEmail(s: String) extends ModeledCustomHeader[OidcClaimEmail] with OidcHeader {
   override def value: String = s
-  override def renderInRequests(): Boolean = true
-  override def renderInResponses(): Boolean = true
   override val companion = OidcClaimEmail
 }
 
@@ -50,10 +43,8 @@ object OidcClaimEmail extends ModeledCustomHeaderCompanion[OidcClaimEmail] {
 }
 
 
-class OidcClaimSub(s: String) extends ModeledCustomHeader[OidcClaimSub] {
+class OidcClaimSub(s: String) extends ModeledCustomHeader[OidcClaimSub] with OidcHeader {
   override def value: String = s
-  override def renderInRequests(): Boolean = true
-  override def renderInResponses(): Boolean = true
   override val companion = OidcClaimSub
 }
 
@@ -63,10 +54,8 @@ object OidcClaimSub extends ModeledCustomHeaderCompanion[OidcClaimSub] {
 }
 
 
-class OidcClaimUserId(s: String) extends ModeledCustomHeader[OidcClaimUserId] {
+class OidcClaimUserId(s: String) extends ModeledCustomHeader[OidcClaimUserId] with OidcHeader {
   override def value: String = s
-  override def renderInRequests(): Boolean = true
-  override def renderInResponses(): Boolean = true
   override val companion = OidcClaimUserId
 }
 
