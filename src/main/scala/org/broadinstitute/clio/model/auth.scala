@@ -11,7 +11,7 @@ trait OidcHeader {
 }
 
 class OidcAccessToken(s: String) extends ModeledCustomHeader[OidcAccessToken] with OidcHeader {
-  override def value: String = s
+  override val value: String = s
   override val companion = OidcAccessToken
 }
 
@@ -22,7 +22,7 @@ object OidcAccessToken extends ModeledCustomHeaderCompanion[OidcAccessToken] {
 
 
 class OidcClaimExpiresIn(s: String) extends ModeledCustomHeader[OidcClaimExpiresIn] with OidcHeader {
-  override def value: String = s
+  override val value: String = s
   override val companion = OidcClaimExpiresIn
 }
 
@@ -33,7 +33,7 @@ object OidcClaimExpiresIn extends ModeledCustomHeaderCompanion[OidcClaimExpiresI
 
 
 class OidcClaimEmail(s: String) extends ModeledCustomHeader[OidcClaimEmail] with OidcHeader {
-  override def value: String = s
+  override val value: String = s
   override val companion = OidcClaimEmail
 }
 
@@ -44,7 +44,7 @@ object OidcClaimEmail extends ModeledCustomHeaderCompanion[OidcClaimEmail] {
 
 
 class OidcClaimSub(s: String) extends ModeledCustomHeader[OidcClaimSub] with OidcHeader {
-  override def value: String = s
+  override val value: String = s
   override val companion = OidcClaimSub
 }
 
@@ -55,7 +55,7 @@ object OidcClaimSub extends ModeledCustomHeaderCompanion[OidcClaimSub] {
 
 
 class OidcClaimUserId(s: String) extends ModeledCustomHeader[OidcClaimUserId] with OidcHeader {
-  override def value: String = s
+  override val value: String = s
   override val companion = OidcClaimUserId
 }
 
