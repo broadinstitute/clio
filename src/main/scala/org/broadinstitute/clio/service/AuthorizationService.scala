@@ -30,5 +30,5 @@ object AuthorizationService {
     new AuthorizationService()
   }
 
-  val mock = AuthorizationInfo("token", "expiration", "email", "id")
+  val mock = AuthorizationInfo("token", "expires", "email", "id")
 }
