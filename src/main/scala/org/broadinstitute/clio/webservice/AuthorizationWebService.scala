@@ -3,18 +3,18 @@ package org.broadinstitute.clio.webservice
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import org.broadinstitute.clio.service.AuthService
+import org.broadinstitute.clio.service.AuthorizationService
 
 
-trait AuthWebService {
+trait AuthorizationWebService {
 
-  lazy val authRoutes: Route = concat(authorizationRoute)
+  lazy val authorizationRoutes: Route = concat(authorizationRoute)
 
-  val authService = AuthService()
+  val authorizationService = AuthorizationService()
 
   private[webservice] val authorizationRoute =
     path("authorization") {
-      authorize(authService.authorize _) {
+      authorize(authorizationService.authorize _) {
         get {
           complete("OK")
         }

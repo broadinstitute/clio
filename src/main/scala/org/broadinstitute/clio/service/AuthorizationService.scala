@@ -6,7 +6,7 @@ import org.broadinstitute.clio.model._
 
 case class AuthorizationInfo(token: String, expiration: String, email: String, id: String)
 
-class AuthService {
+class AuthorizationService() {
 
   def authorize(context: RequestContext): Boolean = {
     val pairs = for (header <- context.request.headers) yield
@@ -19,15 +19,15 @@ class AuthService {
       }
     (pairs.size == 4) && (Vector.tabulate(4) { pairs.toMap } match {
       case Vector(token, expires, email, id) =>
-        AuthService.mock == AuthorizationInfo(token, expires, email, id)
+        AuthorizationService.mock == AuthorizationInfo(token, expires, email, id)
       case _ => false
     })
   }
 }
 
-object AuthService {
-  def apply(): AuthService = {
-    new AuthService()
+object AuthorizationService {
+  def apply(): AuthorizationService = {
+    new AuthorizationService()
   }
 
   val mock = AuthorizationInfo("token", "expiration", "email", "id")
