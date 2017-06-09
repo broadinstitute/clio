@@ -17,8 +17,6 @@ class AuthService {
         case OidcClaimUserId(id)         => 3 -> id
         case OidcClaimSub(id)            => 3 -> id
       }
-    println(s"fnord pairs: ${pairs.size}")
-    println(s"fnord pairs: ${pairs}")
     (pairs.size == 4) && (Vector.tabulate(4) { pairs.toMap } match {
       case Vector(token, expires, email, id) =>
         AuthService.mock == AuthorizationInfo(token, expires, email, id)
