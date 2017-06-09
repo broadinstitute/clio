@@ -2,14 +2,22 @@
 
 from __future__ import absolute_import
 from __future__ import print_function
-import requests
-import os
+
 import time
 
-clio_http_scheme = os.environ.get('CLIO_HTTP_SCHEME', 'http')
-clio_http_host = os.environ.get('CLIO_HTTP_HOST', 'localhost')
-clio_http_port = os.environ.get('CLIO_HTTP_PORT', 8080)
-clio_http_uri = '{0}://{1}:{2}'.format(clio_http_scheme, clio_http_host, clio_http_port)
+import os
+import requests
+
+
+def get_environ_uri(prefix, scheme_default='http', host_default='localhost', port_default=80):
+    scheme = os.environ.get(prefix + '_HTTP_SCHEME', scheme_default)
+    host = os.environ.get(prefix + '_HTTP_HOST', host_default)
+    port = os.environ.get(prefix + '_HTTP_PORT', port_default)
+    return '{0}://{1}:{2}'.format(scheme, host, port)
+
+
+clio_http_uri = get_environ_uri('CLIO', port_default=8080)
+elasticsearch_http_uri = get_environ_uri('ELASTICSEARCH', port_default=9200)
 
 
 def test_wait_for_clio():
@@ -62,10 +70,61 @@ def test_bad_path():
     assert js['rejection'] == 'The requested resource could not be found.'
 
 
+def __assert_expected_fields(expected_fields, mapping_properties):
+    for (field_name, field_type) in expected_fields.items():
+        assert mapping_properties[field_name]['type'] == field_type
+    assert len(expected_fields) == len(mapping_properties)
+
+
+def test_readgroups_mapping():
+    r = requests.get(elasticsearch_http_uri + '/readgroups/_mapping/default')
+    js = r.json()
+    mappings = js['readgroups']['mappings']['default']
+    assert mappings['dynamic'] == 'false'
+    expected_fields = {
+        'analysis_type': 'keyword',
+        'bait_intervals': 'keyword',
+        'data_type': 'keyword',
+        'flowcell_barcode': 'keyword',
+        'individual_alias': 'keyword',
+        'initiative': 'keyword',
+        'lane': 'integer',
+        'lc_set': 'keyword',
+        'library_name': 'keyword',
+        'library_type': 'keyword',
+        'machine_name': 'keyword',
+        'molecular_barcode_name': 'keyword',
+        'molecular_barcode_sequence': 'keyword',
+        'paired_run': 'boolean',
+        'product_family': 'keyword',
+        'product_name': 'keyword',
+        'product_order_id': 'keyword',
+        'product_part_number': 'keyword',
+        'project': 'keyword',
+        'read_structure': 'keyword',
+        'research_project_id': 'keyword',
+        'research_project_name': 'keyword',
+        'root_sample_id': 'keyword',
+        'run_date': 'date',
+        'run_name': 'keyword',
+        'sample_alias': 'keyword',
+        'sample_gender': 'keyword',
+        'sample_id': 'keyword',
+        'sample_lsid': 'keyword',
+        'sample_type': 'keyword',
+        'target_intervals': 'keyword',
+        'ubam_md5': 'keyword',
+        'ubam_path': 'keyword',
+        'ubam_size': 'long',
+    }
+    __assert_expected_fields(expected_fields, mappings['properties'])
+
+
 if __name__ == '__main__':
     test_wait_for_clio()
     test_version()
     test_health()
     test_bad_method()
     test_bad_path()
+    test_readgroups_mapping()
     print('tests passed')
