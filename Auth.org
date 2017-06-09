@@ -1,0 +1,66 @@
+#+TITLE: Clio Authentication and Authorization
+#+STARTUP: showall
+#+OPTIONS: H:0 num:0 toc:1
+# To get an unbreakable space character: C-x8<space>
+# That is C-x8 followed by a space character.
+# Use org-confluence-export-as-confluence
+
+* Clio
+
+** Authentication and Authorization
+
+*** OpenID Connect Proxy
+
+    Clio will will expect requests already authenticated
+    to an upstream server such as an [[https://github.com/broadinstitute/openidc-baseimage][OpenID Connect (OpenIDC) proxy]].
+    The OpenIDC proxy will terminate SSL connections
+    for the Clio service and provide OAuth2 headers
+    when forwarding requests to the Clio server.
+
+    The Broad already deploys an OpenIDC proxy [[https://github.com/broadinstitute/openidc-baseimage][baseimage]]
+    containing Apache with the [[https://github.com/pingidentity/mod_auth_openidc][mod_auth_openidc]] module.
+
+*** Authentication
+
+    The OpenIDC proxy will forward requests to Clio
+    with the same headers expected by [[https://github.com/broadinstitute/rawls.git][Rawls]]:
+
+    - =OIDC_access_token=
+    - =OIDC_CLAIM_expires_in=
+    - =OIDC_CLAIM_email=
+
+    See [[https://github.com/broadinstitute/rawls/blob/develop/core/src/main/scala/org/broadinstitute/dsde/rawls/openam/StandardUserInfoDirectives.scala][StandardUserInfoDirectives.scala]].
+
+    Clio will assume that a request bearing the token
+    originated with the user identified by the token.
+
+    Clio will use the user identification information
+    from the =OIDC= headers to authorize the requests
+    it forwards to Elasticsearch.
+    Clio will compare the user identification information
+    against a list of approved users of the Clio service.
+    Clio will reject a request from an unauthorized user
+    with a *403 Forbidden* response.
+
+*** Authorization
+
+    Clio will compare the user identification information
+    against a whitelist of authorized users
+    maintained somewhere yet to be determined.
+    Clio will forward an authorized request
+    under the authority of a [[https://developers.google.com/identity/protocols/OAuth2ServiceAccount][service account]]
+    appropriate to that authorized user.
+
+    We are not sure yet what endpoints Clio will export,
+    which will need to be authorized,
+    and how the authorization will be done.
+
+*** Documentation
+
+- [[https://developers.google.com/identity/protocols/OAuth2ServiceAccount][OAuth2 Service Account]]
+- [[http://doc.akka.io/api/akka-http/current/akka/http/scaladsl/server/directives/SecurityDirectives.html][Akka HTTP SecurityDirectives]]
+- [[http://doc.akka.io/docs/akka-http/10.0.4/scala/http/routing-dsl/directives/security-directives/index.html#authentication-vs-authorization-scala][Authentication vs Authorization]]
+- [[https://tools.ietf.org/html/rfc6750][RFC-6750 Bearer Token Usage]]
+- [[https://github.com/pingidentity/mod_auth_openidc/wiki/Access-Tokens-and-Refresh-Tokens][Access Tokens and Refresh Tokens in mod_auth_openidc]]
+- [[https://github.com/pingidentity/mod_auth_openidc/wiki/Authorization][Authorization in mod_auth_openidc]]
+- [[https://github.com/broadinstitute/openidc-baseimage][Broad's OpenIDC baseimage]]
