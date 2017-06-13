@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.server.AuthorizationFailedRejection
 import org.scalatest.{FlatSpec, Matchers}
-import org.broadinstitute.clio.model._
 import org.broadinstitute.clio.service._
 
 import scala.concurrent.ExecutionContext
