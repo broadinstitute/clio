@@ -14,5 +14,9 @@ object AuthorizationService {
   def apply()(implicit ec: ExecutionContext): AuthorizationService = {
     new AuthorizationService()
   }
-  val mock = AuthorizationInfo("token", "expires", "email", "id")
+  val mock = AuthorizationInfo(
+    "OIDC_access_token",
+    "OIDC_CLAIM_expires_in",
+    "OIDC_CLAIM_email",
+    "OIDC_CLAIM_sub or OIDC_CLAIM_user_id")
 }

@@ -63,31 +63,35 @@ def test_bad_path():
 
 
 def test_authorization():
-    authorization = clio_http_uri + '/authorization'
-    headers = dict(
-        OIDC_access_token = 'token',
-        OIDC_CLAIM_expires_in = 'expires',
-        OIDC_CLAIM_email = 'email',
-        OIDC_CLAIM_sub = 'id',
-        OIDC_CLAIM_user_id = 'id'
-    )
-    def gas(headers):
-        print('gas: ', authorization, ' headers: ', headers)
-        result = requests.get(auth, headers=headers).json().status_code
-        print('gas: ', result)
+    woExpect = { # expected results from testWo
+        'OIDC_access_token':     'forbidden',
+        'OIDC_CLAIM_expires_in': 'forbidden',
+        'OIDC_CLAIM_email':      'forbidden',
+        'OIDC_CLAIM_sub':        'ok',
+        'OIDC_CLAIM_user_id':    'ok'
+    }
+    def makeHeaders(woExpect): # derive headers from woExpect
+        result = { key : key for key in woExpect.keys() }
+        oks = [key for key, value in woExpect.items() if value == 'ok']
+        id = ' or '.join(oks)
+        for ok in oks: result[ok] = id
         return result
-    def wo(header):
+    headers = makeHeaders(woExpect)
+    authUrl = clio_http_uri + '/authorization'
+    def gas(headers):
+        response = requests.get(authUrl, headers=headers)
+        json = response.json()
+        code = response.status_code
+        result = requests.get(authUrl, headers=headers).status_code
+        return result
+    def wo(header): # a copy of headers without header
         result = dict(headers)
         del result[header]
         return result
-    def test(header, status):
-        print('test: ', header, " = ", status)
-        assert gas(wo('OIDC_CLAIM_user_id')) == requests.codes[status]
-    test('OIDC_CLAIM_user_id', 'ok')
-    test('OIDC_CLAIM_sub', 'ok')
-    test('OIDC_CLAIM_email', 'unauthorized')
-    test('OIDC_CLAIM_expires_in', 'unauthorized')
-    test('OIDC_access_token', 'unauthorized')
+    def testWo(header, status):
+        print('testWo: ', header, " = ", status)
+        assert gas(wo(header)) == requests.codes[status]
+    for header, expect in woExpect.items(): testWo(header, expect)
 
 
 if __name__ == '__main__':
