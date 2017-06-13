@@ -10,7 +10,6 @@ import org.broadinstitute.clio.service._
 import scala.concurrent.ExecutionContext
 
 
-
 class MockAuthorizationWebService()(implicit ec: ExecutionContext) extends AuthorizationWebService {
   override lazy val authorizationService: AuthorizationService = AuthorizationService()
 }
@@ -60,6 +59,30 @@ class AuthorizationWebServiceSpec extends FlatSpec
       addHeader(OidcAccessToken(AuthorizationService.mock.token)).
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
       addHeader(OidcClaimEmail(AuthorizationService.mock.email)) ~>
+    webService.authorizationRoute ~> check {
+      rejection shouldEqual AuthorizationFailedRejection
+    }
+  }
+
+  it should "reject with subject and wrong token" in {
+    val webService = new MockAuthorizationWebService()
+    Get("/authorization").
+      addHeader(OidcAccessToken("wrong token")).
+      addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
+      addHeader(OidcClaimEmail(AuthorizationService.mock.email)).
+      addHeader(OidcClaimSub(AuthorizationService.mock.id)) ~>
+    webService.authorizationRoute ~> check {
+      rejection shouldEqual AuthorizationFailedRejection
+    }
+  }
+
+  it should "reject with user id and wrong token" in {
+    val webService = new MockAuthorizationWebService()
+    Get("/authorization").
+      addHeader(OidcAccessToken("wrong token")).
+      addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
+      addHeader(OidcClaimEmail(AuthorizationService.mock.email)).
+      addHeader(OidcClaimUserId(AuthorizationService.mock.id)) ~>
     webService.authorizationRoute ~> check {
       rejection shouldEqual AuthorizationFailedRejection
     }

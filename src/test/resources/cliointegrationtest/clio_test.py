@@ -62,10 +62,39 @@ def test_bad_path():
     assert js['rejection'] == 'The requested resource could not be found.'
 
 
+def test_authorization():
+    authorization = clio_http_uri + '/authorization'
+    headers = dict(
+        OIDC_access_token = 'token',
+        OIDC_CLAIM_expires_in = 'expires',
+        OIDC_CLAIM_email = 'email',
+        OIDC_CLAIM_sub = 'id',
+        OIDC_CLAIM_user_id = 'id'
+    )
+    def gas(headers):
+        print('gas: ', authorization, ' headers: ', headers)
+        result = requests.get(auth, headers=headers).json().status_code
+        print('gas: ', result)
+        return result
+    def wo(header):
+        result = dict(headers)
+        del result[header]
+        return result
+    def test(header, status):
+        print('test: ', header, " = ", status)
+        assert gas(wo('OIDC_CLAIM_user_id')) == requests.codes[status]
+    test('OIDC_CLAIM_user_id', 'ok')
+    test('OIDC_CLAIM_sub', 'ok')
+    test('OIDC_CLAIM_email', 'unauthorized')
+    test('OIDC_CLAIM_expires_in', 'unauthorized')
+    test('OIDC_access_token', 'unauthorized')
+
+
 if __name__ == '__main__':
     test_wait_for_clio()
     test_version()
     test_health()
     test_bad_method()
     test_bad_path()
+    test_authorization()
     print('tests passed')
