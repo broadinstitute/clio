@@ -68,7 +68,7 @@ object OidcClaimUserId extends ModeledCustomHeaderCompanion[OidcClaimUserId] {
 }
 
 
-trait AuthorizationWebService {
+trait AuthorizationDirectives {
 
   def authorizationService: AuthorizationService
 

@@ -12,7 +12,7 @@ import org.broadinstitute.clio.webservice._
 object ClioServer
   extends StatusWebService
     with AuditDirectives
-    with AuthorizationWebService
+    with AuthorizationDirectives
     with ExceptionDirectives
     with RejectionDirectives
     with StrictLogging {

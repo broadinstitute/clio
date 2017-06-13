@@ -9,18 +9,18 @@ import org.broadinstitute.clio.service._
 import scala.concurrent.ExecutionContext
 
 
-class MockAuthorizationWebService()(implicit ec: ExecutionContext) extends AuthorizationWebService {
+class MockAuthorizationDirectives()(implicit ec: ExecutionContext) extends AuthorizationDirectives {
   override lazy val authorizationService: AuthorizationService = AuthorizationService()
 }
 
 
-class AuthorizationWebServiceSpec extends FlatSpec
+class AuthorizationDirectivesSpec extends FlatSpec
     with Matchers with ScalatestRouteTest {
 
-  behavior of "AuthorizationWebService"
+  behavior of "AuthorizationDirectives"
 
   it should "reject missing token header" in {
-    val webService = new MockAuthorizationWebService()
+    val webService = new MockAuthorizationDirectives()
     Get("/authorization").
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
       addHeader(OidcClaimEmail(AuthorizationService.mock.email)).
@@ -31,7 +31,7 @@ class AuthorizationWebServiceSpec extends FlatSpec
   }
 
   it should "reject missing expires header" in {
-    val webService = new MockAuthorizationWebService()
+    val webService = new MockAuthorizationDirectives()
     Get("/authorization").
       addHeader(OidcAccessToken(AuthorizationService.mock.token)).
       addHeader(OidcClaimEmail(AuthorizationService.mock.email)).
@@ -42,7 +42,7 @@ class AuthorizationWebServiceSpec extends FlatSpec
   }
 
   it should "reject missing email header" in {
-    val webService = new MockAuthorizationWebService()
+    val webService = new MockAuthorizationDirectives()
     Get("/authorization").
       addHeader(OidcAccessToken(AuthorizationService.mock.token)).
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
@@ -53,7 +53,7 @@ class AuthorizationWebServiceSpec extends FlatSpec
   }
 
   it should "reject missing id headers" in {
-    val webService = new MockAuthorizationWebService()
+    val webService = new MockAuthorizationDirectives()
     Get("/authorization").
       addHeader(OidcAccessToken(AuthorizationService.mock.token)).
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
@@ -64,7 +64,7 @@ class AuthorizationWebServiceSpec extends FlatSpec
   }
 
   it should "reject with subject and wrong token" in {
-    val webService = new MockAuthorizationWebService()
+    val webService = new MockAuthorizationDirectives()
     Get("/authorization").
       addHeader(OidcAccessToken("wrong token")).
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
@@ -76,7 +76,7 @@ class AuthorizationWebServiceSpec extends FlatSpec
   }
 
   it should "reject with user id and wrong token" in {
-    val webService = new MockAuthorizationWebService()
+    val webService = new MockAuthorizationDirectives()
     Get("/authorization").
       addHeader(OidcAccessToken("wrong token")).
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
@@ -88,7 +88,7 @@ class AuthorizationWebServiceSpec extends FlatSpec
   }
 
   it should "accept with subject ID header" in {
-    val webService = new MockAuthorizationWebService()
+    val webService = new MockAuthorizationDirectives()
     Get("/authorization").
       addHeader(OidcAccessToken(AuthorizationService.mock.token)).
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
@@ -100,7 +100,7 @@ class AuthorizationWebServiceSpec extends FlatSpec
   }
 
   it should "accept with user ID header" in {
-    val webService = new MockAuthorizationWebService()
+    val webService = new MockAuthorizationDirectives()
     Get("/authorization").
       addHeader(OidcAccessToken(AuthorizationService.mock.token)).
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
@@ -112,7 +112,7 @@ class AuthorizationWebServiceSpec extends FlatSpec
   }
 
   it should "accept with both ID headers" in {
-    val webService = new MockAuthorizationWebService()
+    val webService = new MockAuthorizationDirectives()
     Get("/authorization").
       addHeader(OidcAccessToken(AuthorizationService.mock.token)).
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
