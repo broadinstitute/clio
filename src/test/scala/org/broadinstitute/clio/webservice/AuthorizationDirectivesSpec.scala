@@ -1,10 +1,10 @@
 package org.broadinstitute.clio.webservice
 
 import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.server.AuthorizationFailedRejection
-import org.scalatest.{FlatSpec, Matchers}
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import org.broadinstitute.clio.service._
+import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.ExecutionContext
 
@@ -63,10 +63,10 @@ class AuthorizationDirectivesSpec extends FlatSpec
     }
   }
 
-  it should "reject with subject and wrong token" in {
+  it should "reject with subject and bad token" in {
     val webService = new MockAuthorizationDirectives()
     Get("/authorization").
-      addHeader(OidcAccessToken("wrong token")).
+      addHeader(OidcAccessToken("bad token")).
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
       addHeader(OidcClaimEmail(AuthorizationService.mock.email)).
       addHeader(OidcClaimSub(AuthorizationService.mock.id)) ~>
@@ -75,10 +75,10 @@ class AuthorizationDirectivesSpec extends FlatSpec
     }
   }
 
-  it should "reject with user id and wrong token" in {
+  it should "reject with user id and bad token" in {
     val webService = new MockAuthorizationDirectives()
     Get("/authorization").
-      addHeader(OidcAccessToken("wrong token")).
+      addHeader(OidcAccessToken("bad token")).
       addHeader(OidcClaimExpiresIn(AuthorizationService.mock.expires)).
       addHeader(OidcClaimEmail(AuthorizationService.mock.email)).
       addHeader(OidcClaimUserId(AuthorizationService.mock.id)) ~>
