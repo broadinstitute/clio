@@ -80,8 +80,6 @@ def test_authorization():
     authUrl = clio_http_uri + '/authorization'
     def gas(headers):
         response = requests.get(authUrl, headers=headers)
-        json = response.json()
-        code = response.status_code
         result = requests.get(authUrl, headers=headers).status_code
         return result
     def wo(header): # a copy of headers without header
@@ -89,7 +87,6 @@ def test_authorization():
         del result[header]
         return result
     def testWo(header, status):
-        print('testWo: ', header, " = ", status)
         assert gas(wo(header)) == requests.codes[status]
     for header, expect in woExpect.items(): testWo(header, expect)
 
