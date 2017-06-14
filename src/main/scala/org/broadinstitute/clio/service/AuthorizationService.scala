@@ -3,7 +3,7 @@ package org.broadinstitute.clio.service
 import scala.concurrent.{ExecutionContext, Future}
 
 
-case class AuthorizationInfo(token: String, expires: String, email: String, id: String)
+case class AuthorizationInfo(token: String, expires: Long, email: String, id: String)
 
 class AuthorizationService()(implicit ec: ExecutionContext) {
   def authorize(info: AuthorizationInfo): Future[Boolean] =
@@ -16,7 +16,7 @@ object AuthorizationService {
   }
   val mock = AuthorizationInfo(
     "OIDC_access_token",
-    "OIDC_CLAIM_expires_in",
+    1234567890,
     "OIDC_CLAIM_email",
     "OIDC_CLAIM_sub or OIDC_CLAIM_user_id")
 }

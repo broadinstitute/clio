@@ -75,6 +75,7 @@ def test_authorization():
         oks = [key for key, value in woExpect.items() if value == 'ok']
         id = ' or '.join(oks)
         for ok in oks: result[ok] = id
+        result['OIDC_CLAIM_expires_in'] = str(1234567890)
         return result
     headers = makeHeaders(woExpect)
     authUrl = clio_http_uri + '/authorization'

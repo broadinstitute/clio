@@ -14,14 +14,14 @@ trait AuthorizationDirectives {
     request => {
       val args = request.headers.collect {
         case OidcAccessToken(v)    => 'token   -> v
-        case OidcClaimExpiresIn(v) => 'expires -> v
+        case OidcClaimExpiresIn(v) => 'expires -> v.toString
         case OidcClaimEmail(v)     => 'email   -> v
         case OidcClaimSub(v)       => 'subject -> v
         case OidcClaimUserId(v)    => 'user    -> v
       }.toMap
       val id = (args get 'subject) orElse (args get 'user)
       val info = (args get 'token, args get 'expires, args get 'email, id) match {
-        case (Some(t), Some(x), Some(m), Some(i)) => Some(AuthorizationInfo(t, x, m, i))
+        case (Some(t), Some(x), Some(m), Some(i)) => Some(AuthorizationInfo(t, x.toLong, m, i))
         case _ => None
       }
       provide(info)

@@ -1,65 +1,40 @@
 package org.broadinstitute.clio.webservice
 
-import akka.http.scaladsl.model.headers.{ModeledCustomHeader, ModeledCustomHeaderCompanion}
+/*
+ * These traits just implement Akka-HTTP's header rendering methods.
+ * A ModeledCustomHeader implementation will probably want to extend
+ * one of these.  RequestResponseHeader is the only one used now for
+ * the OidcHeader classes.  See {@link OidcAccessToken} for example.
+ */
 
-import scala.util.Try
+/**
+  * Headers that render in neither requests nor responses.
+  */
+trait InternalHeader {
+  def renderInRequests():Boolean = false
+  def renderInResponses():Boolean = false
+}
 
-
-trait RequestResponseHeader {
+/**
+  * Headers that render only in requests.
+  */
+trait RequestHeader {
   def renderInRequests():Boolean = true
+  def renderInResponses():Boolean = false
+}
+
+/**
+  * Headers that render only in responses.
+  */
+trait ResponseHeader {
+  def renderInRequests():Boolean = false
   def renderInResponses():Boolean = true
 }
 
-class OidcAccessToken(s: String) extends ModeledCustomHeader[OidcAccessToken] with RequestResponseHeader {
-  override val value: String = s
-  override val companion = OidcAccessToken
-}
-
-object OidcAccessToken extends ModeledCustomHeaderCompanion[OidcAccessToken] {
-  override val name = "OIDC_access_token"
-  override def parse(s: String) = Try(new OidcAccessToken(s))
-}
-
-
-class OidcClaimExpiresIn(s: String) extends ModeledCustomHeader[OidcClaimExpiresIn] with RequestResponseHeader {
-  override val value: String = s
-  override val companion = OidcClaimExpiresIn
-}
-
-object OidcClaimExpiresIn extends ModeledCustomHeaderCompanion[OidcClaimExpiresIn] {
-  override val name = "OIDC_CLAIM_expires_in"
-  override def parse(s: String) = Try(new OidcClaimExpiresIn(s))
-}
-
-
-class OidcClaimEmail(s: String) extends ModeledCustomHeader[OidcClaimEmail] with RequestResponseHeader {
-  override val value: String = s
-  override val companion = OidcClaimEmail
-}
-
-object OidcClaimEmail extends ModeledCustomHeaderCompanion[OidcClaimEmail] {
-  override val name = "OIDC_CLAIM_email"
-  override def parse(s: String) = Try(new OidcClaimEmail(s))
-}
-
-
-class OidcClaimSub(s: String) extends ModeledCustomHeader[OidcClaimSub] with RequestResponseHeader {
-  override val value: String = s
-  override val companion = OidcClaimSub
-}
-
-object OidcClaimSub extends ModeledCustomHeaderCompanion[OidcClaimSub] {
-  override val name = "OIDC_CLAIM_sub"
-  override def parse(s: String) = Try(new OidcClaimSub(s))
-}
-
-
-class OidcClaimUserId(s: String) extends ModeledCustomHeader[OidcClaimUserId] with RequestResponseHeader {
-  override val value: String = s
-  override val companion = OidcClaimUserId
-}
-
-object OidcClaimUserId extends ModeledCustomHeaderCompanion[OidcClaimUserId] {
-  override val name = "OIDC_CLAIM_user_id"
-  override def parse(s: String) = Try(new OidcClaimUserId(s))
+/**
+  * Headers that render in both requests and responses.
+  */
+trait RequestResponseHeader {
+  def renderInRequests():Boolean = true
+  def renderInResponses():Boolean = true
 }
