@@ -8,6 +8,44 @@ import akka.http.scaladsl.model.headers.{ModeledCustomHeader, ModeledCustomHeade
 import scala.util.Try
 
 
+trait AuthorizationDirectives {
+
+  def authorizationService: AuthorizationService
+
+  val authorize1: Directive1[Option[AuthorizationInfo]] = extractRequest flatMap {
+    request => {
+      val args = request.headers.collect {
+        case OidcAccessToken(v)    => 'token   -> v
+        case OidcClaimExpiresIn(v) => 'expires -> v
+        case OidcClaimEmail(v)     => 'email   -> v
+        case OidcClaimSub(v)       => 'subject -> v
+        case OidcClaimUserId(v)    => 'user    -> v
+      }.toMap
+      val id = (args get 'subject) orElse (args get 'user)
+      val info = (args get 'token, args get 'expires, args get 'email, id) match {
+        case (Some(t), Some(x), Some(m), Some(i)) => Some(AuthorizationInfo(t, x, m, i))
+        case _ => None
+      }
+      provide(info)
+    }
+  }
+
+  val authorize0: Directive0 = authorize1 flatMap {
+    case Some(info) => authorizeAsync(authorizationService.authorize(info))
+    case None => authorize(false)
+  }
+
+  val authorizationRoute: Route =
+    path("authorization") {
+      authorize0 {
+        get {
+          complete("OK")
+        }
+      }
+    }
+}
+
+
 trait OidcHeader {
   def renderInRequests():Boolean = true
   def renderInResponses():Boolean = true
@@ -65,42 +103,4 @@ class OidcClaimUserId(s: String) extends ModeledCustomHeader[OidcClaimUserId] wi
 object OidcClaimUserId extends ModeledCustomHeaderCompanion[OidcClaimUserId] {
   override val name = "OIDC_CLAIM_user_id"
   override def parse(s: String) = Try(new OidcClaimUserId(s))
-}
-
-
-trait AuthorizationDirectives {
-
-  def authorizationService: AuthorizationService
-
-  val authorize1: Directive1[Option[AuthorizationInfo]] = extractRequest flatMap {
-    request => {
-      val args = request.headers.collect {
-        case OidcAccessToken(v)    => 'token   -> v
-        case OidcClaimExpiresIn(v) => 'expires -> v
-        case OidcClaimEmail(v)     => 'email   -> v
-        case OidcClaimSub(v)       => 'subject -> v
-        case OidcClaimUserId(v)    => 'user    -> v
-      }.toMap
-      val id = (args get 'subject) orElse (args get 'user)
-      val info = (args get 'token, args get 'expires, args get 'email, id) match {
-        case (Some(t), Some(x), Some(m), Some(i)) => Some(AuthorizationInfo(t, x, m, i))
-        case _ => None
-      }
-      provide(info)
-    }
-  }
-
-  val authorize0: Directive0 = authorize1 flatMap {
-    case Some(info) => authorizeAsync(authorizationService.authorize(info))
-    case None => authorize(false)
-  }
-
-  val authorizationRoute: Route =
-    path("authorization") {
-      authorize0 {
-        get {
-          complete("OK")
-        }
-      }
-    }
 }
