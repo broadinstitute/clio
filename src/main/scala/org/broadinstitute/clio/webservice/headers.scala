@@ -5,12 +5,12 @@ import akka.http.scaladsl.model.headers.{ModeledCustomHeader, ModeledCustomHeade
 import scala.util.Try
 
 
-trait OidcHeader {
+trait RequestResponseHeader {
   def renderInRequests():Boolean = true
   def renderInResponses():Boolean = true
 }
 
-class OidcAccessToken(s: String) extends ModeledCustomHeader[OidcAccessToken] with OidcHeader {
+class OidcAccessToken(s: String) extends ModeledCustomHeader[OidcAccessToken] with RequestResponseHeader {
   override val value: String = s
   override val companion = OidcAccessToken
 }
@@ -21,7 +21,7 @@ object OidcAccessToken extends ModeledCustomHeaderCompanion[OidcAccessToken] {
 }
 
 
-class OidcClaimExpiresIn(s: String) extends ModeledCustomHeader[OidcClaimExpiresIn] with OidcHeader {
+class OidcClaimExpiresIn(s: String) extends ModeledCustomHeader[OidcClaimExpiresIn] with RequestResponseHeader {
   override val value: String = s
   override val companion = OidcClaimExpiresIn
 }
@@ -32,7 +32,7 @@ object OidcClaimExpiresIn extends ModeledCustomHeaderCompanion[OidcClaimExpiresI
 }
 
 
-class OidcClaimEmail(s: String) extends ModeledCustomHeader[OidcClaimEmail] with OidcHeader {
+class OidcClaimEmail(s: String) extends ModeledCustomHeader[OidcClaimEmail] with RequestResponseHeader {
   override val value: String = s
   override val companion = OidcClaimEmail
 }
@@ -43,7 +43,7 @@ object OidcClaimEmail extends ModeledCustomHeaderCompanion[OidcClaimEmail] {
 }
 
 
-class OidcClaimSub(s: String) extends ModeledCustomHeader[OidcClaimSub] with OidcHeader {
+class OidcClaimSub(s: String) extends ModeledCustomHeader[OidcClaimSub] with RequestResponseHeader {
   override val value: String = s
   override val companion = OidcClaimSub
 }
@@ -54,7 +54,7 @@ object OidcClaimSub extends ModeledCustomHeaderCompanion[OidcClaimSub] {
 }
 
 
-class OidcClaimUserId(s: String) extends ModeledCustomHeader[OidcClaimUserId] with OidcHeader {
+class OidcClaimUserId(s: String) extends ModeledCustomHeader[OidcClaimUserId] with RequestResponseHeader {
   override val value: String = s
   override val companion = OidcClaimUserId
 }
