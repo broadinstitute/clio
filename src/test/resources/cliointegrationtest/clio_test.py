@@ -120,6 +120,36 @@ def test_readgroups_mapping():
     __assert_expected_fields(expected_fields, mappings['properties'])
 
 
+def test_authorization():
+    withoutExpect = { # expected results from testWithout
+        'OIDC_access_token':     'forbidden',
+        'OIDC_CLAIM_expires_in': 'forbidden',
+        'OIDC_CLAIM_email':      'forbidden',
+        'OIDC_CLAIM_sub':        'ok',
+        'OIDC_CLAIM_user_id':    'ok'
+    }
+    def mockHeaders(withoutExpect): # derive mock headers from withoutExpect
+        result = { key : key for key in withoutExpect.keys() }
+        oks = [key for key, value in withoutExpect.items() if value == 'ok']
+        id = ' or '.join(oks)
+        for ok in oks: result[ok] = id
+        result['OIDC_CLAIM_expires_in'] = str(1234567890)
+        return result
+    headers = mockHeaders(withoutExpect)
+    authUrl = clio_http_uri + '/authorization'
+    def getAuthStatus(headers):
+        response = requests.get(authUrl, headers=headers)
+        result = requests.get(authUrl, headers=headers).status_code
+        return result
+    def without(header): # a copy of headers without header
+        result = dict(headers)
+        del result[header]
+        return result
+    def testWithout(header, status):
+        assert getAuthStatus(without(header)) == requests.codes[status]
+    for header, expect in withoutExpect.items(): testWithout(header, expect)
+
+
 if __name__ == '__main__':
     test_wait_for_clio()
     test_version()
@@ -127,4 +157,5 @@ if __name__ == '__main__':
     test_bad_method()
     test_bad_path()
     test_readgroups_mapping()
+    test_authorization()
     print('tests passed')
