@@ -36,7 +36,7 @@ object AuthorizationService {
     * Mock credentials for testing with the `/authorization` endpoint.
     */
   val mock = AuthorizationInfo(
-    "Oidc_access_token",
+    "OIDC_access_token",
     1234567890,
     "OIDC_CLAIM_email",
     "OIDC_CLAIM_sub or OIDC_CLAIM_user_id")
