@@ -10,29 +10,35 @@ trait AuthorizationDirectives {
 
   def authorizationService: AuthorizationService
 
-  val authorize1: Directive1[Option[AuthorizationInfo]] = extractRequest flatMap {
-    request => {
-      val args = request.headers.collect {
-        case OidcAccessToken(v)    => 'token   -> v
-        case OidcClaimExpiresIn(v) => 'expires -> v.toString
-        case OidcClaimEmail(v)     => 'email   -> v
-        case OidcClaimSub(v)       => 'subject -> v
-        case OidcClaimUserId(v)    => 'user    -> v
-      }.toMap
-      val id = (args get 'subject) orElse (args get 'user)
-      val info = (args get 'token, args get 'expires, args get 'email, id) match {
-        case (Some(t), Some(x), Some(m), Some(i)) => Some(AuthorizationInfo(t, x.toLong, m, i))
-        case _ => None
-      }
-      provide(info)
-    }
+  /**
+    * Extract an {@code Option[AuthorizationInfo]} from request headers.
+    */
+  val authorize1: Directive1[Option[AuthorizationInfo]] = {
+    for {
+      token   <- optionalHeaderValueByType[OidcAccessToken](())
+      expires <- optionalHeaderValueByType[OidcClaimExpiresIn](())
+      email   <- optionalHeaderValueByType[OidcClaimEmail](())
+      subject <- optionalHeaderValueByType[OidcClaimSub](())
+      user    <- optionalHeaderValueByType[OidcClaimUserId](())
+    } yield for {
+        token   <- token.map(_.token)
+        expires <- expires.map(_.seconds)
+        email   <- email.map(_.email)
+        id      <- subject.map(_.subject) orElse user.map(_.user)
+      } yield AuthorizationInfo(token, expires, email, id)
   }
 
+  /**
+    * Use OIDC header values to authorize a request.
+    */
   val authorize0: Directive0 = authorize1 flatMap {
     case Some(info) => authorizeAsync(authorizationService.authorize(info))
     case None => authorize(false)
   }
 
+  /**
+    * An endpoint to test the authorization directives.
+    */
   val authorizationRoute: Route =
     path("authorization") {
       authorize0 {
