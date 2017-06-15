@@ -11,7 +11,7 @@ trait AuthorizationDirectives {
   def authorizationService: AuthorizationService
 
   /**
-    * Extract an `Option[AuthorizationInfo]` from request headers.
+    * Extract an `AuthorizationInfo` from request headers.
     */
   val optionalOidcAuthorizationInfo: Directive1[Option[AuthorizationInfo]] = {
     for {
@@ -37,7 +37,7 @@ trait AuthorizationDirectives {
   }
 
   /**
-    * An endpoint to test the authorization directives.
+    * A temporary endpoint to test `authorizeOidc`.
     */
   val authorizationRoute: Route =
     path("authorization") {
