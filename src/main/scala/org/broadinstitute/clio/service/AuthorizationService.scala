@@ -14,8 +14,12 @@ object AuthorizationService {
   def apply()(implicit ec: ExecutionContext): AuthorizationService = {
     new AuthorizationService()
   }
+
+  /**
+    * Remove this when removing the `/authorization` endpoint.
+    */
   val mock = AuthorizationInfo(
-    "OIDC_access_token",
+    "Oidc_access_token",
     1234567890,
     "OIDC_CLAIM_email",
     "OIDC_CLAIM_sub or OIDC_CLAIM_user_id")

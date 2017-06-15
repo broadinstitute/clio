@@ -6,7 +6,7 @@ import scala.util.Try
 
 
 /**
-  * An OIDC access token with value {@param token}.
+  * An OIDC access token with value `token`.
   * @param token is an access token
   */
 class OidcAccessToken(val token: String) extends ModeledCustomHeader[OidcAccessToken] with RequestResponseHeader {
@@ -20,7 +20,7 @@ object OidcAccessToken extends ModeledCustomHeaderCompanion[OidcAccessToken] {
 }
 
 /**
-  * An OIDC token expiration claim with value {@param seconds}.
+  * An OIDC token expiration claim with value `seconds`.
   * @param seconds integer seconds to token expiration
   */
 class OidcClaimExpiresIn(val seconds: Long) extends ModeledCustomHeader[OidcClaimExpiresIn] with RequestResponseHeader {
@@ -35,7 +35,7 @@ object OidcClaimExpiresIn extends ModeledCustomHeaderCompanion[OidcClaimExpiresI
 }
 
 /**
-  * An OIDC email claim with address {@param email}.
+  * An OIDC email claim with address `email`.
   * @param email is an email address
   */
 class OidcClaimEmail(val email: String) extends ModeledCustomHeader[OidcClaimEmail] with RequestResponseHeader {
@@ -49,7 +49,7 @@ object OidcClaimEmail extends ModeledCustomHeaderCompanion[OidcClaimEmail] {
 }
 
 /**
-  * An OIDC subject ID claim with value {@param subject}.
+  * An OIDC subject ID claim with value `subject`.
   * @param subject is a Google subject ID
   */
 class OidcClaimSub(val subject: String) extends ModeledCustomHeader[OidcClaimSub] with RequestResponseHeader {
@@ -63,7 +63,7 @@ object OidcClaimSub extends ModeledCustomHeaderCompanion[OidcClaimSub] {
 }
 
 /**
-  * An OIDC user ID claim with value {@param user}.
+  * An OIDC user ID claim with value `user`.
   * @param user is a user ID claim
   */
 class OidcClaimUserId(val user: String) extends ModeledCustomHeader[OidcClaimUserId] with RequestResponseHeader {

@@ -11,9 +11,9 @@ trait AuthorizationDirectives {
   def authorizationService: AuthorizationService
 
   /**
-    * Extract an {@code Option[AuthorizationInfo]} from request headers.
+    * Extract an `Option[AuthorizationInfo]` from request headers.
     */
-  val authorize1: Directive1[Option[AuthorizationInfo]] = {
+  val optionalOidcAuthorizationInfo: Directive1[Option[AuthorizationInfo]] = {
     for {
       token   <- optionalHeaderValueByType[OidcAccessToken](())
       expires <- optionalHeaderValueByType[OidcClaimExpiresIn](())
@@ -31,7 +31,7 @@ trait AuthorizationDirectives {
   /**
     * Use OIDC header values to authorize a request.
     */
-  val authorize0: Directive0 = authorize1 flatMap {
+  val authorizeOidc: Directive0 = optionalOidcAuthorizationInfo flatMap {
     case Some(info) => authorizeAsync(authorizationService.authorize(info))
     case None => authorize(false)
   }
@@ -41,7 +41,7 @@ trait AuthorizationDirectives {
     */
   val authorizationRoute: Route =
     path("authorization") {
-      authorize0 {
+      authorizeOidc {
         get {
           complete("OK")
         }
