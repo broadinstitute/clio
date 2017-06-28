@@ -19,7 +19,7 @@ object Dependencies {
   private val TestContainersScalaVersion = "0.6.0"
 
   /** Dependencies used in main code, and transitively by the test code. */
-  private val MainDependencies = Seq(
+  private val MainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,
@@ -34,17 +34,17 @@ object Dependencies {
   )
 
   /** Dependencies only used by test code. */
-  private val TestDependencies = Seq(
+  private val TestDependencies: Seq[ModuleID] = Seq(
     "com.dimafeng" %% "testcontainers-scala" % TestContainersScalaVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "org.scalatest" %% "scalatest" % ScalaTestVersion
   ).map(_ % Test)
 
   /** The full list of project dependencies. */
-  val ProjectDependencies = MainDependencies ++ TestDependencies
+  val ProjectDependencies: Seq[ModuleID] = MainDependencies ++ TestDependencies
 
   /** Suppress warning for evicted libraries. */
-  val OverrideDependencies = Set(
+  val OverrideDependencies: Set[ModuleID] = Set(
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion

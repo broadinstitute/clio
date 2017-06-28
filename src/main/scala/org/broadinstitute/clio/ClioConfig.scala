@@ -18,7 +18,7 @@ object ClioConfig {
     *
     * NOTE: Mimic of this behavior exists within the ClioIntegrationTestRunner also.
     */
-  def withEnvironment(config: Config) = {
+  def withEnvironment(config: Config): Config = {
     environment.withFallback(config).getConfig("clio")
   }
 
@@ -26,22 +26,22 @@ object ClioConfig {
 
   object HttpServer {
     private val http = config.getConfig("http-server")
-    val interface = http.getString("interface")
-    val port = http.getInt("port")
-    val shutdownTimeout = http.as[FiniteDuration]("shutdown-timeout")
+    val interface: String = http.getString("interface")
+    val port: Int = http.getInt("port")
+    val shutdownTimeout: FiniteDuration = http.as[FiniteDuration]("shutdown-timeout")
   }
 
   object Version {
-    val value = config.getString("version")
+    val value: String = config.getString("version")
   }
 
   object Elasticsearch {
     case class ElasticsearchHttpHost(hostname: String = "localhost", port: Int = 9200, scheme: String = "http")
 
     private val elasticsearch = config.getConfig("elasticsearch")
-    val httpHosts = elasticsearch.as[Seq[ElasticsearchHttpHost]]("http-hosts")
-    val readinessColors = elasticsearch.as[Seq[String]]("readiness.colors")
-    val readinessRetries = elasticsearch.getInt("readiness.retries")
-    val readinessPatience = elasticsearch.as[FiniteDuration]("readiness.patience")
+    val httpHosts: Seq[ElasticsearchHttpHost] = elasticsearch.as[Seq[ElasticsearchHttpHost]]("http-hosts")
+    val readinessColors: Seq[String] = elasticsearch.as[Seq[String]]("readiness.colors")
+    val readinessRetries: Int = elasticsearch.getInt("readiness.retries")
+    val readinessPatience: FiniteDuration = elasticsearch.as[FiniteDuration]("readiness.patience")
   }
 }

@@ -8,7 +8,7 @@ class ReflectionIndexDefiner[A](indexName: String, indexType: String, indexClass
   extends ElasticsearchIndexDefiner[A] {
   override def indexDefinition: ElasticsearchIndex = ElasticsearchIndex(indexName, indexType, fieldDefinitions)
 
-  lazy val fieldDefinitions = indexClass.getDeclaredFields map ReflectionIndexDefiner.getFieldDefinition
+  private lazy val fieldDefinitions = indexClass.getDeclaredFields map ReflectionIndexDefiner.getFieldDefinition
 }
 
 object ReflectionIndexDefiner {

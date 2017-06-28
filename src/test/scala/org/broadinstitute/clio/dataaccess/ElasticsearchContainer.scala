@@ -22,7 +22,7 @@ trait ElasticsearchContainer extends ForAllTestContainer {
       waitStrategy = Wait.forHttp("/")
     )
 
-  lazy val elasticsearchContainerIpAddress = container.container.getContainerIpAddress
+  lazy val elasticsearchContainerIpAddress: String = container.container.getContainerIpAddress
 
-  lazy val elasticsearchPort = container.container.getMappedPort(9200)
+  lazy val elasticsearchPort: Integer = container.container.getMappedPort(9200)
 }

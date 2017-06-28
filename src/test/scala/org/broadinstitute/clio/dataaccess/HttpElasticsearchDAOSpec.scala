@@ -155,7 +155,7 @@ class HttpElasticsearchDAOSpec extends AsyncFlatSpec with Matchers with EitherVa
             country = "France",
             continent = "Europe",
             status = "Awesome"
-        )
+          )
       ).refresh(RefreshPolicy.WAIT_UNTIL)
 
     val searchDefinition: SearchDefinition =

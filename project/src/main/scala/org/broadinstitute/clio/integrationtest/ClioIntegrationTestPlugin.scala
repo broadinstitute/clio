@@ -9,9 +9,9 @@ object ClioIntegrationTestPlugin extends AutoPlugin {
   /** The list of items automatically added to build.sbt, including the testDocker command. */
   object autoImport {
     /** The task key for running the integration tests. */
-    val testDocker = ClioIntegrationTestSettings.testDocker
+    val testDocker: TaskKey[Unit] = ClioIntegrationTestSettings.testDocker
   }
 
   /** Add our task to the project(s). */
-  override val projectSettings = ClioIntegrationTestSettings.settings
+  override val projectSettings: Seq[Setting[Task[Unit]]] = ClioIntegrationTestSettings.settings
 }

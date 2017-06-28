@@ -9,7 +9,7 @@ object Compilation {
     * - sbt 'set scalacOptions in Compile += "-X"' compile
     * - sbt 'set scalacOptions in Compile += "-Y"' compile
     */
-  val CompilerSettings = Seq(
+  val CompilerSettings: Seq[String] = Seq(
     "-deprecation",
     "-encoding", "UTF-8",
     "-explaintypes",
@@ -35,7 +35,7 @@ object Compilation {
   )
 
   /** sbt console warnings should not be fatal. */
-  val ConsoleSettings = CompilerSettings filterNot Set(
+  val ConsoleSettings: Seq[String] = CompilerSettings filterNot Set(
     "-Xfatal-warnings",
     "-Xlint",
     "-Ywarn-unused",
@@ -48,7 +48,7 @@ object Compilation {
     * Since warnings are now errors, using this override until someone discovers a way to fix links.
     * http://stackoverflow.com/questions/31488335/scaladoc-2-11-6-fails-on-throws-tag-with-unable-to-find-any-member-to-link#31497874
     */
-  val DocSettings = Seq(
+  val DocSettings: Seq[String] = Seq(
     "-no-link-warnings"
   )
 }
