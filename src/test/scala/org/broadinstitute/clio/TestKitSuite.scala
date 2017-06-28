@@ -12,7 +12,7 @@ import org.scalatest.{BeforeAndAfterAll, Suite}
 abstract class TestKitSuite(actorSystemName: String) extends TestKit(ActorSystem(actorSystemName))
   with Suite with BeforeAndAfterAll {
 
-  override protected def afterAll() = {
+  override protected def afterAll(): Unit = {
     shutdown()
   }
 }

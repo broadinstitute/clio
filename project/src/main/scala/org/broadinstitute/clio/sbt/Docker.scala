@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.sbt
 
+import sbt.Def.Initialize
 import sbt.Keys._
 import sbt._
 import sbtassembly.AssemblyKeys._
@@ -13,7 +14,7 @@ object Docker {
   private val DockerOrganization = "broadinstitute"
 
   /** The list of docker images to publish. */
-  lazy val imageNames = Def.task {
+  lazy val imageNames: Initialize[Task[Seq[ImageName]]] = Def.task {
     Seq(
       // Sets a name with a tag that contains the project version
       ImageName(
@@ -25,7 +26,7 @@ object Docker {
   }
 
   /** The Dockerfile. */
-  lazy val dockerFile = Def.task {
+  lazy val dockerFile: Initialize[Task[Dockerfile]] = Def.task {
     // The assembly task generates a fat JAR file
     val artifact = assembly.value
     val artifactTargetPath = "/app/clio.jar"
@@ -40,7 +41,7 @@ object Docker {
   }
 
   /** Other customizations for sbt-docker. */
-  lazy val buildOptions = Def.setting {
+  lazy val buildOptions: Initialize[BuildOptions] = Def.setting {
     BuildOptions(
       cache = false,
       removeIntermediateContainers = BuildOptions.Remove.Always

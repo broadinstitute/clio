@@ -49,9 +49,9 @@ object ClioServer
 
   override val authorizationService: AuthorizationService = AuthorizationService()
 
-  def beginStartup() = serverService.beginStartup()
+  def beginStartup(): Unit = serverService.beginStartup()
 
-  def awaitShutdownInf() = serverService.awaitShutdownInf()
+  def awaitShutdownInf(): Unit = serverService.awaitShutdownInf()
 
-  def shutdownAndWait() = serverService.shutdownAndWait()
+  def shutdownAndWait(): Unit = serverService.shutdownAndWait()
 }

@@ -14,6 +14,6 @@ object TestContainers {
 
   object DockerImages {
     private val docker = config.getConfig("docker")
-    val elasticsearch = docker.getString("elasticsearch")
+    val elasticsearch: String = docker.getString("elasticsearch")
   }
 }
