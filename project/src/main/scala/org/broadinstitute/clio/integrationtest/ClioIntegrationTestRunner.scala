@@ -22,14 +22,12 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
   def run(): Unit = {
     // Log directory and environment, such that one may run the compose from the command line with
     // bash$ cd DIR; ENVKEY=ENVVAL docker-compose up ...
-    log.info(
-      s"""|Starting docker-compose
+    log.info(s"""|Starting docker-compose
           |  directory: $dockerComposeDirectory
           |  env: ${dockerComposeEnvironment
-           .map({ case (key, value) => s"$key=$value" })
-           .mkString(" ")}
-          |""".stripMargin
-    )
+                  .map({ case (key, value) => s"$key=$value" })
+                  .mkString(" ")}
+          |""".stripMargin)
 
     // Declare a lazy val, such that when it's invoked will run tryDockerComposeCleanup() once and only once
     // Pass our instance as a thunk to addShutdownHook, that will only evaluate on a shutdown
@@ -61,7 +59,8 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     val configEnvironment = ConfigFactory.parseMap(System.getenv)
     val configFile =
       ConfigFactory.parseFile(
-        testClassesDirectory / ClioIntegrationTestRunner.DockerImagesConfigFileName)
+        testClassesDirectory / ClioIntegrationTestRunner.DockerImagesConfigFileName
+      )
     configEnvironment.withFallback(configFile).getConfig("clio.docker")
   }
 
@@ -79,17 +78,13 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     */
   private def tryDockerComposeTest(): Try[Int] = Try {
     val testCommand =
-      Seq("docker-compose", "up", "--build", "--abort-on-container-exit")
-    val exitCodeScanner = new ExitCodeScanner
-    val exitCode = runCommand(testCommand,
-                              dockerComposeDirectory,
-                              dockerComposeEnvironment,
-                              exitCodeScanner.logAndScan(log))
-    // For now, ignore the exit code from docker-compose, and look for the exit code in stdout.
-    exitCodeScanner.loggedExitCodeOption.getOrElse(sys.error(s"""|
-            |Didn't find an exit code in the standard out, exiting with code $exitCode.
-          |Check the logs above for other errors.
-          |""".stripMargin))
+      Seq("docker-compose", "up", "--exit-code-from", "clio-integration-test")
+    runCommand(
+      testCommand,
+      dockerComposeDirectory,
+      dockerComposeEnvironment,
+      log.info(_)
+    )
   }
 
   /** Runs docker-compose cleanup, ignoring any errors. */
@@ -97,10 +92,12 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     Try {
       val cleanupCommand =
         Seq("docker-compose", "down", "--volume", "--rmi", "local")
-      runCommand(cleanupCommand,
-                 dockerComposeDirectory,
-                 dockerComposeEnvironment,
-                 log.info(_))
+      runCommand(
+        cleanupCommand,
+        dockerComposeDirectory,
+        dockerComposeEnvironment,
+        log.info(_)
+      )
     }
     ()
   }
@@ -112,7 +109,8 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     * @return A boolean result of removing the hook, or a throwable describing an error.
     */
   private def tryRemoveShutdownHook(
-      shutdownHook: ShutdownHookThread): Try[Boolean] = Try {
+      shutdownHook: ShutdownHookThread
+  ): Try[Boolean] = Try {
     shutdownHook.remove()
   }
 
