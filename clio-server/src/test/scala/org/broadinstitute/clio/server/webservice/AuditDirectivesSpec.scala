@@ -1,12 +1,11 @@
-package org.broadinstitute.clio.webservice
+package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.ExceptionHandler
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.generic.auto._
-import org.broadinstitute.clio.dataaccess.MockAuditDAO
-import org.broadinstitute.clio.model.MockResult
+import org.broadinstitute.clio.server.dataaccess.MockAuditDAO
 import org.scalatest.{FlatSpec, Matchers}
 
 class AuditDirectivesSpec

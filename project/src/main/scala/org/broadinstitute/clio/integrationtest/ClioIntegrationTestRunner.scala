@@ -11,7 +11,7 @@ import scala.util.{Failure, Success, Try}
   *
   * The the testClassesDirectory contains a sub-directory with a docker-compose.yml. Docker-compose is run from the
   * directory with the yml. The actual docker images to use are all passed via environment variables. The clio docker
-  * image tag is generated from the version. The other docker image names/tags are read from the config file
+  * image tag is generated from the version. The other docker image names/tags are read from the generated config file
   * clio-docker-images.conf.
   */
 class ClioIntegrationTestRunner(testClassesDirectory: File,
@@ -25,7 +25,7 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     log.info(
       s"""|Starting docker-compose
           |  directory: $dockerComposeDirectory
-          |  env: ${dockerComposeEnvironement
+          |  env: ${dockerComposeEnvironment
            .map({ case (key, value) => s"$key=$value" })
            .mkString(" ")}
           |""".stripMargin
@@ -67,10 +67,9 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
 
   /** Where the docker compose integration tests should be run from. */
   private val dockerComposeDirectory = testClassesDirectory / ClioIntegrationTestRunner.DockerComposeDirectoryName
-  private val dockerComposeEnvironement = Seq(
+  private val dockerComposeEnvironment = Seq(
     "CLIO_DOCKER_TAG" -> clioVersion,
     "ELASTICSEARCH_DOCKER_TAG" -> configDocker.getString("elasticsearch")
-    // TODO: Publish the pytest Dockerfile to Docker Hub, then reference the pushed image here.
   )
 
   /**
@@ -84,7 +83,7 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     val exitCodeScanner = new ExitCodeScanner
     val exitCode = runCommand(testCommand,
                               dockerComposeDirectory,
-                              dockerComposeEnvironement,
+                              dockerComposeEnvironment,
                               exitCodeScanner.logAndScan(log))
     // For now, ignore the exit code from docker-compose, and look for the exit code in stdout.
     exitCodeScanner.loggedExitCodeOption.getOrElse(sys.error(s"""|
@@ -100,7 +99,7 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
         Seq("docker-compose", "down", "--volume", "--rmi", "local")
       runCommand(cleanupCommand,
                  dockerComposeDirectory,
-                 dockerComposeEnvironement,
+                 dockerComposeEnvironment,
                  log.info(_))
     }
     ()
@@ -139,6 +138,6 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
 
 object ClioIntegrationTestRunner {
   // Paths within the testClassesDirectory
-  private val DockerComposeDirectoryName = "cliointegrationtest"
+  private val DockerComposeDirectoryName = "docker-compose"
   private val DockerImagesConfigFileName = "clio-docker-images.conf"
 }

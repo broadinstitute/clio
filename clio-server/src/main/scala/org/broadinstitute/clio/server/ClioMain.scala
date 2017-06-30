@@ -1,4 +1,4 @@
-package org.broadinstitute.clio
+package org.broadinstitute.clio.server
 
 object ClioMain {
   def main(args: Array[String]): Unit = {

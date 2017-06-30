@@ -1,23 +1,23 @@
-package org.broadinstitute.clio
+package org.broadinstitute.clio.server
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.{Directive0, Route}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.typesafe.scalalogging.StrictLogging
-import org.broadinstitute.clio.dataaccess.{
+import org.broadinstitute.clio.server.dataaccess.{
   AkkaHttpServerDAO,
   CachedServerStatusDAO,
   HttpElasticsearchDAO,
   LoggingAuditDAO
 }
-import org.broadinstitute.clio.service.{
+import org.broadinstitute.clio.server.service.{
   AuditService,
   AuthorizationService,
   ServerService,
   StatusService
 }
-import org.broadinstitute.clio.webservice._
+import org.broadinstitute.clio.server.webservice._
 
 object ClioServer
     extends StatusWebService

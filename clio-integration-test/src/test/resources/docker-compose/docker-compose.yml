@@ -1,20 +1,15 @@
 version: '2'
 
 services:
-  pytest:
-    build:
-      context: ./
+  clio-integration-test:
+    image: broadinstitute/clio-integration-test:${CLIO_DOCKER_TAG}
     environment:
-      CLIO_HTTP_HOST: clio
+      CLIO_HTTP_HOST: clio-server
       ELASTICSEARCH_HTTP_HOST: elasticsearch1
-    volumes:
-      - ./clio_test.py:/cliointegrationtest/clio_test.py:ro
-    command:
-      - /cliointegrationtest/clio_test.py
-  clio:
-    image: broadinstitute/clio:${CLIO_DOCKER_TAG}
+  clio-server:
+    image: broadinstitute/clio-server:${CLIO_DOCKER_TAG}
     environment:
-      clio.elasticsearch.http-hosts.0.hostname: elasticsearch1
+      clio.server.elasticsearch.http-hosts.0.hostname: elasticsearch1
   elasticsearch1:
     extends:
       file: elasticsearch-compose.yml

@@ -1,9 +1,9 @@
-package org.broadinstitute.clio.webservice
+package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import org.broadinstitute.clio.service.{
+import org.broadinstitute.clio.server.service.{
   AuthorizationInfo,
   AuthorizationService
 }

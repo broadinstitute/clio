@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.dataaccess
+package org.broadinstitute.clio.server.dataaccess
 
 import org.broadinstitute.clio.model.{ClioRequest, ClioResponse}
 

@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.dataaccess
+package org.broadinstitute.clio.server.dataaccess
 
 import com.sksamuel.elastic4s.analyzers._
 import com.sksamuel.elastic4s.bulk.BulkDefinition

@@ -1,9 +1,9 @@
-package org.broadinstitute.clio.webservice
+package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.AuthorizationFailedRejection
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import org.broadinstitute.clio.service._
+import org.broadinstitute.clio.server.service._
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.ExecutionContext

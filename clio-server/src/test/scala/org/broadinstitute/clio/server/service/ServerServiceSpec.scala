@@ -1,6 +1,6 @@
-package org.broadinstitute.clio.service
+package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.{MockClioApp, TestKitSuite}
+import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
 class ServerServiceSpec

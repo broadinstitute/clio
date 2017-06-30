@@ -1,7 +1,7 @@
-package org.broadinstitute.clio.webservice
+package org.broadinstitute.clio.server.webservice
 
-import org.broadinstitute.clio.service.StatusService
-import org.broadinstitute.clio.{ClioApp, MockClioApp}
+import org.broadinstitute.clio.server.service.StatusService
+import org.broadinstitute.clio.server.{ClioApp, MockClioApp}
 
 import scala.concurrent.ExecutionContext
 

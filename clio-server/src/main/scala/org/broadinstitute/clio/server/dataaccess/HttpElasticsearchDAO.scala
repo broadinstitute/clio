@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.dataaccess
+package org.broadinstitute.clio.server.dataaccess
 
 import java.lang.{
   Boolean => JBoolean,
@@ -16,8 +16,8 @@ import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.http.HttpHost
-import org.broadinstitute.clio.ClioConfig
-import org.broadinstitute.clio.ClioConfig.Elasticsearch.ElasticsearchHttpHost
+import org.broadinstitute.clio.server.ClioServerConfig
+import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
 import org.broadinstitute.clio.model.{
   ElasticsearchField,
   ElasticsearchIndex,
@@ -62,11 +62,13 @@ class HttpElasticsearchDAO private[dataaccess] (
   override def isReady: Future[Boolean] = {
     getClusterHealth transform {
       case Success(health) =>
-        if (ClioConfig.Elasticsearch.readinessColors.contains(health.status)) {
+        if (ClioServerConfig.Elasticsearch.readinessColors.contains(
+              health.status
+            )) {
           Success(true)
         } else {
           logger.debug(
-            s"health.status = ${health.status}, readyColors = ${ClioConfig.Elasticsearch.readinessColors}"
+            s"health.status = ${health.status}, readyColors = ${ClioServerConfig.Elasticsearch.readinessColors}"
           )
           Success(false)
         }
@@ -79,10 +81,11 @@ class HttpElasticsearchDAO private[dataaccess] (
     }
   }
 
-  override val readyRetries: Int = ClioConfig.Elasticsearch.readinessRetries
+  override val readyRetries: Int =
+    ClioServerConfig.Elasticsearch.readinessRetries
 
   override val readyPatience: FiniteDuration =
-    ClioConfig.Elasticsearch.readinessPatience
+    ClioServerConfig.Elasticsearch.readinessPatience
 
   override def existsIndexType(index: ElasticsearchIndex): Future[Boolean] = {
     val typesExistsDefinition = typesExist(index.indexName / index.indexType)
@@ -156,7 +159,7 @@ class HttpElasticsearchDAO private[dataaccess] (
 
 object HttpElasticsearchDAO extends StrictLogging {
   def apply()(implicit ec: ExecutionContext): ElasticsearchDAO = {
-    val httpHosts = ClioConfig.Elasticsearch.httpHosts.map(toHttpHost)
+    val httpHosts = ClioServerConfig.Elasticsearch.httpHosts.map(toHttpHost)
     new HttpElasticsearchDAO(httpHosts)
   }
 

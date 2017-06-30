@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.webservice
+package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._

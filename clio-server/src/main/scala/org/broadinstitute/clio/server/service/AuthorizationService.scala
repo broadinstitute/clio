@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.service
+package org.broadinstitute.clio.server.service
 
 import scala.concurrent.{ExecutionContext, Future}
 

@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.webservice
+package org.broadinstitute.clio.server.webservice
 
 /*
  * These traits just implement Akka-HTTP's header rendering methods.

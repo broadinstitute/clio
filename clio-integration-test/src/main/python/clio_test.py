@@ -39,6 +39,7 @@ def test_wait_for_clio():
             pass
         time.sleep(3)
         count = count + 1
+    raise AssertionError("unable to connect to " + clio_http_uri)
 
 
 def test_version():

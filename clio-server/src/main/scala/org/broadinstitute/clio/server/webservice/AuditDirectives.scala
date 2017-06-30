@@ -1,10 +1,10 @@
-package org.broadinstitute.clio.webservice
+package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.RouteResult.{Complete, Rejected}
 import akka.http.scaladsl.server._
 import org.broadinstitute.clio.model.{ClioRequest, ClioResponse}
-import org.broadinstitute.clio.service.AuditService
+import org.broadinstitute.clio.server.service.AuditService
 
 /** An audit trail of request and responses. */
 trait AuditDirectives {

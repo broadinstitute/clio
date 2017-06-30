@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.dataaccess.elasticsearch
+package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 trait ElasticsearchIdExtractor[A] {
   def idFor(value: A): String

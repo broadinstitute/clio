@@ -1,9 +1,9 @@
-package org.broadinstitute.clio.webservice
+package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.generic.auto._
-import org.broadinstitute.clio.dataaccess.{
+import org.broadinstitute.clio.server.dataaccess.{
   MockElasticsearchDAO,
   MockHttpServerDAO,
   MockServerStatusDAO

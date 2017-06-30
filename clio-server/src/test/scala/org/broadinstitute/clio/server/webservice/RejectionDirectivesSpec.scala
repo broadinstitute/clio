@@ -1,10 +1,10 @@
-package org.broadinstitute.clio.webservice
+package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.generic.auto._
-import org.broadinstitute.clio.model.{MockResult, RejectionResult}
+import org.broadinstitute.clio.model.RejectionResult
 import org.scalatest.{FlatSpec, Matchers}
 
 class RejectionDirectivesSpec

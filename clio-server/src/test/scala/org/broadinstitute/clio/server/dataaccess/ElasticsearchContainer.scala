@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.dataaccess
+package org.broadinstitute.clio.server.dataaccess
 
 import java.util.concurrent.TimeUnit
 

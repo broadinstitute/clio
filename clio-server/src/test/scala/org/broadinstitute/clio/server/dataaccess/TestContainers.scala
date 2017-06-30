@@ -1,7 +1,7 @@
-package org.broadinstitute.clio.dataaccess
+package org.broadinstitute.clio.server.dataaccess
 
 import com.typesafe.config.ConfigFactory
-import org.broadinstitute.clio.ClioConfig
+import org.broadinstitute.clio.server.ClioConfig
 
 object TestContainers {
   // docker-java can't read configs that reference OSX keystores, etc.

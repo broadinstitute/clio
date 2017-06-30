@@ -1,3 +1,3 @@
-package org.broadinstitute.clio.webservice
+package org.broadinstitute.clio.server.webservice
 
 object MockRejectionDirectives extends RejectionDirectives

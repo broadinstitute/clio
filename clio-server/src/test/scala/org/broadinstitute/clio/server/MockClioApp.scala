@@ -1,6 +1,6 @@
-package org.broadinstitute.clio
+package org.broadinstitute.clio.server
 
-import org.broadinstitute.clio.dataaccess._
+import org.broadinstitute.clio.server.dataaccess._
 
 object MockClioApp {
   def apply(

@@ -1,4 +1,4 @@
-package org.broadinstitute.clio
+package org.broadinstitute.clio.server
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
