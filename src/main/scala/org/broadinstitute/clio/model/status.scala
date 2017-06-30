@@ -12,6 +12,7 @@ object ServerStatusInfo {
 
 case class ElasticsearchStatusInfo(status: String, nodes: Int, dataNodes: Int)
 
-case class StatusInfo(clio: ServerStatusInfo, elasticsearch: ElasticsearchStatusInfo)
+case class StatusInfo(clio: ServerStatusInfo,
+                      elasticsearch: ElasticsearchStatusInfo)
 
 case class VersionInfo(version: String)

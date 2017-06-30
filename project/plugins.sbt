@@ -3,6 +3,7 @@
 val SbtAssemblyVersion = "0.14.4"
 val SbtGitVersion = "0.9.3"
 val SbtDockerVersion = "1.4.1"
+val ScalafmtVersion = "1.7"
 val Slf4jVersion = "1.7.25"
 val TypesafeConfigVersion = "1.3.1"
 
@@ -12,6 +13,8 @@ libraryDependencies += "org.slf4j" % "slf4j-nop" % Slf4jVersion
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % SbtAssemblyVersion)
 
 addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % SbtDockerVersion)
+
+addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % ScalafmtVersion)
 
 // Various compiler tweaks for our ClioIntegrationTestPlugin.
 // More info available via:
@@ -23,8 +26,10 @@ addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % SbtDockerVersion)
 scalacOptions ++= Seq(
   "-Xlint",
   "-feature",
-  "-Xmax-classfile-name", "200",
-  "-encoding", "UTF-8",
+  "-Xmax-classfile-name",
+  "200",
+  "-encoding",
+  "UTF-8",
   "-unchecked",
   "-deprecation",
   "-Xfuture",
@@ -35,3 +40,7 @@ scalacOptions ++= Seq(
   "-Xfatal-warnings"
 )
 libraryDependencies += "com.typesafe" % "config" % TypesafeConfigVersion
+
+scalafmtVersion in ThisBuild := "1.0.0-RC4"
+scalafmtOnCompile in ThisBuild := true
+ignoreErrors in (ThisBuild, scalafmt) := false

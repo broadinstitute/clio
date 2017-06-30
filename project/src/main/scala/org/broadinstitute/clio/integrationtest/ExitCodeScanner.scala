@@ -15,13 +15,15 @@ class ExitCodeScanner {
   def logAndScan(log: Logger)(input: String): Unit = {
     log.info(input)
     input match {
-      case ExitCodeScanner.ExitCodeRegex(exitCode) => loggedExitCodeOption = Option(exitCode.toInt)
+      case ExitCodeScanner.ExitCodeRegex(exitCode) =>
+        loggedExitCodeOption = Option(exitCode.toInt)
       case _ => /* ignore */
     }
   }
 }
 
 object ExitCodeScanner {
+
   /** The regex for looking for exit codes. */
   private val ExitCodeRegex =
     """exited with code (-?\d+)""".r.unanchored

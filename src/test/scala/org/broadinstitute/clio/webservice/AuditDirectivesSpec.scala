@@ -9,7 +9,10 @@ import org.broadinstitute.clio.dataaccess.MockAuditDAO
 import org.broadinstitute.clio.model.MockResult
 import org.scalatest.{FlatSpec, Matchers}
 
-class AuditDirectivesSpec extends FlatSpec with Matchers with ScalatestRouteTest {
+class AuditDirectivesSpec
+    extends FlatSpec
+    with Matchers
+    with ScalatestRouteTest {
   behavior of "AuditDirectives"
 
   it should "auditRequest" in {
@@ -27,7 +30,9 @@ class AuditDirectivesSpec extends FlatSpec with Matchers with ScalatestRouteTest
   }
 
   it should "auditException" in {
-    implicit val exceptionHandler = ExceptionHandler { case MockAuditDAO.ExceptionMock => complete(MockResult("ok")) }
+    implicit val exceptionHandler = ExceptionHandler {
+      case MockAuditDAO.ExceptionMock => complete(MockResult("ok"))
+    }
     val mockDirectives = new MockAuditDirectives()
     Get("/") ~> mockDirectives.auditException(throw MockAuditDAO.ExceptionMock) ~> check {
       responseAs[MockResult] should be(MockResult("ok"))

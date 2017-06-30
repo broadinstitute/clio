@@ -3,8 +3,10 @@ package org.broadinstitute.clio.webservice
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import org.broadinstitute.clio.service.{AuthorizationInfo, AuthorizationService}
-
+import org.broadinstitute.clio.service.{
+  AuthorizationInfo,
+  AuthorizationService
+}
 
 trait AuthorizationDirectives {
 
@@ -15,16 +17,17 @@ trait AuthorizationDirectives {
     */
   val optionalOidcAuthorizationInfo: Directive1[Option[AuthorizationInfo]] = {
     for {
-      token   <- optionalHeaderValueByType[OidcAccessToken](())
+      token <- optionalHeaderValueByType[OidcAccessToken](())
       expires <- optionalHeaderValueByType[OidcClaimExpiresIn](())
-      email   <- optionalHeaderValueByType[OidcClaimEmail](())
+      email <- optionalHeaderValueByType[OidcClaimEmail](())
       subject <- optionalHeaderValueByType[OidcClaimSub](())
-      user    <- optionalHeaderValueByType[OidcClaimUserId](())
-    } yield for {
-        token   <- token.map(_.token)
+      user <- optionalHeaderValueByType[OidcClaimUserId](())
+    } yield
+      for {
+        token <- token.map(_.token)
         expires <- expires.map(_.seconds)
-        email   <- email.map(_.email)
-        id      <- subject.map(_.subject) orElse user.map(_.user)
+        email <- email.map(_.email)
+        id <- subject.map(_.subject) orElse user.map(_.user)
       } yield AuthorizationInfo(token, expires, email, id)
   }
 
@@ -33,7 +36,7 @@ trait AuthorizationDirectives {
     */
   val authorizeOidc: Directive0 = optionalOidcAuthorizationInfo flatMap {
     case Some(info) => authorizeAsync(authorizationService.authorize(info))
-    case None => authorize(false)
+    case None       => authorize(false)
   }
 
   /**

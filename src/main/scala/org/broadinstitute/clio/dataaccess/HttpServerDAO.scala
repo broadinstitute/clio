@@ -6,6 +6,7 @@ import scala.concurrent.Future
   * Starts and stops an http server.
   */
 trait HttpServerDAO {
+
   /**
     * Starts the web server.
     */

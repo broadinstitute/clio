@@ -5,9 +5,11 @@ import org.broadinstitute.clio.model.ServerStatusInfo
 import scala.concurrent.Future
 
 class MockServerStatusDAO extends ServerStatusDAO {
-  override def setStatus(status: ServerStatusInfo): Future[Unit] = Future.successful(())
+  override def setStatus(status: ServerStatusInfo): Future[Unit] =
+    Future.successful(())
 
-  override def getStatus: Future[ServerStatusInfo] = Future.successful(MockServerStatusDAO.StatusMock)
+  override def getStatus: Future[ServerStatusInfo] =
+    Future.successful(MockServerStatusDAO.StatusMock)
 }
 
 object MockServerStatusDAO {

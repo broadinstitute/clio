@@ -15,12 +15,18 @@ trait RejectionDirectives {
 
   private val mapRejectionsToJsonHandler: RejectionHandler = {
     RejectionHandler.default.mapRejectionResponse {
-      case httpResponse@HttpResponse(_, _, httpEntity: HttpEntity.Strict, _) =>
+      case httpResponse @ HttpResponse(
+            _,
+            _,
+            httpEntity: HttpEntity.Strict,
+            _
+          ) =>
         // since all Akka default rejection responses are Strict this will handle all rejections
         val message = RejectionResult(httpEntity.data.utf8String)
         val jsonMessage = message.asJson.noSpaces
         httpResponse.withEntity(ContentTypes.`application/json`, jsonMessage)
-      case httpResponse => httpResponse // pass through all other types of responses
+      case httpResponse =>
+        httpResponse // pass through all other types of responses
     }
   }
 }

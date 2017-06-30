@@ -14,12 +14,14 @@ class MemoryAuditDAO extends MockAuditDAO {
     super.auditRequest(request)
   }
 
-  override def auditResponse(request: ClioRequest, response: ClioResponse): Future[Unit] = {
+  override def auditResponse(request: ClioRequest,
+                             response: ClioResponse): Future[Unit] = {
     auditResponses :+= ((request, response))
     super.auditResponse(request, response)
   }
 
-  override def auditException(request: ClioRequest, exception: Exception): Future[Unit] = {
+  override def auditException(request: ClioRequest,
+                              exception: Exception): Future[Unit] = {
     auditExceptions :+= ((request, exception))
     super.auditException(request, exception)
   }

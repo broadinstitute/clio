@@ -6,16 +6,18 @@ import org.broadinstitute.clio.model.{ClioRequest, ClioResponse}
 
 import scala.concurrent.Future
 
-class AuditService private(auditDAO: AuditDAO) {
+class AuditService private (auditDAO: AuditDAO) {
   def auditRequest(request: ClioRequest): Future[Unit] = {
     auditDAO.auditRequest(request)
   }
 
-  def auditResponse(request: ClioRequest, response: ClioResponse): Future[Unit] = {
+  def auditResponse(request: ClioRequest,
+                    response: ClioResponse): Future[Unit] = {
     auditDAO.auditResponse(request, response)
   }
 
-  def auditException(request: ClioRequest, exception: Exception): Future[Unit] = {
+  def auditException(request: ClioRequest,
+                     exception: Exception): Future[Unit] = {
     auditDAO.auditException(request, exception)
   }
 }

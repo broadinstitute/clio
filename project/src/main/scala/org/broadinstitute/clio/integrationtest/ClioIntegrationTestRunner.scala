@@ -14,7 +14,10 @@ import scala.util.{Failure, Success, Try}
   * image tag is generated from the version. The other docker image names/tags are read from the config file
   * clio-docker-images.conf.
   */
-class ClioIntegrationTestRunner(testClassesDirectory: File, clioVersion: String, log: Logger) {
+class ClioIntegrationTestRunner(testClassesDirectory: File,
+                                clioVersion: String,
+                                log: Logger) {
+
   /** Runs the integration test. */
   def run(): Unit = {
     // Log directory and environment, such that one may run the compose from the command line with
@@ -22,7 +25,9 @@ class ClioIntegrationTestRunner(testClassesDirectory: File, clioVersion: String,
     log.info(
       s"""|Starting docker-compose
           |  directory: $dockerComposeDirectory
-          |  env: ${dockerComposeEnvironement.map({ case (key, value) => s"$key=$value" }).mkString(" ")}
+          |  env: ${dockerComposeEnvironement
+           .map({ case (key, value) => s"$key=$value" })
+           .mkString(" ")}
           |""".stripMargin
     )
 
@@ -42,8 +47,9 @@ class ClioIntegrationTestRunner(testClassesDirectory: File, clioVersion: String,
     // With cleanup complete, now check our test exit code
     triedDockerComposeTest match {
       case Failure(exception) => throw exception
-      case Success(0) => /* ok */
-      case Success(exitCode) => sys.error(s"test failed with exit code $exitCode")
+      case Success(0)         => /* ok */
+      case Success(exitCode) =>
+        sys.error(s"test failed with exit code $exitCode")
     }
   }
 
@@ -54,7 +60,8 @@ class ClioIntegrationTestRunner(testClassesDirectory: File, clioVersion: String,
   private val configDocker = {
     val configEnvironment = ConfigFactory.parseMap(System.getenv)
     val configFile =
-      ConfigFactory.parseFile(testClassesDirectory / ClioIntegrationTestRunner.DockerImagesConfigFileName)
+      ConfigFactory.parseFile(
+        testClassesDirectory / ClioIntegrationTestRunner.DockerImagesConfigFileName)
     configEnvironment.withFallback(configFile).getConfig("clio.docker")
   }
 
@@ -72,13 +79,15 @@ class ClioIntegrationTestRunner(testClassesDirectory: File, clioVersion: String,
     * @return The exit code of the integration test.
     */
   private def tryDockerComposeTest(): Try[Int] = Try {
-    val testCommand = Seq("docker-compose", "up", "--build", "--abort-on-container-exit")
+    val testCommand =
+      Seq("docker-compose", "up", "--build", "--abort-on-container-exit")
     val exitCodeScanner = new ExitCodeScanner
-    val exitCode = runCommand(testCommand, dockerComposeDirectory, dockerComposeEnvironement,
-      exitCodeScanner.logAndScan(log))
+    val exitCode = runCommand(testCommand,
+                              dockerComposeDirectory,
+                              dockerComposeEnvironement,
+                              exitCodeScanner.logAndScan(log))
     // For now, ignore the exit code from docker-compose, and look for the exit code in stdout.
-    exitCodeScanner.loggedExitCodeOption.getOrElse(sys.error(
-      s"""|
+    exitCodeScanner.loggedExitCodeOption.getOrElse(sys.error(s"""|
             |Didn't find an exit code in the standard out, exiting with code $exitCode.
           |Check the logs above for other errors.
           |""".stripMargin))
@@ -87,8 +96,12 @@ class ClioIntegrationTestRunner(testClassesDirectory: File, clioVersion: String,
   /** Runs docker-compose cleanup, ignoring any errors. */
   private def dockerComposeCleanup(): Unit = {
     Try {
-      val cleanupCommand = Seq("docker-compose", "down", "--volume", "--rmi", "local")
-      runCommand(cleanupCommand, dockerComposeDirectory, dockerComposeEnvironement, log.info(_))
+      val cleanupCommand =
+        Seq("docker-compose", "down", "--volume", "--rmi", "local")
+      runCommand(cleanupCommand,
+                 dockerComposeDirectory,
+                 dockerComposeEnvironement,
+                 log.info(_))
     }
     ()
   }
@@ -99,7 +112,8 @@ class ClioIntegrationTestRunner(testClassesDirectory: File, clioVersion: String,
     * @param shutdownHook Hook to remove.
     * @return A boolean result of removing the hook, or a throwable describing an error.
     */
-  private def tryRemoveShutdownHook(shutdownHook: ShutdownHookThread): Try[Boolean] = Try {
+  private def tryRemoveShutdownHook(
+      shutdownHook: ShutdownHookThread): Try[Boolean] = Try {
     shutdownHook.remove()
   }
 
@@ -112,7 +126,9 @@ class ClioIntegrationTestRunner(testClassesDirectory: File, clioVersion: String,
     * @param logFunction A function implementing logging.
     * @return The exit code of the process.
     */
-  private def runCommand(command: Seq[String], cwd: File, extraEnv: Seq[(String, String)],
+  private def runCommand(command: Seq[String],
+                         cwd: File,
+                         extraEnv: Seq[(String, String)],
                          logFunction: String => Unit): Int = {
     import scala.sys.process._
     val process = Process(command, cwd, extraEnv: _*)

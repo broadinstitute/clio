@@ -9,8 +9,10 @@ import org.scalatest.{BeforeAndAfterAll, Suite}
   *
   * @param actorSystemName The name of the actor system.
   */
-abstract class TestKitSuite(actorSystemName: String) extends TestKit(ActorSystem(actorSystemName))
-  with Suite with BeforeAndAfterAll {
+abstract class TestKitSuite(actorSystemName: String)
+    extends TestKit(ActorSystem(actorSystemName))
+    with Suite
+    with BeforeAndAfterAll {
 
   override protected def afterAll(): Unit = {
     shutdown()

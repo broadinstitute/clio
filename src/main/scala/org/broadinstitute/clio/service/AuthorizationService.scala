@@ -10,7 +10,10 @@ import scala.concurrent.{ExecutionContext, Future}
   * @param email   is the address for the user
   * @param id      is a Google subject ID or Oauth user ID.
   */
-case class AuthorizationInfo(token: String, expires: Long, email: String, id: String)
+case class AuthorizationInfo(token: String,
+                             expires: Long,
+                             email: String,
+                             id: String)
 
 class AuthorizationService()(implicit ec: ExecutionContext) {
 
@@ -39,5 +42,6 @@ object AuthorizationService {
     "OIDC_access_token",
     1234567890,
     "OIDC_CLAIM_email",
-    "OIDC_CLAIM_sub or OIDC_CLAIM_user_id")
+    "OIDC_CLAIM_sub or OIDC_CLAIM_user_id"
+  )
 }
