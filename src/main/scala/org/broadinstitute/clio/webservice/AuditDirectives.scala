@@ -46,11 +46,16 @@ trait AuditDirectives {
   private def toClioResponse(routeResult: RouteResult): ClioResponse = {
     routeResult match {
       case Complete(httpResponse) => ClioResponse(httpResponse.toString)
-      case Rejected(rejections) => ClioResponse(if (rejections.isEmpty) "Rejected" else rejections.mkString(", "))
+      case Rejected(rejections) =>
+        ClioResponse(
+          if (rejections.isEmpty) "Rejected" else rejections.mkString(", ")
+        )
     }
   }
 
-  private def auditExceptionHandler(requestContext: RequestContext): ExceptionHandler = {
+  private def auditExceptionHandler(
+    requestContext: RequestContext
+  ): ExceptionHandler = {
     ExceptionHandler {
       case exception: Exception =>
         val request = toClioRequest(requestContext)

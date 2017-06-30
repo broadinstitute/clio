@@ -3,7 +3,10 @@ package org.broadinstitute.clio.service
 import org.broadinstitute.clio.{MockClioApp, TestKitSuite}
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
-class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") with AsyncFlatSpecLike with Matchers {
+class ServerServiceSpec
+    extends TestKitSuite("ServerServiceSpec")
+    with AsyncFlatSpecLike
+    with Matchers {
   behavior of "ServerService"
 
   it should "beginStartup" in {

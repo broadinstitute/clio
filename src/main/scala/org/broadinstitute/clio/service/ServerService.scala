@@ -7,22 +7,33 @@ import cats.syntax.functor._
 import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.ClioApp
 import org.broadinstitute.clio.dataaccess.elasticsearch.ElasticsearchIndexDefiners
-import org.broadinstitute.clio.dataaccess.{ElasticsearchDAO, HttpServerDAO, ServerStatusDAO}
+import org.broadinstitute.clio.dataaccess.{
+  ElasticsearchDAO,
+  HttpServerDAO,
+  ServerStatusDAO
+}
 import org.broadinstitute.clio.model.{ElasticsearchIndex, ServerStatusInfo}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class ServerService private(serverStatusDAO: ServerStatusDAO, httpServerDAO: HttpServerDAO,
-                            elasticsearchDAO: ElasticsearchDAO)
-                           (implicit ec: ExecutionContext, system: ActorSystem) extends StrictLogging {
+class ServerService private (
+  serverStatusDAO: ServerStatusDAO,
+  httpServerDAO: HttpServerDAO,
+  elasticsearchDAO: ElasticsearchDAO
+)(implicit ec: ExecutionContext, system: ActorSystem)
+    extends StrictLogging {
+
   /**
     * Kick off a startup, and return immediately.
     */
   def beginStartup(): Unit = {
     val startupAttempt = startup()
     startupAttempt.failed foreach { exception =>
-      logger.error(s"Server failed to startup due to ${exception.getMessage}", exception)
+      logger.error(
+        s"Server failed to startup due to ${exception.getMessage}",
+        exception
+      )
       shutdown()
     }
     ()
@@ -62,12 +73,13 @@ class ServerService private(serverStatusDAO: ServerStatusDAO, httpServerDAO: Htt
   }
 
   private[service] def shutdown(): Future[Unit] = {
-    serverStatusDAO.setStatus(ServerStatusInfo.ShuttingDown) transformWith { _ =>
-      elasticsearchDAO.close() transformWith { _ =>
-        httpServerDAO.shutdown() transformWith { _ =>
-          serverStatusDAO.setStatus(ServerStatusInfo.ShutDown)
+    serverStatusDAO.setStatus(ServerStatusInfo.ShuttingDown) transformWith {
+      _ =>
+        elasticsearchDAO.close() transformWith { _ =>
+          httpServerDAO.shutdown() transformWith { _ =>
+            serverStatusDAO.setStatus(ServerStatusInfo.ShutDown)
+          }
         }
-      }
     }
   }
 
@@ -80,21 +92,29 @@ class ServerService private(serverStatusDAO: ServerStatusDAO, httpServerDAO: Htt
             status <- elasticsearchDAO.getClusterStatus
           } yield {
             logger.info("Elastic search not ready. Giving up.")
-            throw new RuntimeException(s"Elasticsearch server was not ready for processing. Last status was: $status")
+            throw new RuntimeException(
+              s"Elasticsearch server was not ready for processing. Last status was: $status"
+            )
           }
         case Failure(exception) if retryCount <= 0 =>
-          logger.error(s"Unable to get color due to exception ${exception.getMessage}. Giving up.", exception)
+          logger.error(
+            s"Unable to get color due to exception ${exception.getMessage}. Giving up.",
+            exception
+          )
           Future.failed(exception)
         case Success(false) =>
           val waitDuration = elasticsearchDAO.readyPatience
-          logger.info(s"Elasticsearch not ready. Will try again in $waitDuration.")
+          logger.info(
+            s"Elasticsearch not ready. Will try again in $waitDuration."
+          )
           after(waitDuration, system.scheduler)(waitWithRetry(retryCount - 1))
         case Failure(exception) =>
           val waitDuration = elasticsearchDAO.readyPatience
           logger.error(
             s"Unable to get Elasticsearch status due to exception ${exception.getMessage}. " +
               s"Will try again in $waitDuration.",
-            exception)
+            exception
+          )
           after(waitDuration, system.scheduler)(waitWithRetry(retryCount - 1))
       }
     }
@@ -106,17 +126,28 @@ class ServerService private(serverStatusDAO: ServerStatusDAO, httpServerDAO: Htt
     def createOrUpdateIndex(index: ElasticsearchIndex): Future[Unit] = {
       for {
         exists <- elasticsearchDAO.existsIndexType(index)
-        _ <- if (exists) Future.successful(()) else elasticsearchDAO.createIndexType(index)
+        _ <- if (exists) Future.successful(())
+        else elasticsearchDAO.createIndexType(index)
         _ <- elasticsearchDAO.updateFieldDefinitions(index)
       } yield ()
     }
 
-    Future.sequence(ElasticsearchIndexDefiners.All.map(definer => createOrUpdateIndex(definer.indexDefinition))).void
+    Future
+      .sequence(
+        ElasticsearchIndexDefiners.All
+          .map(definer => createOrUpdateIndex(definer.indexDefinition))
+      )
+      .void
   }
 }
 
 object ServerService {
-  def apply(app: ClioApp)(implicit ec: ExecutionContext, system: ActorSystem): ServerService = {
-    new ServerService(app.serverStatusDAO, app.httpServerDAO, app.elasticsearchDAO)
+  def apply(app: ClioApp)(implicit ec: ExecutionContext,
+                          system: ActorSystem): ServerService = {
+    new ServerService(
+      app.serverStatusDAO,
+      app.httpServerDAO,
+      app.elasticsearchDAO
+    )
   }
 }

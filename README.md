@@ -40,6 +40,14 @@ Metadata Manager
 
 `docker run --rm -it -p 8080:8080 broadinstitute/clio:<version>`
 
+### Test that the code is consistently formatted
+
+`sbt scalafmt::test test:scalafmt::test sbt:scalafmt::test`
+
+### Format the code with scalafmt
+
+`sbt scalafmt test:scalafmt`
+
 ## More information
 
 Internal documentation [here](https://broadinstitute.atlassian.net/wiki/pages/viewpage.action?pageId=114531509).

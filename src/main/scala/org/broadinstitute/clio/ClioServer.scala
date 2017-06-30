@@ -5,12 +5,22 @@ import akka.http.scaladsl.server.{Directive0, Route}
 import akka.http.scaladsl.server.Directives._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.typesafe.scalalogging.StrictLogging
-import org.broadinstitute.clio.dataaccess.{AkkaHttpServerDAO, CachedServerStatusDAO, HttpElasticsearchDAO, LoggingAuditDAO}
-import org.broadinstitute.clio.service.{AuditService, AuthorizationService, ServerService, StatusService}
+import org.broadinstitute.clio.dataaccess.{
+  AkkaHttpServerDAO,
+  CachedServerStatusDAO,
+  HttpElasticsearchDAO,
+  LoggingAuditDAO
+}
+import org.broadinstitute.clio.service.{
+  AuditService,
+  AuthorizationService,
+  ServerService,
+  StatusService
+}
 import org.broadinstitute.clio.webservice._
 
 object ClioServer
-  extends StatusWebService
+    extends StatusWebService
     with AuditDirectives
     with AuthorizationDirectives
     with ExceptionDirectives
@@ -21,14 +31,16 @@ object ClioServer
 
   private implicit def executionContext = system.dispatcher
 
-  private val loggingDecider: Supervision.Decider = {
-    error =>
-      logger.error("stopping due to error", error)
-      Supervision.Stop
+  private val loggingDecider: Supervision.Decider = { error =>
+    logger.error("stopping due to error", error)
+    Supervision.Stop
   }
 
-  private lazy val actorMaterializerSettings = ActorMaterializerSettings(system).withSupervisionStrategy(loggingDecider)
-  private implicit lazy val materializer = ActorMaterializer(actorMaterializerSettings)
+  private lazy val actorMaterializerSettings =
+    ActorMaterializerSettings(system).withSupervisionStrategy(loggingDecider)
+  private implicit lazy val materializer = ActorMaterializer(
+    actorMaterializerSettings
+  )
 
   private val wrapperDirectives: Directive0 = {
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
@@ -41,13 +53,15 @@ object ClioServer
   private val httpServerDAO = AkkaHttpServerDAO(routes)
   private val elasticsearchDAO = HttpElasticsearchDAO()
 
-  private val app = new ClioApp(serverStatusDAO, auditDAO, httpServerDAO, elasticsearchDAO)
+  private val app =
+    new ClioApp(serverStatusDAO, auditDAO, httpServerDAO, elasticsearchDAO)
 
   private val serverService = ServerService(app)
   override val auditService = AuditService(app)
   override val statusService = StatusService(app)
 
-  override val authorizationService: AuthorizationService = AuthorizationService()
+  override val authorizationService: AuthorizationService =
+    AuthorizationService()
 
   def beginStartup(): Unit = serverService.beginStartup()
 

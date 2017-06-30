@@ -16,7 +16,8 @@ trait ExceptionDirectives {
     val message = ErrorResult(StatusCodes.InternalServerError.defaultMessage)
     val jsonMessage = message.asJson.noSpaces
     val entity = HttpEntity(ContentTypes.`application/json`, jsonMessage)
-    val httpResponse = HttpResponse(StatusCodes.InternalServerError, entity = entity)
+    val httpResponse =
+      HttpResponse(StatusCodes.InternalServerError, entity = entity)
     complete(httpResponse)
   }
 

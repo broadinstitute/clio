@@ -9,6 +9,7 @@ import sbt._
   * Versioning information for builds of clio, based on a dotted version appended with a git hash.
   */
 object Versioning {
+
   /** This version number if this is a release commit, or the upcoming version number if this is a snapshot. */
   val ClioVersion = "0.0.1"
 
@@ -17,7 +18,7 @@ object Versioning {
     val base = git.baseVersion.value
     val hash = git.gitHeadCommit.value match {
       case Some(sha) => s"g${sha.take(7)}"
-      case None => "UNKNOWN"
+      case None      => "UNKNOWN"
     }
     Option(s"$base-$hash-SNAP")
   }

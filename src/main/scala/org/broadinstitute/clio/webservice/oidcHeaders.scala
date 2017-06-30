@@ -1,15 +1,19 @@
 package org.broadinstitute.clio.webservice
 
-import akka.http.scaladsl.model.headers.{ModeledCustomHeader, ModeledCustomHeaderCompanion}
+import akka.http.scaladsl.model.headers.{
+  ModeledCustomHeader,
+  ModeledCustomHeaderCompanion
+}
 
 import scala.util.Try
-
 
 /**
   * An OIDC access token with value `token`.
   * @param token is an access token
   */
-class OidcAccessToken(val token: String) extends ModeledCustomHeader[OidcAccessToken] with RequestResponseHeader {
+class OidcAccessToken(val token: String)
+    extends ModeledCustomHeader[OidcAccessToken]
+    with RequestResponseHeader {
   override val value: String = token
   override val companion = OidcAccessToken
 }
@@ -23,14 +27,18 @@ object OidcAccessToken extends ModeledCustomHeaderCompanion[OidcAccessToken] {
   * An OIDC token expiration claim with value `seconds`.
   * @param seconds integer seconds to token expiration
   */
-class OidcClaimExpiresIn(val seconds: Long) extends ModeledCustomHeader[OidcClaimExpiresIn] with RequestResponseHeader {
+class OidcClaimExpiresIn(val seconds: Long)
+    extends ModeledCustomHeader[OidcClaimExpiresIn]
+    with RequestResponseHeader {
   override val value: String = seconds.toString
   override val companion = OidcClaimExpiresIn
 }
 
-object OidcClaimExpiresIn extends ModeledCustomHeaderCompanion[OidcClaimExpiresIn] {
+object OidcClaimExpiresIn
+    extends ModeledCustomHeaderCompanion[OidcClaimExpiresIn] {
   override val name = "OIDC_CLAIM_expires_in"
-  override def parse(seconds: String) = Try(new OidcClaimExpiresIn(seconds.toLong))
+  override def parse(seconds: String) =
+    Try(new OidcClaimExpiresIn(seconds.toLong))
   def apply(seconds: Long) = new OidcClaimExpiresIn(seconds)
 }
 
@@ -38,7 +46,9 @@ object OidcClaimExpiresIn extends ModeledCustomHeaderCompanion[OidcClaimExpiresI
   * An OIDC email claim with address `email`.
   * @param email is an email address
   */
-class OidcClaimEmail(val email: String) extends ModeledCustomHeader[OidcClaimEmail] with RequestResponseHeader {
+class OidcClaimEmail(val email: String)
+    extends ModeledCustomHeader[OidcClaimEmail]
+    with RequestResponseHeader {
   override val value: String = email
   override val companion = OidcClaimEmail
 }
@@ -52,7 +62,9 @@ object OidcClaimEmail extends ModeledCustomHeaderCompanion[OidcClaimEmail] {
   * An OIDC subject ID claim with value `subject`.
   * @param subject is a Google subject ID
   */
-class OidcClaimSub(val subject: String) extends ModeledCustomHeader[OidcClaimSub] with RequestResponseHeader {
+class OidcClaimSub(val subject: String)
+    extends ModeledCustomHeader[OidcClaimSub]
+    with RequestResponseHeader {
   override val value: String = subject
   override val companion = OidcClaimSub
 }
@@ -66,7 +78,9 @@ object OidcClaimSub extends ModeledCustomHeaderCompanion[OidcClaimSub] {
   * An OIDC user ID claim with value `user`.
   * @param user is a user ID claim
   */
-class OidcClaimUserId(val user: String) extends ModeledCustomHeader[OidcClaimUserId] with RequestResponseHeader {
+class OidcClaimUserId(val user: String)
+    extends ModeledCustomHeader[OidcClaimUserId]
+    with RequestResponseHeader {
   override val value: String = user
   override val companion = OidcClaimUserId
 }

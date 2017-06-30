@@ -3,8 +3,7 @@ package org.broadinstitute.clio
 import org.broadinstitute.clio.dataaccess._
 
 object MockClioApp {
-  def apply
-  (
+  def apply(
     serverStatusDAO: ServerStatusDAO = new MockServerStatusDAO(),
     auditDAO: AuditDAO = new MockAuditDAO(),
     httpServerDAO: HttpServerDAO = new MockHttpServerDAO(),

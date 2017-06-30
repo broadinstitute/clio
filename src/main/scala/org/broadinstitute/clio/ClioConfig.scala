@@ -28,7 +28,8 @@ object ClioConfig {
     private val http = config.getConfig("http-server")
     val interface: String = http.getString("interface")
     val port: Int = http.getInt("port")
-    val shutdownTimeout: FiniteDuration = http.as[FiniteDuration]("shutdown-timeout")
+    val shutdownTimeout: FiniteDuration =
+      http.as[FiniteDuration]("shutdown-timeout")
   }
 
   object Version {
@@ -36,12 +37,17 @@ object ClioConfig {
   }
 
   object Elasticsearch {
-    case class ElasticsearchHttpHost(hostname: String = "localhost", port: Int = 9200, scheme: String = "http")
+    case class ElasticsearchHttpHost(hostname: String = "localhost",
+                                     port: Int = 9200,
+                                     scheme: String = "http")
 
     private val elasticsearch = config.getConfig("elasticsearch")
-    val httpHosts: Seq[ElasticsearchHttpHost] = elasticsearch.as[Seq[ElasticsearchHttpHost]]("http-hosts")
-    val readinessColors: Seq[String] = elasticsearch.as[Seq[String]]("readiness.colors")
+    val httpHosts: Seq[ElasticsearchHttpHost] =
+      elasticsearch.as[Seq[ElasticsearchHttpHost]]("http-hosts")
+    val readinessColors: Seq[String] =
+      elasticsearch.as[Seq[String]]("readiness.colors")
     val readinessRetries: Int = elasticsearch.getInt("readiness.retries")
-    val readinessPatience: FiniteDuration = elasticsearch.as[FiniteDuration]("readiness.patience")
+    val readinessPatience: FiniteDuration =
+      elasticsearch.as[FiniteDuration]("readiness.patience")
   }
 }

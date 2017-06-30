@@ -21,12 +21,13 @@ import scala.concurrent.duration._
   * - [[https://www.elastic.co/guide/en/elasticsearch/reference/5.1/docker.html#docker-cli-run-dev-mode]]
   * - [[https://www.elastic.co/blog/bootstrap_checks_annoying_instead_of_devastating]]
   */
-trait ElasticsearchContainer extends ForAllTestContainer {
-  self: Suite =>
+trait ElasticsearchContainer extends ForAllTestContainer { self: Suite =>
 
   override val container: GenericContainer = {
     GenericContainer(
-      imageName = ElasticsearchContainer.findRealImageName(TestContainers.DockerImages.elasticsearch),
+      imageName = ElasticsearchContainer.findRealImageName(
+        TestContainers.DockerImages.elasticsearch
+      ),
       exposedPorts = Seq(9200),
       env = Map(
         "transport.host" -> "127.0.0.1",
@@ -38,7 +39,8 @@ trait ElasticsearchContainer extends ForAllTestContainer {
     )
   }
 
-  lazy val elasticsearchContainerIpAddress: String = container.container.getContainerIpAddress
+  lazy val elasticsearchContainerIpAddress: String =
+    container.container.getContainerIpAddress
 
   lazy val elasticsearchPort: Integer = container.container.getMappedPort(9200)
 }
@@ -58,7 +60,10 @@ object ElasticsearchContainer {
     * @param timeout Amount of time to wait.
     * @return The image name recognized by Testcontainers.
     */
-  private def findRealImageName(image: String, timeout: FiniteDuration = 60.seconds): String = {
+  private def findRealImageName(
+    image: String,
+    timeout: FiniteDuration = 60.seconds
+  ): String = {
     try {
       new RemoteDockerImage(image).get(timeout.toSeconds, TimeUnit.SECONDS)
       image

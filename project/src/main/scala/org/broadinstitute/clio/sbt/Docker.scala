@@ -10,6 +10,7 @@ import sbtdocker._
   * Customizations for building docker images via sbt-docker.
   */
 object Docker {
+
   /** The name of docker organization. */
   private val DockerOrganization = "broadinstitute"
 

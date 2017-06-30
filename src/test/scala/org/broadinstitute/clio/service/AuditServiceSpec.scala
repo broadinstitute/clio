@@ -13,7 +13,9 @@ class AuditServiceSpec extends AsyncFlatSpec with Matchers {
     val app = MockClioApp(auditDAO = memoryAuditDAO)
     val auditService = AuditService(app)
     for {
-      _ <- auditService.auditRequest(ClioRequest(MockAuditDAO.RequestContentMock))
+      _ <- auditService.auditRequest(
+        ClioRequest(MockAuditDAO.RequestContentMock)
+      )
     } yield {
       val result = ClioRequest(MockAuditDAO.RequestContentMock)
       memoryAuditDAO.auditRequests should be(Seq(result))
@@ -29,11 +31,13 @@ class AuditServiceSpec extends AsyncFlatSpec with Matchers {
     for {
       _ <- auditService.auditResponse(
         ClioRequest(MockAuditDAO.RequestContentMock),
-        ClioResponse(MockAuditDAO.ResponseContentMock))
+        ClioResponse(MockAuditDAO.ResponseContentMock)
+      )
     } yield {
       val result = (
         ClioRequest(MockAuditDAO.RequestContentMock),
-        ClioResponse(MockAuditDAO.ResponseContentMock))
+        ClioResponse(MockAuditDAO.ResponseContentMock)
+      )
       memoryAuditDAO.auditRequests should be(empty)
       memoryAuditDAO.auditResponses should be(Seq(result))
       memoryAuditDAO.auditExceptions should be(empty)
@@ -45,9 +49,15 @@ class AuditServiceSpec extends AsyncFlatSpec with Matchers {
     val app = MockClioApp(auditDAO = memoryAuditDAO)
     val auditService = AuditService(app)
     for {
-      _ <- auditService.auditException(ClioRequest(MockAuditDAO.RequestContentMock), MockAuditDAO.ExceptionMock)
+      _ <- auditService.auditException(
+        ClioRequest(MockAuditDAO.RequestContentMock),
+        MockAuditDAO.ExceptionMock
+      )
     } yield {
-      val result = (ClioRequest(MockAuditDAO.RequestContentMock), MockAuditDAO.ExceptionMock)
+      val result = (
+        ClioRequest(MockAuditDAO.RequestContentMock),
+        MockAuditDAO.ExceptionMock
+      )
       memoryAuditDAO.auditRequests should be(empty)
       memoryAuditDAO.auditResponses should be(empty)
       memoryAuditDAO.auditExceptions should be(Seq(result))

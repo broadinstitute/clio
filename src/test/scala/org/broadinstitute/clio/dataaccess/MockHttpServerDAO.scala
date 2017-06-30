@@ -5,7 +5,8 @@ import scala.concurrent.Future
 class MockHttpServerDAO() extends HttpServerDAO {
   override def startup(): Future[Unit] = Future.successful(())
 
-  override def getVersion: Future[String] = Future.successful(MockHttpServerDAO.VersionMock)
+  override def getVersion: Future[String] =
+    Future.successful(MockHttpServerDAO.VersionMock)
 
   override def shutdown(): Future[Unit] = Future.successful(())
 

@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.sbt
 
 object Compilation {
+
   /**
     * Various compiler tweaks. More info available via:
     * - http://tpolecat.github.io/2017/04/25/scalac-flags.html
@@ -11,7 +12,8 @@ object Compilation {
     */
   val CompilerSettings: Seq[String] = Seq(
     "-deprecation",
-    "-encoding", "UTF-8",
+    "-encoding",
+    "UTF-8",
     "-explaintypes",
     "-feature",
     "-target:jvm-1.8",
@@ -20,7 +22,8 @@ object Compilation {
     "-Xfatal-warnings",
     "-Xfuture",
     "-Xlint",
-    "-Xmax-classfile-name", "200",
+    "-Xmax-classfile-name",
+    "200",
     "-Yno-adapted-args",
     "-Ywarn-dead-code",
     "-Ywarn-extra-implicit",

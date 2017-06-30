@@ -10,7 +10,9 @@ object TestContainers {
     sys.props += "DOCKER_CONFIG" -> "/dev/null/workaround/docker-java/issues/806"
   }
 
-  private val config = ClioConfig.withEnvironment(ConfigFactory.parseResources("clio-docker-images.conf"))
+  private val config = ClioConfig.withEnvironment(
+    ConfigFactory.parseResources("clio-docker-images.conf")
+  )
 
   object DockerImages {
     private val docker = config.getConfig("docker")

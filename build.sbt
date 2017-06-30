@@ -16,8 +16,8 @@ libraryDependencies ++= Dependencies.ProjectDependencies
 dependencyOverrides ++= Dependencies.OverrideDependencies
 
 scalacOptions ++= Compilation.CompilerSettings
-scalacOptions in(Compile, doc) ++= Compilation.DocSettings
-scalacOptions in(Compile, console) := Compilation.ConsoleSettings
+scalacOptions in (Compile, doc) ++= Compilation.DocSettings
+scalacOptions in (Compile, console) := Compilation.ConsoleSettings
 
 git.baseVersion := Versioning.ClioVersion
 git.formattedShaVersion := Versioning.gitShaVersion.value
@@ -27,3 +27,7 @@ assemblyJarName in assembly := Versioning.assemblyName.value
 imageNames in docker := Docker.imageNames.value
 dockerfile in docker := Docker.dockerFile.value
 buildOptions in docker := Docker.buildOptions.value
+
+scalafmtVersion in ThisBuild := "1.0.0-RC4"
+scalafmtOnCompile in ThisBuild := true
+ignoreErrors in (ThisBuild, scalafmt) := false
