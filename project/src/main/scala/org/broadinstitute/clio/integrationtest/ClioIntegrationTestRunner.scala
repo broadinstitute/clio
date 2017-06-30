@@ -11,7 +11,7 @@ import scala.util.{Failure, Success, Try}
   *
   * The the testClassesDirectory contains a sub-directory with a docker-compose.yml. Docker-compose is run from the
   * directory with the yml. The actual docker images to use are all passed via environment variables. The clio docker
-  * image tag is generated from the version. The other docker image names/tags are read from the config file
+  * image tag is generated from the version. The other docker image names/tags are read from the generated config file
   * clio-docker-images.conf.
   */
 class ClioIntegrationTestRunner(testClassesDirectory: File,
@@ -22,14 +22,12 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
   def run(): Unit = {
     // Log directory and environment, such that one may run the compose from the command line with
     // bash$ cd DIR; ENVKEY=ENVVAL docker-compose up ...
-    log.info(
-      s"""|Starting docker-compose
+    log.info(s"""|Starting docker-compose
           |  directory: $dockerComposeDirectory
-          |  env: ${dockerComposeEnvironement
-           .map({ case (key, value) => s"$key=$value" })
-           .mkString(" ")}
-          |""".stripMargin
-    )
+          |  env: ${dockerComposeEnvironment
+                  .map({ case (key, value) => s"$key=$value" })
+                  .mkString(" ")}
+          |""".stripMargin)
 
     // Declare a lazy val, such that when it's invoked will run tryDockerComposeCleanup() once and only once
     // Pass our instance as a thunk to addShutdownHook, that will only evaluate on a shutdown
@@ -61,16 +59,16 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     val configEnvironment = ConfigFactory.parseMap(System.getenv)
     val configFile =
       ConfigFactory.parseFile(
-        testClassesDirectory / ClioIntegrationTestRunner.DockerImagesConfigFileName)
+        testClassesDirectory / ClioIntegrationTestRunner.DockerImagesConfigFileName
+      )
     configEnvironment.withFallback(configFile).getConfig("clio.docker")
   }
 
   /** Where the docker compose integration tests should be run from. */
   private val dockerComposeDirectory = testClassesDirectory / ClioIntegrationTestRunner.DockerComposeDirectoryName
-  private val dockerComposeEnvironement = Seq(
+  private val dockerComposeEnvironment = Seq(
     "CLIO_DOCKER_TAG" -> clioVersion,
     "ELASTICSEARCH_DOCKER_TAG" -> configDocker.getString("elasticsearch")
-    // TODO: Publish the pytest Dockerfile to Docker Hub, then reference the pushed image here.
   )
 
   /**
@@ -80,17 +78,13 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     */
   private def tryDockerComposeTest(): Try[Int] = Try {
     val testCommand =
-      Seq("docker-compose", "up", "--build", "--abort-on-container-exit")
-    val exitCodeScanner = new ExitCodeScanner
-    val exitCode = runCommand(testCommand,
-                              dockerComposeDirectory,
-                              dockerComposeEnvironement,
-                              exitCodeScanner.logAndScan(log))
-    // For now, ignore the exit code from docker-compose, and look for the exit code in stdout.
-    exitCodeScanner.loggedExitCodeOption.getOrElse(sys.error(s"""|
-            |Didn't find an exit code in the standard out, exiting with code $exitCode.
-          |Check the logs above for other errors.
-          |""".stripMargin))
+      Seq("docker-compose", "up", "--exit-code-from", "clio-integration-test")
+    runCommand(
+      testCommand,
+      dockerComposeDirectory,
+      dockerComposeEnvironment,
+      log.info(_)
+    )
   }
 
   /** Runs docker-compose cleanup, ignoring any errors. */
@@ -98,10 +92,12 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     Try {
       val cleanupCommand =
         Seq("docker-compose", "down", "--volume", "--rmi", "local")
-      runCommand(cleanupCommand,
-                 dockerComposeDirectory,
-                 dockerComposeEnvironement,
-                 log.info(_))
+      runCommand(
+        cleanupCommand,
+        dockerComposeDirectory,
+        dockerComposeEnvironment,
+        log.info(_)
+      )
     }
     ()
   }
@@ -113,7 +109,8 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     * @return A boolean result of removing the hook, or a throwable describing an error.
     */
   private def tryRemoveShutdownHook(
-      shutdownHook: ShutdownHookThread): Try[Boolean] = Try {
+      shutdownHook: ShutdownHookThread
+  ): Try[Boolean] = Try {
     shutdownHook.remove()
   }
 
@@ -139,6 +136,6 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
 
 object ClioIntegrationTestRunner {
   // Paths within the testClassesDirectory
-  private val DockerComposeDirectoryName = "cliointegrationtest"
+  private val DockerComposeDirectoryName = "docker-compose"
   private val DockerImagesConfigFileName = "clio-docker-images.conf"
 }

@@ -1,0 +1,3 @@
+package org.broadinstitute.clio.server.webservice
+
+object MockExceptionDirectives extends ExceptionDirectives

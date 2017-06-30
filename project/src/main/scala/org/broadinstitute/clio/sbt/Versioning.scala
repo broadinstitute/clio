@@ -30,8 +30,10 @@ object Versioning {
 
   /** Write the version information into a configuration file. */
   lazy val writeVersionConfig: Initialize[Task[Seq[File]]] = Def.task {
-    val file = (resourceManaged in Compile).value / s"${name.value}-version.conf"
-    val contents = Seq(s"${name.value}.version: ${version.value}")
+    val projectName = name.value
+    val projectConfig = projectName.replace("clio-", "clio.")
+    val file = (resourceManaged in Compile).value / s"$projectName-version.conf"
+    val contents = Seq(s"$projectConfig.version: ${version.value}")
     IO.writeLines(file, contents)
     Seq(file)
   }

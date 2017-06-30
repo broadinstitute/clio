@@ -14,31 +14,35 @@ Metadata Manager
 
 ### Quickly run a server
 
-`sbt run`
+`sbt clio-server/run`
 
 ### Connect to the running server
 
 `curl localhost:8080`
 
-### Build an executable jar
+### Build executable jars
 
 `sbt assembly`
 
-### Build docker image
+### Build docker images
 
 `sbt docker`
 
-### Test the built docker image
+### Build docker image of only clio-server
+
+`sbt clio-server/docker`
+
+### Test the existing built docker images
 
 `sbt testDocker`
 
-### Build and then test the docker image
+### Build and then use docker-compose to run the docker images
 
 `sbt docker testDocker`
 
-### Run the docker image
+### Run the server docker image
 
-`docker run --rm -it -p 8080:8080 broadinstitute/clio:<version>`
+`docker run --rm -it -p 8080:8080 broadinstitute/clio-server:<version>`
 
 ### Test that the code is consistently formatted
 
