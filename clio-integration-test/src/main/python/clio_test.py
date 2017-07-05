@@ -77,10 +77,10 @@ def __assert_expected_fields(expected_fields, mapping_properties):
     assert len(expected_fields) == len(mapping_properties)
 
 
-def test_readgroups_mapping():
-    r = requests.get(elasticsearch_http_uri + '/readgroups/_mapping/default')
+def test_read_group_mapping():
+    r = requests.get(elasticsearch_http_uri + '/read_group/_mapping/default')
     js = r.json()
-    mappings = js['readgroups']['mappings']['default']
+    mappings = js['read_group']['mappings']['default']
     assert mappings['dynamic'] == 'false'
     expected_fields = {
         'analysis_type': 'keyword',
@@ -157,6 +157,6 @@ if __name__ == '__main__':
     test_health()
     test_bad_method()
     test_bad_path()
-    test_readgroups_mapping()
+    test_read_group_mapping()
     test_authorization()
     print('tests passed')

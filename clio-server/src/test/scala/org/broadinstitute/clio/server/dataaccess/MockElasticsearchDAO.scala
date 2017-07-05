@@ -1,9 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.model.{
-  ElasticsearchIndex,
-  ElasticsearchStatusInfo
-}
+import org.broadinstitute.clio.model.ElasticsearchStatusInfo
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -18,15 +16,14 @@ class MockElasticsearchDAO extends ElasticsearchDAO {
 
   override val readyPatience: FiniteDuration = 0.seconds
 
-  override def existsIndexType(index: ElasticsearchIndex): Future[Boolean] =
+  override def existsIndexType(index: ElasticsearchIndex[_]): Future[Boolean] =
     Future.successful(true)
 
-  override def createIndexType(index: ElasticsearchIndex,
-                               replicate: Boolean): Future[Unit] =
+  override def createIndexType(index: ElasticsearchIndex[_]): Future[Unit] =
     Future.successful(())
 
   override def updateFieldDefinitions(
-    index: ElasticsearchIndex
+    index: ElasticsearchIndex[_]
   ): Future[Unit] = Future.successful(())
 
   override def close(): Future[Unit] = Future.successful(())

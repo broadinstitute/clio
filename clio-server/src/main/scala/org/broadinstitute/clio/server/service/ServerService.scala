@@ -2,17 +2,15 @@ package org.broadinstitute.clio.server.service
 
 import akka.actor.ActorSystem
 import akka.pattern._
-import cats.instances.future._
-import cats.syntax.functor._
 import com.typesafe.scalalogging.StrictLogging
+import org.broadinstitute.clio.model.ServerStatusInfo
 import org.broadinstitute.clio.server.ClioApp
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndexDefiners
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
   ElasticsearchDAO,
   HttpServerDAO,
   ServerStatusDAO
 }
-import org.broadinstitute.clio.model.{ElasticsearchIndex, ServerStatusInfo}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -122,8 +120,9 @@ class ServerService private (
     waitWithRetry(elasticsearchDAO.readyRetries)
   }
 
+  /** If an index with the name doesn't exist then create it, and then separately update the fields on the index. */
   private[service] def createOrUpdateIndices(): Future[Unit] = {
-    def createOrUpdateIndex(index: ElasticsearchIndex): Future[Unit] = {
+    def createOrUpdateIndex(index: ElasticsearchIndex[_]): Future[Unit] = {
       for {
         exists <- elasticsearchDAO.existsIndexType(index)
         _ <- if (exists) Future.successful(())
@@ -132,12 +131,9 @@ class ServerService private (
       } yield ()
     }
 
-    Future
-      .sequence(
-        ElasticsearchIndexDefiners.All
-          .map(definer => createOrUpdateIndex(definer.indexDefinition))
-      )
-      .void
+    for {
+      _ <- createOrUpdateIndex(ElasticsearchIndex.ReadGroup)
+    } yield ()
   }
 }
 

@@ -29,6 +29,8 @@ object ClioServerConfig {
                                      scheme: String = "http")
 
     private val elasticsearch = config.getConfig("elasticsearch")
+    val replicateIndices: Boolean =
+      elasticsearch.getBoolean("replicate-indices")
     val httpHosts: Seq[ElasticsearchHttpHost] =
       elasticsearch.as[Seq[ElasticsearchHttpHost]]("http-hosts")
     val readinessColors: Seq[String] =
