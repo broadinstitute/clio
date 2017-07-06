@@ -1,9 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.model.{
-  ElasticsearchIndex,
-  ElasticsearchStatusInfo
-}
+import org.broadinstitute.clio.model.ElasticsearchStatusInfo
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -39,17 +37,15 @@ trait ElasticsearchDAO {
     * @param index The index name and type.
     * @return A future Boolean if the index exists, or a future error.
     */
-  def existsIndexType(index: ElasticsearchIndex): Future[Boolean]
+  def existsIndexType(index: ElasticsearchIndex[_]): Future[Boolean]
 
   /**
     * Creates an empty index.
     *
     * @param index     The index name and type. Fields are ignored.
-    * @param replicate If false, does not replicate the index.
     * @return A future Unit after the index is created, or a future error.
     */
-  def createIndexType(index: ElasticsearchIndex,
-                      replicate: Boolean = true): Future[Unit]
+  def createIndexType(index: ElasticsearchIndex[_]): Future[Unit]
 
   /**
     * Updates fields for an existing index.
@@ -57,7 +53,7 @@ trait ElasticsearchDAO {
     * @param index The index name and type to update.
     * @return A future Unit after the fields are updated, or a future error.
     */
-  def updateFieldDefinitions(index: ElasticsearchIndex): Future[Unit]
+  def updateFieldDefinitions(index: ElasticsearchIndex[_]): Future[Unit]
 
   /**
     * Closes the connection to elasticsearch.

@@ -8,75 +8,37 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.CreateIndexDefinition
 import com.sksamuel.elastic4s.searches.SearchDefinition
 import io.circe.parser
-import org.apache.http.HttpHost
 import org.apache.http.util.EntityUtils
-import org.broadinstitute.clio.model.{
-  ElasticsearchField,
-  ElasticsearchIndex,
-  ElasticsearchStatusInfo
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  AutoElasticsearchIndex,
+  ElasticsearchIndex
 }
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.ResponseException
 import org.scalatest._
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
-
 class HttpElasticsearchDAOSpec
-    extends AsyncFlatSpec
+    extends AbstractElasticsearchDAOSpec("HttpElasticsearchDAO")
+    with AsyncFlatSpecLike
     with Matchers
-    with EitherValues
-    with BeforeAndAfterAll
-    with ElasticsearchContainer {
+    with EitherValues {
   behavior of "HttpElasticsearch"
 
-  lazy val httpHost =
-    new HttpHost(elasticsearchContainerIpAddress, elasticsearchPort)
-  lazy val httpElasticsearchDAO = new HttpElasticsearchDAO(Seq(httpHost))
-
-  private val StatusGreen = "green"
-
-  override protected def afterAll(): Unit = {
-    // Not using regular .close within afterAll. The execution context provided by scalatest doesn't seem to run here.
-    httpElasticsearchDAO.closeClient()
-    super.afterAll()
-  }
-
-  it should "wait up to 60s for green status" in {
-    def waitForGreen(count: Int, sleep: Duration): Future[Assertion] = {
-      httpElasticsearchDAO.getClusterStatus flatMap {
-        case ElasticsearchStatusInfo(StatusGreen, 1, 1) =>
-          Future.successful(succeed)
-        case other if count == 0 =>
-          Future.failed(new RuntimeException(s"Timeout with status: $other"))
-        case _ =>
-          Thread.sleep(sleep.toMillis)
-          waitForGreen(count - 1, sleep)
-      }
-    }
-
-    waitForGreen(20, 3.seconds)
+  it should "initialize" in {
+    initialize()
   }
 
   it should "create an index and update the index field types" in {
-    val indexVersion1 = ElasticsearchIndex(
-      "readgroups1",
-      "default",
-      Seq(ElasticsearchField("bar", classOf[String]))
-    )
-    val indexVersion2 = ElasticsearchIndex(
-      "readgroups1",
-      "default",
-      Seq(
-        ElasticsearchField("foo", classOf[Long]),
-        ElasticsearchField("bar", classOf[String])
-      )
-    )
+    case class IndexVersion1(bar: String)
+    case class IndexVersion2(foo: Long, bar: String)
+
+    val indexVersion1: ElasticsearchIndex[_] =
+      new AutoElasticsearchIndex[IndexVersion1]("test_index_update_type")
+    val indexVersion2: ElasticsearchIndex[_] =
+      new AutoElasticsearchIndex[IndexVersion2]("test_index_update_type")
+
     for {
-      _ <- httpElasticsearchDAO.createIndexType(
-        indexVersion1,
-        replicate = false
-      )
+      _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
       existsVersion1 <- httpElasticsearchDAO.existsIndexType(indexVersion1)
       _ = existsVersion1 should be(true)
       existsVersion2 <- httpElasticsearchDAO.existsIndexType(indexVersion2)
@@ -86,27 +48,19 @@ class HttpElasticsearchDAOSpec
     } yield succeed
   }
 
-  it should "fail to recreate an index twice" in {
-    val indexVersion1 = ElasticsearchIndex(
-      "readgroups2",
-      "default",
-      Seq(ElasticsearchField("bar", classOf[String]))
-    )
-    val indexVersion2 = ElasticsearchIndex(
-      "readgroups2",
-      "default",
-      Seq(
-        ElasticsearchField("foo", classOf[Long]),
-        ElasticsearchField("bar", classOf[String])
-      )
-    )
+  it should "fail to recreate an index twice when skipping check for existence" in {
+    case class IndexVersion1(foo: String)
+    case class IndexVersion2(foo: Long, bar: String)
+
+    val indexVersion1: ElasticsearchIndex[_] =
+      new AutoElasticsearchIndex[IndexVersion1]("test_index_fail_recreate")
+    val indexVersion2: ElasticsearchIndex[_] =
+      new AutoElasticsearchIndex[IndexVersion2]("test_index_fail_recreate")
+
     for {
-      _ <- httpElasticsearchDAO.createIndexType(
-        indexVersion1,
-        replicate = false
-      )
+      _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
       exception <- recoverToExceptionIf[ResponseException] {
-        httpElasticsearchDAO.createIndexType(indexVersion2, replicate = false)
+        httpElasticsearchDAO.createIndexType(indexVersion2)
       }
       _ = {
         val json = EntityUtils.toString(exception.getResponse.getEntity)
@@ -116,27 +70,21 @@ class HttpElasticsearchDAOSpec
         val errorType = error.get[String]("type").right.value
         val errorReason = error.get[String]("reason").right.value
         errorType should be("index_already_exists_exception")
-        errorReason should fullyMatch regex """index \[readgroups2/.*\] already exists"""
+        errorReason should fullyMatch regex """index \[test_index_fail_recreate/.*\] already exists"""
       }
     } yield succeed
   }
 
   it should "fail to change the index field types" in {
-    val indexVersion1 = ElasticsearchIndex(
-      "readgroups3",
-      "default",
-      Seq(ElasticsearchField("foo", classOf[String]))
-    )
-    val indexVersion2 = ElasticsearchIndex(
-      "readgroups3",
-      "default",
-      Seq(ElasticsearchField("foo", classOf[Long]))
-    )
+    case class IndexVersion1(foo: String)
+    case class IndexVersion2(foo: Long)
+
+    val indexVersion1: ElasticsearchIndex[_] =
+      new AutoElasticsearchIndex[IndexVersion1]("test_index_fail_change_types")
+    val indexVersion2: ElasticsearchIndex[_] =
+      new AutoElasticsearchIndex[IndexVersion2]("test_index_fail_change_types")
     for {
-      _ <- httpElasticsearchDAO.createIndexType(
-        indexVersion1,
-        replicate = false
-      )
+      _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
       _ <- httpElasticsearchDAO.updateFieldDefinitions(indexVersion1)
       exception <- recoverToExceptionIf[ResponseException] {
         httpElasticsearchDAO.updateFieldDefinitions(indexVersion2)
@@ -161,14 +109,15 @@ class HttpElasticsearchDAOSpec
   case class City(name: String,
                   country: String,
                   continent: String,
-                  status: String)
+                  status: String,
+                  slogan: Option[String])
 
   it should "perform various CRUD-like operations" in {
     val clusterHealthDefinition: ClusterHealthDefinition =
       clusterHealth()
 
     val indexCreationDefinition: CreateIndexDefinition =
-      createIndex("places") mappings {
+      createIndex("places") replicas 0 mappings {
         mapping("cities") as (
           keywordField("id"),
           textField("name") boost 4,
@@ -195,7 +144,16 @@ class HttpElasticsearchDAOSpec
             name = "Paris",
             country = "France",
             continent = "Europe",
-            status = "Awesome"
+            status = "Awesome",
+            slogan = Option("Liberté, égalité, fraternité")
+          ),
+        indexInto("places" / "cities") id "de" doc
+          City(
+            name = "Berlin",
+            country = "Germany",
+            continent = "Europe",
+            status = "Awesome",
+            slogan = None
           )
       ).refresh(RefreshPolicy.WAIT_UNTIL)
 
@@ -214,7 +172,7 @@ class HttpElasticsearchDAOSpec
 
     for {
       health <- httpClient execute clusterHealthDefinition
-      _ = health.status should be(StatusGreen)
+      _ = health.status should be("green")
       indexCreation <- httpClient execute indexCreationDefinition
       _ = indexCreation.acknowledged should be(true)
       populate <- httpClient execute populateDefinition

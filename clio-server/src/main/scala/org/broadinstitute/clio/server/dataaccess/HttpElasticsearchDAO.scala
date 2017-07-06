@@ -1,28 +1,15 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import java.lang.{
-  Boolean => JBoolean,
-  Double => JDouble,
-  Float => JFloat,
-  Integer => JInteger,
-  Long => JLong
-}
-import java.time.OffsetDateTime
-
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.cluster.ClusterHealthResponse
-import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.http.HttpHost
+import org.broadinstitute.clio.model.ElasticsearchStatusInfo
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
-import org.broadinstitute.clio.model.{
-  ElasticsearchField,
-  ElasticsearchIndex,
-  ElasticsearchStatusInfo
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.elasticsearch.client.RestClient
 
 import scala.concurrent.duration.FiniteDuration
@@ -87,18 +74,18 @@ class HttpElasticsearchDAO private[dataaccess] (
   override val readyPatience: FiniteDuration =
     ClioServerConfig.Elasticsearch.readinessPatience
 
-  override def existsIndexType(index: ElasticsearchIndex): Future[Boolean] = {
+  override def existsIndexType(index: ElasticsearchIndex[_]): Future[Boolean] = {
     val typesExistsDefinition = typesExist(index.indexName / index.indexType)
     httpClient.execute(typesExistsDefinition).map(_.exists)
   }
 
-  override def createIndexType(index: ElasticsearchIndex,
-                               replicate: Boolean): Future[Unit] = {
+  override def createIndexType(index: ElasticsearchIndex[_]): Future[Unit] = {
     val createIndexDefinition = createIndex(index.indexName) mappings mapping(
       index.indexType
     )
     val replicatedIndexDefinition =
-      if (replicate) createIndexDefinition
+      if (ClioServerConfig.Elasticsearch.replicateIndices)
+        createIndexDefinition
       else createIndexDefinition.replicas(0)
     httpClient
       .execute(replicatedIndexDefinition)
@@ -118,10 +105,10 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   override def updateFieldDefinitions(
-    index: ElasticsearchIndex
+    index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     val indexAndType = index.indexName / index.indexType
-    val fieldDefinitions = index.fields map HttpElasticsearchDAO.fieldDefinition
+    val fieldDefinitions = index.fields
     val putMappingDefinition = putMapping(indexAndType) dynamic DynamicMapping.False as (fieldDefinitions: _*)
     httpClient
       .execute(putMappingDefinition)
@@ -131,9 +118,9 @@ class HttpElasticsearchDAO private[dataaccess] (
         else {
           val message =
             s"""|Put mapping was not acknowledged:
-              |  Index: ${index.indexName}/${index.indexType}
-              |  Acknowledged: ${response.acknowledged}
-              |""".stripMargin
+                |  Index: ${index.indexName}/${index.indexType}
+                |  Acknowledged: ${response.acknowledged}
+                |""".stripMargin
           throw new RuntimeException(message)
         }
       })
@@ -151,7 +138,7 @@ class HttpElasticsearchDAO private[dataaccess] (
 
   private def hostsString = httpHosts.mkString(", ")
 
-  private def getClusterHealth: Future[ClusterHealthResponse] = {
+  private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {
     val clusterHealthDefinition = clusterHealth()
     httpClient execute clusterHealthDefinition
   }
@@ -171,27 +158,5 @@ object HttpElasticsearchDAO extends StrictLogging {
       elasticsearchHttpHost.port,
       elasticsearchHttpHost.scheme
     )
-  }
-
-  private def fieldDefinition(
-    elasticsearchField: ElasticsearchField
-  ): FieldDefinition = {
-    val fieldName = elasticsearchField.fieldName
-    elasticsearchField.fieldType match {
-      case clazz if clazz == classOf[Boolean]        => booleanField(fieldName)
-      case clazz if clazz == classOf[JBoolean]       => booleanField(fieldName)
-      case clazz if clazz == classOf[Int]            => intField(fieldName)
-      case clazz if clazz == classOf[JInteger]       => intField(fieldName)
-      case clazz if clazz == classOf[Long]           => longField(fieldName)
-      case clazz if clazz == classOf[JLong]          => longField(fieldName)
-      case clazz if clazz == classOf[Float]          => floatField(fieldName)
-      case clazz if clazz == classOf[JFloat]         => floatField(fieldName)
-      case clazz if clazz == classOf[Double]         => doubleField(fieldName)
-      case clazz if clazz == classOf[JDouble]        => doubleField(fieldName)
-      case clazz if clazz == classOf[String]         => keywordField(fieldName)
-      case clazz if clazz == classOf[OffsetDateTime] => dateField(fieldName)
-      case clazz =>
-        throw new RuntimeException(s"No support for $fieldName: $clazz")
-    }
   }
 }

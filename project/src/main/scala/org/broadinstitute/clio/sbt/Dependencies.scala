@@ -7,13 +7,14 @@ import sbt._
   */
 object Dependencies {
   // The version numbers of each main and test dependency.
-  private val AkkaHttpCirceVersion = "1.16.1"
-  private val AkkaHttpVersion = "10.0.7"
+  private val AkkaHttpCirceVersion = "1.17.0"
+  private val AkkaHttpVersion = "10.0.9"
   private val CirceVersion = "0.8.0"
-  private val Elastic4sVersion = "5.4.3"
-  private val FicusVersion = "1.4.0"
+  private val Elastic4sVersion = "5.4.6"
+  private val FicusVersion = "1.4.1"
   private val LogbackClassicVersion = "1.2.3"
-  private val ScalaLoggingVersion = "3.5.0"
+  private val S_machVersion = "2.1.0"
+  private val ScalaLoggingVersion = "3.7.0"
   private val ScalaTestVersion = "3.0.3"
   private val Slf4jVersion = "1.7.25"
   private val TestContainersScalaVersion = "0.6.0"
@@ -30,6 +31,7 @@ object Dependencies {
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
+    "net.s_mach" %% "string" % S_machVersion,
     "org.slf4j" % "slf4j-api" % Slf4jVersion
   )
 
