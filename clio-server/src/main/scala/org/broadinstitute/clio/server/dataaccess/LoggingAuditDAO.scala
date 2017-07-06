@@ -1,12 +1,12 @@
 package org.broadinstitute.clio.server.dataaccess
 
 import com.typesafe.scalalogging.StrictLogging
-import org.broadinstitute.clio.model.{ClioRequest, ClioResponse}
+import org.broadinstitute.clio.server.model.{ClioRequest, ClioResponse}
 import org.slf4j.MarkerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class LoggingAuditDAO private (implicit ec: ExecutionContext)
+class LoggingAuditDAO private (implicit executionContext: ExecutionContext)
     extends AuditDAO
     with StrictLogging {
   override def auditRequest(request: ClioRequest): Future[Unit] = {
@@ -38,7 +38,7 @@ class LoggingAuditDAO private (implicit ec: ExecutionContext)
 }
 
 object LoggingAuditDAO {
-  def apply()(implicit ec: ExecutionContext): AuditDAO = {
+  def apply()(implicit executionContext: ExecutionContext): AuditDAO = {
     new LoggingAuditDAO
   }
 

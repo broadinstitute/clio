@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
 class AkkaHttpServerDAO private (routes: Route)(
   implicit system: ActorSystem,
   executionContext: ExecutionContext,
-  fm: Materializer
+  materializer: Materializer
 ) extends HttpServerDAO
     with StrictLogging {
 
@@ -82,7 +82,7 @@ class AkkaHttpServerDAO private (routes: Route)(
 object AkkaHttpServerDAO {
   def apply(routes: Route)(implicit system: ActorSystem,
                            executionContext: ExecutionContext,
-                           fm: Materializer): HttpServerDAO = {
+                           materializer: Materializer): HttpServerDAO = {
     new AkkaHttpServerDAO(routes)
   }
 }

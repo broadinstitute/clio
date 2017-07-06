@@ -11,9 +11,11 @@ object Dependencies {
   private val AkkaHttpVersion = "10.0.9"
   private val CirceVersion = "0.8.0"
   private val Elastic4sVersion = "5.4.6"
+  private val EnumeratumVersion = "1.5.12"
+  private val EnumeratumCirceVersion = "1.5.14"
   private val FicusVersion = "1.4.1"
   private val LogbackClassicVersion = "1.2.3"
-  private val S_machVersion = "2.1.0"
+  private val S_machStringVersion = "2.1.0"
   private val ScalaLoggingVersion = "3.7.0"
   private val ScalaTestVersion = "3.0.3"
   private val Slf4jVersion = "1.7.25"
@@ -22,6 +24,8 @@ object Dependencies {
   /** Dependencies used in main code, and transitively by the test code. */
   val ServerMainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
+    "com.beachape" %% "enumeratum" % EnumeratumVersion,
+    "com.beachape" %% "enumeratum-circe" % EnumeratumCirceVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
@@ -30,8 +34,9 @@ object Dependencies {
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
+    "io.circe" %% "circe-generic-extras" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
-    "net.s_mach" %% "string" % S_machVersion,
+    "net.s_mach" %% "string" % S_machStringVersion,
     "org.slf4j" % "slf4j-api" % Slf4jVersion
   )
 
@@ -50,6 +55,7 @@ object Dependencies {
   val ServerOverrideDependencies: Set[ModuleID] = Set(
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
+    "io.circe" %% "circe-generic-extras" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion
   )
 }

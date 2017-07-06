@@ -2,13 +2,16 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import io.circe.generic.auto._
 import org.broadinstitute.clio.server.dataaccess.{
-  MockElasticsearchDAO,
   MockHttpServerDAO,
   MockServerStatusDAO
 }
-import org.broadinstitute.clio.model.{StatusInfo, VersionInfo}
+import org.broadinstitute.clio.server.model.{
+  StatusInfo,
+  SystemStatusInfo,
+  VersionInfo
+}
+import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.scalatest.{FlatSpec, Matchers}
 
 class StatusWebServiceSpec
@@ -30,10 +33,7 @@ class StatusWebServiceSpec
     val webService = new MockStatusWebService()
     Get("/health") ~> webService.healthRoute ~> check {
       responseAs[StatusInfo] should be(
-        StatusInfo(
-          MockServerStatusDAO.StatusMock,
-          MockElasticsearchDAO.StatusMock
-        )
+        StatusInfo(MockServerStatusDAO.StatusMock, SystemStatusInfo.OK)
       )
     }
   }

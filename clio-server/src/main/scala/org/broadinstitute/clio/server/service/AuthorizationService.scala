@@ -15,7 +15,7 @@ case class AuthorizationInfo(token: String,
                              email: String,
                              id: String)
 
-class AuthorizationService()(implicit ec: ExecutionContext) {
+class AuthorizationService()(implicit executionContext: ExecutionContext) {
 
   /**
     * Return `true` when credentials in `info` authorize access to
@@ -29,7 +29,9 @@ class AuthorizationService()(implicit ec: ExecutionContext) {
 }
 
 object AuthorizationService {
-  def apply()(implicit ec: ExecutionContext): AuthorizationService = {
+  def apply()(
+    implicit executionContext: ExecutionContext
+  ): AuthorizationService = {
     new AuthorizationService()
   }
 

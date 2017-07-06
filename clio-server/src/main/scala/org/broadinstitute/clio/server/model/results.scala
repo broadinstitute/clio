@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.model
+package org.broadinstitute.clio.server.model
 
 case class ErrorResult(error: String)
 

@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.{MemoryAuditDAO, MockAuditDAO}
-import org.broadinstitute.clio.model.{ClioRequest, ClioResponse}
+import org.broadinstitute.clio.server.model.{ClioRequest, ClioResponse}
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
 class AuditServiceSpec extends AsyncFlatSpec with Matchers {
