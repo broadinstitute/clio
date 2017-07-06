@@ -4,11 +4,11 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.generic.auto._
 import org.broadinstitute.clio.server.dataaccess.{
-  MockSearchDAO,
   MockHttpServerDAO,
+  MockSearchDAO,
   MockServerStatusDAO
 }
-import org.broadinstitute.clio.model.{StatusInfo, VersionInfo}
+import org.broadinstitute.clio.server.model.{StatusInfo, VersionInfo}
 import org.scalatest.{FlatSpec, Matchers}
 
 class StatusWebServiceSpec

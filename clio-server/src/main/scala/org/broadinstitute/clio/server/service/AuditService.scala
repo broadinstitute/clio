@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.AuditDAO
-import org.broadinstitute.clio.model.{ClioRequest, ClioResponse}
+import org.broadinstitute.clio.server.model.{ClioRequest, ClioResponse}
 
 import scala.concurrent.Future
 

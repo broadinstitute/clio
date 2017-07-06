@@ -1,13 +1,9 @@
 package org.broadinstitute.clio.server.service
 
 import com.typesafe.scalalogging.StrictLogging
-import org.broadinstitute.clio.model.ServerStatusInfo
 import org.broadinstitute.clio.server.ClioApp
-import org.broadinstitute.clio.server.dataaccess.{
-  HttpServerDAO,
-  SearchDAO,
-  ServerStatusDAO
-}
+import org.broadinstitute.clio.server.dataaccess.{HttpServerDAO, SearchDAO, ServerStatusDAO}
+import org.broadinstitute.clio.server.model.ServerStatusInfo
 
 import scala.concurrent.{ExecutionContext, Future}
 

@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.model.ElasticsearchStatusInfo
+import org.broadinstitute.clio.server.model.ElasticsearchStatusInfo
 
 import scala.concurrent.Future
 

@@ -1,16 +1,8 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.model.{
-  StatusInfo,
-  ElasticsearchStatusInfo,
-  VersionInfo
-}
 import org.broadinstitute.clio.server.ClioApp
-import org.broadinstitute.clio.server.dataaccess.{
-  HttpServerDAO,
-  SearchDAO,
-  ServerStatusDAO
-}
+import org.broadinstitute.clio.server.dataaccess.{HttpServerDAO, SearchDAO, ServerStatusDAO}
+import org.broadinstitute.clio.server.model.{ElasticsearchStatusInfo, StatusInfo, VersionInfo}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}

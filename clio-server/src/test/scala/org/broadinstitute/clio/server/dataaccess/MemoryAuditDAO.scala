@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.model.{ClioRequest, ClioResponse}
+import org.broadinstitute.clio.server.model.{ClioRequest, ClioResponse}
 
 import scala.concurrent.Future
 

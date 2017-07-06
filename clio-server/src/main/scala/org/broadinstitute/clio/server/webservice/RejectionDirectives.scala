@@ -5,7 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import io.circe.generic.auto._
 import io.circe.syntax._
-import org.broadinstitute.clio.model.RejectionResult
+import org.broadinstitute.clio.server.model.RejectionResult
 
 /** Rejection translation into json. */
 trait RejectionDirectives {

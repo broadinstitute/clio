@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess
 
 import com.typesafe.scalalogging.StrictLogging
-import org.broadinstitute.clio.model.{ClioRequest, ClioResponse}
+import org.broadinstitute.clio.server.model.{ClioRequest, ClioResponse}
 import org.slf4j.MarkerFactory
 
 import scala.concurrent.{ExecutionContext, Future}
