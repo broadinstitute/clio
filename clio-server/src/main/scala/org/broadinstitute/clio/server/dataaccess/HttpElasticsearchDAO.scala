@@ -1,25 +1,26 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import akka.actor.ActorSystem
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.cluster.ClusterHealthResponse
 import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.http.HttpHost
-import org.broadinstitute.clio.model.ElasticsearchStatusInfo
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.elasticsearch.client.RestClient
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 class HttpElasticsearchDAO private[dataaccess] (
-  httpHosts: Seq[HttpHost]
-)(implicit executionContext: ExecutionContext)
+  private[dataaccess] val httpHosts: Seq[HttpHost]
+)(implicit
+  val executionContext: ExecutionContext,
+  val system: ActorSystem)
     extends SearchDAO
+    with SystemElasticsearchDAO
     with StrictLogging {
 
   private[dataaccess] val httpClient = {
@@ -27,59 +28,25 @@ class HttpElasticsearchDAO private[dataaccess] (
     HttpClient.fromRestClient(restClient)
   }
 
-  override def getClusterStatus: Future[ElasticsearchStatusInfo] = {
-    getClusterHealth transform {
-      case Success(health) =>
-        Success(
-          ElasticsearchStatusInfo(
-            health.status,
-            health.numberOfNodes,
-            health.numberOfDataNodes
-          )
-        )
-      case Failure(exception) =>
-        logger.error(
-          s"Error while getting Elasticsearch cluster status from $hostsString",
-          exception
-        )
-        Success(HttpElasticsearchDAO.StatusError)
-    }
+  private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {
+    val clusterHealthDefinition = clusterHealth()
+    httpClient execute clusterHealthDefinition
   }
 
-  override def isReady: Future[Boolean] = {
-    getClusterHealth transform {
-      case Success(health) =>
-        if (ClioServerConfig.Elasticsearch.readinessColors.contains(
-              health.status
-            )) {
-          Success(true)
-        } else {
-          logger.debug(
-            s"health.status = ${health.status}, readyColors = ${ClioServerConfig.Elasticsearch.readinessColors}"
-          )
-          Success(false)
-        }
-      case Failure(exception) =>
-        logger.debug(
-          s"Error while getting Elasticsearch cluster status from $hostsString",
-          exception
-        )
-        Success(false)
-    }
+  private[dataaccess] def closeClient(): Unit = {
+    httpClient.close()
   }
 
-  override val readyRetries: Int =
-    ClioServerConfig.Elasticsearch.readinessRetries
-
-  override val readyPatience: FiniteDuration =
-    ClioServerConfig.Elasticsearch.readinessPatience
-
-  override def existsIndexType(index: ElasticsearchIndex[_]): Future[Boolean] = {
+  private[dataaccess] def existsIndexType(
+    index: ElasticsearchIndex[_]
+  ): Future[Boolean] = {
     val typesExistsDefinition = typesExist(index.indexName / index.indexType)
     httpClient.execute(typesExistsDefinition).map(_.exists)
   }
 
-  override def createIndexType(index: ElasticsearchIndex[_]): Future[Unit] = {
+  private[dataaccess] def createIndexType(
+    index: ElasticsearchIndex[_]
+  ): Future[Unit] = {
     val createIndexDefinition = createIndex(index.indexName) mappings mapping(
       index.indexType
     )
@@ -87,70 +54,37 @@ class HttpElasticsearchDAO private[dataaccess] (
       if (ClioServerConfig.Elasticsearch.replicateIndices)
         createIndexDefinition
       else createIndexDefinition.replicas(0)
-    httpClient
-      .execute(replicatedIndexDefinition)
-      .map(response => {
-        if (response.acknowledged && response.shards_acknowledged)
-          ()
-        else {
-          val message =
-            s"""|Index creation was not acknowledged:
-              |  Index: ${index.indexName}/${index.indexType}
-              |  Acknowledged: ${response.acknowledged}
-              |  Shards Acknowledged: ${response.shards_acknowledged}
-              |""".stripMargin
-          throw new RuntimeException(message)
-        }
-      })
-  }
-
-  override def updateFieldDefinitions(
-    index: ElasticsearchIndex[_]
-  ): Future[Unit] = {
-    val indexAndType = index.indexName / index.indexType
-    val fieldDefinitions = index.fields
-    val putMappingDefinition = putMapping(indexAndType) dynamic DynamicMapping.False as (fieldDefinitions: _*)
-    httpClient
-      .execute(putMappingDefinition)
-      .map(response => {
-        if (response.acknowledged)
-          ()
-        else {
-          val message =
-            s"""|Put mapping was not acknowledged:
-                |  Index: ${index.indexName}/${index.indexType}
-                |  Acknowledged: ${response.acknowledged}
-                |""".stripMargin
-          throw new RuntimeException(message)
-        }
-      })
-  }
-
-  override def close(): Future[Unit] = {
-    Future {
-      closeClient()
+    httpClient.execute(replicatedIndexDefinition) map { response =>
+      if (!response.acknowledged || !response.shards_acknowledged)
+        throw new RuntimeException(s"""|Bad response:
+                                       |$replicatedIndexDefinition
+                                       |$response""".stripMargin)
+      ()
     }
   }
 
-  private[dataaccess] def closeClient(): Unit = {
-    httpClient.close()
+  private[dataaccess] def updateFieldDefinitions(
+    index: ElasticsearchIndex[_]
+  ): Future[Unit] = {
+    val putMappingDefinition =
+      putMapping(index.indexName / index.indexType) dynamic DynamicMapping.False as (index.fields: _*)
+    httpClient.execute(putMappingDefinition) map { response =>
+      if (!response.acknowledged)
+        throw new RuntimeException(s"""|Bad response:
+                                       |$putMappingDefinition
+                                       |$response""".stripMargin)
+      ()
+    }
   }
 
-  private def hostsString = httpHosts.mkString(", ")
-
-  private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {
-    val clusterHealthDefinition = clusterHealth()
-    httpClient execute clusterHealthDefinition
-  }
 }
 
 object HttpElasticsearchDAO extends StrictLogging {
-  def apply()(implicit executionContext: ExecutionContext): SearchDAO = {
+  def apply()(implicit executionContext: ExecutionContext,
+              system: ActorSystem): SearchDAO = {
     val httpHosts = ClioServerConfig.Elasticsearch.httpHosts.map(toHttpHost)
     new HttpElasticsearchDAO(httpHosts)
   }
-
-  private val StatusError = ElasticsearchStatusInfo("error", -1, -1)
 
   private def toHttpHost(elasticsearchHttpHost: ElasticsearchHttpHost) = {
     new HttpHost(

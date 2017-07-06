@@ -52,20 +52,4 @@ class ServerServiceSpec
       _ <- serverService.shutdown()
     } yield succeed
   }
-
-  it should "waitForElasticsearchReady" in {
-    val app = MockClioApp()
-    val serverService = ServerService(app)
-    for {
-      _ <- serverService.waitForElasticsearchReady()
-    } yield succeed
-  }
-
-  it should "createOrUpdateIndices" in {
-    val app = MockClioApp()
-    val serverService = ServerService(app)
-    for {
-      _ <- serverService.createOrUpdateIndices()
-    } yield succeed
-  }
 }

@@ -28,12 +28,9 @@ def test_wait_for_clio():
             r = requests.get(clio_http_uri + '/health')
             js = r.json()
             clio_status = js['clio']['status']
-            elasticsearch = js['elasticsearch']
-            elasticsearch_status = elasticsearch['status']
-            elasticsearch_data_nodes = elasticsearch['dataNodes']
-            if clio_status == 'started' and elasticsearch_status == 'green' and elasticsearch_data_nodes > 1:
-                print("connected to clio. Elasticsearch status %s, running %s nodes." %
-                      (elasticsearch_status, elasticsearch_data_nodes))
+            elasticsearch_status = js['elasticsearch']['status']
+            if clio_status == 'started' and elasticsearch_status == 'OK':
+                print("connected to clio.")
                 return
         except requests.exceptions.RequestException:
             pass
@@ -52,9 +49,7 @@ def test_health():
     r = requests.get(clio_http_uri + '/health')
     js = r.json()
     assert js['clio']['status'] == 'started'
-    assert js['elasticsearch']['status'] == 'green'
-    assert js['elasticsearch']['nodes'] > 1
-    assert js['elasticsearch']['dataNodes'] > 1
+    assert js['elasticsearch']['status'] == 'OK'
 
 
 def test_bad_method():

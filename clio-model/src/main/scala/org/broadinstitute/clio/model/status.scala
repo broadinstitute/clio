@@ -10,7 +10,7 @@ object ServerStatusInfo {
   val ShutDown = new ServerStatusInfo("shut_down")
 }
 
-case class ElasticsearchStatusInfo(status: String, nodes: Int, dataNodes: Int)
+case class ElasticsearchStatusInfo(status: String)
 
 case class StatusInfo(clio: ServerStatusInfo,
                       elasticsearch: ElasticsearchStatusInfo)
