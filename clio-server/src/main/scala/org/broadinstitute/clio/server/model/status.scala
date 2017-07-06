@@ -1,18 +1,37 @@
 package org.broadinstitute.clio.server.model
 
-case class ServerStatusInfo(status: String)
+import enumeratum._
 
-object ServerStatusInfo {
-  val NotStarted = new ServerStatusInfo("not_started")
-  val Starting = new ServerStatusInfo("starting")
-  val Started = new ServerStatusInfo("started")
-  val ShuttingDown = new ServerStatusInfo("shutting_down")
-  val ShutDown = new ServerStatusInfo("shut_down")
+import scala.collection.immutable.IndexedSeq
+
+sealed trait ServerStatusInfo extends EnumEntry
+
+object ServerStatusInfo extends Enum[ServerStatusInfo] {
+  override val values: IndexedSeq[ServerStatusInfo] = findValues
+
+  case object NotStarted extends ServerStatusInfo
+
+  case object Starting extends ServerStatusInfo
+
+  case object Started extends ServerStatusInfo
+
+  case object ShuttingDown extends ServerStatusInfo
+
+  case object ShutDown extends ServerStatusInfo
+
 }
 
-case class ElasticsearchStatusInfo(status: String)
+sealed trait SystemStatusInfo extends EnumEntry
 
-case class StatusInfo(clio: ServerStatusInfo,
-                      elasticsearch: ElasticsearchStatusInfo)
+object SystemStatusInfo extends Enum[SystemStatusInfo] {
+  override val values: IndexedSeq[SystemStatusInfo] = findValues
+
+  case object OK extends SystemStatusInfo
+
+  case object Error extends SystemStatusInfo
+
+}
+
+case class StatusInfo(clio: ServerStatusInfo, search: SystemStatusInfo)
 
 case class VersionInfo(version: String)

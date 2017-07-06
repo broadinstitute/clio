@@ -127,7 +127,7 @@ class HttpElasticsearchDAOSpec
 
     // Enabled circe Indexable and HitReader usage below
     import com.sksamuel.elastic4s.circe._
-    import io.circe.generic.auto._
+    import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
 
     val populateDefinition: BulkDefinition =
       bulk(

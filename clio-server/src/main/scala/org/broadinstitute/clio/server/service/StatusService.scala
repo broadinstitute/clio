@@ -1,8 +1,16 @@
 package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.ClioApp
-import org.broadinstitute.clio.server.dataaccess.{HttpServerDAO, SearchDAO, ServerStatusDAO}
-import org.broadinstitute.clio.server.model.{ElasticsearchStatusInfo, StatusInfo, VersionInfo}
+import org.broadinstitute.clio.server.dataaccess.{
+  HttpServerDAO,
+  SearchDAO,
+  ServerStatusDAO
+}
+import org.broadinstitute.clio.server.model.{
+  StatusInfo,
+  SystemStatusInfo,
+  VersionInfo
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
@@ -31,12 +39,10 @@ object StatusService {
     new StatusService(app.serverStatusDAO, app.httpServerDAO, app.searchDAO)
   }
 
-  private def toSystemStatusInfo(
-    status: Try[_]
-  ): Try[ElasticsearchStatusInfo] = {
+  private def toSystemStatusInfo(status: Try[_]): Try[SystemStatusInfo] = {
     status.transform(
-      _ => Success(ElasticsearchStatusInfo("OK")),
-      _ => Success(ElasticsearchStatusInfo("Error"))
+      _ => Success(SystemStatusInfo.OK),
+      _ => Success(SystemStatusInfo.Error)
     )
   }
 }

@@ -4,9 +4,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.ExceptionHandler
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
-import io.circe.generic.auto._
 import org.broadinstitute.clio.server.dataaccess.MockAuditDAO
 import org.broadinstitute.clio.server.model.MockResult
+import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.scalatest.{FlatSpec, Matchers}
 
 class AuditDirectivesSpec
