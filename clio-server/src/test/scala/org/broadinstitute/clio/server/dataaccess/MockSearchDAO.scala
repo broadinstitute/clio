@@ -6,9 +6,9 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchInde
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class MockElasticsearchDAO extends ElasticsearchDAO {
+class MockSearchDAO extends SearchDAO {
   override def getClusterStatus: Future[ElasticsearchStatusInfo] =
-    Future.successful(MockElasticsearchDAO.StatusMock)
+    Future.successful(MockSearchDAO.StatusMock)
 
   override def isReady: Future[Boolean] = Future.successful(true)
 
@@ -29,7 +29,7 @@ class MockElasticsearchDAO extends ElasticsearchDAO {
   override def close(): Future[Unit] = Future.successful(())
 }
 
-object MockElasticsearchDAO {
+object MockSearchDAO {
   val StatusMock =
     ElasticsearchStatusInfo("Mock Elasticsearch Status", 123, 456)
 }

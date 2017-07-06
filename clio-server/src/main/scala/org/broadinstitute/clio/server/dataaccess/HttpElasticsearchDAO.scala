@@ -18,8 +18,8 @@ import scala.util.{Failure, Success}
 
 class HttpElasticsearchDAO private[dataaccess] (
   httpHosts: Seq[HttpHost]
-)(implicit ec: ExecutionContext)
-    extends ElasticsearchDAO
+)(implicit executionContext: ExecutionContext)
+    extends SearchDAO
     with StrictLogging {
 
   private[dataaccess] val httpClient = {
@@ -145,7 +145,7 @@ class HttpElasticsearchDAO private[dataaccess] (
 }
 
 object HttpElasticsearchDAO extends StrictLogging {
-  def apply()(implicit ec: ExecutionContext): ElasticsearchDAO = {
+  def apply()(implicit executionContext: ExecutionContext): SearchDAO = {
     val httpHosts = ClioServerConfig.Elasticsearch.httpHosts.map(toHttpHost)
     new HttpElasticsearchDAO(httpHosts)
   }

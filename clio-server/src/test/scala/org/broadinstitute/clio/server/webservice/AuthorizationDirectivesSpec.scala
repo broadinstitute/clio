@@ -8,8 +8,9 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.ExecutionContext
 
-class MockAuthorizationDirectives()(implicit ec: ExecutionContext)
-    extends AuthorizationDirectives {
+class MockAuthorizationDirectives()(
+  implicit executionContext: ExecutionContext
+) extends AuthorizationDirectives {
   override lazy val authorizationService: AuthorizationService =
     AuthorizationService()
 }

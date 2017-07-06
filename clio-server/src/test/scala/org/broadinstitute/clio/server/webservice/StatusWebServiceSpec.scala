@@ -4,7 +4,7 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.generic.auto._
 import org.broadinstitute.clio.server.dataaccess.{
-  MockElasticsearchDAO,
+  MockSearchDAO,
   MockHttpServerDAO,
   MockServerStatusDAO
 }
@@ -30,10 +30,7 @@ class StatusWebServiceSpec
     val webService = new MockStatusWebService()
     Get("/health") ~> webService.healthRoute ~> check {
       responseAs[StatusInfo] should be(
-        StatusInfo(
-          MockServerStatusDAO.StatusMock,
-          MockElasticsearchDAO.StatusMock
-        )
+        StatusInfo(MockServerStatusDAO.StatusMock, MockSearchDAO.StatusMock)
       )
     }
   }

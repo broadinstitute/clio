@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.{
-  MockElasticsearchDAO,
+  MockSearchDAO,
   MockHttpServerDAO,
   MockServerStatusDAO
 }
@@ -27,10 +27,7 @@ class StatusServiceSpec extends AsyncFlatSpec with Matchers {
     for {
       status <- statusService.getStatus
       _ = status should be(
-        StatusInfo(
-          MockServerStatusDAO.StatusMock,
-          MockElasticsearchDAO.StatusMock
-        )
+        StatusInfo(MockServerStatusDAO.StatusMock, MockSearchDAO.StatusMock)
       )
     } yield succeed
   }

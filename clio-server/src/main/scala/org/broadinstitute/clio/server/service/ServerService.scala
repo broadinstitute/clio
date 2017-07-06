@@ -7,7 +7,7 @@ import org.broadinstitute.clio.model.ServerStatusInfo
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
-  ElasticsearchDAO,
+  SearchDAO,
   HttpServerDAO,
   ServerStatusDAO
 }
@@ -18,8 +18,8 @@ import scala.util.{Failure, Success}
 class ServerService private (
   serverStatusDAO: ServerStatusDAO,
   httpServerDAO: HttpServerDAO,
-  elasticsearchDAO: ElasticsearchDAO
-)(implicit ec: ExecutionContext, system: ActorSystem)
+  searchDAO: SearchDAO
+)(implicit executionContext: ExecutionContext, system: ActorSystem)
     extends StrictLogging {
 
   /**
@@ -73,7 +73,7 @@ class ServerService private (
   private[service] def shutdown(): Future[Unit] = {
     serverStatusDAO.setStatus(ServerStatusInfo.ShuttingDown) transformWith {
       _ =>
-        elasticsearchDAO.close() transformWith { _ =>
+        searchDAO.close() transformWith { _ =>
           httpServerDAO.shutdown() transformWith { _ =>
             serverStatusDAO.setStatus(ServerStatusInfo.ShutDown)
           }
@@ -83,11 +83,11 @@ class ServerService private (
 
   private[service] def waitForElasticsearchReady(): Future[Unit] = {
     def waitWithRetry(retryCount: Int): Future[Unit] = {
-      elasticsearchDAO.isReady transformWith {
+      searchDAO.isReady transformWith {
         case Success(true) => Future.successful(())
         case Success(false) if retryCount <= 0 =>
           for {
-            status <- elasticsearchDAO.getClusterStatus
+            status <- searchDAO.getClusterStatus
           } yield {
             logger.info("Elastic search not ready. Giving up.")
             throw new RuntimeException(
@@ -101,13 +101,13 @@ class ServerService private (
           )
           Future.failed(exception)
         case Success(false) =>
-          val waitDuration = elasticsearchDAO.readyPatience
+          val waitDuration = searchDAO.readyPatience
           logger.info(
             s"Elasticsearch not ready. Will try again in $waitDuration."
           )
           after(waitDuration, system.scheduler)(waitWithRetry(retryCount - 1))
         case Failure(exception) =>
-          val waitDuration = elasticsearchDAO.readyPatience
+          val waitDuration = searchDAO.readyPatience
           logger.error(
             s"Unable to get Elasticsearch status due to exception ${exception.getMessage}. " +
               s"Will try again in $waitDuration.",
@@ -117,17 +117,17 @@ class ServerService private (
       }
     }
 
-    waitWithRetry(elasticsearchDAO.readyRetries)
+    waitWithRetry(searchDAO.readyRetries)
   }
 
   /** If an index with the name doesn't exist then create it, and then separately update the fields on the index. */
   private[service] def createOrUpdateIndices(): Future[Unit] = {
     def createOrUpdateIndex(index: ElasticsearchIndex[_]): Future[Unit] = {
       for {
-        exists <- elasticsearchDAO.existsIndexType(index)
+        exists <- searchDAO.existsIndexType(index)
         _ <- if (exists) Future.successful(())
-        else elasticsearchDAO.createIndexType(index)
-        _ <- elasticsearchDAO.updateFieldDefinitions(index)
+        else searchDAO.createIndexType(index)
+        _ <- searchDAO.updateFieldDefinitions(index)
       } yield ()
     }
 
@@ -138,12 +138,8 @@ class ServerService private (
 }
 
 object ServerService {
-  def apply(app: ClioApp)(implicit ec: ExecutionContext,
+  def apply(app: ClioApp)(implicit executionContext: ExecutionContext,
                           system: ActorSystem): ServerService = {
-    new ServerService(
-      app.serverStatusDAO,
-      app.httpServerDAO,
-      app.elasticsearchDAO
-    )
+    new ServerService(app.serverStatusDAO, app.httpServerDAO, app.searchDAO)
   }
 }

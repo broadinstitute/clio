@@ -7,9 +7,9 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 /**
-  * Communicates with an elasticsearch server.
+  * Communicates with a search server.
   */
-trait ElasticsearchDAO {
+trait SearchDAO {
 
   /**
     * Returns the status.

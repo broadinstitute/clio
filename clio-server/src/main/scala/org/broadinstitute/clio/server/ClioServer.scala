@@ -51,10 +51,10 @@ object ClioServer
   private val serverStatusDAO = CachedServerStatusDAO()
   private val auditDAO = LoggingAuditDAO()
   private val httpServerDAO = AkkaHttpServerDAO(routes)
-  private val elasticsearchDAO = HttpElasticsearchDAO()
+  private val searchDAO = HttpElasticsearchDAO()
 
   private val app =
-    new ClioApp(serverStatusDAO, auditDAO, httpServerDAO, elasticsearchDAO)
+    new ClioApp(serverStatusDAO, auditDAO, httpServerDAO, searchDAO)
 
   private val serverService = ServerService(app)
   override val auditService = AuditService(app)

@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.{
-  ElasticsearchDAO,
+  SearchDAO,
   HttpServerDAO,
   ServerStatusDAO
 }
@@ -13,12 +13,12 @@ import scala.concurrent.{ExecutionContext, Future}
 class StatusService private (
   serverStatusDAO: ServerStatusDAO,
   httpServerDAO: HttpServerDAO,
-  elasticsearchDAO: ElasticsearchDAO
-)(implicit ec: ExecutionContext) {
+  searchDAO: SearchDAO
+)(implicit executionContext: ExecutionContext) {
   def getStatus: Future[StatusInfo] = {
     for {
       serverStatus <- serverStatusDAO.getStatus
-      elasticsearchStatus <- elasticsearchDAO.getClusterStatus
+      elasticsearchStatus <- searchDAO.getClusterStatus
     } yield StatusInfo(serverStatus, elasticsearchStatus)
   }
 
@@ -28,11 +28,9 @@ class StatusService private (
 }
 
 object StatusService {
-  def apply(app: ClioApp)(implicit ec: ExecutionContext): StatusService = {
-    new StatusService(
-      app.serverStatusDAO,
-      app.httpServerDAO,
-      app.elasticsearchDAO
-    )
+  def apply(
+    app: ClioApp
+  )(implicit executionContext: ExecutionContext): StatusService = {
+    new StatusService(app.serverStatusDAO, app.httpServerDAO, app.searchDAO)
   }
 }
