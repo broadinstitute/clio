@@ -1,9 +1,12 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-case class DocumentMock(mockField1: Option[Double],
-                        mockField2: Option[Int],
+import java.time.OffsetDateTime
+
+case class DocumentMock(mockFieldDate: Option[OffsetDateTime],
+                        mockFieldDouble: Option[Double],
+                        mockFieldInt: Option[Int],
                         mockFileMd5: Option[String],
                         mockFilePath: Option[String],
                         mockFileSize: Option[Long],
-                        mockKey1: String,
-                        mockKey2: Long)
+                        mockKeyLong: Long,
+                        mockKeyString: String)

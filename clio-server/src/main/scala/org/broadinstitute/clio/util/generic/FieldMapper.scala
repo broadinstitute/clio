@@ -28,6 +28,10 @@ sealed trait FieldMapper[A] {
   * val fieldMapper = FieldMapper[Foo]
   * println(fieldMapper.fields)
   * ```
+  *
+  * @see [[org.broadinstitute.clio.util.json.StateDecoder]]
+  * @see [[org.broadinstitute.clio.util.generic.CaseClassMapper]]
+  * @see [[org.broadinstitute.clio.util.generic.CaseClassMapperWithTypes]]
   */
 object FieldMapper {
 

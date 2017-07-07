@@ -3,10 +3,10 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import time
-
 import os
 import requests
+import time
+import uuid
 
 
 def get_environ_uri(prefix, scheme_default='http', host_default='localhost', port_default=80):
@@ -146,6 +146,27 @@ def test_authorization():
     for header, expect in withoutExpect.items(): testWithout(header, expect)
 
 
+def test_read_group_metadata():
+    id = str(uuid.uuid4()).replace('-', '')
+    library = 'library' + id
+
+    payload = {'project': 'testProject'}
+    r = requests.post(clio_http_uri + '/readgroup/metadata/v1/barcode1/1/' + library, json=payload)
+    js = r.json()
+    assert js == {}
+
+    payload = {'library_name': library}
+    r = requests.post(clio_http_uri + '/readgroup/query/v1', json=payload)
+    js = r.json()
+    assert len(js) == 1
+    assert js[0] == {
+        'flowcell_barcode': 'barcode1',
+        'lane': 1,
+        'library_name': library,
+        'project': 'testProject',
+    }
+
+
 if __name__ == '__main__':
     test_wait_for_clio()
     test_version()
@@ -154,4 +175,5 @@ if __name__ == '__main__':
     test_bad_path()
     test_read_group_mapping()
     test_authorization()
+    test_read_group_metadata()
     print('tests passed')
