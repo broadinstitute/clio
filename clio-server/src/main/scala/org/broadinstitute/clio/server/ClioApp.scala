@@ -2,8 +2,8 @@ package org.broadinstitute.clio.server
 
 import org.broadinstitute.clio.server.dataaccess.{
   AuditDAO,
-  SearchDAO,
   HttpServerDAO,
+  SearchDAO,
   ServerStatusDAO
 }
 

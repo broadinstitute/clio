@@ -30,7 +30,7 @@ val commonTestDockerSettings: Seq[Setting[_]] = Seq(
 lazy val clio = project
   .in(file("."))
   .settings(commonSettings)
-  .aggregate(`clio-integration-test`, `clio-model`, `clio-server`)
+  .aggregate(`clio-integration-test`, `clio-transfer-model`, `clio-server`)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `clio-integration-test` = project
@@ -41,12 +41,12 @@ lazy val `clio-integration-test` = project
   .enablePlugins(ClioIntegrationTestPlugin)
   .settings(commonTestDockerSettings)
 
-lazy val `clio-model` = project
+lazy val `clio-transfer-model` = project
   .settings(commonSettings)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `clio-server` = project
-  .dependsOn(`clio-model`)
+  .dependsOn(`clio-transfer-model`)
   .settings(
     libraryDependencies ++= Dependencies.ServerDependencies,
     dependencyOverrides ++= Dependencies.ServerOverrideDependencies

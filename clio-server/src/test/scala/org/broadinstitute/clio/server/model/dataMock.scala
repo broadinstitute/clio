@@ -1,23 +1,25 @@
 package org.broadinstitute.clio.server.model
 
-case class ModelMockKey(mockKey1: String, mockKey2: Long)
+import java.time.OffsetDateTime
 
-case class ModelMockMetadata(mockField1: Option[Double],
-                             mockField2: Option[Int])
+case class ModelMockKey(mockKeyLong: Long, mockKeyString: String)
 
-case class ModelMockData(mockFileMd5: String,
-                         mockFilePath: String,
-                         mockFileSize: Long)
+case class ModelMockMetadata(mockFieldDouble: Option[Double],
+                             mockFieldInt: Option[Int],
+                             mockFieldDate: Option[OffsetDateTime])
 
-case class ModelMockQueryInput(mockKey1: Option[String],
-                               mockKey2: Option[Long],
-                               mockField1: Option[Double],
-                               mockField2: Option[Int])
+case class ModelMockQueryInput(mockFieldDouble: Option[Double],
+                               mockFieldDateEnd: Option[OffsetDateTime],
+                               mockFieldDateStart: Option[OffsetDateTime],
+                               mockFieldInt: Option[Int],
+                               mockKeyLong: Option[Long],
+                               mockKeyString: Option[String])
 
-case class ModelMockQueryOutput(mockKey1: String,
-                                mockKey2: Long,
-                                mockField1: Option[Double],
-                                mockField2: Option[Int],
+case class ModelMockQueryOutput(mockKeyLong: Long,
+                                mockKeyString: String,
+                                mockFieldDouble: Option[Double],
+                                mockFieldInt: Option[Int],
+                                mockFieldDate: Option[OffsetDateTime],
                                 mockFileMd5: Option[String],
                                 mockFilePath: Option[String],
                                 mockFileSize: Option[Long])

@@ -1,8 +1,8 @@
 package org.broadinstitute.clio.server
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.server.{Directive0, Route}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.{Directive0, Route}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.server.dataaccess.{
@@ -11,16 +11,12 @@ import org.broadinstitute.clio.server.dataaccess.{
   HttpElasticsearchDAO,
   LoggingAuditDAO
 }
-import org.broadinstitute.clio.server.service.{
-  AuditService,
-  AuthorizationService,
-  ServerService,
-  StatusService
-}
+import org.broadinstitute.clio.server.service._
 import org.broadinstitute.clio.server.webservice._
 
 object ClioServer
     extends StatusWebService
+    with ReadGroupWebService
     with AuditDirectives
     with AuthorizationDirectives
     with ExceptionDirectives
@@ -45,7 +41,8 @@ object ClioServer
   private val wrapperDirectives: Directive0 = {
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
-  private val innerRoutes: Route = concat(authorizationRoute, statusRoutes)
+  private val innerRoutes: Route =
+    concat(authorizationRoute, statusRoutes, readGroupRoutes)
   private val routes = wrapperDirectives(innerRoutes)
 
   private val serverStatusDAO = CachedServerStatusDAO()
@@ -59,6 +56,7 @@ object ClioServer
   private val serverService = ServerService(app)
   override val auditService = AuditService(app)
   override val statusService = StatusService(app)
+  override val readGroupService = ReadGroupService(app)
 
   override val authorizationService: AuthorizationService =
     AuthorizationService()
