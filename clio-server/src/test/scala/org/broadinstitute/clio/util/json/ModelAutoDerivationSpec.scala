@@ -25,7 +25,7 @@ class ModelAutoDerivationSpec
   private val noNullPrinter = Printer.noSpaces.copy(dropNullKeys = true)
 
   it should "encode with snake case" in {
-    case class TestClass(fieldA: Option[String], fieldB: Int)
+    case class TestClass(fieldA: Option[String], fieldBB: Int)
 
     val jsonValues =
       Table(
