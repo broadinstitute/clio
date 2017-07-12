@@ -16,7 +16,7 @@ object Dependencies {
   private val FicusVersion = "1.4.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
-  private val ScalaLoggingVersion = "3.7.0"
+  private val ScalaLoggingVersion = "3.7.1"
   private val ScalaTestVersion = "3.0.3"
   private val Slf4jVersion = "1.7.25"
   private val TestContainersScalaVersion = "0.6.0"
