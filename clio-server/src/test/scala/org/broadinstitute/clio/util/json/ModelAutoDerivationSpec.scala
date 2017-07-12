@@ -62,7 +62,7 @@ class ModelAutoDerivationSpec
   }
 
   it should "fail to decode camel case" in {
-    case class TestClass(fieldA: Option[String], fieldD:  Int)
+    case class TestClass(fieldA: Option[String], fieldB:  Int)
 
     val jsonValues =
       Table(
