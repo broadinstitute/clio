@@ -2,6 +2,8 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
+import io.circe.Json
+import org.broadinstitute.clio.server.service.SchemaService
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -32,4 +34,10 @@ class ReadGroupWebServiceSpec
     }
   }
 
+  it should "return a JSON schema" in {
+    val webService = new MockReadGroupWebService()
+    Get("/schema/v1") ~> webService.getSchema ~> check {
+      responseAs[Json] should be(SchemaService.readGroupSchemaJson)
+    }
+  }
 }
