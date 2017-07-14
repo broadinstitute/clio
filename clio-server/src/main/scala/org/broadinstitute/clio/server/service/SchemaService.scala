@@ -14,7 +14,7 @@ import scala.reflect.runtime.universe.{Type, TypeTag, typeOf, typeTag}
   * Generate JSON schema from case classes such as the QueryOutputs.
   *
   * JsonSchema uses the same shapeless pattern as the
-  * org.broadinstitute.clio.util.generic.FieldMapper
+  * [[org.broadinstitute.clio.util.generic.FieldMapper]]
   */
 object SchemaService {
 

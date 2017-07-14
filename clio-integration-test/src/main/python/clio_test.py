@@ -3,7 +3,6 @@
 from __future__ import absolute_import
 from __future__ import print_function
 
-import json
 import os
 import requests
 import time
@@ -177,15 +176,11 @@ def test_json_schema():
                     'date':    {"type": "string" , "format": "date-time"} }
         response = requests.get(elasticsearch_http_uri + '/read_group/_mapping/default')
         mapping = response.json()['read_group']['mappings']['default']['properties']
-        print("test_json_schema() mapping: " + str(mapping))
         properties = { key: schemas[value['type']] for key, value in mapping.items() }
         return { 'type': 'object',
                  'required': [ 'flowcell_barcode', 'lane', 'library_name' ],
                  'properties': properties }
-    print("test_json_schema() expected: " + str(expected()))
     response = requests.get(clio_http_uri + '/readgroup/schema/v1')
-    print("test_json_schema() response.text: " + response.text)
-    print("test_json_schema() response.json(): " + str(response.json()))
     result = response.json()
     assert result == expected()
 
