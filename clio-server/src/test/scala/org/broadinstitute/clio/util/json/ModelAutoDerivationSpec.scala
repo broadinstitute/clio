@@ -51,6 +51,7 @@ class ModelAutoDerivationSpec
         ("input", "expected"),
         (
           """{"field_a": "hello", "field_b": 123}""",
+
           TestClass(Option("hello"), 123)
         ),
         ("""{"field_b": 456}""", TestClass(None, 456))
