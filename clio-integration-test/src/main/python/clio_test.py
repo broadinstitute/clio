@@ -134,9 +134,7 @@ def test_authorization():
     headers = mockHeaders(withoutExpect)
     authUrl = clio_http_uri + '/authorization'
     def getAuthStatus(headers):
-        response = requests.get(authUrl, headers=headers)
-        result = requests.get(authUrl, headers=headers).status_code
-        return result
+        return requests.get(authUrl, headers=headers).status_code
     def without(header): # a copy of headers without header
         result = dict(headers)
         del result[header]
@@ -167,6 +165,26 @@ def test_read_group_metadata():
     }
 
 
+# I don't know how to derive the required fields.
+#
+def test_json_schema():
+    def expected():
+        schemas = { 'keyword': {"type": "string" },
+                    'boolean': {"type": "boolean"},
+                    'integer': {"type": "integer", "format": "int32"},
+                    'long':    {"type": "integer", "format": "int64"},
+                    'date':    {"type": "string" , "format": "date-time"} }
+        response = requests.get(elasticsearch_http_uri + '/read_group/_mapping/default')
+        mapping = response.json()['read_group']['mappings']['default']['properties']
+        properties = { key: schemas[value['type']] for key, value in mapping.items() }
+        return { 'type': 'object',
+                 'required': [ 'flowcell_barcode', 'lane', 'library_name' ],
+                 'properties': properties }
+    response = requests.get(clio_http_uri + '/readgroup/schema/v1')
+    result = response.json()
+    assert result == expected()
+
+
 if __name__ == '__main__':
     test_wait_for_clio()
     test_version()
@@ -176,4 +194,5 @@ if __name__ == '__main__':
     test_read_group_mapping()
     test_authorization()
     test_read_group_metadata()
+    test_json_schema()
     print('tests passed')

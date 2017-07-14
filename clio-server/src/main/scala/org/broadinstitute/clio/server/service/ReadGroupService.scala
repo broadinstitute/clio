@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.server.service
 
+import io.circe.Json
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.SearchDAO
 import org.broadinstitute.clio.server.model._
@@ -35,6 +36,9 @@ class ReadGroupService private (
       searchDAO.queryReadGroup
     )
   }
+
+  def querySchema(): Future[Json] =
+    SchemaService.readGroupSchema
 }
 
 object ReadGroupService {
