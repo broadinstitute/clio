@@ -1,7 +1,11 @@
 package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.MockClioApp
-import org.broadinstitute.clio.server.dataaccess.{MemoryAuditDAO, MockAuditDAO}
+import org.broadinstitute.clio.server.dataaccess.{
+  FailingAuditDAO,
+  MemoryAuditDAO,
+  MockAuditDAO
+}
 import org.broadinstitute.clio.server.model.{ClioRequest, ClioResponse}
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
@@ -61,6 +65,42 @@ class AuditServiceSpec extends AsyncFlatSpec with Matchers {
       memoryAuditDAO.auditRequests should be(empty)
       memoryAuditDAO.auditResponses should be(empty)
       memoryAuditDAO.auditExceptions should be(Seq(result))
+    }
+  }
+
+  it should "fail when auditRequest fails" in {
+    val failingAuditDAO = new FailingAuditDAO()
+    val app = MockClioApp(auditDAO = failingAuditDAO)
+    val auditService = AuditService(app)
+
+    recoverToSucceededIf[FailingAuditDAO.AuditRequestFailure] {
+      auditService.auditRequest(ClioRequest(MockAuditDAO.RequestContentMock))
+    }
+  }
+
+  it should "fail when auditResponse fails" in {
+    val failingAuditDAO = new FailingAuditDAO()
+    val app = MockClioApp(auditDAO = failingAuditDAO)
+    val auditService = AuditService(app)
+
+    recoverToSucceededIf[FailingAuditDAO.AuditResponseFailure] {
+      auditService.auditResponse(
+        ClioRequest(MockAuditDAO.RequestContentMock),
+        ClioResponse(MockAuditDAO.ResponseContentMock)
+      )
+    }
+  }
+
+  it should "fail when auditException fails" in {
+    val failingAuditDAO = new FailingAuditDAO()
+    val app = MockClioApp(auditDAO = failingAuditDAO)
+    val auditService = AuditService(app)
+
+    recoverToSucceededIf[FailingAuditDAO.AuditExceptionFailure] {
+      auditService.auditException(
+        ClioRequest(MockAuditDAO.RequestContentMock),
+        MockAuditDAO.ExceptionMock
+      )
     }
   }
 }
