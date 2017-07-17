@@ -44,14 +44,13 @@ class ModelAutoDerivationSpec
   }
 
   it should "decode snake case" in {
-    case class TestClass(fieldA: Option[String], zzzz: Int)
+    case class TestClass(fieldA: Option[String], fieldB: Int)
 
     val jsonValues =
       Table(
         ("input", "expected"),
         (
           """{"field_a": "hello", "field_b": 123}""",
-
 
           TestClass(Option("hello"), 123)
         ),
