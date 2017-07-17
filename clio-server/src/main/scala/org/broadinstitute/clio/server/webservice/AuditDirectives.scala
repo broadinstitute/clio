@@ -15,19 +15,21 @@ trait AuditDirectives {
   lazy val auditRequest: Directive0 = {
     extractRequestContext flatMap { requestContext =>
       val request = toClioRequest(requestContext)
-      auditService.auditRequest(request)
-      pass
+      onSuccess(auditService.auditRequest(request))
     }
   }
 
   /** Audits the request result. */
   lazy val auditResult: Directive0 = {
     extractRequestContext flatMap { requestContext =>
-      mapRouteResult { routeResult =>
+      mapRouteResultFuture { routeResultFut =>
+        import requestContext.executionContext
         val request = toClioRequest(requestContext)
-        val response = toClioResponse(routeResult)
-        auditService.auditResponse(request, response)
-        routeResult
+        for {
+          routeResult <- routeResultFut
+          response = toClioResponse(routeResult)
+          _ <- auditService.auditResponse(request, response)
+        } yield routeResult
       }
     }
   }
@@ -59,8 +61,9 @@ trait AuditDirectives {
     ExceptionHandler {
       case exception: Exception =>
         val request = toClioRequest(requestContext)
-        auditService.auditException(request, exception)
-        throw exception
+        onSuccess(auditService.auditException(request, exception)) {
+          throw exception
+        }
     }
   }
 }
