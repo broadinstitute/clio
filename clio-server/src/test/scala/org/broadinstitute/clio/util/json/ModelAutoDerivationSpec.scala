@@ -51,6 +51,7 @@ class ModelAutoDerivationSpec
         ("input", "expected"),
         (
           """{"field_a": "hello", "field_b": 123}""",
+
           TestClass(Option("hello"), 123)
         ),
         ("""{"field_b": 456}""", TestClass(None, 456))
@@ -61,8 +62,10 @@ class ModelAutoDerivationSpec
     }
   }
 
+
   it should "fail to decode camel case" in {
     case class TestClass(fieldA: Option[String], fieldB: Int)
+
 
     val jsonValues =
       Table(
