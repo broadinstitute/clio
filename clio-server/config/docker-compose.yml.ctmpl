@@ -1,0 +1,23 @@
+{{with $docker_tag := env "DOCKER_TAG"}}
+{{with $host_port := env "HOST_CLIO_PORT"}}
+{{with $clio_port := env "CONTAINER_CLIO_PORT"}}
+{{with $host_conf := env "HOST_CLIO_CONF"}}
+{{with $clio_conf := env "CONTAINER_CLIO_CONF"}}
+{{with $host_logback := env "HOST_CLIO_LOGBACK"}}
+{{with $clio_logback := env "CONTAINER_CLIO_LOGBACK"}}
+{{with $host_logs := env "HOST_LOG_DIR"}}
+{{with $clio_logs := env "CONTAINER_LOG_DIR"}}
+app:
+  image: broadinstitute/clio-server:{{$docker_tag}}
+  env_file:
+    - /app/clio.env
+  ports:
+    - "{{$host_port}}:{{$clio_port}}"
+  volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - {{$host_conf}}:{{$clio_conf}}:ro
+    - {{$host_logback}}:{{$clio_logback}}:ro
+    - {{$host_logs}}:{{$clio_logs}}
+  restart: always
+
+{{end}}{{end}}{{end}}{{end}}{{end}}{{end}}{{end}}{{end}}{{end}}

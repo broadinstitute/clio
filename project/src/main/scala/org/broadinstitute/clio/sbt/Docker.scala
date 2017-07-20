@@ -37,7 +37,12 @@ object Docker {
       label("CLIO_VERSION", version.value)
       expose(8080)
       add(artifact, artifactTargetPath)
-      entryPoint("java", "-jar", artifactTargetPath)
+      /*
+       * We need to use `entryPointShell` here to allow the environment variable to be substituted.
+       * By default, using the shell form of ENTRYPOINT prevents signals from reaching the docker container.
+       * Prepending `exec` fixes the problem.
+       */
+      entryPointShell("exec", "java", "$JAVA_OPTS", "-jar", artifactTargetPath)
     }
   }
 
@@ -74,7 +79,8 @@ object Docker {
 
   /** The name of the test images. */
   private val TestImages = Map(
-    "elasticsearch" -> "broadinstitute/elasticsearch:5.4.0_6")
+    "elasticsearch" -> "broadinstitute/elasticsearch:5.4.0_6"
+  )
 
   /** Write the version information into a configuration file. */
   lazy val writeTestImagesConfig: Initialize[Task[Seq[File]]] = Def.task {
