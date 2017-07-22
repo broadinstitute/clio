@@ -4,7 +4,7 @@
 set -ex
 
 # program
-progname=$(basename $0)
+PROG_NAME=$(basename $0)
 CLIO_DIR=$(cd $(dirname $(dirname $0)) && pwd)
 
 # This script is run on jenkins server in order to perform all the necessary
@@ -45,7 +45,7 @@ CONFIG_DIR=clio-server/config
 
 if [ ! -d "$CONFIG_DIR" ]
 then
-    echo "Missing configuration directory ($CONFIG_DIR) - Exitting "
+    echo "Missing configuration directory ($CONFIG_DIR) - Exiting "
     exit 1
 fi
 
@@ -61,21 +61,25 @@ else
    exit 1
 fi
    
-# initialize vars
+# initialize vars used in multiple config templates
 # location on host where configs should get copied
 APP_DIR=${APP_DIR:-"/app"}
-# mappings from files on the host VM to files in the docker
-HOST_LOG_DIR=/local/clio_logs
-CONTAINER_LOG_DIR=/logs
-HOST_CLIO_CONF=${APP_DIR}/clio.conf
-CONTAINER_CLIO_CONF=/etc/clio.conf
-HOST_CLIO_LOGBACK=${APP_DIR}/clio-logback.xml
-CONTAINER_CLIO_LOGBACK=/etc/clio-logback.xml
+# location in the clio container where configs will be mounted
+CLIO_CONF_DIR=/etc
+# location in the clio container where logs will be mounted
+CLIO_LOG_DIR=/logs
+# name of the application config used by the clio instance
+CLIO_APP_CONF=clio.conf
+# name of the logback config used by the clio instance
+CLIO_LOGBACK_CONF=clio-logback.xml
+# name of the env file used to set up clio with docker-compose
+CLIO_ENV_FILE=clio.env
+# port to expose for clio on the host VM
 HOST_CLIO_PORT=80
-CONTAINER_CLIO_PORT=8080
+# port to expose for clio in the clio container
+CONTAINER_CLIO_PORT=${HOST_CLIO_PORT}
 
 # SSH options
-#SSH_USER=jenkins
 SSH_USER=jenkins
 SSHOPTS="-o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o StrictHostKeyChecking=no"
 SSHCMD="ssh $SSHOPTS"
@@ -92,36 +96,47 @@ fi
 
 # build the clio-server docker image
 docker run --rm \
-	-v /var/run/docker.sock:/var/run/docker.sock \
+    -v /var/run/docker.sock:/var/run/docker.sock \
     -v ${CLIO_DIR}:/clio \
     -w="/clio" \
     broadinstitute/scala:scala-2.11.8 sbt "$SET_TESTS" "$SET_VERSION" "clio-server/docker"
 
 # if no tag was given, read the default tag from the generated resource file
 if [[ -z "$DOCKER_TAG" ]]; then
-	DOCKER_TAG=$(cat ${CLIO_DIR}/clio-server/target/scala-2.12/resource_managed/main/clio-server-version.conf | perl -pe 's/clio\.server\.version:\s+//g')
+    DOCKER_TAG=$(cat ${CLIO_DIR}/clio-server/target/scala-2.12/resource_managed/main/clio-server-version.conf | perl -pe 's/clio\.server\.version:\s+//g')
 fi
 
 # push the docker image
 docker push broadinstitute/clio-server:${DOCKER_TAG}
 
 # TMPDIR
-TMPDIR=$(mktemp -d ${progname}-XXXXXX)
+TMPDIR=$(mktemp -d ${PROG_NAME}-XXXXXX)
 # temporary env file for rendering ctmpls
-ENV_FILE="${TMPDIR}/env-vars.txt"
+CTMPL_ENV_FILE="${TMPDIR}/env-vars.txt"
 
 # populate temp env.txt file with necessary environment
-echo "ENVIRONMENT=${ENV}" >> ${ENV_FILE}
-echo "ENV=${ENV}" >> ${ENV_FILE}
-echo "DOCKER_TAG=${DOCKER_TAG}" >> ${ENV_FILE}
-echo "HOST_LOG_DIR=${HOST_LOG_DIR}" >> ${ENV_FILE}
-echo "CONTAINER_LOG_DIR=${CONTAINER_LOG_DIR}" >> ${ENV_FILE}
-echo "HOST_CLIO_CONF=${HOST_CLIO_CONF}" >> ${ENV_FILE}
-echo "CONTAINER_CLIO_CONF=${CONTAINER_CLIO_CONF}" >> ${ENV_FILE}
-echo "HOST_CLIO_LOGBACK=${HOST_CLIO_LOGBACK}" >> ${ENV_FILE}
-echo "CONTAINER_CLIO_LOGBACK=${CONTAINER_CLIO_LOGBACK}" >> ${ENV_FILE}
-echo "HOST_CLIO_PORT=${HOST_CLIO_PORT}" >> ${ENV_FILE}
-echo "CONTAINER_CLIO_PORT=${CONTAINER_CLIO_PORT}" >> ${ENV_FILE}
+echo "ENV=${ENV}" >> ${CTMPL_ENV_FILE}
+echo "DOCKER_TAG=${DOCKER_TAG}" >> ${CTMPL_ENV_FILE}
+echo "APP_DIR=${APP_DIR}" >> ${CTMPL_ENV_FILE}
+echo "CLIO_CONF_DIR=${CLIO_CONF_DIR}" >> ${CTMPL_ENV_FILE}
+echo "CLIO_LOG_DIR=${CLIO_LOG_DIR}" >> ${CTMPL_ENV_FILE}
+echo "CLIO_APP_CONF=${CLIO_APP_CONF}" >> ${CTMPL_ENV_FILE}
+echo "CLIO_LOGBACK_CONF=${CLIO_LOGBACK_CONF}" >> ${CTMPL_ENV_FILE}
+echo "CLIO_ENV_FILE=${CLIO_ENV_FILE}" >> ${CTMPL_ENV_FILE}
+echo "HOST_CLIO_PORT=${HOST_CLIO_PORT}" >> ${CTMPL_ENV_FILE}
+echo "CONTAINER_CLIO_PORT=${CONTAINER_CLIO_PORT}" >> ${CTMPL_ENV_FILE}
+
+# copy configs to temp dir
+cp ${CONFIG_DIR}/* ${TMPDIR}/
+
+# render all ctmpls
+docker run --rm \
+    -v ${PWD}/${TMPDIR}:/working \
+    -v ${PWD}/jenkins:/scripts \
+    -v ${TOKEN_FILE}:/root/.vault-token:ro \
+    --env-file="${CTMPL_ENV_FILE}" \
+    broadinstitute/dsde-toolbox:latest /scripts/render-ctmpl.sh
+rm -f ${CTMPL_ENV_FILE}
 
 stopcontainer() {
     # stop running container on host
@@ -138,18 +153,6 @@ startcontainer() {
     # docker-compose up -d
     ${SSHCMD} ${SSH_USER}@${CLIO_HOST} "docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml up -d"
 }
-
-# copy configs to temp dir
-cp ${CONFIG_DIR}/* ${TMPDIR}/
-
-# render all ctmpls
-docker run --rm \
-    -v ${PWD}/${TMPDIR}:/working \
-    -v ${PWD}/jenkins:/scripts \
-    -v ${TOKEN_FILE}:/root/.vault-token:ro \
-    --env-file="${ENV_FILE}" \
-    broadinstitute/dsde-toolbox:latest /scripts/render-ctmpl.sh
-rm -rf ${ENV_FILE}
 
 # copy configs to temp directory on host
 # rm -rf /app.new

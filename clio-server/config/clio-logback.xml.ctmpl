@@ -1,4 +1,4 @@
-{{with $log_dir := env "CONTAINER_LOG_DIR"}}
+{{with $log_dir := env "CLIO_LOG_DIR"}}
 <!--suppress ALL -->
 <configuration>
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -11,7 +11,7 @@
         </rollingPolicy>
 
         <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-            <maxFileSize>1GB</maxFileSize>
+            <maxFileSize>10MB</maxFileSize>
         </triggeringPolicy>
 
         <encoder>

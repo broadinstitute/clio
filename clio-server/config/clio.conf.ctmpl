@@ -1,18 +1,14 @@
-{{with $environment := env "ENVIRONMENT"}}
-{{with $clio_port := env "CONTAINER_CLIO_PORT"}}
 include "application.conf"
 
 clio.server {
-    http-server.port: {{$clio_port}}
+    http-server.port: {{env "CONTAINER_CLIO_PORT"}}
 
     elasticsearch.http-hosts: [
-        {{range $i := loop 1 4}}
+        {{range $i := loop 3}}
         {
-          hostname: "elasticsearch10{{$i}}-priv.gotc-{{$environment}}.broadinstitute.org",
+          hostname: "elasticsearch10{{add 1 $i}}-priv.gotc-{{env "ENV"}}.broadinstitute.org",
           port: 9200,
           scheme: http
-        },
-        {{end}}
+        },{{end}}
     ]
 }
-{{end}}{{end}}
