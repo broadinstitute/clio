@@ -147,14 +147,12 @@ def test_authorization():
 def test_read_group_metadata():
     id = str(uuid.uuid4()).replace('-', '')
     library = 'library' + id
-
-    payload = {'project': 'testProject'}
-    r = requests.post(clio_http_uri + '/readgroup/metadata/v1/barcode1/1/' + library, json=payload)
+    upsert = {'project': 'testProject'}
+    r = requests.post(clio_http_uri + '/readgroup/metadata/v1/barcode1/1/' + library, json=upsert)
     js = r.json()
     assert js == {}
-
-    payload = {'library_name': library}
-    r = requests.post(clio_http_uri + '/readgroup/query/v1', json=payload)
+    query = {'library_name': library}
+    r = requests.post(clio_http_uri + '/readgroup/query/v1', json=query)
     js = r.json()
     assert len(js) == 1
     assert js[0] == {
@@ -185,6 +183,25 @@ def test_json_schema():
     assert result == expected()
 
 
+def test_read_group_metadata_v2():
+    id = str(uuid.uuid4()).replace('-', '')
+    library = 'library' + id
+    upsert = {'project': 'testProject'}
+    r = requests.post(clio_http_uri + '/readgroup/metadata/v2/barcode1/1/' + library, json=upsert)
+    js = r.json()
+    assert js == {}
+    query = {'library_name': library}
+    r = requests.post(clio_http_uri + '/readgroup/query/v2', json=query)
+    js = r.json()
+    assert len(js) == 1
+    assert js[0] == {
+        'flowcell_barcode': 'barcode1',
+        'lane': 1,
+        'library_name': library,
+        'project': 'testProject',
+    }
+
+
 if __name__ == '__main__':
     test_wait_for_clio()
     test_version()
@@ -195,4 +212,5 @@ if __name__ == '__main__':
     test_authorization()
     test_read_group_metadata()
     test_json_schema()
+    test_read_group_metadata_v2()
     print('tests passed')

@@ -5,7 +5,10 @@ import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.SearchDAO
 import org.broadinstitute.clio.server.model._
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.generic.SameFieldsTypeConverter
+import org.broadinstitute.clio.util.generic.{
+  CaseClassTypeConverter,
+  SameFieldsTypeConverter
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -26,6 +29,19 @@ class ReadGroupService private (
     )
   }
 
+  def upsertMetadataV2(
+    transferKey: TransferReadGroupV2Key,
+    transferMetadata: TransferReadGroupV1Metadata
+  ): Future[Unit] = {
+    SearchService.upsertMetadata(
+      transferKey,
+      transferMetadata,
+      ReadGroupService.ConverterV2Key,
+      ReadGroupService.ConverterV1Metadata,
+      searchDAO.updateReadGroupMetadata
+    )
+  }
+
   def queryMetadata(
     transferInput: TransferReadGroupV1QueryInput
   ): Future[Seq[TransferReadGroupV1QueryOutput]] = {
@@ -33,6 +49,17 @@ class ReadGroupService private (
       transferInput,
       ReadGroupService.ConverterV1QueryInput,
       ReadGroupService.ConverterV1QueryOutput,
+      searchDAO.queryReadGroup
+    )
+  }
+
+  def queryMetadataV2(
+    transferInput: TransferReadGroupV2QueryInput
+  ): Future[Seq[TransferReadGroupV2QueryOutput]] = {
+    SearchService.queryMetadata(
+      transferInput,
+      ReadGroupService.ConverterV2QueryInput,
+      ReadGroupService.ConverterV2QueryOutput,
       searchDAO.queryReadGroup
     )
   }
@@ -49,7 +76,9 @@ object ReadGroupService {
   }
 
   private[service] val ConverterV1Key =
-    SameFieldsTypeConverter[TransferReadGroupV1Key, ModelReadGroupKey]
+    CaseClassTypeConverter[TransferReadGroupV1Key, ModelReadGroupKey] {
+      _.updated("location", "Unknown")
+    }
 
   private[service] val ConverterV1Metadata =
     SameFieldsTypeConverter[
@@ -57,15 +86,30 @@ object ReadGroupService {
       ModelReadGroupMetadata
     ]
 
+  private[service] val ConverterV2Key =
+    SameFieldsTypeConverter[TransferReadGroupV2Key, ModelReadGroupKey]
+
   private[service] val ConverterV1QueryInput =
-    SameFieldsTypeConverter[
+    CaseClassTypeConverter[
       TransferReadGroupV1QueryInput,
+      ModelReadGroupQueryInput
+    ] { _.filterKeys(_ != "location") }
+
+  private[service] val ConverterV1QueryOutput =
+    CaseClassTypeConverter[
+      ModelReadGroupQueryOutput,
+      TransferReadGroupV1QueryOutput
+    ] { _.filterKeys(_ != "location") }
+
+  private[service] val ConverterV2QueryInput =
+    SameFieldsTypeConverter[
+      TransferReadGroupV2QueryInput,
       ModelReadGroupQueryInput
     ]
 
-  private[service] val ConverterV1QueryOutput =
+  private[service] val ConverterV2QueryOutput =
     SameFieldsTypeConverter[
       ModelReadGroupQueryOutput,
-      TransferReadGroupV1QueryOutput
+      TransferReadGroupV2QueryOutput
     ]
 }

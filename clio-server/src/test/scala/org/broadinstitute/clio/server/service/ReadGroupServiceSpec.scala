@@ -35,7 +35,7 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
       memorySearchDAO.updateReadGroupMetadataCalls should be(
         Seq(
           (
-            ModelReadGroupKey("barcode1", 2, "library3"),
+            ModelReadGroupKey("barcode1", 2, "library3", "Unknown"),
             ModelReadGroupMetadata(
               analysisType = None,
               baitIntervals = None,
@@ -93,8 +93,9 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
           ModelReadGroupQueryInput(
             flowcellBarcode = None,
             lane = None,
-            lcSet = None,
             libraryName = None,
+            location = None,
+            lcSet = None,
             project = Option("testProject"),
             runDateEnd = None,
             runDateStart = None,

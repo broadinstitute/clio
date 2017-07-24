@@ -4,7 +4,8 @@ import java.time.OffsetDateTime
 
 case class ModelReadGroupKey(flowcellBarcode: String,
                              lane: Int,
-                             libraryName: String)
+                             libraryName: String,
+                             location: String)
 
 case class ModelReadGroupMetadata(analysisType: Option[String],
                                   baitIntervals: Option[String],
@@ -40,22 +41,24 @@ case class ModelReadGroupMetadata(analysisType: Option[String],
 
 case class ModelReadGroupQueryInput(flowcellBarcode: Option[String],
                                     lane: Option[Int],
-                                    lcSet: Option[String],
                                     libraryName: Option[String],
+                                    location: Option[String],
+                                    lcSet: Option[String],
                                     project: Option[String],
                                     runDateEnd: Option[OffsetDateTime],
                                     runDateStart: Option[OffsetDateTime],
                                     sampleAlias: Option[String])
 
-case class ModelReadGroupQueryOutput(analysisType: Option[String],
+case class ModelReadGroupQueryOutput(flowcellBarcode: String,
+                                     lane: Int,
+                                     libraryName: String,
+                                     location: String,
+                                     analysisType: Option[String],
                                      baitIntervals: Option[String],
                                      dataType: Option[String],
-                                     flowcellBarcode: String,
                                      individualAlias: Option[String],
                                      initiative: Option[String],
-                                     lane: Int,
                                      lcSet: Option[String],
-                                     libraryName: String,
                                      libraryType: Option[String],
                                      machineName: Option[String],
                                      molecularBarcodeName: Option[String],

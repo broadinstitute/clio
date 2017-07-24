@@ -20,7 +20,7 @@ class ReadGroupElasticsearchDAOSpec
   }
 
   it should "updateReadGroupMetadata" in {
-    val key = ModelReadGroupKey("barcodeURGM1", 2, "library3")
+    val key = ModelReadGroupKey("barcodeURGM1", 2, "library3", "GCP")
     val metadata = ModelReadGroupMetadata(
       analysisType = None,
       baitIntervals = None,
@@ -64,7 +64,7 @@ class ReadGroupElasticsearchDAOSpec
   it should "queryReadGroup" in {
     val id = UUID.randomUUID.toString.replaceAll("-", "")
     val library = "library" + id
-    val key = ModelReadGroupKey("barcodeQRG1", 2, library)
+    val key = ModelReadGroupKey("barcodeQRG1", 2, library, "OnPrem")
     val metadata = ModelReadGroupMetadata(
       analysisType = None,
       baitIntervals = None,
@@ -101,8 +101,9 @@ class ReadGroupElasticsearchDAOSpec
     val queryInput = ModelReadGroupQueryInput(
       flowcellBarcode = None,
       lane = None,
-      lcSet = None,
       libraryName = Option(library),
+      location = None,
+      lcSet = None,
       project = None,
       runDateEnd = None,
       runDateStart = None,
@@ -115,15 +116,16 @@ class ReadGroupElasticsearchDAOSpec
       queryOutputs should be(
         Seq(
           ModelReadGroupQueryOutput(
+            flowcellBarcode = "barcodeQRG1",
+            lane = 2,
+            libraryName = library,
+            location = "OnPrem",
             analysisType = None,
             baitIntervals = None,
             dataType = None,
-            flowcellBarcode = "barcodeQRG1",
             individualAlias = None,
             initiative = None,
-            lane = 2,
             lcSet = None,
-            libraryName = library,
             libraryType = None,
             machineName = None,
             molecularBarcodeName = None,
