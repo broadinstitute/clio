@@ -66,6 +66,9 @@ class ReadGroupService private (
 
   def querySchema(): Future[Json] =
     SchemaService.readGroupSchema
+
+  def querySchemaV2(): Future[Json] =
+    SchemaService.readGroupSchemaV2
 }
 
 object ReadGroupService {

@@ -29,7 +29,7 @@ def test_wait_for_clio():
             js = r.json()
             clio_status = js['clio']
             search_status = js['search']
-            if clio_status == 'Started' and search_status == 'OK':
+            if clio_status == 'Started' : # and search_status == 'OK':
                 print("connected to clio.")
                 return
         except requests.exceptions.RequestException:
@@ -78,15 +78,16 @@ def test_read_group_mapping():
     mappings = js['read_group']['mappings']['default']
     assert mappings['dynamic'] == 'false'
     expected_fields = {
+        'flowcell_barcode': 'keyword',
+        'lane': 'integer',
+        'library_name': 'keyword',
+        'location' : 'keyword',
         'analysis_type': 'keyword',
         'bait_intervals': 'keyword',
         'data_type': 'keyword',
-        'flowcell_barcode': 'keyword',
         'individual_alias': 'keyword',
         'initiative': 'keyword',
-        'lane': 'integer',
         'lc_set': 'keyword',
-        'library_name': 'keyword',
         'library_type': 'keyword',
         'machine_name': 'keyword',
         'molecular_barcode_name': 'keyword',
@@ -146,21 +147,43 @@ def test_authorization():
 
 def test_read_group_metadata():
     id = str(uuid.uuid4()).replace('-', '')
-    library = 'library' + id
-    upsert = {'project': 'testProject'}
-    r = requests.post(clio_http_uri + '/readgroup/metadata/v1/barcode1/1/' + library, json=upsert)
-    js = r.json()
-    assert js == {}
-    query = {'library_name': library}
-    r = requests.post(clio_http_uri + '/readgroup/query/v1', json=query)
-    js = r.json()
-    assert len(js) == 1
-    assert js[0] == {
+    expected = {
         'flowcell_barcode': 'barcode1',
         'lane': 1,
-        'library_name': library,
+        'library_name': 'library' + id,
+        'project': 'testProject'
+    }
+    upsert = {'project' : expected['project']}
+    suffix = '/readgroup/metadata/v1/barcode1/1/' + expected['library_name']
+    upsertResponse = requests.post(clio_http_uri + suffix, json=upsert)
+    assert upsertResponse.json() == {}
+    query = {'library_name': expected['library_name']}
+    queryResponse = requests.post(clio_http_uri + '/readgroup/query/v1', json=query)
+    js = queryResponse.json()
+    assert len(js) == 1
+    assert js[0] == expected
+
+
+def test_read_group_metadata_v2():
+    id = str(uuid.uuid4()).replace('-', '')
+    expected = {
+        'flowcell_barcode': 'barcode1',
+        'lane': 1,
+        'library_name': 'library' + id,
+        'location' : 'GCS',
         'project': 'testProject',
     }
+    upsert = {'project': expected['project']}
+    suffix = ('/readgroup/metadata/v2/barcode1/1/'
+              + expected['library_name'] + "/"
+              + expected['location'])
+    upsertResponse = requests.post(clio_http_uri + suffix, json=upsert)
+    assert upsertResponse.json() == {}
+    query = {'library_name': library}
+    queryResponse = requests.post(clio_http_uri + '/readgroup/query/v2', json=query)
+    js = queryResponse.json()
+    assert len(js) == 1
+    assert js[0] == expected
 
 
 # I don't know how to derive the required fields.
@@ -174,11 +197,33 @@ def test_json_schema():
                     'date':    {"type": "string" , "format": "date-time"} }
         response = requests.get(elasticsearch_http_uri + '/read_group/_mapping/default')
         mapping = response.json()['read_group']['mappings']['default']['properties']
+        del mapping['location']
+        properties = { key: schemas[value['type']] for key, value in mapping.items() }
+        result = { 'type': 'object',
+                   'required': [ 'flowcell_barcode', 'lane', 'library_name' ],
+                   'properties': properties }
+        return result
+    response = requests.get(clio_http_uri + '/readgroup/schema/v1')
+    result = response.json()
+    assert result == expected()
+
+
+# I don't know how to derive the required fields.
+#
+def test_json_schema_v2():
+    def expected():
+        schemas = { 'keyword': {"type": "string" },
+                    'boolean': {"type": "boolean"},
+                    'integer': {"type": "integer", "format": "int32"},
+                    'long':    {"type": "integer", "format": "int64"},
+                    'date':    {"type": "string" , "format": "date-time"} }
+        response = requests.get(elasticsearch_http_uri + '/read_group/_mapping/default')
+        mapping = response.json()['read_group']['mappings']['default']['properties']
         properties = { key: schemas[value['type']] for key, value in mapping.items() }
         return { 'type': 'object',
-                 'required': [ 'flowcell_barcode', 'lane', 'library_name' ],
+                 'required': [ 'flowcell_barcode', 'lane', 'library_name', 'location'],
                  'properties': properties }
-    response = requests.get(clio_http_uri + '/readgroup/schema/v1')
+    response = requests.get(clio_http_uri + '/readgroup/schema/v2')
     result = response.json()
     assert result == expected()
 
@@ -187,9 +232,9 @@ def test_read_group_metadata_v2():
     id = str(uuid.uuid4()).replace('-', '')
     library = 'library' + id
     upsert = {'project': 'testProject'}
-    r = requests.post(clio_http_uri + '/readgroup/metadata/v2/barcode1/1/' + library, json=upsert)
-    js = r.json()
-    assert js == {}
+    suffix = '/readgroup/metadata/v2/barcode1/1/' + library + "/GCS"
+    r = requests.post(clio_http_uri + suffix, json=upsert)
+    assert r.json() == {}
     query = {'library_name': library}
     r = requests.post(clio_http_uri + '/readgroup/query/v2', json=query)
     js = r.json()
@@ -198,6 +243,7 @@ def test_read_group_metadata_v2():
         'flowcell_barcode': 'barcode1',
         'lane': 1,
         'library_name': library,
+        'location' : 'GCS',
         'project': 'testProject',
     }
 
@@ -211,6 +257,7 @@ if __name__ == '__main__':
     test_read_group_mapping()
     test_authorization()
     test_read_group_metadata()
-    test_json_schema()
     test_read_group_metadata_v2()
+    test_json_schema()
+    test_json_schema_v2()
     print('tests passed')
