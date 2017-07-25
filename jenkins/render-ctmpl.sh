@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This script was copied from the gotc project.
+
 progname=`basename $0`
 
 # set defaults

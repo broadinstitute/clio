@@ -7,26 +7,26 @@ set -ex
 PROG_NAME=$(basename $0)
 CLIO_DIR=$(cd $(dirname $(dirname $0)) && pwd)
 
-# This script is run on jenkins server in order to perform all the necessary
-# steps deploy a clio-server instance to a host.
+# Run this script on Jenkins to deploy Clio to a host.
 
-# For instance:
-#   build and push a docker image for clio-server
-#   gather configurations associated with app to deploy
-#   render any ctmpls
-#   copy configs to node
-#   stop any currently running container
-#   re-start container using new configs
+# Steps:
+#   Build and push a docker image for clio-server
+#   Gather configurations associated with app to deploy
+#   Render any ctmpls
+#   Copy configs to node
+#   Stop any currently running container
+#   Re-start container using new configs
+#   Verify that the new container reports the correct version
 
-# the script expects the following ENV vars set to non-null values
-#  ENV: environment to deploy to
-#  CLIO_HOST: hostname to deploy clio to
+# The script expects the following ENV vars set to non-null values
+#   ENV: environment to deploy to, one of "dev", "staging", or "prod"
+#   CLIO_HOST: hostname to deploy clio to
 
-# the script also supports the optional ENV vars
+# The script also supports the optional ENV vars
 #  DOCKER_TAG: docker tag to apply to the built and deployed instance
 #              if not specified, the default SNAP version is used
-#  RUN_TESTS: if "false", unit tests will not be run as part of building
-#             the docker image
+#  RUN_TESTS: if set to "false", unit tests will not be run as part of
+#             building the docker image
 
 # verify required vars are set to actual values
 if [ -z "$ENV" ]
@@ -57,7 +57,7 @@ elif [ -f ${HOME}/.vault-token ]
 then
    TOKEN_FILE="${HOME}/.vault-token"
 else
-   echo "Missing VAULT TOKEN file - Exitting"
+   echo "Missing VAULT TOKEN file - Exiting"
    exit 1
 fi
    
@@ -82,7 +82,7 @@ CONTAINER_CLIO_PORT=${HOST_CLIO_PORT}
 # SSH options
 SSH_USER=jenkins
 SSHOPTS="-o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o StrictHostKeyChecking=no"
-SSHCMD="ssh $SSHOPTS"
+SSHCMD="ssh $SSHOPTS ${SSH_USER}@${CLIO_HOST}"
 SCPCMD="scp $SSHOPTS"
 
 # sbt command to disable tests in the docker build
@@ -110,28 +110,21 @@ fi
 docker push broadinstitute/clio-server:${DOCKER_TAG}
 
 # TMPDIR
-TMPDIR=$(mktemp -d ${PROG_NAME}-XXXXXX)
+TMPDIR=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
 # temporary env file for rendering ctmpls
 CTMPL_ENV_FILE="${TMPDIR}/env-vars.txt"
 
 # populate temp env.txt file with necessary environment
-echo "ENV=${ENV}" >> ${CTMPL_ENV_FILE}
-echo "DOCKER_TAG=${DOCKER_TAG}" >> ${CTMPL_ENV_FILE}
-echo "APP_DIR=${APP_DIR}" >> ${CTMPL_ENV_FILE}
-echo "CLIO_CONF_DIR=${CLIO_CONF_DIR}" >> ${CTMPL_ENV_FILE}
-echo "CLIO_LOG_DIR=${CLIO_LOG_DIR}" >> ${CTMPL_ENV_FILE}
-echo "CLIO_APP_CONF=${CLIO_APP_CONF}" >> ${CTMPL_ENV_FILE}
-echo "CLIO_LOGBACK_CONF=${CLIO_LOGBACK_CONF}" >> ${CTMPL_ENV_FILE}
-echo "CLIO_ENV_FILE=${CLIO_ENV_FILE}" >> ${CTMPL_ENV_FILE}
-echo "HOST_CLIO_PORT=${HOST_CLIO_PORT}" >> ${CTMPL_ENV_FILE}
-echo "CONTAINER_CLIO_PORT=${CONTAINER_CLIO_PORT}" >> ${CTMPL_ENV_FILE}
+for var in "ENV" "DOCKER_TAG" "APP_DIR" "CLIO_CONF_DIR" "CLIO_LOG_DIR" "CLIO_APP_CONF" "CLIO_LOGBACK_CONF" "CLIO_ENV_FILE" "HOST_CLIO_PORT" "CONTAINER_CLIO_PORT"; do
+    echo "${var}=${!var}" >> ${CTMPL_ENV_FILE}
+done
 
 # copy configs to temp dir
 cp ${CONFIG_DIR}/* ${TMPDIR}/
 
 # render all ctmpls
 docker run --rm \
-    -v ${CLIO_DIR}/${TMPDIR}:/working \
+    -v ${TMPDIR}:/working \
     -v ${CLIO_DIR}/jenkins:/scripts \
     -v ${TOKEN_FILE}:/root/.vault-token:ro \
     --env-file="${CTMPL_ENV_FILE}" \
@@ -140,24 +133,24 @@ rm -f ${CTMPL_ENV_FILE}
 
 stopcontainer() {
     # stop running container on host
-    ${SSHCMD} ${SSH_USER}@${CLIO_HOST} "test -f ${APP_DIR}/docker-compose.yml && docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml stop || echo"
+    ${SSHCMD} "test -f ${APP_DIR}/docker-compose.yml && docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml stop || echo"
 
     # docker-compose rm -f
-    ${SSHCMD} ${SSH_USER}@${CLIO_HOST} "test -f ${APP_DIR}/docker-compose.yml && docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml rm -f || echo"
+    ${SSHCMD} "test -f ${APP_DIR}/docker-compose.yml && docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml rm -f || echo"
 }
 
 startcontainer() {
     # docker-compose pull
-    ${SSHCMD} ${SSH_USER}@${CLIO_HOST} "docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml pull"
+    ${SSHCMD} "docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml pull"
 
     # docker-compose up -d
-    ${SSHCMD} ${SSH_USER}@${CLIO_HOST} "docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml up -d"
+    ${SSHCMD} "docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml up -d"
 }
 
 # copy configs to temp directory on host
 # rm -rf /app.new
 # mkdir /app.new
-${SSHCMD} ${SSH_USER}@${CLIO_HOST} "sudo rm -rf ${APP_DIR}.new && sudo mkdir ${APP_DIR}.new && sudo chgrp ${SSH_USER} ${APP_DIR}.new && sudo chmod g+w ${APP_DIR}.new"
+${SSHCMD} "sudo rm -rf ${APP_DIR}.new && sudo mkdir ${APP_DIR}.new && sudo chgrp ${SSH_USER} ${APP_DIR}.new && sudo chmod g+w ${APP_DIR}.new"
 
 # copy configs to /app.new
 ${SCPCMD} -r ${TMPDIR}/* ${SSH_USER}@${CLIO_HOST}:${APP_DIR}.new/
@@ -168,10 +161,10 @@ stopcontainer
 # move /app.old to /app.old.old
 # move /app to /app.old
 # move /app.new to /app
-${SSHCMD} ${SSH_USER}@${CLIO_HOST} <<EOF
-([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}.old.old) && \
-([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_DIR}.old) && \
-sudo mv ${APP_DIR}.new ${APP_DIR}
+${SSHCMD} <<-EOF
+    ([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}.old.old) &&
+    ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_DIR}.old) &&
+    sudo mv ${APP_DIR}.new ${APP_DIR}
 EOF
 
 # start running the new container
@@ -186,7 +179,7 @@ VERSION=$(curl -s "${CLIO_HOST}:${HOST_CLIO_PORT}/version" | python -c "import s
 
 if [[ "$STATUS" == "OK" && "$VERSION" == "$DOCKER_TAG" ]]; then
     # rm /app.old.old
-    ${SSHCMD} ${SSH_USER}@${CLIO_HOST} "sudo rm -rf ${APP_DIR}.old.old"
+    ${SSHCMD} "sudo rm -rf ${APP_DIR}.old.old"
     exit 0
 else
     # roll back the deployment
@@ -196,10 +189,10 @@ else
     # rm /app
     # move /app.old to /app
     # move /app.old.old to /app.old
-    ${SSHCMD} ${SSH_USER}@${CLIO_HOST} <<EOF
-sudo rm -rf ${APP_DIR} && \
-([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}) && \
-([ ! -d ${APP_DIR}.old.old ] || sudo mv ${APP_DIR}.old.old ${APP_DIR}.old)
+    ${SSHCMD} <<-EOF
+        sudo rm -rf ${APP_DIR} &&
+        ([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}) &&
+        ([ ! -d ${APP_DIR}.old.old ] || sudo mv ${APP_DIR}.old.old ${APP_DIR}.old)
 EOF
 
     # start running the old container
