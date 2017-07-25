@@ -27,9 +27,10 @@ def test_wait_for_clio():
         try:
             r = requests.get(clio_http_uri + '/health')
             js = r.json()
+            print("js: ", js)
             clio_status = js['clio']
             search_status = js['search']
-            if clio_status == 'Started' : # and search_status == 'OK':
+            if clio_status == 'Started' and search_status == 'OK':
                 print("connected to clio.")
                 return
         except requests.exceptions.RequestException:
@@ -179,7 +180,7 @@ def test_read_group_metadata_v2():
               + expected['location'])
     upsertResponse = requests.post(clio_http_uri + suffix, json=upsert)
     assert upsertResponse.json() == {}
-    query = {'library_name': library}
+    query = {'library_name': expected['library_name']}
     queryResponse = requests.post(clio_http_uri + '/readgroup/query/v2', json=query)
     js = queryResponse.json()
     assert len(js) == 1
@@ -226,26 +227,6 @@ def test_json_schema_v2():
     response = requests.get(clio_http_uri + '/readgroup/schema/v2')
     result = response.json()
     assert result == expected()
-
-
-def test_read_group_metadata_v2():
-    id = str(uuid.uuid4()).replace('-', '')
-    library = 'library' + id
-    upsert = {'project': 'testProject'}
-    suffix = '/readgroup/metadata/v2/barcode1/1/' + library + "/GCS"
-    r = requests.post(clio_http_uri + suffix, json=upsert)
-    assert r.json() == {}
-    query = {'library_name': library}
-    r = requests.post(clio_http_uri + '/readgroup/query/v2', json=query)
-    js = r.json()
-    assert len(js) == 1
-    assert js[0] == {
-        'flowcell_barcode': 'barcode1',
-        'lane': 1,
-        'library_name': library,
-        'location' : 'GCS',
-        'project': 'testProject',
-    }
 
 
 if __name__ == '__main__':
