@@ -131,8 +131,8 @@ cp ${CONFIG_DIR}/* ${TMPDIR}/
 
 # render all ctmpls
 docker run --rm \
-    -v ${PWD}/${TMPDIR}:/working \
-    -v ${PWD}/jenkins:/scripts \
+    -v ${CLIO_DIR}/${TMPDIR}:/working \
+    -v ${CLIO_DIR}/jenkins:/scripts \
     -v ${TOKEN_FILE}:/root/.vault-token:ro \
     --env-file="${CTMPL_ENV_FILE}" \
     broadinstitute/dsde-toolbox:latest /scripts/render-ctmpl.sh
