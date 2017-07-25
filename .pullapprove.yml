@@ -24,7 +24,7 @@ groups:
   staging-reviewers:
     required: 2
     teams:
-      -dsde-pipelines-developers
+      - dsde-pipelines-developers
     conditions:
       branches:
         - staging
