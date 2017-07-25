@@ -4,6 +4,7 @@ import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
 import org.broadinstitute.clio.server.model.{
   ModelReadGroupKey,
+  ModelReadGroupLocation,
   ModelReadGroupMetadata,
   ModelReadGroupQueryInput
 }
@@ -35,7 +36,12 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
       memorySearchDAO.updateReadGroupMetadataCalls should be(
         Seq(
           (
-            ModelReadGroupKey("barcode1", 2, "library3", "Unknown"),
+            ModelReadGroupKey(
+              "barcode1",
+              2,
+              "library3",
+              ModelReadGroupLocation.unknown._2
+            ),
             ModelReadGroupMetadata(
               analysisType = None,
               baitIntervals = None,

@@ -2,6 +2,14 @@ package org.broadinstitute.clio.server.model
 
 import java.time.OffsetDateTime
 
+object ModelReadGroupLocation {
+  sealed abstract class Place(override val toString: String)
+  case object Gcp extends Place("GCP")
+  case object OnPrem extends Place("OnPrem")
+  val key = "location"
+  val unknown = (key, "unknown")
+}
+
 case class ModelReadGroupKey(flowcellBarcode: String,
                              lane: Int,
                              libraryName: String,
