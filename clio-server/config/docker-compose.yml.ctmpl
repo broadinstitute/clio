@@ -1,0 +1,18 @@
+{{with $app_dir := env "APP_DIR"}}
+{{with $conf_dir := env "CLIO_CONF_DIR"}}
+{{with $app_conf := env "CLIO_APP_CONF"}}
+{{with $logback_conf := env "CLIO_LOGBACK_CONF"}}
+{{with $env_file := env "CLIO_ENV_FILE"}}
+app:
+  image: broadinstitute/clio-server:{{env "DOCKER_TAG"}}
+  env_file:
+    - {{$app_dir}}/{{$env_file}}
+  ports:
+    - "{{env "HOST_CLIO_PORT"}}:{{env "CONTAINER_CLIO_PORT"}}"
+  volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - {{$app_dir}}/{{$app_conf}}:{{$conf_dir}}/{{$app_conf}}:ro
+    - {{$app_dir}}/{{$logback_conf}}:{{$conf_dir}}/{{$logback_conf}}:ro
+    - /local/clio_logs:{{env "CLIO_LOG_DIR"}}
+  restart: always
+{{end}}{{end}}{{end}}{{end}}{{end}}
