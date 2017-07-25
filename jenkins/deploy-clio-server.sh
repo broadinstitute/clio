@@ -174,8 +174,8 @@ startcontainer
 sleep 10
 
 # hit the health and version endpoints to check the deployment status
-STATUS=$(curl -s "${CLIO_HOST}:${HOST_CLIO_PORT}/health" | python -c "import sys, json; print json.load(sys.stdin)['search']" || echo)
-VERSION=$(curl -s "${CLIO_HOST}:${HOST_CLIO_PORT}/version" | python -c "import sys, json; print json.load(sys.stdin)['version']" || echo)
+STATUS=$(curl -s "${CLIO_HOST}:${HOST_CLIO_PORT}/health" | jq -r .search)
+VERSION=$(curl -s "${CLIO_HOST}:${HOST_CLIO_PORT}/version" | jq -r .version)
 
 if [[ "$STATUS" == "OK" && "$VERSION" == "$DOCKER_TAG" ]]; then
     # rm /app.old.old
