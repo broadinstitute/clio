@@ -20,16 +20,23 @@ clio_http_uri = get_environ_uri('CLIO', port_default=8080)
 elasticsearch_http_uri = get_environ_uri('ELASTICSEARCH', port_default=9200)
 
 
-def test_wait_for_clio():
+def get_cluster_health():
+    response = requests.get(elasticsearch_http_uri + "/_cluster/health")
+    return response.json()['status']
+
+
+def test_wait_for_clio(allowYellowHealth=False):
     count = 0
     print("waiting for " + clio_http_uri)
     while count < 20:
         try:
             r = requests.get(clio_http_uri + '/health')
             js = r.json()
-            print("js: ", js)
             clio_status = js['clio']
             search_status = js['search']
+            if allowYellowHealth and 'yellow' == get_cluster_health():
+                print("WARNING: test_wait_for_clio() allowing yellow cluster health.")
+                search_status = 'OK'
             if clio_status == 'Started' and search_status == 'OK':
                 print("connected to clio.")
                 return
@@ -46,11 +53,15 @@ def test_version():
     assert 'version' in js
 
 
-def test_health():
+def test_health(allowYellowHealth=False):
     r = requests.get(clio_http_uri + '/health')
     js = r.json()
     assert js['clio'] == 'Started'
-    assert js['search'] == 'OK'
+    if allowYellowHealth:
+        print("WARNING: test_health() allowing yellow cluster health.")
+        assert 'yellow' == get_cluster_health()
+    else:
+        assert js['search'] == 'OK'
 
 
 def test_bad_method():
@@ -229,10 +240,13 @@ def test_json_schema_v2():
     assert result == expected()
 
 
+# Allow yellow Elasticsearch cluster health when running outside of
+# the standard dockerized test.
+#
 if __name__ == '__main__':
-    test_wait_for_clio()
+    test_wait_for_clio(True)
     test_version()
-    test_health()
+    test_health(True)
     test_bad_method()
     test_bad_path()
     test_read_group_mapping()
