@@ -127,7 +127,7 @@ object SchemaService {
       * a JSON schema for a shapeless HList representing a class
       *
       * @param witness is a witness for the field name in the head
-      * @param tail is the tail of the
+      * @param tail is the tail of the HList representation of A
       * @tparam Key is a singleton type for the name of the head field
       * @tparam Head is the type of the head field
       * @tparam Tail is the type of the rest of the fields after head
