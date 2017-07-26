@@ -2,18 +2,12 @@ package org.broadinstitute.clio.server.model
 
 import java.time.OffsetDateTime
 
-object ModelReadGroupLocation {
-  sealed class Place(override val toString: String)
-  case object Gcp extends Place("GCP")
-  case object OnPrem extends Place("OnPrem")
-  val key = "location"
-  val unknown = (key, "unknown")
-}
+import org.broadinstitute.clio.transfer.model.TransferReadGroupLocation
 
 case class ModelReadGroupKey(flowcellBarcode: String,
                              lane: Int,
                              libraryName: String,
-                             location: String)
+                             location: TransferReadGroupLocation)
 
 case class ModelReadGroupMetadata(analysisType: Option[String],
                                   baitIntervals: Option[String],
@@ -47,20 +41,22 @@ case class ModelReadGroupMetadata(analysisType: Option[String],
                                   ubamPath: Option[String],
                                   ubamSize: Option[Long])
 
-case class ModelReadGroupQueryInput(flowcellBarcode: Option[String],
-                                    lane: Option[Int],
-                                    libraryName: Option[String],
-                                    location: Option[String],
-                                    lcSet: Option[String],
-                                    project: Option[String],
-                                    runDateEnd: Option[OffsetDateTime],
-                                    runDateStart: Option[OffsetDateTime],
-                                    sampleAlias: Option[String])
+case class ModelReadGroupQueryInput(
+  flowcellBarcode: Option[String],
+  lane: Option[Int],
+  libraryName: Option[String],
+  location: Option[TransferReadGroupLocation],
+  lcSet: Option[String],
+  project: Option[String],
+  runDateEnd: Option[OffsetDateTime],
+  runDateStart: Option[OffsetDateTime],
+  sampleAlias: Option[String]
+)
 
 case class ModelReadGroupQueryOutput(flowcellBarcode: String,
                                      lane: Int,
                                      libraryName: String,
-                                     location: String,
+                                     location: TransferReadGroupLocation,
                                      analysisType: Option[String],
                                      baitIntervals: Option[String],
                                      dataType: Option[String],

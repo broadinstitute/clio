@@ -3,6 +3,7 @@ package org.broadinstitute.clio.server.dataaccess
 import java.util.UUID
 
 import org.broadinstitute.clio.server.model._
+import org.broadinstitute.clio.transfer.model._
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
 class ReadGroupElasticsearchDAOSpec
@@ -24,7 +25,7 @@ class ReadGroupElasticsearchDAOSpec
       "barcodeURGM1",
       2,
       "library3",
-      ModelReadGroupLocation.Gcp.toString
+      TransferReadGroupLocation.Gcp
     )
     val metadata = ModelReadGroupMetadata(
       analysisType = None,
@@ -73,7 +74,7 @@ class ReadGroupElasticsearchDAOSpec
       "barcodeQRG1",
       2,
       library,
-      ModelReadGroupLocation.OnPrem.toString
+      TransferReadGroupLocation.OnPrem
     )
     val metadata = ModelReadGroupMetadata(
       analysisType = None,
@@ -129,7 +130,7 @@ class ReadGroupElasticsearchDAOSpec
             flowcellBarcode = "barcodeQRG1",
             lane = 2,
             libraryName = library,
-            location = ModelReadGroupLocation.OnPrem.toString,
+            location = TransferReadGroupLocation.OnPrem,
             analysisType = None,
             baitIntervals = None,
             dataType = None,

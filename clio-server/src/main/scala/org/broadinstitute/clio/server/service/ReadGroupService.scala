@@ -80,7 +80,7 @@ object ReadGroupService {
 
   private[service] val ConverterV1Key =
     CaseClassTypeConverter[TransferReadGroupV1Key, ModelReadGroupKey] {
-      _ + ModelReadGroupLocation.unknown
+      _ + TransferReadGroupLocation.unknown
     }
 
   private[service] val ConverterV1Metadata =
@@ -96,13 +96,13 @@ object ReadGroupService {
     CaseClassTypeConverter[
       TransferReadGroupV1QueryInput,
       ModelReadGroupQueryInput
-    ] { _.filterKeys(_ != ModelReadGroupLocation.key) }
+    ] { _.filterKeys(_ != TransferReadGroupLocation.key) }
 
   private[service] val ConverterV1QueryOutput =
     CaseClassTypeConverter[
       ModelReadGroupQueryOutput,
       TransferReadGroupV1QueryOutput
-    ] { _.filterKeys(_ != ModelReadGroupLocation.key) }
+    ] { _.filterKeys(_ != TransferReadGroupLocation.key) }
 
   private[service] val ConverterV2QueryInput =
     SameFieldsTypeConverter[

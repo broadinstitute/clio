@@ -105,16 +105,17 @@ object SchemaService {
       val aLong = Json.obj(aType("integer"), aFormat("int64"))
       val aTime = Json.obj(aType("string"), aFormat("date-time"))
       fieldType match {
-        case t if t =:= typeOf[Boolean]                => (true, aBoolean)
-        case t if t =:= typeOf[Int]                    => (true, aInt)
-        case t if t =:= typeOf[Long]                   => (true, aLong)
-        case t if t =:= typeOf[String]                 => (true, aString)
-        case t if t =:= typeOf[OffsetDateTime]         => (true, aTime)
-        case t if t =:= typeOf[Option[Boolean]]        => (false, aBoolean)
-        case t if t =:= typeOf[Option[Int]]            => (false, aInt)
-        case t if t =:= typeOf[Option[Long]]           => (false, aLong)
-        case t if t =:= typeOf[Option[String]]         => (false, aString)
-        case t if t =:= typeOf[Option[OffsetDateTime]] => (false, aTime)
+        case t if t =:= typeOf[Boolean]                   => (true, aBoolean)
+        case t if t =:= typeOf[Int]                       => (true, aInt)
+        case t if t =:= typeOf[Long]                      => (true, aLong)
+        case t if t =:= typeOf[String]                    => (true, aString)
+        case t if t =:= typeOf[TransferReadGroupLocation] => (true, aString)
+        case t if t =:= typeOf[OffsetDateTime]            => (true, aTime)
+        case t if t =:= typeOf[Option[Boolean]]           => (false, aBoolean)
+        case t if t =:= typeOf[Option[Int]]               => (false, aInt)
+        case t if t =:= typeOf[Option[Long]]              => (false, aLong)
+        case t if t =:= typeOf[Option[String]]            => (false, aString)
+        case t if t =:= typeOf[Option[OffsetDateTime]]    => (false, aTime)
         case _ =>
           throw new IllegalArgumentException(
             s"No JsonSchema support for $fieldName: $fieldType yet"

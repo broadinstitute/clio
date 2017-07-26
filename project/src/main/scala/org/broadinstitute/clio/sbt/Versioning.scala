@@ -6,11 +6,14 @@ import sbt.Keys._
 import sbt._
 
 /**
-  * Versioning information for builds of clio, based on a dotted version appended with a git hash.
+  * Versioning information for builds of clio, based on a dotted
+  * version appended with a git hash.
   */
 object Versioning {
 
-  /** This version number if this is a release commit, or the upcoming version number if this is a snapshot. */
+  /** This version number if this is a release commit, or the upcoming
+    * version number if this is a snapshot.
+    */
   val ClioVersion = "0.0.1"
 
   /** Generate a version using the first 7 chars of the git hash, or "UNKNOWN". */

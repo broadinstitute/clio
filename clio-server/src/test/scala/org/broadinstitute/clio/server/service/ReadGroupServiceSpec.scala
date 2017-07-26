@@ -2,17 +2,8 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
-import org.broadinstitute.clio.server.model.{
-  ModelReadGroupKey,
-  ModelReadGroupLocation,
-  ModelReadGroupMetadata,
-  ModelReadGroupQueryInput
-}
-import org.broadinstitute.clio.transfer.model.{
-  TransferReadGroupV1Key,
-  TransferReadGroupV1Metadata,
-  TransferReadGroupV1QueryInput
-}
+import org.broadinstitute.clio.server.model._
+import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
@@ -40,7 +31,7 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
               "barcode1",
               2,
               "library3",
-              ModelReadGroupLocation.unknown._2
+              TransferReadGroupLocation.unknown._2
             ),
             ModelReadGroupMetadata(
               analysisType = None,

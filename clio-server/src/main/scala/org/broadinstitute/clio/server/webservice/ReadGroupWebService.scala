@@ -5,13 +5,7 @@ import akka.http.scaladsl.server._
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport._
 import org.broadinstitute.clio.server.service.ReadGroupService
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
-import org.broadinstitute.clio.transfer.model.{
-  TransferReadGroupV1Key,
-  TransferReadGroupV2Key,
-  TransferReadGroupV1Metadata,
-  TransferReadGroupV1QueryInput,
-  TransferReadGroupV2QueryInput
-}
+import org.broadinstitute.clio.transfer.model._
 
 trait ReadGroupWebService {
 
@@ -45,7 +39,7 @@ trait ReadGroupWebService {
       flowcellBarcode <- pathPrefix(Segment)
       lane <- pathPrefix(IntNumber)
       libraryName <- pathPrefix(Segment)
-      location <- pathPrefix(Segment)
+      location <- pathPrefix(TransferReadGroupLocation.pathMatcher)
     } yield
       TransferReadGroupV2Key(flowcellBarcode, lane, libraryName, location)
   }
