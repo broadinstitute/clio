@@ -3,7 +3,7 @@ package org.broadinstitute.clio.server.model
 import java.time.OffsetDateTime
 
 object ModelReadGroupLocation {
-  sealed abstract class Place(override val toString: String)
+  sealed class Place(override val toString: String)
   case object Gcp extends Place("GCP")
   case object OnPrem extends Place("OnPrem")
   val key = "location"
