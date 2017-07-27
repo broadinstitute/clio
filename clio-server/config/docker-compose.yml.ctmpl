@@ -5,6 +5,10 @@
 {{with $env_file := env "CLIO_ENV_FILE"}}
 app:
   image: broadinstitute/clio-server:{{env "DOCKER_TAG"}}
+  logging:
+    driver: syslog
+    options:
+        tag: "clio-server"
   env_file:
     - {{$app_dir}}/{{$env_file}}
   ports:
@@ -13,6 +17,22 @@ app:
     - /etc/localtime:/etc/localtime:ro
     - {{$app_dir}}/{{$app_conf}}:{{$conf_dir}}/{{$app_conf}}:ro
     - {{$app_dir}}/{{$logback_conf}}:{{$conf_dir}}/{{$logback_conf}}:ro
-    - /local/clio_logs:{{env "CLIO_LOG_DIR"}}
   restart: always
+  links:
+    - logger
+  depends_on:
+    - logger
+  volumes_from:
+    - logger
+
+logger:
+  image: broadinstitute/fluentd-gcp:latest
+  expose:
+    - 5140/tcp
+    - 5140/udp
+  volumes:
+    - /app/config.d:/etc/fluent/config.d:ro
+    - /local/clio_logs:{{env "CLIO_LOG_DIR"}}:rw
+  restart: always
+
 {{end}}{{end}}{{end}}{{end}}{{end}}
