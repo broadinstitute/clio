@@ -1,7 +1,7 @@
 {{with $log_dir := env "CLIO_LOG_DIR"}}
 <source>
   @type tail
-  path {{$log_dir}}
+  path {{$log_dir}}/clio.log
   pos_file {{$log_dir}}/pos/clio.pos
   limit_recently_modified 24h
   tag clio
