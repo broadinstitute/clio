@@ -3,7 +3,7 @@ package org.broadinstitute.clio.server.service
 import java.time.OffsetDateTime
 
 import io.circe._
-import org.broadinstitute.clio.transfer.model.TransferReadGroupV1QueryOutput
+import org.broadinstitute.clio.transfer.model._
 import shapeless._
 import shapeless.labelled._
 
@@ -105,16 +105,17 @@ object SchemaService {
       val aLong = Json.obj(aType("integer"), aFormat("int64"))
       val aTime = Json.obj(aType("string"), aFormat("date-time"))
       fieldType match {
-        case t if t =:= typeOf[Boolean]                => (true, aBoolean)
-        case t if t =:= typeOf[Int]                    => (true, aInt)
-        case t if t =:= typeOf[Long]                   => (true, aLong)
-        case t if t =:= typeOf[String]                 => (true, aString)
-        case t if t =:= typeOf[OffsetDateTime]         => (true, aTime)
-        case t if t =:= typeOf[Option[Boolean]]        => (false, aBoolean)
-        case t if t =:= typeOf[Option[Int]]            => (false, aInt)
-        case t if t =:= typeOf[Option[Long]]           => (false, aLong)
-        case t if t =:= typeOf[Option[String]]         => (false, aString)
-        case t if t =:= typeOf[Option[OffsetDateTime]] => (false, aTime)
+        case t if t =:= typeOf[Boolean]                   => (true, aBoolean)
+        case t if t =:= typeOf[Int]                       => (true, aInt)
+        case t if t =:= typeOf[Long]                      => (true, aLong)
+        case t if t =:= typeOf[String]                    => (true, aString)
+        case t if t =:= typeOf[TransferReadGroupLocation] => (true, aString)
+        case t if t =:= typeOf[OffsetDateTime]            => (true, aTime)
+        case t if t =:= typeOf[Option[Boolean]]           => (false, aBoolean)
+        case t if t =:= typeOf[Option[Int]]               => (false, aInt)
+        case t if t =:= typeOf[Option[Long]]              => (false, aLong)
+        case t if t =:= typeOf[Option[String]]            => (false, aString)
+        case t if t =:= typeOf[Option[OffsetDateTime]]    => (false, aTime)
         case _ =>
           throw new IllegalArgumentException(
             s"No JsonSchema support for $fieldName: $fieldType yet"
@@ -126,7 +127,7 @@ object SchemaService {
       * a JSON schema for a shapeless HList representing a class
       *
       * @param witness is a witness for the field name in the head
-      * @param tail is the tail of the
+      * @param tail is the tail of the HList representation of A
       * @tparam Key is a singleton type for the name of the head field
       * @tparam Head is the type of the head field
       * @tparam Tail is the type of the rest of the fields after head
@@ -177,6 +178,12 @@ object SchemaService {
     JsonSchema[TransferReadGroupV1QueryOutput].toJson
 
   /**
+    * The JSON schema for a ReadGroup index
+    */
+  lazy val readGroupSchemaJsonV2: Json =
+    JsonSchema[TransferReadGroupV2QueryOutput].toJson
+
+  /**
     * a Future JSON schema for a ReadGroup index
     *
     * @param executionContext is from the webservice
@@ -185,4 +192,14 @@ object SchemaService {
   def readGroupSchema(
     implicit executionContext: ExecutionContext
   ): Future[Json] = Future(readGroupSchemaJson)
+
+  /**
+    * a Future JSON schema for a ReadGroup index
+    *
+    * @param executionContext is from the webservice
+    * @return a marshallable JSON schema for a ReadGroup
+    */
+  def readGroupSchemaV2(
+    implicit executionContext: ExecutionContext
+  ): Future[Json] = Future(readGroupSchemaJsonV2)
 }

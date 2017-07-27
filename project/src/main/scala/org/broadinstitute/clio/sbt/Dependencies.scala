@@ -51,6 +51,10 @@ object Dependencies {
   val ServerDependencies
     : Seq[ModuleID] = ServerMainDependencies ++ ServerTestDependencies
 
+  val TransferModelDependencies: Seq[ModuleID] = Seq(
+    "com.beachape" %% "enumeratum" % EnumeratumVersion
+  )
+
   /** Suppress warning for evicted libraries. */
   val ServerOverrideDependencies: Set[ModuleID] = Set(
     "io.circe" %% "circe-core" % CirceVersion,

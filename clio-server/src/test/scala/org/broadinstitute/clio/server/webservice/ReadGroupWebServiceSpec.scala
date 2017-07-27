@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.webservice
 
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.Json
@@ -20,9 +22,46 @@ class ReadGroupWebServiceSpec
     }
   }
 
+  it should "postMetadataV2 with OnPrem location" in {
+    val webService = new MockReadGroupWebService()
+    Post(
+      "/metadata/v2/barcodeOnPrem/3/libraryOnPrem/OnPrem",
+      Map("project" -> "testOnPremLocation")
+    ) ~> webService.postMetadataV2 ~> check {
+      responseAs[Map[String, String]] should be(empty)
+    }
+  }
+
+  it should "postMetadataV2 with GCP location" in {
+    val webService = new MockReadGroupWebService()
+    Post(
+      "/metadata/v2/barcodeGCP/4/libraryGCP/GCP",
+      Map("project" -> "testGCPlocation")
+    ) ~> webService.postMetadataV2 ~> check {
+      responseAs[Map[String, String]] should be(empty)
+    }
+  }
+
+  it should "reject postMetadataV2 with BoGuS location" in {
+    val webService = new MockReadGroupWebService()
+    Post(
+      "/metadata/v2/barcodeBoGuS/5/libraryBoGuS/BoGuS",
+      Map("project" -> "testBoGuSlocation")
+    ) ~> Route.seal(webService.postMetadataV2) ~> check {
+      status shouldEqual StatusCodes.NotFound
+    }
+  }
+
   it should "query with an empty request" in {
     val webService = new MockReadGroupWebService()
     Post("/query/v1", Map.empty[String, String]) ~> webService.query ~> check {
+      responseAs[Seq[String]] should be(empty)
+    }
+  }
+
+  it should "queryV2 with an empty request" in {
+    val webService = new MockReadGroupWebService()
+    Post("/query/v2", Map.empty[String, String]) ~> webService.queryV2 ~> check {
       responseAs[Seq[String]] should be(empty)
     }
   }
@@ -34,10 +73,24 @@ class ReadGroupWebServiceSpec
     }
   }
 
+  it should "queryV2 without an empty request" in {
+    val webService = new MockReadGroupWebService()
+    Post("/query/v2", Map("project" -> "testProject")) ~> webService.queryV2 ~> check {
+      responseAs[Seq[String]] should be(empty)
+    }
+  }
+
   it should "return a JSON schema" in {
     val webService = new MockReadGroupWebService()
     Get("/schema/v1") ~> webService.getSchema ~> check {
       responseAs[Json] should be(SchemaService.readGroupSchemaJson)
+    }
+  }
+
+  it should "return a V2 JSON schema" in {
+    val webService = new MockReadGroupWebService()
+    Get("/schema/v2") ~> webService.getSchemaV2 ~> check {
+      responseAs[Json] should be(SchemaService.readGroupSchemaJsonV2)
     }
   }
 }

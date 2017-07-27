@@ -20,7 +20,6 @@ trait ReadGroupElasticsearchDAO extends SearchDAO {
     key: ModelReadGroupKey,
     metadata: ModelReadGroupMetadata
   ): Future[Unit] = {
-
     updateMetadata(
       ElasticsearchIndex.ReadGroup,
       ElasticsearchDocumentMapper.ReadGroup,

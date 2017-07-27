@@ -2,15 +2,18 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import java.time.OffsetDateTime
 
-case class DocumentReadGroup(analysisType: Option[String],
+import org.broadinstitute.clio.transfer.model.TransferReadGroupLocation
+
+case class DocumentReadGroup(flowcellBarcode: String,
+                             lane: Int,
+                             libraryName: String,
+                             location: TransferReadGroupLocation,
+                             analysisType: Option[String],
                              baitIntervals: Option[String],
                              dataType: Option[String],
-                             flowcellBarcode: String,
                              individualAlias: Option[String],
                              initiative: Option[String],
-                             lane: Int,
                              lcSet: Option[String],
-                             libraryName: String,
                              libraryType: Option[String],
                              machineName: Option[String],
                              molecularBarcodeName: Option[String],

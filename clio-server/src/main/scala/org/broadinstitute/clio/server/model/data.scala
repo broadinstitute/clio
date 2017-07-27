@@ -2,9 +2,12 @@ package org.broadinstitute.clio.server.model
 
 import java.time.OffsetDateTime
 
+import org.broadinstitute.clio.transfer.model.TransferReadGroupLocation
+
 case class ModelReadGroupKey(flowcellBarcode: String,
                              lane: Int,
-                             libraryName: String)
+                             libraryName: String,
+                             location: TransferReadGroupLocation)
 
 case class ModelReadGroupMetadata(analysisType: Option[String],
                                   baitIntervals: Option[String],
@@ -38,24 +41,28 @@ case class ModelReadGroupMetadata(analysisType: Option[String],
                                   ubamPath: Option[String],
                                   ubamSize: Option[Long])
 
-case class ModelReadGroupQueryInput(flowcellBarcode: Option[String],
-                                    lane: Option[Int],
-                                    lcSet: Option[String],
-                                    libraryName: Option[String],
-                                    project: Option[String],
-                                    runDateEnd: Option[OffsetDateTime],
-                                    runDateStart: Option[OffsetDateTime],
-                                    sampleAlias: Option[String])
+case class ModelReadGroupQueryInput(
+  flowcellBarcode: Option[String],
+  lane: Option[Int],
+  libraryName: Option[String],
+  location: Option[TransferReadGroupLocation],
+  lcSet: Option[String],
+  project: Option[String],
+  runDateEnd: Option[OffsetDateTime],
+  runDateStart: Option[OffsetDateTime],
+  sampleAlias: Option[String]
+)
 
-case class ModelReadGroupQueryOutput(analysisType: Option[String],
+case class ModelReadGroupQueryOutput(flowcellBarcode: String,
+                                     lane: Int,
+                                     libraryName: String,
+                                     location: TransferReadGroupLocation,
+                                     analysisType: Option[String],
                                      baitIntervals: Option[String],
                                      dataType: Option[String],
-                                     flowcellBarcode: String,
                                      individualAlias: Option[String],
                                      initiative: Option[String],
-                                     lane: Int,
                                      lcSet: Option[String],
-                                     libraryName: String,
                                      libraryType: Option[String],
                                      machineName: Option[String],
                                      molecularBarcodeName: Option[String],
