@@ -158,6 +158,7 @@ def test_authorization():
 
 
 def test_read_group_metadata():
+    version = 'v1'
     id = str(uuid.uuid4()).replace('-', '')
     expected = {
         'flowcell_barcode': 'barcode1',
@@ -166,33 +167,41 @@ def test_read_group_metadata():
         'project': 'testProject'
     }
     upsert = {'project' : expected['project']}
-    suffix = '/readgroup/metadata/v1/barcode1/1/' + expected['library_name']
-    upsertResponse = requests.post(clio_http_uri + suffix, json=upsert)
+    upsertUri = '/'.join([clio_http_uri, 'readgroup', 'metadata', version,
+                          expected['flowcell_barcode'],
+                          str(expected['lane']),
+                          expected['library_name']])
+    upsertResponse = requests.post(upsertUri, json=upsert)
     assert upsertResponse.json() == {}
     query = {'library_name': expected['library_name']}
-    queryResponse = requests.post(clio_http_uri + '/readgroup/query/v1', json=query)
+    queryUri = '/'.join([clio_http_uri, 'readgroup', 'query', version])
+    queryResponse = requests.post(queryUri, json=query)
     js = queryResponse.json()
     assert len(js) == 1
     assert js[0] == expected
 
 
 def test_read_group_metadata_v2():
+    version = 'v2'
     id = str(uuid.uuid4()).replace('-', '')
     expected = {
-        'flowcell_barcode': 'barcode1',
-        'lane': 1,
+        'flowcell_barcode': 'barcode2',
+        'lane': 2,
         'library_name': 'library' + id,
-        'location' : 'GCS',
+        'location' : 'GCP',
         'project': 'testProject',
     }
     upsert = {'project': expected['project']}
-    suffix = ('/readgroup/metadata/v2/barcode1/1/'
-              + expected['library_name'] + "/"
-              + expected['location'])
-    upsertResponse = requests.post(clio_http_uri + suffix, json=upsert)
+    upsertUri = '/'.join([clio_http_uri, 'readgroup', 'metadata', version,
+                          expected['flowcell_barcode'],
+                          str(expected['lane']),
+                          expected['library_name'],
+                          expected['location']])
+    upsertResponse = requests.post(upsertUri, json=upsert)
     assert upsertResponse.json() == {}
+    queryUri = '/'.join([clio_http_uri, 'readgroup', 'query', version])
     query = {'library_name': expected['library_name']}
-    queryResponse = requests.post(clio_http_uri + '/readgroup/query/v2', json=query)
+    queryResponse = requests.post(queryUri, json=query)
     js = queryResponse.json()
     assert len(js) == 1
     assert js[0] == expected
