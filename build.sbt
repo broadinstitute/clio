@@ -42,6 +42,7 @@ lazy val `clio-integration-test` = project
   .settings(commonTestDockerSettings)
 
 lazy val `clio-transfer-model` = project
+  .settings(libraryDependencies ++= Dependencies.TransferModelDependencies)
   .settings(commonSettings)
   .disablePlugins(AssemblyPlugin)
 

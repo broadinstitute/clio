@@ -2,10 +2,11 @@ package org.broadinstitute.clio.transfer.model
 
 import java.time.OffsetDateTime
 
-case class TransferReadGroupV1QueryOutput(
+case class TransferReadGroupV2QueryOutput(
   flowcellBarcode: String,
   lane: Int,
   libraryName: String,
+  location: TransferReadGroupLocation,
   analysisType: Option[String],
   baitIntervals: Option[String],
   dataType: Option[String],
