@@ -56,25 +56,12 @@ errorout() {
 
 cd ${output}
 
-for file in `ls`
+for file in `find . -type f -name "*.ctmpl"`
 do
-    # check if it is a file
-    if [ ! -f "${file}" ]
-    then
-        # skip non-regular files
-        continue
-    fi
 
     # filename without .ctmpl
     outputfile="${file%.*}"
     extension="${file##*.}"
-
-    # only process ctmpl files skip all others
-    if [ "${extension}" != "ctmpl" ]
-    then
-        # skip
-        continue
-    fi
 
     # check if outputfile ends in .b64
     # get second extension
