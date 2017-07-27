@@ -20,8 +20,6 @@ app:
   restart: always
   links:
     - logger
-  depends_on:
-    - logger
   volumes_from:
     - logger
 
