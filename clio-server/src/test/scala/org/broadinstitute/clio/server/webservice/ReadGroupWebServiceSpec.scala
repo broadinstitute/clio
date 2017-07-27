@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.webservice
 
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.Json
@@ -45,10 +47,8 @@ class ReadGroupWebServiceSpec
     Post(
       "/metadata/v2/barcodeBoGuS/5/libraryBoGuS/BoGuS",
       Map("project" -> "testBoGuSlocation")
-    ) ~> webService.postMetadataV2 ~> check {
-      //
-      // WTF goes here and how would I figure it out?
-      //
+    ) ~> Route.seal(webService.postMetadataV2) ~> check {
+      status shouldEqual StatusCodes.NotFound
     }
   }
 
