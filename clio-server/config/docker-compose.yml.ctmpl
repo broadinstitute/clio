@@ -27,9 +27,6 @@ app:
 
 logger:
   image: broadinstitute/fluentd-gcp:latest
-  expose:
-    - 5140/tcp
-    - 5140/udp
   volumes:
     - /app/config.d:/etc/fluent/config.d:ro
     - /local/clio_logs:{{env "CLIO_LOG_DIR"}}:rw
