@@ -120,7 +120,7 @@ for var in "ENV" "DOCKER_TAG" "APP_DIR" "CLIO_CONF_DIR" "CLIO_LOG_DIR" "CLIO_APP
 done
 
 # copy configs to temp dir
-cp ${CONFIG_DIR}/* ${TMPDIR}/
+cp -r ${CONFIG_DIR}/* ${TMPDIR}/
 
 # render all ctmpls
 docker run --rm \
