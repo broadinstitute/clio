@@ -99,7 +99,7 @@ docker run --rm \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v ${CLIO_DIR}:/clio \
     -w="/clio" \
-    broadinstitute/scala:scala-2.11.8 sbt "$SET_TESTS" "$SET_VERSION" "clio-server/docker"
+    broadinstitute/scala:scala-2.12.2-sbt-0.13.15 sbt "$SET_TESTS" "$SET_VERSION" "clio-server/docker"
 
 # if no tag was given, read the default tag from the generated resource file
 if [[ -z "$DOCKER_TAG" ]]; then
