@@ -171,7 +171,7 @@ EOF
 startcontainer
 
 # wait for the server to come up before checking its health
-sleep 10
+sleep 15
 
 # hit the health and version endpoints to check the deployment status
 STATUS=$(curl -s "${CLIO_HOST}:${HOST_CLIO_PORT}/health" | jq -r .search)
