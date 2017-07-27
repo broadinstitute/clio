@@ -25,7 +25,7 @@ class ReadGroupElasticsearchDAOSpec
       "barcodeURGM1",
       2,
       "library3",
-      TransferReadGroupLocation.Gcp
+      TransferReadGroupLocation.GCP
     )
     val metadata = ModelReadGroupMetadata(
       analysisType = None,

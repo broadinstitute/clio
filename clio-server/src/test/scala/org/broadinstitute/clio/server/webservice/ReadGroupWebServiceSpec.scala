@@ -20,13 +20,35 @@ class ReadGroupWebServiceSpec
     }
   }
 
-  it should "postMetadataV2" in {
+  it should "postMetadataV2 with OnPrem location" in {
     val webService = new MockReadGroupWebService()
     Post(
-      "/metadata/v2/barcodeA/2/libraryC/OnPrem",
-      Map("project" -> "testProject")
+      "/metadata/v2/barcodeOnPrem/3/libraryOnPrem/OnPrem",
+      Map("project" -> "testOnPremLocation")
     ) ~> webService.postMetadataV2 ~> check {
       responseAs[Map[String, String]] should be(empty)
+    }
+  }
+
+  it should "postMetadataV2 with GCP location" in {
+    val webService = new MockReadGroupWebService()
+    Post(
+      "/metadata/v2/barcodeGCP/4/libraryGCP/GCP",
+      Map("project" -> "testGCPlocation")
+    ) ~> webService.postMetadataV2 ~> check {
+      responseAs[Map[String, String]] should be(empty)
+    }
+  }
+
+  it should "reject postMetadataV2 with BoGuS location" in {
+    val webService = new MockReadGroupWebService()
+    Post(
+      "/metadata/v2/barcodeBoGuS/5/libraryBoGuS/BoGuS",
+      Map("project" -> "testBoGuSlocation")
+    ) ~> webService.postMetadataV2 ~> check {
+      //
+      // WTF goes here and how would I figure it out?
+      //
     }
   }
 
