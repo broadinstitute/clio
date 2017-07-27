@@ -80,10 +80,11 @@ class CaseClassMapper[T: ClassTag] {
       vals.get(name) match {
         case Some(value) if value == null => value
         case Some(value) =>
-          if (!tpe.isAssignableFrom(value.getClass))
+          if (!tpe.isAssignableFrom(value.getClass)) {
             throw new IllegalArgumentException(
               s"Value '$value' of type ${value.getClass.getName} cannot be assigned to field $name: ${tpe.getName}"
             )
+          }
           value
         case None =>
           defaultValue(name, tpe)

@@ -4,6 +4,7 @@ import java.time.OffsetDateTime
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.mappings.FieldDefinition
+import enumeratum.EnumEntry
 import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.runtime.universe.Type
@@ -37,19 +38,21 @@ object AutoElasticsearchIndex {
     val nameSnake = fieldName.toSnakeCase(Lexer.CamelCase)
     import scala.reflect.runtime.universe.typeOf
     fieldType match {
-      case tpe if tpe =:= typeOf[Boolean]         => booleanField(nameSnake)
-      case tpe if tpe =:= typeOf[Int]             => intField(nameSnake)
-      case tpe if tpe =:= typeOf[Long]            => longField(nameSnake)
-      case tpe if tpe =:= typeOf[Float]           => floatField(nameSnake)
-      case tpe if tpe =:= typeOf[Double]          => doubleField(nameSnake)
-      case tpe if tpe =:= typeOf[String]          => keywordField(nameSnake)
-      case tpe if tpe =:= typeOf[OffsetDateTime]  => dateField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[Boolean]] => booleanField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[Int]]     => intField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[Long]]    => longField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[Float]]   => floatField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[Double]]  => doubleField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[String]]  => keywordField(nameSnake)
+      case tpe if tpe =:= typeOf[Boolean]           => booleanField(nameSnake)
+      case tpe if tpe =:= typeOf[Int]               => intField(nameSnake)
+      case tpe if tpe =:= typeOf[Long]              => longField(nameSnake)
+      case tpe if tpe =:= typeOf[Float]             => floatField(nameSnake)
+      case tpe if tpe =:= typeOf[Double]            => doubleField(nameSnake)
+      case tpe if tpe =:= typeOf[String]            => keywordField(nameSnake)
+      case tpe if tpe <:< typeOf[EnumEntry]         => keywordField(nameSnake)
+      case tpe if tpe =:= typeOf[OffsetDateTime]    => dateField(nameSnake)
+      case tpe if tpe =:= typeOf[Option[Boolean]]   => booleanField(nameSnake)
+      case tpe if tpe =:= typeOf[Option[Int]]       => intField(nameSnake)
+      case tpe if tpe =:= typeOf[Option[Long]]      => longField(nameSnake)
+      case tpe if tpe =:= typeOf[Option[Float]]     => floatField(nameSnake)
+      case tpe if tpe =:= typeOf[Option[Double]]    => doubleField(nameSnake)
+      case tpe if tpe =:= typeOf[Option[String]]    => keywordField(nameSnake)
+      case tpe if tpe <:< typeOf[Option[EnumEntry]] => keywordField(nameSnake)
       case tpe if tpe =:= typeOf[Option[OffsetDateTime]] =>
         dateField(nameSnake)
       case _ =>
