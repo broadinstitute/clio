@@ -181,7 +181,7 @@ object SchemaService {
     * The JSON schema for a ReadGroup index
     */
   lazy val readGroupSchemaJsonV2: Json =
-    JsonSchema[TransferReadGroupV2QueryOutput].toJson
+    JsonSchema[TransferReadGroupV1QueryOutput].toJson
 
   /**
     * a Future JSON schema for a ReadGroup index

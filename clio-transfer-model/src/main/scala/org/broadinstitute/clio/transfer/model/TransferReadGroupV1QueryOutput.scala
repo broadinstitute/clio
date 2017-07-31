@@ -6,6 +6,7 @@ case class TransferReadGroupV1QueryOutput(
   flowcellBarcode: String,
   lane: Int,
   libraryName: String,
+  location: TransferReadGroupLocation,
   analysisType: Option[String],
   baitIntervals: Option[String],
   dataType: Option[String],

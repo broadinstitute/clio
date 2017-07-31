@@ -27,7 +27,7 @@ class ReadGroupWebServiceSpec
     Post(
       "/metadata/v2/barcodeOnPrem/3/libraryOnPrem/OnPrem",
       Map("project" -> "testOnPremLocation")
-    ) ~> webService.postMetadataV2 ~> check {
+    ) ~> webService.postMetadata ~> check {
       responseAs[Map[String, String]] should be(empty)
     }
   }
@@ -37,7 +37,7 @@ class ReadGroupWebServiceSpec
     Post(
       "/metadata/v2/barcodeGCP/4/libraryGCP/GCP",
       Map("project" -> "testGCPlocation")
-    ) ~> webService.postMetadataV2 ~> check {
+    ) ~> webService.postMetadata ~> check {
       responseAs[Map[String, String]] should be(empty)
     }
   }
@@ -47,7 +47,7 @@ class ReadGroupWebServiceSpec
     Post(
       "/metadata/v2/barcodeBoGuS/5/libraryBoGuS/BoGuS",
       Map("project" -> "testBoGuSlocation")
-    ) ~> Route.seal(webService.postMetadataV2) ~> check {
+    ) ~> Route.seal(webService.postMetadata) ~> check {
       status shouldEqual StatusCodes.NotFound
     }
   }
@@ -61,7 +61,7 @@ class ReadGroupWebServiceSpec
 
   it should "queryV2 with an empty request" in {
     val webService = new MockReadGroupWebService()
-    Post("/query/v2", Map.empty[String, String]) ~> webService.queryV2 ~> check {
+    Post("/query/v2", Map.empty[String, String]) ~> webService.query ~> check {
       responseAs[Seq[String]] should be(empty)
     }
   }
@@ -75,7 +75,7 @@ class ReadGroupWebServiceSpec
 
   it should "queryV2 without an empty request" in {
     val webService = new MockReadGroupWebService()
-    Post("/query/v2", Map("project" -> "testProject")) ~> webService.queryV2 ~> check {
+    Post("/query/v2", Map("project" -> "testProject")) ~> webService.query ~> check {
       responseAs[Seq[String]] should be(empty)
     }
   }
@@ -89,7 +89,7 @@ class ReadGroupWebServiceSpec
 
   it should "return a V2 JSON schema" in {
     val webService = new MockReadGroupWebService()
-    Get("/schema/v2") ~> webService.getSchemaV2 ~> check {
+    Get("/schema/v2") ~> webService.getSchema ~> check {
       responseAs[Json] should be(SchemaService.readGroupSchemaJsonV2)
     }
   }
