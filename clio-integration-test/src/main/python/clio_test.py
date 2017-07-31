@@ -183,42 +183,6 @@ def test_read_group_metadata():
     assert js[0] == expected
 
 
-def read_group_metadata_v2_location(location, upsertAssert):
-    version = 'v2'
-    expected = {
-        'flowcell_barcode': 'barcode2',
-        'lane': 2,
-        'library_name': 'library' + new_uuid(),
-        'location' : location,
-        'project': 'testProject'
-    }
-    upsert = {'project': expected['project']}
-    upsertUri = '/'.join([clio_http_uri, 'readgroup', 'metadata', version,
-                          expected['flowcell_barcode'],
-                          str(expected['lane']),
-                          expected['library_name'],
-                          expected['location']])
-    upsertResponse = requests.post(upsertUri, json=upsert)
-    upsertAssert(upsertResponse.json())
-    queryUri = '/'.join([clio_http_uri, 'readgroup', 'query', version])
-    query = {'library_name': expected['library_name']}
-    queryResponse = requests.post(queryUri, json=query)
-    return queryResponse.json(), expected
-
-
-def test_read_group_metadata_v2():
-    def assertRejected(response):
-        assert response['rejection'] == 'The requested resource could not be found.'
-    def assertEmpty(response):
-        not response
-    for location in ['GCP', 'OnPrem']:
-        js, expected = read_group_metadata_v2_location(location, assertEmpty)
-        assert len(js) == 1
-        assert js[0] == expected
-    js, _ = read_group_metadata_v2_location('Unknown', assertRejected)
-    assertEmpty(js)
-
-
 # I don't know how to derive the required fields.
 #
 def test_json_schema():
@@ -240,26 +204,6 @@ def test_json_schema():
     assert response.json() == expected()
 
 
-# I don't know how to derive the required fields.
-#
-def test_json_schema_v2():
-    def expected():
-        schemas = { 'keyword': {"type": "string" },
-                    'boolean': {"type": "boolean"},
-                    'integer': {"type": "integer", "format": "int32"},
-                    'long':    {"type": "integer", "format": "int64"},
-                    'date':    {"type": "string" , "format": "date-time"} }
-        uri = '/'.join([elasticsearch_http_uri, 'read_group', '_mapping', 'default'])
-        response = requests.get(uri)
-        mapping = response.json()['read_group']['mappings']['default']['properties']
-        properties = { key: schemas[value['type']] for key, value in mapping.items() }
-        return { 'type': 'object',
-                 'required': [ 'flowcell_barcode', 'lane', 'library_name', 'location'],
-                 'properties': properties }
-    response = requests.get('/'.join([clio_http_uri, 'readgroup', 'schema', 'v2']))
-    assert response.json() == expected()
-
-
 # Allow yellow Elasticsearch cluster health when running outside of
 # the standard dockerized test.
 #
@@ -272,7 +216,5 @@ if __name__ == '__main__':
     test_read_group_mapping()
     test_authorization()
     test_read_group_metadata()
-    test_read_group_metadata_v2()
     test_json_schema()
-    test_json_schema_v2()
     print('tests passed')
