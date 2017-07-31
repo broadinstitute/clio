@@ -49,9 +49,7 @@ object ReadGroupService {
   }
 
   private[service] val ConverterV1Key =
-    SameFieldsTypeConverter[
-      TransferReadGroupV1Key,
-      ModelReadGroupKey]
+    SameFieldsTypeConverter[TransferReadGroupV1Key, ModelReadGroupKey]
 
   private[service] val ConverterV1Metadata =
     SameFieldsTypeConverter[
