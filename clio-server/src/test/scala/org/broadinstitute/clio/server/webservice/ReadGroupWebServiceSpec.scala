@@ -15,37 +15,30 @@ class ReadGroupWebServiceSpec
     with ScalatestRouteTest {
   behavior of "ReadGroupWebService"
 
-  it should "postMetadata" in {
-    val webService = new MockReadGroupWebService()
-    Post("/metadata/v1/barcodeA/2/libraryC", Map("project" -> "testProject")) ~> webService.postMetadata ~> check {
-      responseAs[Map[String, String]] should be(empty)
-    }
-  }
-
-  it should "postMetadataV2 with OnPrem location" in {
+  it should "postMetadata with OnPrem location" in {
     val webService = new MockReadGroupWebService()
     Post(
-      "/metadata/v2/barcodeOnPrem/3/libraryOnPrem/OnPrem",
+      "/metadata/v1/barcodeOnPrem/3/libraryOnPrem/OnPrem",
       Map("project" -> "testOnPremLocation")
     ) ~> webService.postMetadata ~> check {
       responseAs[Map[String, String]] should be(empty)
     }
   }
 
-  it should "postMetadataV2 with GCP location" in {
+  it should "postMetadata with GCP location" in {
     val webService = new MockReadGroupWebService()
     Post(
-      "/metadata/v2/barcodeGCP/4/libraryGCP/GCP",
+      "/metadata/v1/barcodeGCP/4/libraryGCP/GCP",
       Map("project" -> "testGCPlocation")
     ) ~> webService.postMetadata ~> check {
       responseAs[Map[String, String]] should be(empty)
     }
   }
 
-  it should "reject postMetadataV2 with BoGuS location" in {
+  it should "reject postMetadata with BoGuS location" in {
     val webService = new MockReadGroupWebService()
     Post(
-      "/metadata/v2/barcodeBoGuS/5/libraryBoGuS/BoGuS",
+      "/metadata/v1/barcodeBoGuS/5/libraryBoGuS/BoGuS",
       Map("project" -> "testBoGuSlocation")
     ) ~> Route.seal(webService.postMetadata) ~> check {
       status shouldEqual StatusCodes.NotFound
@@ -59,23 +52,9 @@ class ReadGroupWebServiceSpec
     }
   }
 
-  it should "queryV2 with an empty request" in {
-    val webService = new MockReadGroupWebService()
-    Post("/query/v2", Map.empty[String, String]) ~> webService.query ~> check {
-      responseAs[Seq[String]] should be(empty)
-    }
-  }
-
   it should "query without an empty request" in {
     val webService = new MockReadGroupWebService()
     Post("/query/v1", Map("project" -> "testProject")) ~> webService.query ~> check {
-      responseAs[Seq[String]] should be(empty)
-    }
-  }
-
-  it should "queryV2 without an empty request" in {
-    val webService = new MockReadGroupWebService()
-    Post("/query/v2", Map("project" -> "testProject")) ~> webService.query ~> check {
       responseAs[Seq[String]] should be(empty)
     }
   }
@@ -84,13 +63,6 @@ class ReadGroupWebServiceSpec
     val webService = new MockReadGroupWebService()
     Get("/schema/v1") ~> webService.getSchema ~> check {
       responseAs[Json] should be(SchemaService.readGroupSchemaJson)
-    }
-  }
-
-  it should "return a V2 JSON schema" in {
-    val webService = new MockReadGroupWebService()
-    Get("/schema/v2") ~> webService.getSchema ~> check {
-      responseAs[Json] should be(SchemaService.readGroupSchemaJsonV2)
     }
   }
 }

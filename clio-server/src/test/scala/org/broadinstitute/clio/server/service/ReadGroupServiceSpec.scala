@@ -14,7 +14,12 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
     val memorySearchDAO = new MemoryReadGroupSearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val readGroupService = ReadGroupService(app)
-    val transferKey = TransferReadGroupV1Key("barcode1", 2, "library3", TransferReadGroupLocation.GCP)
+    val transferKey = TransferReadGroupV1Key(
+      "barcode1",
+      2,
+      "library3",
+      TransferReadGroupLocation.GCP
+    )
     val transferMetadataMapper =
       new CaseClassMapper[TransferReadGroupV1Metadata]
     val transferMetadata =
