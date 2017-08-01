@@ -13,14 +13,7 @@ trait ReadGroupWebService {
 
   lazy val readGroupRoutes: Route = {
     pathPrefix("readgroup") {
-      concat(
-        getSchema,
-        getSchemaV2,
-        postMetadata,
-        postMetadataV2,
-        query,
-        queryV2
-      )
+      concat(getSchema, postMetadata, query)
     }
   }
 
@@ -30,18 +23,9 @@ trait ReadGroupWebService {
       flowcellBarcode <- pathPrefix(Segment)
       lane <- pathPrefix(IntNumber)
       libraryName <- pathPrefix(Segment)
-    } yield TransferReadGroupV1Key(flowcellBarcode, lane, libraryName)
-  }
-
-  private[webservice] val pathPrefixKeyV2
-    : Directive1[TransferReadGroupV2Key] = {
-    for {
-      flowcellBarcode <- pathPrefix(Segment)
-      lane <- pathPrefix(IntNumber)
-      libraryName <- pathPrefix(Segment)
       location <- pathPrefix(TransferReadGroupLocation.pathMatcher)
     } yield
-      TransferReadGroupV2Key(flowcellBarcode, lane, libraryName, location)
+      TransferReadGroupV1Key(flowcellBarcode, lane, libraryName, location)
   }
 
   private[webservice] val postMetadata: Route = {
@@ -51,20 +35,6 @@ trait ReadGroupWebService {
           post {
             entity(as[TransferReadGroupV1Metadata]) { metadata =>
               complete(readGroupService.upsertMetadata(key, metadata))
-            }
-          }
-        }
-      }
-    }
-  }
-
-  private[webservice] val postMetadataV2: Route = {
-    pathPrefix("metadata") {
-      pathPrefix("v2") {
-        pathPrefixKeyV2 { key =>
-          post {
-            entity(as[TransferReadGroupV1Metadata]) { metadata =>
-              complete(readGroupService.upsertMetadataV2(key, metadata))
             }
           }
         }
@@ -84,33 +54,11 @@ trait ReadGroupWebService {
     }
   }
 
-  private[webservice] val queryV2: Route = {
-    pathPrefix("query") {
-      pathPrefix("v2") {
-        post {
-          entity(as[TransferReadGroupV2QueryInput]) { input =>
-            complete(readGroupService.queryMetadataV2(input))
-          }
-        }
-      }
-    }
-  }
-
   private[webservice] val getSchema: Route = {
     pathPrefix("schema") {
       pathPrefix("v1") {
         get {
           complete(readGroupService.querySchema())
-        }
-      }
-    }
-  }
-
-  private[webservice] val getSchemaV2: Route = {
-    pathPrefix("schema") {
-      pathPrefix("v2") {
-        get {
-          complete(readGroupService.querySchemaV2())
         }
       }
     }
