@@ -29,7 +29,7 @@ import scala.reflect.{ClassTag, classTag}
   * @tparam T The type of the case class, with a context bound also specifying that a `implicit ctag: ClassTag[T]`
   *           exists.
   *           https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
-  * @see [[org.broadinstitute.clio.util.generic.SameFieldsTypeConverter]]
+  * @see [[SameFieldsTypeConverter]]
   */
 class CaseClassMapper[T: ClassTag] {
 

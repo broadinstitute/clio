@@ -17,6 +17,8 @@ addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % SbtDockerVersion)
 
 addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % SbtScalafmtVersion)
 
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.0")
+
 // Various compiler tweaks for our ClioIntegrationTestPlugin.
 // More info available via:
 //   https://tpolecat.github.io/2014/04/11/scalac-flags.html

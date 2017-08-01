@@ -88,7 +88,7 @@ object StateDecoder extends LowPriorityStateDecoder {
   /**
     * Retrieves a decoder for any HList made up of a (headNameAndOptionType :: (more tail elements) :: HNil).
     *
-    * See [[org.broadinstitute.clio.util.json.LowPriorityStateDecoder.hlistDecoder]] for more details. This is the
+    * See [[LowPriorityStateDecoder.hlistDecoder]] for more details. This is the
     * equivalent, but instead of returning an decoder for `H`, returns a decoder for `Option[H]`.
     *
     * @param witness       Reads the symbol name.

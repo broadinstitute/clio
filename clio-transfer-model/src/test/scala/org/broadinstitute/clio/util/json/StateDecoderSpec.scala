@@ -1,9 +1,9 @@
 package org.broadinstitute.clio.util.json
 
-import org.scalatest.{EitherValues, FlatSpec, Matchers}
 import io.circe._
 import io.circe.parser._
 import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.{EitherValues, FlatSpec, Matchers}
 
 class StateDecoderSpec
     extends FlatSpec
@@ -15,7 +15,8 @@ class StateDecoderSpec
   it should "decode an empty class" in {
     case class TestClass()
 
-    implicit val decoder = Decoder.fromState(StateDecoder[TestClass].state)
+    implicit val decoder: Decoder[TestClass] =
+      Decoder.fromState(StateDecoder[TestClass].state)
     decode[TestClass]("""{}""").right.value should be(TestClass())
   }
 
@@ -32,7 +33,8 @@ class StateDecoderSpec
         ("""{"fieldB": 456}""", TestClass(None, 456))
       )
 
-    implicit val decoder = Decoder.fromState(StateDecoder[TestClass].state)
+    implicit val decoder: Decoder[TestClass] =
+      Decoder.fromState(StateDecoder[TestClass].state)
     forAll(jsonValues) { (input, expected) =>
       decode[TestClass](input).right.value should be(expected)
     }
@@ -60,7 +62,8 @@ class StateDecoderSpec
 
     import cats.syntax.show._
 
-    implicit val decoder = Decoder.fromState(StateDecoder[TestClass].state)
+    implicit val decoder: Decoder[TestClass] =
+      Decoder.fromState(StateDecoder[TestClass].state)
     forAll(jsonValues) { (input, expected) =>
       decode[TestClass](input).left.value.show should be(expected)
     }

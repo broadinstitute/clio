@@ -15,7 +15,8 @@ inThisBuild(
     git.formattedShaVersion := Versioning.gitShaVersion.value,
     scalafmtVersion := Dependencies.ScalafmtVersion,
     scalafmtOnCompile := true,
-    ignoreErrors in scalafmt := false
+    ignoreErrors in scalafmt := false,
+    coverageHighlighting := false
   )
 )
 
@@ -41,7 +42,12 @@ val commonTestDockerSettings: Seq[Setting[_]] = Seq(
 lazy val clio = project
   .in(file("."))
   .settings(commonSettings)
-  .aggregate(`clio-integration-test`, `clio-transfer-model`, `clio-server`)
+  .aggregate(
+    `clio-integration-test`,
+    `clio-transfer-model`,
+    `clio-server`,
+    `clio-client`
+  )
   .disablePlugins(AssemblyPlugin)
 
 lazy val `clio-integration-test` = project
@@ -68,3 +74,14 @@ lazy val `clio-server` = project
   .settings(commonDockerSettings)
   .settings(dockerfile in docker := Docker.serverDockerFile.value)
   .settings(commonTestDockerSettings)
+
+lazy val `clio-client` = project
+  .dependsOn(`clio-transfer-model`)
+  .settings(libraryDependencies ++= Dependencies.ClientDependencies)
+  .settings(commonSettings)
+  .settings(commonTestDockerSettings)
+
+addCommandAlias(
+  "testCoverage",
+  "; clean; coverage; test; coverageOff; coverageReport; coverageAggregate"
+)

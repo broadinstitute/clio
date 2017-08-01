@@ -13,7 +13,7 @@ import scala.reflect.ClassTag
   * @tparam To   The type of the destination case class, with a context bound also specifying that an
   *              `implicit ctagTo: ClassTag[T]` exists.
   *              https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
-  * @see [[org.broadinstitute.clio.util.generic.SameFieldsTypeConverter]]
+  * @see [[SameFieldsTypeConverter]]
   */
 class CaseClassTypeConverter[From: ClassTag, To: ClassTag] private (
   convertVals: Map[String, _] => Map[String, _]

@@ -23,7 +23,7 @@ import scala.annotation.implicitNotFound
   *
   * @tparam From Class to convert from.
   * @tparam To   Class to convert to.
-  * @see [[org.broadinstitute.clio.util.generic.CaseClassTypeConverter]]
+  * @see [[CaseClassTypeConverter]]
   */
 @implicitNotFound(
   "Type ${From} and type ${To} do not have the same fields with the same names and same types."
