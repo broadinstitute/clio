@@ -46,7 +46,6 @@ proxy:
     CALLBACK_URI: https://clio101.gotc-{{env "ENV"}}.broadinstitute.org/oauth2callback
     LOG_LEVEL: warn
     PROXY_URL: http://app:{{env "CONTAINER_CLIO_PORT"}}/
-    PROXY_URL2: http://app:{{env "CONTAINER_CLIO_PORT"}}/api
     SERVER_NAME: clio101.gotc-{{env "ENV"}}.broadinstitute.org
     AUTH_TYPE2: "AuthType None"
     AUTH_REQUIRE2: Require all granted
