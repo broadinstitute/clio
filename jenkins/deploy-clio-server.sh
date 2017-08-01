@@ -172,8 +172,8 @@ startcontainer
 sleep 15
 
 # hit the health and version endpoints to check the deployment status
-STATUS=$(curl -s "${CLIO_HOST}/api/health" | jq -r .search)
-VERSION=$(curl -s "${CLIO_HOST}/api/version" | jq -r .version)
+STATUS=$(curl -s "https://${CLIO_HOST}/health" | jq -r .search)
+VERSION=$(curl -s "https://${CLIO_HOST}/version" | jq -r .version)
 
 if [[ "$STATUS" == "OK" && "$VERSION" == "$DOCKER_TAG" ]]; then
     # rm /app.old.old
