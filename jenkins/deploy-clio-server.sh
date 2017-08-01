@@ -75,7 +75,7 @@ CLIO_LOGBACK_CONF=clio-logback.xml
 # name of the env file used to set up clio with docker-compose
 CLIO_ENV_FILE=clio.env
 # port to expose for clio on the host VM
-HOST_CLIO_PORT=80
+HOST_CLIO_PORT=8000
 # port to expose for clio in the clio container
 CONTAINER_CLIO_PORT=${HOST_CLIO_PORT}
 
