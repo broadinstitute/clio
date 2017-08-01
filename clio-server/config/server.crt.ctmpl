@@ -1,1 +1,1 @@
-{{with $environment := env "ENVIRONMENT"}}{{with $commonSsl := vault (printf "secret/dsde/gotc/%s/common/server.crt" $environment)}}{{$commonSsl.Data.server_crt}}{{end}}{{end}}
+{{with $env_file := env "CLIO_ENV_FILE"}}{{with $commonSsl := vault (printf "secret/dsde/gotc/%s/common/server.crt" {{env "ENV"}})}}{{$commonSsl.Data.server_crt}}{{end}}{{end}}
