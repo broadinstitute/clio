@@ -74,10 +74,8 @@ CLIO_APP_CONF=clio.conf
 CLIO_LOGBACK_CONF=clio-logback.xml
 # name of the env file used to set up clio with docker-compose
 CLIO_ENV_FILE=clio.env
-# port to expose for clio on the host VM
-HOST_CLIO_PORT=8000
 # port to expose for clio in the clio container
-CONTAINER_CLIO_PORT=${HOST_CLIO_PORT}
+CONTAINER_CLIO_PORT=8000
 
 # SSH options
 SSH_USER=jenkins
@@ -115,7 +113,7 @@ TMPDIR=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
 CTMPL_ENV_FILE="${TMPDIR}/env-vars.txt"
 
 # populate temp env.txt file with necessary environment
-for var in "ENV" "DOCKER_TAG" "APP_DIR" "CLIO_CONF_DIR" "CLIO_LOG_DIR" "CLIO_APP_CONF" "CLIO_LOGBACK_CONF" "CLIO_ENV_FILE" "HOST_CLIO_PORT" "CONTAINER_CLIO_PORT"; do
+for var in "ENV" "DOCKER_TAG" "APP_DIR" "CLIO_CONF_DIR" "CLIO_LOG_DIR" "CLIO_APP_CONF" "CLIO_LOGBACK_CONF" "CLIO_ENV_FILE" "CONTAINER_CLIO_PORT"; do
     echo "${var}=${!var}" >> ${CTMPL_ENV_FILE}
 done
 
@@ -174,8 +172,8 @@ startcontainer
 sleep 15
 
 # hit the health and version endpoints to check the deployment status
-STATUS=$(curl -s "${CLIO_HOST}:${HOST_CLIO_PORT}/health" | jq -r .search)
-VERSION=$(curl -s "${CLIO_HOST}:${HOST_CLIO_PORT}/version" | jq -r .version)
+STATUS=$(curl -s "${CLIO_HOST}/api/health" | jq -r .search)
+VERSION=$(curl -s "${CLIO_HOST}/api/version" | jq -r .version)
 
 if [[ "$STATUS" == "OK" && "$VERSION" == "$DOCKER_TAG" ]]; then
     # rm /app.old.old
