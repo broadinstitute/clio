@@ -178,12 +178,6 @@ object SchemaService {
     JsonSchema[TransferReadGroupV1QueryOutput].toJson
 
   /**
-    * The JSON schema for a ReadGroup index
-    */
-  lazy val readGroupSchemaJsonV2: Json =
-    JsonSchema[TransferReadGroupV1QueryOutput].toJson
-
-  /**
     * a Future JSON schema for a ReadGroup index
     *
     * @param executionContext is from the webservice
@@ -192,14 +186,4 @@ object SchemaService {
   def readGroupSchema(
     implicit executionContext: ExecutionContext
   ): Future[Json] = Future(readGroupSchemaJson)
-
-  /**
-    * a Future JSON schema for a ReadGroup index
-    *
-    * @param executionContext is from the webservice
-    * @return a marshallable JSON schema for a ReadGroup
-    */
-  def readGroupSchemaV2(
-    implicit executionContext: ExecutionContext
-  ): Future[Json] = Future(readGroupSchemaJsonV2)
 }
