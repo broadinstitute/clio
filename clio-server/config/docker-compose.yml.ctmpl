@@ -45,12 +45,15 @@ proxy:
   environment:
     CALLBACK_URI: https://clio101.gotc-{{env "ENV"}}.broadinstitute.org/oauth2callback
     LOG_LEVEL: warn
+    PROXY_PATH: /
     PROXY_URL: http://app:{{env "CONTAINER_CLIO_PORT"}}/
     SERVER_NAME: clio101.gotc-{{env "ENV"}}.broadinstitute.org
-    AUTH_TYPE2: "AuthType None"
-    AUTH_REQUIRE2: Require all granted
-    AUTH_LDAP_GROUP_ATTR2: 'AuthLDAPGroupAttribute member'
-    REMOTE_USER_CLAIM: sub
+    AUTH_TYPE: AuthType None
+    OIDC_CLAIM: Require all granted
+    PROXY_PATH2: /api
+    PROXY_URL2: http://app:{{env "CONTAINER_CLIO_PORT"}}/api
+    AUTH_TYPE2: AuthType oauth20
+    OIDC_CLAIM2: Require valid-user
 
 logger:
   image: broadinstitute/fluentd-gcp:latest
