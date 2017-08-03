@@ -43,9 +43,8 @@ object ClioServer
   }
   private val innerRoutes: Route =
     concat(
-      pathPrefix("api") { authorizationRoute },
       statusRoutes,
-      pathPrefix("api") { readGroupRoutes }
+      pathPrefix("api") { authorizationRoute ~ readGroupRoutes }
     )
   private val routes = wrapperDirectives(innerRoutes)
 
