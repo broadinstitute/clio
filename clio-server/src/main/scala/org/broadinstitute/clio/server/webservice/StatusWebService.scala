@@ -8,7 +8,8 @@ import org.broadinstitute.clio.server.service.StatusService
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 
 trait StatusWebService {
-  lazy val statusRoutes: Route = concat(versionRoute, healthRoute, slashRedirectRoute)
+  lazy val statusRoutes: Route =
+    concat(versionRoute, healthRoute, slashRedirectRoute)
 
   def statusService: StatusService
 
