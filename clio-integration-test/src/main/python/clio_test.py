@@ -233,7 +233,7 @@ def test_query_sample_project():
     upserts[2]['sample_alias'] = sample2
 
     for record in upserts:
-        upsertUri = '/'.join([clio_http_uri, 'readgroup', 'metadata', version,
+        upsertUri = '/'.join([clio_http_uri, 'api', 'readgroup', 'metadata', version,
                               record['flowcell_barcode'],
                               str(record['lane']),
                               record['library_name'],
