@@ -35,6 +35,53 @@ class ReadGroupWebServiceSpec
     }
   }
 
+  it should "query with a project and sample and return multiple records" in {
+    val webService = new MockReadGroupWebService()
+    Post(
+      "/metadata/v1/barcodeGCP/5/LibraryGCP/GCP",
+      Map("project" -> "testProject1", "sample_alias" -> "sample1")
+    ) ~> webService.postMetadata ~> check {
+      status shouldEqual StatusCodes.OK
+    }
+    Post(
+      "/metadata/v1/barcodeGCP/6/LibraryGCP/GCP",
+      Map("project" -> "testProject1", "sample_alias" -> "sample1")
+    ) ~> webService.postMetadata ~> check {
+      status shouldEqual StatusCodes.OK
+    }
+    Post(
+      "/metadata/v1/barcodeGCP/7/LibraryGCP/GCP",
+      Map("project" -> "testProject1", "sample_alias" -> "sample2")
+    ) ~> webService.postMetadata ~> check {
+      status shouldEqual StatusCodes.OK
+    }
+
+    Post(
+      "/query/v1",
+      Map("project" -> "testProject1")
+    ) ~> webService.query ~> check {
+      print(response.toString())
+      responseAs[Seq[String]] should not be empty
+    }
+
+    Post(
+      "/query/v1",
+      Map("project" -> "testProject1", "sample_alias" -> "sample1")
+    ) ~> webService.query ~> check {
+      responseAs[Seq[String]] should not be empty
+    }
+  }
+
+  it should "query with a BoGuS project and sample and return nothing" in {
+    val webService = new MockReadGroupWebService()
+    Post(
+      "/query/v1",
+      Map("project" -> "testBoGuSproject", "sample_alias" -> "testBoGuSsample")
+    ) ~> webService.query ~> check {
+      responseAs[Seq[String]] should be(empty)
+    }
+  }
+
   it should "reject postMetadata with BoGuS location" in {
     val webService = new MockReadGroupWebService()
     Post(

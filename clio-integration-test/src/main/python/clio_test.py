@@ -215,6 +215,44 @@ def test_json_schema():
     response = requests.get('/'.join([clio_http_uri, 'api','readgroup', 'schema', 'v1']))
     assert response.json() == expected()
 
+def test_query_sample_project():
+    version = 'v1'
+    project = 'testProject' + new_uuid()
+    upserts = [{
+            'flowcell_barcode': 'barcode2',
+            'lane': 2,
+            'library_name': 'library' + new_uuid(),
+            'location': 'GCP',
+            'project': project
+        } for _ in range(3)]
+
+    sample1 = 'testSample' + new_uuid()
+    sample2 = 'testSample' + new_uuid()
+    upserts[0]['sample_alias'] = sample1
+    upserts[1]['sample_alias'] = sample1
+    upserts[2]['sample_alias'] = sample2
+
+    for record in upserts:
+        upsertUri = '/'.join([clio_http_uri, 'readgroup', 'metadata', version,
+                              record['flowcell_barcode'],
+                              str(record['lane']),
+                              record['library_name'],
+                              record['location']])
+        upsert = {'sample_alias': record['sample_alias'], 'project': record['project']}
+        upsertResponse = requests.post(upsertUri, json=upsert)
+        assert upsertResponse.ok
+
+    queryUri = '/'.join([clio_http_uri, 'readgroup', 'query', version])
+    getByProjectResponse = requests.post(queryUri, json={'project': project})
+    assert len(getByProjectResponse.json()) == 3
+    for record in getByProjectResponse.json():
+        assert record['project'] == project
+
+    getBySampleIdResponse = requests.post(queryUri, json={'sample_alias': sample1})
+    assert len(getBySampleIdResponse.json()) == 2
+    for record in getBySampleIdResponse.json():
+        assert record['sample_alias'] == sample1
+
 
 # Allow yellow Elasticsearch cluster health when running outside of
 # the standard dockerized test.
@@ -229,4 +267,5 @@ if __name__ == '__main__':
     test_authorization()
     test_read_group_metadata()
     test_json_schema()
+    test_query_sample_project()
     print('tests passed')
