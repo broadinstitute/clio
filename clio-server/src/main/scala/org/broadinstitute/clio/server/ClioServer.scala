@@ -42,7 +42,10 @@ object ClioServer
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
   private val innerRoutes: Route =
-    concat(authorizationRoute, statusRoutes, readGroupRoutes)
+    concat(
+      statusRoutes,
+      pathPrefix("api") { authorizationRoute ~ readGroupRoutes }
+    )
   private val routes = wrapperDirectives(innerRoutes)
 
   private val serverStatusDAO = CachedServerStatusDAO()

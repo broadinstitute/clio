@@ -168,12 +168,20 @@ EOF
 # start running the new container
 startcontainer
 
-# wait for the server to come up before checking its health
-sleep 15
+STATUS=
+VERSION=
 
-# hit the health and version endpoints to check the deployment status
-STATUS=$(curl -s "https://${CLIO_HOST}/health" | jq -r .search)
-VERSION=$(curl -s "https://${CLIO_HOST}/version" | jq -r .version)
+# try 3 times at 20 second intervals
+attempts=1
+
+while [ -z "$STATUS" ] && [ ${attempts} -le 3 ]
+do
+  sleep 20
+  echo "Attempt $attempts"
+  STATUS=$(curl -fs https://"${CLIO_HOST}/health" | jq -r .search)
+  VERSION=$(curl -fs https://"${CLIO_HOST}/version" | jq -r .version)
+  attempts=$((attempts + 1))
+done
 
 if [[ "$STATUS" == "OK" && "$VERSION" == "$DOCKER_TAG" ]]; then
     # rm /app.old.old
