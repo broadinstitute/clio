@@ -144,7 +144,7 @@ def test_authorization():
         result['OIDC_CLAIM_expires_in'] = str(1234567890)
         return result
     headers = mockHeaders(withoutExpect)
-    authUrl = clio_http_uri + '/authorization'
+    authUrl = clio_http_uri + '/api/authorization'
     def getAuthStatus(headers):
         return requests.get(authUrl, headers=headers).status_code
     def without(header): # a copy of headers without header
@@ -170,14 +170,14 @@ def read_group_metadata_location(location, upsertAssert):
         'project': 'testProject'
     }
     upsert = {'project': expected['project']}
-    upsertUri = '/'.join([clio_http_uri, 'readgroup', 'metadata', version,
+    upsertUri = '/'.join([clio_http_uri, 'api', 'readgroup', 'metadata', version,
                           expected['flowcell_barcode'],
                           str(expected['lane']),
                           expected['library_name'],
                           expected['location']])
     upsertResponse = requests.post(upsertUri, json=upsert)
     upsertAssert(upsertResponse.json())
-    queryUri = '/'.join([clio_http_uri, 'readgroup', 'query', version])
+    queryUri = '/'.join([clio_http_uri, 'api', 'readgroup', 'query', version])
     query = {'library_name': expected['library_name']}
     queryResponse = requests.post(queryUri, json=query)
     return queryResponse.json(), expected
@@ -212,7 +212,7 @@ def test_json_schema():
         return { 'type': 'object',
                  'required': [ 'flowcell_barcode', 'lane', 'library_name', 'location'],
                  'properties': properties }
-    response = requests.get('/'.join([clio_http_uri, 'readgroup', 'schema', 'v1']))
+    response = requests.get('/'.join([clio_http_uri, 'api','readgroup', 'schema', 'v1']))
     assert response.json() == expected()
 
 
