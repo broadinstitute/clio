@@ -242,7 +242,7 @@ def test_query_sample_project():
         upsertResponse = requests.post(upsertUri, json=upsert)
         assert upsertResponse.ok
 
-    queryUri = '/'.join([clio_http_uri, 'readgroup', 'query', version])
+    queryUri = '/'.join([clio_http_uri, 'api', 'readgroup', 'query', version])
     getByProjectResponse = requests.post(queryUri, json={'project': project})
     assert len(getByProjectResponse.json()) == 3
     for record in getByProjectResponse.json():
