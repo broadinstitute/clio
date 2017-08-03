@@ -63,10 +63,7 @@ class ReadGroupWebServiceSpec
     // We have to test the MemorySearchDAO because we're not going to implement
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
-    Post(
-      "/query/v1",
-      Map("project" -> "testProject1")
-    ) ~> webService.query ~> check {
+    Post("/query/v1", Map("project" -> "testProject1")) ~> webService.query ~> check {
       memorySearchDAO.queryReadGroupCalls should have length 1
       val firstQuery = memorySearchDAO.queryReadGroupCalls.head
       firstQuery.project should be(Some("testProject1"))

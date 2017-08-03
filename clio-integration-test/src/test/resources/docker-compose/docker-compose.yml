@@ -9,7 +9,7 @@ services:
   clio-server:
     image: broadinstitute/clio-server:${CLIO_DOCKER_TAG}
     environment:
-      clio.server.elasticsearch.http-hosts.0.hostname: elasticsearch1
+      JAVA_OPTS: -Dclio.server.elasticsearch.http-hosts.0.hostname=elasticsearch1
   elasticsearch1:
     extends:
       file: elasticsearch-compose.yml
