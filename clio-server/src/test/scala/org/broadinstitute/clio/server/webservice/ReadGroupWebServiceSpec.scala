@@ -5,6 +5,8 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.Json
+import org.broadinstitute.clio.server.MockClioApp
+import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
 import org.broadinstitute.clio.server.service.SchemaService
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.scalatest.{FlatSpec, Matchers}
@@ -36,7 +38,9 @@ class ReadGroupWebServiceSpec
   }
 
   it should "query with a project and sample and return multiple records" in {
-    val webService = new MockReadGroupWebService()
+    val memorySearchDAO = new MemoryReadGroupSearchDAO()
+    val app = MockClioApp(searchDAO = memorySearchDAO)
+    val webService = new MockReadGroupWebService(app)
     Post(
       "/metadata/v1/barcodeGCP/5/LibraryGCP/GCP",
       Map("project" -> "testProject1", "sample_alias" -> "sample1")
@@ -60,15 +64,20 @@ class ReadGroupWebServiceSpec
       "/query/v1",
       Map("project" -> "testProject1")
     ) ~> webService.query ~> check {
-      print(response.toString())
-      responseAs[Seq[String]] should not be empty
+      memorySearchDAO.queryReadGroupCalls should have length 1
+      val firstQuery = memorySearchDAO.queryReadGroupCalls.head
+      firstQuery.project should be(Some("testProject1"))
+      firstQuery.sampleAlias should be(empty)
     }
 
     Post(
       "/query/v1",
       Map("project" -> "testProject1", "sample_alias" -> "sample1")
     ) ~> webService.query ~> check {
-      responseAs[Seq[String]] should not be empty
+      memorySearchDAO.queryReadGroupCalls should have length 2
+      val secondQuery = memorySearchDAO.queryReadGroupCalls(1)
+      secondQuery.project should be(Some("testProject1"))
+      secondQuery.sampleAlias should be(Some("sample1"))
     }
   }
 
