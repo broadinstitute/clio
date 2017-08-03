@@ -60,6 +60,9 @@ class ReadGroupWebServiceSpec
       status shouldEqual StatusCodes.OK
     }
 
+    // We have to test the MemorySearchDAO because we're not going to implement
+    // Elasticsearch logic in our test specs. Here, we're just verifying that
+    // the web service passes the appropriate queries onto the search DAO.
     Post(
       "/query/v1",
       Map("project" -> "testProject1")
