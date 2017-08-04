@@ -254,6 +254,35 @@ def test_query_sample_project():
         assert record['sample_alias'] == sample1
 
 
+def test_read_group_metadata_update():
+    version = 'v1'
+    project = 'testProject' + new_uuid()
+    metadata = {
+        'flowcell_barcode': 'barcode2',
+        'lane': 2,
+        'library_name': 'library' + new_uuid(),
+        'location': 'GCP',
+        'project': project,
+        'sample_alias': 'sampleAlias1'
+    }
+    upsertUri = '/'.join([clio_http_uri, 'api', 'readgroup', 'metadata', version,
+                          metadata['flowcell_barcode'],
+                          str(metadata['lane']),
+                          metadata['library_name'],
+                          metadata['location']])
+    upsert = {'sample_alias': metadata['sample_alias'], 'project': metadata['project']}
+    upsertResponse = requests.post(upsertUri, json=upsert)
+    assert upsertResponse.ok
+    query_uri = '/'.join([clio_http_uri, 'api', 'readgroup', 'query', version])
+    query_project={'project': project}
+    query_old_response = requests.post(query_uri, json=query_project)
+    assert query_old_response.json()[0]['sample_alias'] == 'sampleAlias1'
+    updateResponse = requests.post(upsertUri, json={'sample_alias': 'sampleAlias2'})
+    assert updateResponse.ok
+    query_new_response = requests.post(query_uri, json=query_project)
+    assert query_new_response.json()[0]['sample_alias'] == 'sampleAlias2'
+
+
 # Allow yellow Elasticsearch cluster health when running outside of
 # the standard dockerized test.
 #
@@ -268,4 +297,5 @@ if __name__ == '__main__':
     test_read_group_metadata()
     test_json_schema()
     test_query_sample_project()
+    test_read_group_metadata_update()
     print('tests passed')
