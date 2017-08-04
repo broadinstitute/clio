@@ -5,15 +5,22 @@ import org.broadinstitute.clio.sbt._
 
 enablePlugins(GitVersioning)
 
-// Set the scala version used by the project. sbt version set in build.properties.
+// Settings applied at the scope of the entire build.
+inThisBuild(
+  Seq(
+    scalaVersion := "2.12.2",
+    organization := "org.broadinstitute",
+    scalacOptions ++= Compilation.CompilerSettings,
+    git.baseVersion := Versioning.clioBaseVersion.value,
+    git.formattedShaVersion := Versioning.gitShaVersion.value
+  )
+)
+
+// Settings that must be applied to each project because they are scoped
+// to individual configurations / tasks.
 val commonSettings: Seq[Setting[_]] = Seq(
-  scalaVersion := "2.12.2",
-  organization := "org.broadinstitute",
-  scalacOptions ++= Compilation.CompilerSettings,
   scalacOptions in (Compile, doc) ++= Compilation.DocSettings,
   scalacOptions in (Compile, console) := Compilation.ConsoleSettings,
-  git.baseVersion := Versioning.ClioVersion,
-  git.formattedShaVersion := Versioning.gitShaVersion.value,
   resourceGenerators in Compile += Versioning.writeVersionConfig.taskValue
 )
 

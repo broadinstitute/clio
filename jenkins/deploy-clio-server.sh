@@ -23,8 +23,8 @@ CLIO_DIR=$(cd $(dirname $(dirname $0)) && pwd)
 #   CLIO_HOST: hostname to deploy clio to
 
 # The script also supports the optional ENV vars
-#  DOCKER_TAG: docker tag to apply to the built and deployed instance
-#              if not specified, the default SNAP version is used
+#  VERSION: tag to apply to the docker image,
+#           rather than using the default git-version.
 #  RUN_TESTS: if set to "false", unit tests will not be run as part of
 #             building the docker image
 
@@ -32,13 +32,22 @@ CLIO_DIR=$(cd $(dirname $(dirname $0)) && pwd)
 if [ -z "$ENV" ]
 then
    echo "Error: ENV not set!!"
-   exit 2
+   exit 1
+else
+  case "$ENV" in
+    "dev"|"staging"|"prod")
+      ;;
+    *)
+      echo "Error: Invalid environment '$ENV'!!"
+      exit 1
+      ;;
+  esac
 fi
 
 if [ -z "$CLIO_HOST" ]
 then
    echo "Error: CLIO_HOST not set!!"
-   exit 2
+   exit 1
 fi
 
 CONFIG_DIR=clio-server/config
@@ -60,7 +69,7 @@ else
    echo "Missing VAULT TOKEN file - Exiting"
    exit 1
 fi
-   
+
 # initialize vars used in multiple config templates
 # location on host where configs should get copied
 APP_DIR=${APP_DIR:-"/app"}
@@ -92,25 +101,24 @@ if [[ "$RUN_TESTS" = "false" ]]; then
     SET_TESTS="set test in assembly in LocalProject(\"clio-server\") := {}"
 fi
 # sbt command to override the default docker tag
-if [[ ! -z "$DOCKER_TAG" ]]; then
-    SET_VERSION="set version := \"$DOCKER_TAG\""
+if [[ ! -z "$VERSION" ]]; then
+    SET_VERSION="set version := \"$VERSION\""
 fi
 
 # build the clio-server docker image
 docker run --rm \
     -v /var/run/docker.sock:/var/run/docker.sock \
+    -v ~/.dockercfg:/root/.dockercfg \
     -v ${CLIO_DIR}:/clio \
     -v ~/.ivy2:/root/.ivy2 \
     -w="/clio" \
-    broadinstitute/scala:scala-2.12.2-sbt-0.13.15 sbt "$SET_TESTS" "$SET_VERSION" "clio-server/docker"
+    broadinstitute/scala:scala-2.12.2-sbt-0.13.15 \
+    sbt "$SET_TESTS" "$SET_VERSION" "clio-server/dockerBuildAndPush"
 
 # if no tag was given, read the default tag from the generated resource file
-if [[ -z "$DOCKER_TAG" ]]; then
-    DOCKER_TAG=$(cat ${CLIO_DIR}/clio-server/target/scala-2.12/resource_managed/main/clio-server-version.conf | perl -pe 's/clio\.server\.version:\s+//g')
+if [[ -z "$VERSION" ]]; then
+    VERSION=$(cat ${CLIO_DIR}/clio-server/target/scala-2.12/resource_managed/main/clio-server-version.conf | perl -pe 's/clio\.server\.version:\s+//g')
 fi
-
-# push the docker image
-docker push broadinstitute/clio-server:${DOCKER_TAG}
 
 # TMPDIR
 TMPDIR=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
@@ -118,7 +126,7 @@ TMPDIR=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
 CTMPL_ENV_FILE="${TMPDIR}/env-vars.txt"
 
 # populate temp env.txt file with necessary environment
-for var in ENV DOCKER_TAG APP_DIR CLIO_CONF_DIR HOST_LOG_DIR CLIO_LOG_DIR POS_LOG_DIR CLIO_APP_CONF CLIO_LOGBACK_CONF CLIO_ENV_FILE CONTAINER_CLIO_PORT; do
+for var in ENV VERSION APP_DIR CLIO_CONF_DIR HOST_LOG_DIR CLIO_LOG_DIR POS_LOG_DIR CLIO_APP_CONF CLIO_LOGBACK_CONF CLIO_ENV_FILE CONTAINER_CLIO_PORT; do
     echo "${var}=${!var}" >> ${CTMPL_ENV_FILE}
 done
 
@@ -176,7 +184,7 @@ EOF
 startcontainer
 
 STATUS=
-VERSION=
+REPORTED_VERSION=
 
 # try 3 times at 20 second intervals
 attempts=1
@@ -186,11 +194,11 @@ do
   sleep 20
   echo "Attempt $attempts"
   STATUS=$(curl -fs https://"${CLIO_HOST}/health" | jq -r .search)
-  VERSION=$(curl -fs https://"${CLIO_HOST}/version" | jq -r .version)
+  REPORTED_VERSION=$(curl -fs https://"${CLIO_HOST}/version" | jq -r .version)
   attempts=$((attempts + 1))
 done
 
-if [[ "$STATUS" == "OK" && "$VERSION" == "$DOCKER_TAG" ]]; then
+if [[ "$STATUS" == "OK" && "$REPORTED_VERSION" == "$VERSION" ]]; then
     # rm /app.old.old
     ${SSHCMD} "sudo rm -rf ${APP_DIR}.old.old"
     exit 0
@@ -211,5 +219,5 @@ EOF
     # start running the old container
     startcontainer
 
-    exit 2
+    exit 1
 fi

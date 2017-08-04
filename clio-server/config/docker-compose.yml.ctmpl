@@ -4,7 +4,7 @@
 {{with $logback_conf := env "CLIO_LOGBACK_CONF"}}
 {{with $env_file := env "CLIO_ENV_FILE"}}
 app:
-  image: broadinstitute/clio-server:{{env "DOCKER_TAG"}}
+  image: broadinstitute/clio-server:{{env "VERSION"}}
   log_driver: "syslog"
   log_opt:
     tag: "clio-server"

@@ -11,10 +11,14 @@ import sbt._
   */
 object Versioning {
 
-  /** This version number if this is a release commit, or the upcoming
-    * version number if this is a snapshot.
+  /**
+    * Read the base version from file. This version number
+    * if this is a release commit, or the upcoming version number
+    * if this is a snapshot.
     */
-  val ClioVersion = "0.0.1"
+  lazy val clioBaseVersion: Initialize[String] = Def.setting {
+    IO.read(baseDirectory(_ / ".clio-version").value).stripLineEnd
+  }
 
   /** Generate a version using the first 7 chars of the git hash, or "UNKNOWN". */
   lazy val gitShaVersion: Initialize[Option[String]] = Def.setting {
