@@ -273,15 +273,12 @@ def test_read_group_metadata_update():
     upsert = {'sample_alias': metadata['sample_alias'], 'project': metadata['project']}
     upsertResponse = requests.post(upsertUri, json=upsert)
     assert upsertResponse.ok
-
     query_uri = '/'.join([clio_http_uri, 'api', 'readgroup', 'query', version])
     query_project={'project': project}
     query_old_response = requests.post(query_uri, json=query_project)
     assert query_old_response.json()[0]['sample_alias'] == 'sampleAlias1'
-
     updateResponse = requests.post(upsertUri, json={'sample_alias': 'sampleAlias2'})
     assert updateResponse.ok
-
     query_new_response = requests.post(query_uri, json=query_project)
     assert query_new_response.json()[0]['sample_alias'] == 'sampleAlias2'
 
