@@ -96,6 +96,7 @@ fi
 docker run --rm \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -v ${CLIO_DIR}:/clio \
+    -v ~/.ivy2:/root/.ivy2 \
     -w="/clio" \
     broadinstitute/scala:scala-2.12.2-sbt-0.13.15 sbt "$SET_TESTS" "$SET_VERSION" "clio-server/docker"
 
