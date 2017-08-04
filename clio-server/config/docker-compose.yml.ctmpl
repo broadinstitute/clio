@@ -59,7 +59,7 @@ logger:
   image: broadinstitute/fluentd-gcp:latest
   volumes:
     - /app/config.d:/etc/fluent/config.d:ro
-    - /local/clio_logs:{{env "CLIO_LOG_DIR"}}:rw
+    - {{env "HOST_LOG_DIR"}}:{{env "CLIO_LOG_DIR"}}:rw
   restart: always
 
 {{end}}{{end}}{{end}}{{end}}{{end}}

@@ -66,8 +66,12 @@ fi
 APP_DIR=${APP_DIR:-"/app"}
 # location in the clio container where configs will be mounted
 CLIO_CONF_DIR=/etc
+# location on the clio host where logs will be stored
+HOST_LOG_DIR=/local/clio_logs
 # location in the clio container where logs will be mounted
 CLIO_LOG_DIR=/logs
+# relative path within the log dir where the fluentd pos logfile should be stored
+POS_LOG_DIR=pos
 # name of the application config used by the clio instance
 CLIO_APP_CONF=clio.conf
 # name of the logback config used by the clio instance
@@ -114,7 +118,7 @@ TMPDIR=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
 CTMPL_ENV_FILE="${TMPDIR}/env-vars.txt"
 
 # populate temp env.txt file with necessary environment
-for var in "ENV" "DOCKER_TAG" "APP_DIR" "CLIO_CONF_DIR" "CLIO_LOG_DIR" "CLIO_APP_CONF" "CLIO_LOGBACK_CONF" "CLIO_ENV_FILE" "CONTAINER_CLIO_PORT"; do
+for var in ENV DOCKER_TAG APP_DIR CLIO_CONF_DIR HOST_LOG_DIR CLIO_LOG_DIR POS_LOG_DIR CLIO_APP_CONF CLIO_LOGBACK_CONF CLIO_ENV_FILE CONTAINER_CLIO_PORT; do
     echo "${var}=${!var}" >> ${CTMPL_ENV_FILE}
 done
 
@@ -160,10 +164,12 @@ stopcontainer
 # move /app.old to /app.old.old
 # move /app to /app.old
 # move /app.new to /app
+# create pos log directory if it doesn't already exist
 ${SSHCMD} <<-EOF
     ([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}.old.old) &&
     ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_DIR}.old) &&
-    sudo mv ${APP_DIR}.new ${APP_DIR}
+    sudo mv ${APP_DIR}.new ${APP_DIR} &&
+    sudo mkdir -p ${HOST_LOG_DIR}/${POS_LOG_DIR}
 EOF
 
 # start running the new container
