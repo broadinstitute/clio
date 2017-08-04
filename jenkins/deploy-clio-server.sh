@@ -102,7 +102,7 @@ if [[ "$RUN_TESTS" = "false" ]]; then
 fi
 # sbt command to override the default docker tag
 if [[ ! -z "$VERSION" ]]; then
-    SET_VERSION="set version := \"$VERSION\""
+    SET_VERSION="set version in ThisBuild := \"$VERSION\""
 fi
 
 # build the clio-server docker image
