@@ -41,17 +41,15 @@ case class ModelReadGroupMetadata(analysisType: Option[String],
                                   ubamPath: Option[String],
                                   ubamSize: Option[Long])
 
-case class ModelReadGroupQueryInput(
-  flowcellBarcode: Option[String],
-  lane: Option[Int],
-  libraryName: Option[String],
-  location: Option[TransferReadGroupLocation],
-  lcSet: Option[String],
-  project: Option[String],
-  runDateEnd: Option[OffsetDateTime],
-  runDateStart: Option[OffsetDateTime],
-  sampleAlias: Option[String]
-)
+case class ModelReadGroupQueryInput(flowcellBarcode: Option[String],
+                                    lane: Option[Int],
+                                    libraryName: Option[String],
+                                    location: Option[TransferReadGroupLocation],
+                                    lcSet: Option[String],
+                                    project: Option[String],
+                                    runDateEnd: Option[OffsetDateTime],
+                                    runDateStart: Option[OffsetDateTime],
+                                    sampleAlias: Option[String])
 
 case class ModelReadGroupQueryOutput(flowcellBarcode: String,
                                      lane: Int,
