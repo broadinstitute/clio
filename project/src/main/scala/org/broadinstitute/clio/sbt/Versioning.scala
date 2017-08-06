@@ -12,9 +12,16 @@ import sbt._
 object Versioning {
 
   /**
-    * Read the base version from file. This version number
-    * if this is a release commit, or the upcoming version number
-    * if this is a snapshot.
+    * Read the base Clio version from file.
+    * Interpreted as this version number if this is a release commit,
+    * or the upcoming version number if this is a snapshot.
+    *
+    * NOTE: This definition assumes it will be used in the scope of
+    * ThisBuild, as the ".clio-version" file is located in the root
+    * directory of the entire project. Setting this in the scope of
+    * an individual sub-project will cause SBT to look for the version
+    * file in the base directory of that sub-project, where it won't
+    * be found, causing an error.
     */
   lazy val clioBaseVersion: Initialize[String] = Def.setting {
     IO.read(baseDirectory(_ / ".clio-version").value).stripLineEnd
