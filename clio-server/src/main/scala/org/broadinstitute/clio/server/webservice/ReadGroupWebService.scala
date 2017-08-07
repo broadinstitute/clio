@@ -19,7 +19,7 @@ trait ReadGroupWebService {
     }
   }
 
-  private[webservice] val pathPrefixKeyV1
+  private[webservice] val pathPrefixKey
     : Directive1[TransferReadGroupV1Key] = {
     for {
       flowcellBarcode <- pathPrefix(Segment)
@@ -31,7 +31,7 @@ trait ReadGroupWebService {
 
   private[webservice] val postMetadata: Route = {
     pathPrefix("metadata") {
-      pathPrefixKeyV1 { key =>
+      pathPrefixKey { key =>
         post {
           entity(as[TransferReadGroupV1Metadata]) { metadata =>
             complete(readGroupService.upsertMetadata(key, metadata))
