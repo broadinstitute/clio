@@ -26,7 +26,7 @@ def elasticsearch_url(*args):
 def clio_url(*args):
     return prefix_url(get_environ_url('CLIO', port=8080), *args)
 
-def readgroup_v1_url(*args):
+def read_group_v1_url(*args):
     return clio_url('api', 'v1', 'readgroup', *args)
 
 
@@ -170,14 +170,14 @@ def read_group_metadata_location(location, upsertAssert):
         'project': 'testProject'
     }
     upsert = {'project': expected['project']}
-    upsertUrl = readgroup_v1_url('metadata',
-                                 expected['flowcell_barcode'],
-                                 expected['lane'],
-                                 expected['library_name'],
-                                 expected['location'])
+    upsertUrl = read_group_v1_url('metadata',
+                                  expected['flowcell_barcode'],
+                                  expected['lane'],
+                                  expected['library_name'],
+                                  expected['location'])
     upsertAssert(requests.post(upsertUrl, json=upsert).json())
     query = {'library_name': expected['library_name']}
-    url = readgroup_v1_url('query')
+    url = read_group_v1_url('query')
     return requests.post(url, json=query).json(), expected
 
 
@@ -223,14 +223,14 @@ def test_query_sample_project():
                'sample_alias': 'testSample' + new_uuid()} for _ in range(3)]
     sample = upsert[0]['sample_alias'] = upsert[1]['sample_alias']
     for up in upsert:
-        upsertUrl = readgroup_v1_url('metadata',
-                                     up['flowcell_barcode'],
-                                     up['lane'],
-                                     up['library_name'],
-                                     up['location'])
+        upsertUrl = read_group_v1_url('metadata',
+                                      up['flowcell_barcode'],
+                                      up['lane'],
+                                      up['library_name'],
+                                      up['location'])
         json = {k : up[k] for k in ['sample_alias', 'project']}
         assert requests.post(upsertUrl, json=json).ok
-    queryUrl = readgroup_v1_url('query')
+    queryUrl = read_group_v1_url('query')
     projectJson = requests.post(queryUrl, json={'project': project}).json()
     assert len(projectJson) == 3
     for record in projectJson:
@@ -250,10 +250,10 @@ def test_read_group_metadata_update():
         'sample_alias': 'sampleAlias1'
     }
     def querySample():
-        r = requests.post(readgroup_v1_url('query'), json={'project': metadata['project']})
+        r = requests.post(read_group_v1_url('query'), json={'project': metadata['project']})
         return r.json()[0]['sample_alias']
     keys = ['flowcell_barcode', 'lane', 'library_name', 'location']
-    url = readgroup_v1_url('metadata', *[metadata[k] for k in keys])
+    url = read_group_v1_url('metadata', *[metadata[k] for k in keys])
     upsert = {k : metadata[k] for k in ['sample_alias', 'project']}
     assert requests.post(url, json=upsert).ok
     assert querySample() == 'sampleAlias1'
