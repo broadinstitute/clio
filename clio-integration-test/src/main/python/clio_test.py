@@ -170,15 +170,15 @@ def read_group_metadata_location(location, upsertAssert):
         'project': 'testProject'
     }
     upsert = {'project': expected['project']}
-    upsertUri = readgroup_v1_url('metadata',
+    upsertUrl = readgroup_v1_url('metadata',
                                  expected['flowcell_barcode'],
                                  expected['lane'],
                                  expected['library_name'],
                                  expected['location'])
-    upsertAssert(requests.post(upsertUri, json=upsert).json())
+    upsertAssert(requests.post(upsertUrl, json=upsert).json())
     query = {'library_name': expected['library_name']}
-    uri = readgroup_v1_url('query')
-    return requests.post(uri, json=query).json(), expected
+    url = readgroup_v1_url('query')
+    return requests.post(url, json=query).json(), expected
 
 
 def test_read_group_metadata():
