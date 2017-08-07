@@ -58,7 +58,7 @@ lazy val `clio-server` = project
   .settings(dockerfile in docker := Docker.serverDockerFile.value)
   .settings(commonTestDockerSettings)
 
-val ScalafmtVersion = "1.0.0" // https://github.com/lucidsoftware/neo-sbt-scalafmt/issues/29
+val ScalafmtVersion = "1.1.0"
 
 scalafmtVersion in ThisBuild := ScalafmtVersion
 scalafmtOnCompile in ThisBuild := true

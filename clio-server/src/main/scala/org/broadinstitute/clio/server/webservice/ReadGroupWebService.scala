@@ -24,8 +24,7 @@ trait ReadGroupWebService {
       lane <- pathPrefix(IntNumber)
       libraryName <- pathPrefix(Segment)
       location <- pathPrefix(TransferReadGroupLocation.pathMatcher)
-    } yield
-      TransferReadGroupV1Key(flowcellBarcode, lane, libraryName, location)
+    } yield TransferReadGroupV1Key(flowcellBarcode, lane, libraryName, location)
   }
 
   private[webservice] val postMetadata: Route = {

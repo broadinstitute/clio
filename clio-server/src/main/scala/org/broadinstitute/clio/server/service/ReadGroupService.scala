@@ -52,10 +52,7 @@ object ReadGroupService {
     SameFieldsTypeConverter[TransferReadGroupV1Key, ModelReadGroupKey]
 
   private[service] val ConverterV1Metadata =
-    SameFieldsTypeConverter[
-      TransferReadGroupV1Metadata,
-      ModelReadGroupMetadata
-    ]
+    SameFieldsTypeConverter[TransferReadGroupV1Metadata, ModelReadGroupMetadata]
 
   private[service] val ConverterV1QueryInput =
     SameFieldsTypeConverter[
