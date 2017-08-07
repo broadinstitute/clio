@@ -1,0 +1,45 @@
+version: 2
+
+group_defaults:
+  always_pending:
+    labels:
+      - do-not-merge
+      - needs-rebase
+      - work-in-progress
+  approve_by_comment:
+    enabled: true
+    approve_regex: '^:+1:'
+  author_approval:
+    ignored: true
+
+groups:
+  develop-reviewers:
+    required: 1
+    teams:
+      - dsde-pipelines-developers
+    conditions:
+      branches:
+        - develop
+
+  staging-reviewers:
+    required: 2
+    teams:
+      - dsde-pipelines-developers
+    conditions:
+      branches:
+        - staging
+    reset_on_push:
+      enabled: true
+
+  prod-reviewers:
+    required: 2
+    # Based on the description of DSDEGP-1420, changes to prod should
+    # only be allowed with the approval of both Jay and KT.
+    users:
+      - jacarey
+      - ktibbett
+    conditions:
+      branches:
+        - master
+    reset_on_push:
+      enabled: true

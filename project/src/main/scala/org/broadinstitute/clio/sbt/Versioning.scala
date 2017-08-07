@@ -6,12 +6,26 @@ import sbt.Keys._
 import sbt._
 
 /**
-  * Versioning information for builds of clio, based on a dotted version appended with a git hash.
+  * Versioning information for builds of clio, based on a dotted
+  * version appended with a git hash.
   */
 object Versioning {
 
-  /** This version number if this is a release commit, or the upcoming version number if this is a snapshot. */
-  val ClioVersion = "0.0.1"
+  /**
+    * Read the base Clio version from file.
+    * Interpreted as this version number if this is a release commit,
+    * or the upcoming version number if this is a snapshot.
+    *
+    * NOTE: This definition assumes it will be used in the scope of
+    * ThisBuild, as the ".clio-version" file is located in the root
+    * directory of the entire project. Setting this in the scope of
+    * an individual sub-project will cause SBT to look for the version
+    * file in the base directory of that sub-project, where it won't
+    * be found, causing an error.
+    */
+  lazy val clioBaseVersion: Initialize[String] = Def.setting {
+    IO.read(baseDirectory(_ / ".clio-version").value).stripLineEnd
+  }
 
   /** Generate a version using the first 7 chars of the git hash, or "UNKNOWN". */
   lazy val gitShaVersion: Initialize[Option[String]] = Def.setting {

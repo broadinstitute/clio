@@ -19,8 +19,12 @@ def get_environ_uri(prefix, scheme_default='http', host_default='localhost', por
 clio_http_uri = get_environ_uri('CLIO', port_default=8080)
 elasticsearch_http_uri = get_environ_uri('ELASTICSEARCH', port_default=9200)
 
+def get_cluster_health():
+    response = requests.get(elasticsearch_http_uri + "/_cluster/health")
+    return response.json()['status']
 
-def test_wait_for_clio():
+
+def test_wait_for_clio(allowYellowHealth=False):
     count = 0
     print("waiting for " + clio_http_uri)
     while count < 20:
@@ -29,6 +33,9 @@ def test_wait_for_clio():
             js = r.json()
             clio_status = js['clio']
             search_status = js['search']
+            if allowYellowHealth and 'yellow' == get_cluster_health():
+                print("WARNING: test_wait_for_clio() allowing yellow cluster health.")
+                search_status = 'OK'
             if clio_status == 'Started' and search_status == 'OK':
                 print("connected to clio.")
                 return
@@ -45,11 +52,15 @@ def test_version():
     assert 'version' in js
 
 
-def test_health():
+def test_health(allowYellowHealth=False):
     r = requests.get(clio_http_uri + '/health')
     js = r.json()
     assert js['clio'] == 'Started'
-    assert js['search'] == 'OK'
+    if allowYellowHealth:
+        print('WARNING: test_health() allowing yellow cluster health.')
+        assert 'yellow' == get_cluster_health()
+    else:
+        assert js['search'] == 'OK'
 
 
 def test_bad_method():
@@ -78,15 +89,16 @@ def test_read_group_mapping():
     mappings = js['read_group']['mappings']['default']
     assert mappings['dynamic'] == 'false'
     expected_fields = {
+        'flowcell_barcode': 'keyword',
+        'lane': 'integer',
+        'library_name': 'keyword',
+        'location' : 'keyword',
         'analysis_type': 'keyword',
         'bait_intervals': 'keyword',
         'data_type': 'keyword',
-        'flowcell_barcode': 'keyword',
         'individual_alias': 'keyword',
         'initiative': 'keyword',
-        'lane': 'integer',
         'lc_set': 'keyword',
-        'library_name': 'keyword',
         'library_type': 'keyword',
         'machine_name': 'keyword',
         'molecular_barcode_name': 'keyword',
@@ -132,7 +144,7 @@ def test_authorization():
         result['OIDC_CLAIM_expires_in'] = str(1234567890)
         return result
     headers = mockHeaders(withoutExpect)
-    authUrl = clio_http_uri + '/authorization'
+    authUrl = clio_http_uri + '/api/authorization'
     def getAuthStatus(headers):
         return requests.get(authUrl, headers=headers).status_code
     def without(header): # a copy of headers without header
@@ -144,25 +156,44 @@ def test_authorization():
     for header, expect in withoutExpect.items(): testWithout(header, expect)
 
 
-def test_read_group_metadata():
-    id = str(uuid.uuid4()).replace('-', '')
-    library = 'library' + id
+def new_uuid():
+    return str(uuid.uuid4()).replace('-', '')
 
-    payload = {'project': 'testProject'}
-    r = requests.post(clio_http_uri + '/readgroup/metadata/v1/barcode1/1/' + library, json=payload)
-    js = r.json()
-    assert js == {}
 
-    payload = {'library_name': library}
-    r = requests.post(clio_http_uri + '/readgroup/query/v1', json=payload)
-    js = r.json()
-    assert len(js) == 1
-    assert js[0] == {
-        'flowcell_barcode': 'barcode1',
-        'lane': 1,
-        'library_name': library,
-        'project': 'testProject',
+def read_group_metadata_location(location, upsertAssert):
+    version = 'v1'
+    expected = {
+        'flowcell_barcode': 'barcode2',
+        'lane': 2,
+        'library_name': 'library' + new_uuid(),
+        'location' : location,
+        'project': 'testProject'
     }
+    upsert = {'project': expected['project']}
+    upsertUri = '/'.join([clio_http_uri, 'api', 'readgroup', 'metadata', version,
+                          expected['flowcell_barcode'],
+                          str(expected['lane']),
+                          expected['library_name'],
+                          expected['location']])
+    upsertResponse = requests.post(upsertUri, json=upsert)
+    upsertAssert(upsertResponse.json())
+    queryUri = '/'.join([clio_http_uri, 'api', 'readgroup', 'query', version])
+    query = {'library_name': expected['library_name']}
+    queryResponse = requests.post(queryUri, json=query)
+    return queryResponse.json(), expected
+
+
+def test_read_group_metadata():
+    def assertRejected(response):
+        assert response['rejection'] == 'The requested resource could not be found.'
+    def assertEmpty(response):
+        not response
+    for location in ['GCP', 'OnPrem']:
+        js, expected = read_group_metadata_location(location, assertEmpty)
+        assert len(js) == 1
+        assert js[0] == expected
+    js, _ = read_group_metadata_location('Unknown', assertRejected)
+    assertEmpty(js)
 
 
 # I don't know how to derive the required fields.
@@ -174,25 +205,97 @@ def test_json_schema():
                     'integer': {"type": "integer", "format": "int32"},
                     'long':    {"type": "integer", "format": "int64"},
                     'date':    {"type": "string" , "format": "date-time"} }
-        response = requests.get(elasticsearch_http_uri + '/read_group/_mapping/default')
+        uri = '/'.join([elasticsearch_http_uri, 'read_group', '_mapping', 'default'])
+        response = requests.get(uri)
         mapping = response.json()['read_group']['mappings']['default']['properties']
         properties = { key: schemas[value['type']] for key, value in mapping.items() }
         return { 'type': 'object',
-                 'required': [ 'flowcell_barcode', 'lane', 'library_name' ],
+                 'required': [ 'flowcell_barcode', 'lane', 'library_name', 'location'],
                  'properties': properties }
-    response = requests.get(clio_http_uri + '/readgroup/schema/v1')
-    result = response.json()
-    assert result == expected()
+    response = requests.get('/'.join([clio_http_uri, 'api','readgroup', 'schema', 'v1']))
+    assert response.json() == expected()
+
+def test_query_sample_project():
+    version = 'v1'
+    project = 'testProject' + new_uuid()
+    upserts = [{
+            'flowcell_barcode': 'barcode2',
+            'lane': 2,
+            'library_name': 'library' + new_uuid(),
+            'location': 'GCP',
+            'project': project
+        } for _ in range(3)]
+
+    sample1 = 'testSample' + new_uuid()
+    sample2 = 'testSample' + new_uuid()
+    upserts[0]['sample_alias'] = sample1
+    upserts[1]['sample_alias'] = sample1
+    upserts[2]['sample_alias'] = sample2
+
+    for record in upserts:
+        upsertUri = '/'.join([clio_http_uri, 'api', 'readgroup', 'metadata', version,
+                              record['flowcell_barcode'],
+                              str(record['lane']),
+                              record['library_name'],
+                              record['location']])
+        upsert = {'sample_alias': record['sample_alias'], 'project': record['project']}
+        upsertResponse = requests.post(upsertUri, json=upsert)
+        assert upsertResponse.ok
+
+    queryUri = '/'.join([clio_http_uri, 'api', 'readgroup', 'query', version])
+    getByProjectResponse = requests.post(queryUri, json={'project': project})
+    assert len(getByProjectResponse.json()) == 3
+    for record in getByProjectResponse.json():
+        assert record['project'] == project
+
+    getBySampleIdResponse = requests.post(queryUri, json={'sample_alias': sample1})
+    assert len(getBySampleIdResponse.json()) == 2
+    for record in getBySampleIdResponse.json():
+        assert record['sample_alias'] == sample1
 
 
+def test_read_group_metadata_update():
+    version = 'v1'
+    project = 'testProject' + new_uuid()
+    metadata = {
+        'flowcell_barcode': 'barcode2',
+        'lane': 2,
+        'library_name': 'library' + new_uuid(),
+        'location': 'GCP',
+        'project': project,
+        'sample_alias': 'sampleAlias1'
+    }
+    upsertUri = '/'.join([clio_http_uri, 'api', 'readgroup', 'metadata', version,
+                          metadata['flowcell_barcode'],
+                          str(metadata['lane']),
+                          metadata['library_name'],
+                          metadata['location']])
+    upsert = {'sample_alias': metadata['sample_alias'], 'project': metadata['project']}
+    upsertResponse = requests.post(upsertUri, json=upsert)
+    assert upsertResponse.ok
+    query_uri = '/'.join([clio_http_uri, 'api', 'readgroup', 'query', version])
+    query_project={'project': project}
+    query_old_response = requests.post(query_uri, json=query_project)
+    assert query_old_response.json()[0]['sample_alias'] == 'sampleAlias1'
+    updateResponse = requests.post(upsertUri, json={'sample_alias': 'sampleAlias2'})
+    assert updateResponse.ok
+    query_new_response = requests.post(query_uri, json=query_project)
+    assert query_new_response.json()[0]['sample_alias'] == 'sampleAlias2'
+
+
+# Allow yellow Elasticsearch cluster health when running outside of
+# the standard dockerized test.
+#
 if __name__ == '__main__':
-    test_wait_for_clio()
+    test_wait_for_clio(True)
     test_version()
-    test_health()
+    test_health(True)
     test_bad_method()
     test_bad_path()
     test_read_group_mapping()
     test_authorization()
     test_read_group_metadata()
     test_json_schema()
+    test_query_sample_project()
+    test_read_group_metadata_update()
     print('tests passed')

@@ -2,16 +2,8 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
-import org.broadinstitute.clio.server.model.{
-  ModelReadGroupKey,
-  ModelReadGroupMetadata,
-  ModelReadGroupQueryInput
-}
-import org.broadinstitute.clio.transfer.model.{
-  TransferReadGroupV1Key,
-  TransferReadGroupV1Metadata,
-  TransferReadGroupV1QueryInput
-}
+import org.broadinstitute.clio.server.model._
+import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
@@ -22,7 +14,12 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
     val memorySearchDAO = new MemoryReadGroupSearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val readGroupService = ReadGroupService(app)
-    val transferKey = TransferReadGroupV1Key("barcode1", 2, "library3")
+    val transferKey = TransferReadGroupV1Key(
+      "barcode1",
+      2,
+      "library3",
+      TransferReadGroupLocation.GCP
+    )
     val transferMetadataMapper =
       new CaseClassMapper[TransferReadGroupV1Metadata]
     val transferMetadata =
@@ -35,7 +32,12 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
       memorySearchDAO.updateReadGroupMetadataCalls should be(
         Seq(
           (
-            ModelReadGroupKey("barcode1", 2, "library3"),
+            ModelReadGroupKey(
+              "barcode1",
+              2,
+              "library3",
+              TransferReadGroupLocation.GCP
+            ),
             ModelReadGroupMetadata(
               analysisType = None,
               baitIntervals = None,
@@ -93,8 +95,9 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
           ModelReadGroupQueryInput(
             flowcellBarcode = None,
             lane = None,
-            lcSet = None,
             libraryName = None,
+            location = None,
+            lcSet = None,
             project = Option("testProject"),
             runDateEnd = None,
             runDateStart = None,

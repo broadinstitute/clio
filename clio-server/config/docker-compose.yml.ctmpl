@@ -1,0 +1,64 @@
+version: "2"
+{{with $app_dir := env "APP_DIR"}}{{with $conf_dir := env "CLIO_CONF_DIR"}}
+services:
+  app:
+    image: broadinstitute/clio-server:{{env "VERSION"}}
+    logging:
+      driver: "syslog"
+      options:
+        tag: "clio-server"
+    env_file:
+      - {{$app_dir}}/clio.env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - {{$app_dir}}/{{env "CLIO_APP_CONF"}}:{{$conf_dir}}/{{env "CLIO_APP_CONF"}}:ro
+      - {{$app_dir}}/{{env "CLIO_LOGBACK_CONF"}}:{{$conf_dir}}/{{env "CLIO_LOGBACK_CONF"}}:ro
+    restart: always
+    links:
+      - logger
+    volumes_from:
+      - logger
+
+  proxy:
+    image: broadinstitute/openidc-proxy:latest
+    hostname: {{env "CLIO_HOST"}}
+    logging:
+      driver: "syslog"
+      options:
+        tag: "clio-proxy"
+    links:
+      - app:app
+      - logger
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - {{$app_dir}}/server.crt:/etc/ssl/certs/server.crt:ro
+      - {{$app_dir}}/server.key:/etc/ssl/private/server.key:ro
+      - {{$app_dir}}/ca-bundle.crt:/etc/ssl/certs/ca-bundle.crt:ro
+      - {{$app_dir}}/site.conf:/etc/apache2/sites-enabled/site.conf
+      - {{$app_dir}}/mpm_event.conf:/etc/apache2/conf-enabled/mpm_event.conf:ro
+    volumes_from:
+      - logger
+    restart: always
+    environment:
+      CALLBACK_URI: https://{{env "CLIO_HOST"}}/oauth2callback
+      LOG_LEVEL: warn
+      PROXY_PATH: /
+      PROXY_URL: http://app:{{env "CONTAINER_CLIO_PORT"}}/
+      SERVER_NAME: {{env "CLIO_HOST"}}
+      AUTH_TYPE: AuthType None
+      OIDC_CLAIM: Require all granted
+      PROXY_PATH2: /api
+      PROXY_URL2: http://app:{{env "CONTAINER_CLIO_PORT"}}/api
+      AUTH_TYPE2: AuthType oauth20
+      OIDC_CLAIM2: Require valid-user
+
+  logger:
+    image: broadinstitute/fluentd-gcp:latest
+    volumes:
+      - {{$app_dir}}/config.d:/etc/fluent/config.d:ro
+      - {{env "HOST_LOG_DIR"}}:{{env "CLIO_LOG_DIR"}}:rw
+    restart: always
+{{end}}{{end}}

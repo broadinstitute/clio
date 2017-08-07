@@ -21,6 +21,13 @@ object Dependencies {
   private val Slf4jVersion = "1.7.25"
   private val TestContainersScalaVersion = "0.6.0"
 
+  /**
+    * Version of scalafmt to pull in via plugin.
+    * Declared separately from the other dependencies because it's
+    * added through the `scalafmtVersion` key, not `libraryDependencies`.
+    */
+  val ScalafmtVersion = "1.1.0"
+
   /** Dependencies used in main code, and transitively by the test code. */
   val ServerMainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
@@ -50,6 +57,10 @@ object Dependencies {
   /** The full list of server dependencies. */
   val ServerDependencies
     : Seq[ModuleID] = ServerMainDependencies ++ ServerTestDependencies
+
+  val TransferModelDependencies: Seq[ModuleID] = Seq(
+    "com.beachape" %% "enumeratum" % EnumeratumVersion
+  )
 
   /** Suppress warning for evicted libraries. */
   val ServerOverrideDependencies: Set[ModuleID] = Set(

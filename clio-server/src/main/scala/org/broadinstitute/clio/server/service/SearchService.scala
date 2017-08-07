@@ -46,13 +46,13 @@ object SearchService {
     * @tparam MO The type of the Model Query Output.
     * @return The result of the query.
     */
-  def queryMetadata[TI, TO, MI, MO](
-    transferInput: TI,
-    queryInputConverter: TypeConverter[TI, MI],
-    queryOutputConverter: TypeConverter[MO, TO],
-    query: MI => Future[Seq[MO]]
-  )(implicit
-    executionContext: ExecutionContext): Future[Seq[TO]] = {
+  def queryMetadata[TI, TO, MI, MO](transferInput: TI,
+                                    queryInputConverter: TypeConverter[TI, MI],
+                                    queryOutputConverter: TypeConverter[MO, TO],
+                                    query: MI => Future[Seq[MO]])(
+    implicit
+    executionContext: ExecutionContext
+  ): Future[Seq[TO]] = {
     val modelInput = queryInputConverter.convert(transferInput)
     val modelOutputs = query(modelInput)
     modelOutputs map {
