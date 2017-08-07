@@ -47,7 +47,6 @@ class AuditDirectivesSpec
     val failingAuditDAO = new FailingAuditDAO()
     val app = MockClioApp(auditDAO = failingAuditDAO)
     val mockDirectives = new MockAuditDirectives(app)
-
     Get("/") ~> mockDirectives.auditRequest(complete(MockResult("ok"))) ~> check {
       response.status.isFailure() should be(true)
     }

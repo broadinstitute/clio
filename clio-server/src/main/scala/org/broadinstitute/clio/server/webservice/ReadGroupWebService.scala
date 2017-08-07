@@ -12,8 +12,10 @@ trait ReadGroupWebService {
   def readGroupService: ReadGroupService
 
   lazy val readGroupRoutes: Route = {
-    pathPrefix("readgroup") {
-      concat(getSchema, postMetadata, query)
+    pathPrefix("v1") {
+      pathPrefix("readgroup") {
+        concat(getSchema, postMetadata, query)
+      }
     }
   }
 
@@ -29,12 +31,10 @@ trait ReadGroupWebService {
 
   private[webservice] val postMetadata: Route = {
     pathPrefix("metadata") {
-      pathPrefix("v1") {
-        pathPrefixKeyV1 { key =>
-          post {
-            entity(as[TransferReadGroupV1Metadata]) { metadata =>
-              complete(readGroupService.upsertMetadata(key, metadata))
-            }
+      pathPrefixKeyV1 { key =>
+        post {
+          entity(as[TransferReadGroupV1Metadata]) { metadata =>
+            complete(readGroupService.upsertMetadata(key, metadata))
           }
         }
       }
@@ -43,11 +43,9 @@ trait ReadGroupWebService {
 
   private[webservice] val query: Route = {
     pathPrefix("query") {
-      pathPrefix("v1") {
-        post {
-          entity(as[TransferReadGroupV1QueryInput]) { input =>
-            complete(readGroupService.queryMetadata(input))
-          }
+      post {
+        entity(as[TransferReadGroupV1QueryInput]) { input =>
+          complete(readGroupService.queryMetadata(input))
         }
       }
     }
@@ -55,10 +53,8 @@ trait ReadGroupWebService {
 
   private[webservice] val getSchema: Route = {
     pathPrefix("schema") {
-      pathPrefix("v1") {
-        get {
-          complete(readGroupService.querySchema())
-        }
+      get {
+        complete(readGroupService.querySchema())
       }
     }
   }
