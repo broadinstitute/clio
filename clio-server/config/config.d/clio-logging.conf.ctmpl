@@ -2,7 +2,7 @@
 <source>
   @type tail
   path {{$log_dir}}/clio.log
-  pos_file {{$log_dir}}/pos/clio.pos
+  pos_file {{$log_dir}}/{{env "POS_LOG_DIR"}}/clio.pos
   limit_recently_modified 24h
   tag clio
   format multiline

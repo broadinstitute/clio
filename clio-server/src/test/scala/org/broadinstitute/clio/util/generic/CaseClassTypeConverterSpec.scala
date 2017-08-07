@@ -59,8 +59,6 @@ object CaseClassTypeConverterSpec {
                                      oldB: Int,
                                      toRemove: Boolean)
 
-  case class InternalModelDifferent(a: Option[String],
-                                    newB: Int,
-                                    toAdd: Double)
+  case class InternalModelDifferent(a: Option[String], newB: Int, toAdd: Double)
 
 }
