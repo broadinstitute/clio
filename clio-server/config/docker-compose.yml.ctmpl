@@ -2,7 +2,7 @@ version: "2"
 {{with $app_dir := env "APP_DIR"}}{{with $conf_dir := env "CLIO_CONF_DIR"}}
 services:
   app:
-    image: broadinstitute/clio-server:{{env "VERSION"}}
+    image: broadinstitute/clio-server:{{env "DOCKER_TAG"}}
     logging:
       driver: "syslog"
       options:
