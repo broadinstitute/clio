@@ -69,6 +69,30 @@ object Docker {
     }
   }
 
+  /** The Dockerfile. */
+  lazy val jenkinsIntegrationTestDockerFile: Initialize[Task[Dockerfile]] =
+    Def.task {
+      val pythonSource = baseDirectory(_ / "src" / "main" / "python").value
+      new Dockerfile {
+
+        // TODO: Publish the pytest Dockerfile to Docker Hub, then reference the pushed image here.
+        // Generic pytest docker image
+        from("python:3.6")
+        run("mkdir", "/app")
+        workDir("/app")
+        copy(pythonSource / "requirements.txt", "./")
+        run("pip", "install", "-r", "requirements.txt")
+        entryPoint("pytest", "-s")
+
+        // clio-integration-test specifics
+        label("CLIO_VERSION", version.value)
+        workDir("/cliointegrationtest")
+        copy(pythonSource / "clio_test.py", "./")
+        cmd("/cliointegrationtest/clio_test.py")
+
+      }
+    }
+
   /** Other customizations for sbt-docker. */
   lazy val buildOptions: Initialize[BuildOptions] = Def.setting {
     BuildOptions(
