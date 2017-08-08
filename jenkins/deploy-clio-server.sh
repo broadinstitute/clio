@@ -10,9 +10,7 @@ CLIO_DIR=$(cd $(dirname $(dirname $0)) && pwd)
 # Run this script on Jenkins to deploy Clio to a host.
 
 # Steps:
-#   Build and push a docker image for clio-server
-#   Gather configurations associated with app to deploy
-#   Render any ctmpls
+#   Render clio-server ctmpls into configs for the given environment
 #   Copy configs to node
 #   Stop any currently running container
 #   Re-start container using new configs
@@ -20,13 +18,7 @@ CLIO_DIR=$(cd $(dirname $(dirname $0)) && pwd)
 
 # The script expects the following ENV vars set to non-null values
 #   ENV: environment to deploy to, one of "dev", "staging", or "prod"
-#   CLIO_HOST: hostname to deploy clio to
-
-# The script also supports the optional ENV vars
-#  VERSION: tag to apply to the docker image,
-#           rather than using the default git-version.
-#  RUN_TESTS: if set to "false", unit tests will not be run as part of
-#             building the docker image
+#   DOCKER_TAG: the docker tag to deploy
 
 # verify required vars are set to actual values
 if [ -z "$ENV" ]
@@ -44,9 +36,11 @@ else
   esac
 fi
 
-if [ -z "$CLIO_HOST" ]
+CLIO_HOST="clio101.gotc-${ENV}.broadinstitute.org"
+
+if [ -z "$DOCKER_TAG" ]
 then
-  >&2 echo "Error: CLIO_HOST not set!!"
+  >&2 echo "Error: DOCKER_TAG not set!!"
   exit 1
 fi
 
@@ -86,7 +80,7 @@ CLIO_APP_CONF=clio.conf
 # name of the logback config used by the clio instance
 CLIO_LOGBACK_CONF=clio-logback.xml
 # port to expose for clio in the clio container
-CONTAINER_CLIO_PORT=8000
+CONTAINER_CLIO_PORT=8080
 
 # SSH options
 SSH_USER=jenkins
@@ -94,38 +88,12 @@ SSHOPTS="-o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o StrictHostKeyCheck
 SSHCMD="ssh $SSHOPTS ${SSH_USER}@${CLIO_HOST}"
 SCPCMD="scp $SSHOPTS"
 
-# sbt command to disable tests in the docker build
-if [[ "$RUN_TESTS" = "false" ]]
-then
-  SET_TESTS="set test in assembly in LocalProject(\"clio-server\") := {}"
-fi
-# sbt command to override the default docker tag
-if [[ ! -z "$VERSION" ]]
-then
-  SET_VERSION="set version in ThisBuild := \"$VERSION\""
-fi
-
-# build the clio-server docker image
-docker run --rm \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -v ~/.dockercfg:/root/.dockercfg \
-  -v ${CLIO_DIR}:/clio \
-  -v ~/.ivy2:/root/.ivy2 \
-  -w="/clio" \
-  broadinstitute/scala:scala-2.12.2-sbt-0.13.15 \
-  sbt "$SET_TESTS" "$SET_VERSION" "clio-server/dockerBuildAndPush"
-
-# if no tag was given, read the default tag from the generated resource file
-if [[ -z "$VERSION" ]]; then
-  VERSION=$(cat ${CLIO_DIR}/clio-server/target/scala-2.12/resource_managed/main/clio-server-version.conf | perl -pe 's/clio\.server\.version:\s+//g')
-fi
-
 # create a temp dir to store rendered configs
 TMPDIR=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
 CTMPL_ENV_FILE="${TMPDIR}/env-vars.txt"
 
 # populate temp env.txt file with necessary environment for rendering configs
-for var in ENV CLIO_HOST VERSION APP_DIR CLIO_CONF_DIR HOST_LOG_DIR CLIO_LOG_DIR POS_LOG_DIR CLIO_APP_CONF CLIO_LOGBACK_CONF CONTAINER_CLIO_PORT; do
+for var in ENV CLIO_HOST DOCKER_TAG APP_DIR CLIO_CONF_DIR HOST_LOG_DIR CLIO_LOG_DIR POS_LOG_DIR CLIO_APP_CONF CLIO_LOGBACK_CONF CONTAINER_CLIO_PORT; do
   echo "${var}=${!var}" >> ${CTMPL_ENV_FILE}
 done
 
@@ -199,7 +167,7 @@ do
   attempts=$((attempts + 1))
 done
 
-if [[ "$STATUS" == "OK" && "$REPORTED_VERSION" == "$VERSION" ]]; then
+if [[ "$STATUS" == "OK" && "$REPORTED_VERSION" == "$DOCKER_TAG" ]]; then
   # rm /app.old.old
   ${SSHCMD} "sudo rm -rf ${APP_DIR}.old.old"
   exit 0
