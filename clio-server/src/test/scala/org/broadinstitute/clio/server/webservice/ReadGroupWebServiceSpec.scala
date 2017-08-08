@@ -20,7 +20,7 @@ class ReadGroupWebServiceSpec
   it should "postMetadata with OnPrem location" in {
     val webService = new MockReadGroupWebService()
     Post(
-      "/metadata/v1/barcodeOnPrem/3/libraryOnPrem/OnPrem",
+      "/metadata/barcodeOnPrem/3/libraryOnPrem/OnPrem",
       Map("project" -> "testOnPremLocation")
     ) ~> webService.postMetadata ~> check {
       responseAs[Map[String, String]] should be(empty)
@@ -30,7 +30,7 @@ class ReadGroupWebServiceSpec
   it should "postMetadata with GCP location" in {
     val webService = new MockReadGroupWebService()
     Post(
-      "/metadata/v1/barcodeGCP/4/libraryGCP/GCP",
+      "/metadata/barcodeGCP/4/libraryGCP/GCP",
       Map("project" -> "testGCPlocation")
     ) ~> webService.postMetadata ~> check {
       responseAs[Map[String, String]] should be(empty)
@@ -42,19 +42,19 @@ class ReadGroupWebServiceSpec
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val webService = new MockReadGroupWebService(app)
     Post(
-      "/metadata/v1/barcodeGCP/5/LibraryGCP/GCP",
+      "/metadata/barcodeGCP/5/LibraryGCP/GCP",
       Map("project" -> "testProject1", "sample_alias" -> "sample1")
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
     Post(
-      "/metadata/v1/barcodeGCP/6/LibraryGCP/GCP",
+      "/metadata/barcodeGCP/6/LibraryGCP/GCP",
       Map("project" -> "testProject1", "sample_alias" -> "sample1")
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
     Post(
-      "/metadata/v1/barcodeGCP/7/LibraryGCP/GCP",
+      "/metadata/barcodeGCP/7/LibraryGCP/GCP",
       Map("project" -> "testProject1", "sample_alias" -> "sample2")
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
@@ -63,7 +63,7 @@ class ReadGroupWebServiceSpec
     // We have to test the MemorySearchDAO because we're not going to implement
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
-    Post("/query/v1", Map("project" -> "testProject1")) ~> webService.query ~> check {
+    Post("/query", Map("project" -> "testProject1")) ~> webService.query ~> check {
       memorySearchDAO.queryReadGroupCalls should have length 1
       val firstQuery = memorySearchDAO.queryReadGroupCalls.head
       firstQuery.project should be(Some("testProject1"))
@@ -71,7 +71,7 @@ class ReadGroupWebServiceSpec
     }
 
     Post(
-      "/query/v1",
+      "/query",
       Map("project" -> "testProject1", "sample_alias" -> "sample1")
     ) ~> webService.query ~> check {
       memorySearchDAO.queryReadGroupCalls should have length 2
@@ -84,7 +84,7 @@ class ReadGroupWebServiceSpec
   it should "query with a BoGuS project and sample and return nothing" in {
     val webService = new MockReadGroupWebService()
     Post(
-      "/query/v1",
+      "/query",
       Map("project" -> "testBoGuSproject", "sample_alias" -> "testBoGuSsample")
     ) ~> webService.query ~> check {
       responseAs[Seq[String]] should be(empty)
@@ -94,7 +94,7 @@ class ReadGroupWebServiceSpec
   it should "reject postMetadata with BoGuS location" in {
     val webService = new MockReadGroupWebService()
     Post(
-      "/metadata/v1/barcodeBoGuS/5/libraryBoGuS/BoGuS",
+      "/metadata/barcodeBoGuS/5/libraryBoGuS/BoGuS",
       Map("project" -> "testBoGuSlocation")
     ) ~> Route.seal(webService.postMetadata) ~> check {
       status shouldEqual StatusCodes.NotFound
@@ -103,21 +103,21 @@ class ReadGroupWebServiceSpec
 
   it should "query with an empty request" in {
     val webService = new MockReadGroupWebService()
-    Post("/query/v1", Map.empty[String, String]) ~> webService.query ~> check {
+    Post("/query", Map.empty[String, String]) ~> webService.query ~> check {
       responseAs[Seq[String]] should be(empty)
     }
   }
 
   it should "query without an empty request" in {
     val webService = new MockReadGroupWebService()
-    Post("/query/v1", Map("project" -> "testProject")) ~> webService.query ~> check {
+    Post("/query", Map("project" -> "testProject")) ~> webService.query ~> check {
       responseAs[Seq[String]] should be(empty)
     }
   }
 
   it should "return a JSON schema" in {
     val webService = new MockReadGroupWebService()
-    Get("/schema/v1") ~> webService.getSchema ~> check {
+    Get("/schema") ~> webService.getSchema ~> check {
       responseAs[Json] should be(SchemaService.readGroupSchemaJson)
     }
   }
