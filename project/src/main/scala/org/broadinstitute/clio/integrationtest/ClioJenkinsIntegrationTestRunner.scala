@@ -78,11 +78,7 @@ class ClioJenkinsIntegrationTestRunner(testClassesDirectory: File,
     */
   private def tryDockerComposeTest(): Try[Int] = Try {
     runCommandAsync(
-      Seq("docker-compose",
-          "--verbose",
-          "run",
-          "--service-ports",
-          "clio-server"),
+      Seq("docker-compose", "run", "--service-ports", "clio-server"),
       dockerComposeDirectory,
       dockerComposeEnvironment,
       log.info(_)

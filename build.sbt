@@ -41,12 +41,7 @@ val commonTestDockerSettings: Seq[Setting[_]] = Seq(
 lazy val clio = project
   .in(file("."))
   .settings(commonSettings)
-  .aggregate(
-    `clio-integration-test`,
-    `clio-jenkins-integration-test`,
-    `clio-transfer-model`,
-    `clio-server`
-  )
+  .aggregate(`clio-integration-test`, `clio-transfer-model`, `clio-server`)
   .disablePlugins(AssemblyPlugin)
 
 lazy val `clio-integration-test` = project
@@ -54,17 +49,7 @@ lazy val `clio-integration-test` = project
   .enablePlugins(DockerPlugin)
   .settings(commonDockerSettings)
   .settings(dockerfile in docker := Docker.integrationTestDockerFile.value)
-  .enablePlugins(ClioIntegrationTestPlugin)
-  .settings(commonTestDockerSettings)
-
-lazy val `clio-jenkins-integration-test` = project
-  .settings(commonSettings)
-  .enablePlugins(DockerPlugin)
-  .settings(commonDockerSettings)
-  .settings(
-    dockerfile in docker := Docker.jenkinsIntegrationTestDockerFile.value
-  )
-  .enablePlugins(ClioJenkinsIntegrationTestPlugin)
+  .enablePlugins(ClioIntegrationTestPlugin, ClioJenkinsIntegrationTestPlugin)
   .settings(commonTestDockerSettings)
 
 lazy val `clio-transfer-model` = project
