@@ -13,20 +13,30 @@ object ClioIntegrationTestSettings extends AutoPlugin {
   val testDocker: TaskKey[Unit] =
     taskKey[Unit]("Run clio integration tests via docker.")
 
-  /** The actual task to run docker. */
-  lazy val runTestDocker: Initialize[Task[Unit]] = Def.task {
-    // Use the settings classDirectory for tests, and the project version
-    val testClassesDirectory = (classDirectory in Test).value
-    val clioVersion = version.value
+  /** The task key for running the integration tests in Jenkins. */
+  val testDockerJenkins: TaskKey[Unit] =
+    taskKey[Unit]("Run clio integration tests via docker in Jenkins.")
 
-    // Wait for task test:compile, and the task to create the logs
-    (compile in Test).value
-    val log = streams.value.log
+  private def creatTestTask(jenkinsTest: Boolean) = {
+    Def.task {
+      // Use the settings classDirectory for tests, and the project version
+      val testClassesDirectory = (classDirectory in Test).value
+      val clioVersion = version.value
 
-    new ClioIntegrationTestRunner(testClassesDirectory, clioVersion, log).run()
+      // Wait for task test:compile, and the task to create the logs
+      (compile in Test).value
+      val log = streams.value.log
+
+      new ClioIntegrationTestRunner(testClassesDirectory,
+                                    clioVersion,
+                                    jenkinsTest,
+                                    log)
+        .run()
+    }
   }
 
   /** Settings to add to the project */
   lazy val settings: Seq[Setting[Task[Unit]]] = Seq(
-    testDocker := runTestDocker.value)
+    testDocker := creatTestTask(false).value,
+    testDockerJenkins := creatTestTask(true).value)
 }

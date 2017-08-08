@@ -16,6 +16,7 @@ import scala.util.{Failure, Success, Try}
   */
 class ClioIntegrationTestRunner(testClassesDirectory: File,
                                 clioVersion: String,
+                                jenkinsTest: Boolean,
                                 log: Logger) {
 
   /** Runs the integration test. */
@@ -35,7 +36,8 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     val shutdownHook = sys addShutdownHook dockerComposeCleanupInstance
 
     // Go try and run the docker compose test
-    val triedDockerComposeTest = tryDockerComposeTest()
+    val triedDockerComposeTest =
+      if (jenkinsTest) tryDockerComposeJenkinsTest() else tryDockerComposeTest()
 
     // Evaluate our lazy val from above, cleaning up only once
     // While we're here, try to remove our shutdown hook
@@ -70,6 +72,35 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     "CLIO_DOCKER_TAG" -> clioVersion,
     "ELASTICSEARCH_DOCKER_TAG" -> configDocker.getString("elasticsearch")
   )
+
+  /**
+    * Runs docker-compose cluster locally, including an integration test, then shuts down.
+    *
+    * @return The exit code of the integration test.
+    */
+  private def tryDockerComposeJenkinsTest(): Try[Int] = Try {
+    runCommandAsync(
+      Seq("docker-compose",
+          "--file",
+          "docker-compose-jenkins.yml",
+          "run",
+          "--service-ports",
+          "clio-server"),
+      dockerComposeDirectory,
+      dockerComposeEnvironment,
+      log.info(_)
+    )
+    runCommand(
+      Seq("docker-compose",
+          "--file",
+          "docker-compose-jenkins.yml",
+          "run",
+          "clio-jenkins-integration-test"),
+      dockerComposeDirectory,
+      dockerComposeEnvironment,
+      log.info(_)
+    )
+  }
 
   /**
     * Runs docker-compose cluster locally, including an integration test, then shuts down.
@@ -131,6 +162,25 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     val process = Process(command, cwd, extraEnv: _*)
     val processLogger = ProcessLogger(logFunction)
     process ! processLogger
+  }
+
+  /**
+    * Run a command asynchronously using scala.sys.process.
+    *
+    * @param command     The command to run.
+    * @param cwd         Directory to run from.
+    * @param extraEnv    Other environment variables to pass to the command.
+    * @param logFunction A function implementing logging.
+    */
+  private def runCommandAsync(command: Seq[String],
+                              cwd: File,
+                              extraEnv: Seq[(String, String)],
+                              logFunction: String => Unit): Unit = {
+    import scala.sys.process._
+    val process = Process(command, cwd, extraEnv: _*)
+    val processLogger = ProcessLogger(logFunction)
+    process run processLogger
+    ()
   }
 }
 
