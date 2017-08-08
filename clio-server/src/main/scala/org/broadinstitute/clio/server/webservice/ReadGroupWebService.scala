@@ -19,8 +19,7 @@ trait ReadGroupWebService {
     }
   }
 
-  private[webservice] val pathPrefixKey
-    : Directive1[TransferReadGroupV1Key] = {
+  private[webservice] val pathPrefixKey: Directive1[TransferReadGroupV1Key] = {
     for {
       flowcellBarcode <- pathPrefix(Segment)
       lane <- pathPrefix(IntNumber)

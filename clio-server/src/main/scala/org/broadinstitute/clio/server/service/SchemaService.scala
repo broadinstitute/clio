@@ -174,7 +174,7 @@ object SchemaService {
   /**
     * The JSON schema for a ReadGroup index
     */
-  lazy val readGroupSchemaJson: Json =
+  val readGroupSchemaJson: Json =
     JsonSchema[TransferReadGroupV1QueryOutput].toJson
 
   /**
