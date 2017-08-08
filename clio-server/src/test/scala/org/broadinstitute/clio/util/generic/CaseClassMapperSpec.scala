@@ -9,10 +9,7 @@ class CaseClassMapperSpec extends FlatSpec with Matchers {
 
   it should "get field names" in {
     val mapper = new CaseClassMapper[TestClass]
-    mapper.names should contain theSameElementsInOrderAs Seq(
-      "fieldA",
-      "fieldB"
-    )
+    mapper.names should contain theSameElementsInOrderAs Seq("fieldA", "fieldB")
   }
 
   it should "get field values" in {

@@ -23,57 +23,68 @@ CLIO_DIR=$(cd $(dirname $(dirname $0)) && pwd)
 #   CLIO_HOST: hostname to deploy clio to
 
 # The script also supports the optional ENV vars
-#  DOCKER_TAG: docker tag to apply to the built and deployed instance
-#              if not specified, the default SNAP version is used
+#  VERSION: tag to apply to the docker image,
+#           rather than using the default git-version.
 #  RUN_TESTS: if set to "false", unit tests will not be run as part of
 #             building the docker image
 
 # verify required vars are set to actual values
 if [ -z "$ENV" ]
 then
-   echo "Error: ENV not set!!"
-   exit 2
+  >&2 echo "Error: ENV not set!!"
+  exit 1
+else
+  case "$ENV" in
+    "dev"|"staging"|"prod")
+      ;;
+    *)
+      >&2 echo "Error: Invalid environment '$ENV'!!"
+      exit 1
+      ;;
+  esac
 fi
 
 if [ -z "$CLIO_HOST" ]
 then
-   echo "Error: CLIO_HOST not set!!"
-   exit 2
+  >&2 echo "Error: CLIO_HOST not set!!"
+  exit 1
 fi
 
-CONFIG_DIR=clio-server/config
+CONFIG_DIR=${CLIO_DIR}/clio-server/config
 
 if [ ! -d "$CONFIG_DIR" ]
 then
-    echo "Missing configuration directory ($CONFIG_DIR) - Exiting "
-    exit 1
+  >&2 echo "Missing configuration directory ($CONFIG_DIR) - Exiting "
+  exit 1
 fi
 
 # set VAULT token location
 if [ -f /etc/vault-token-dsde ]
 then
-   TOKEN_FILE="/etc/vault-token-dsde"
+  TOKEN_FILE="/etc/vault-token-dsde"
 elif [ -f ${HOME}/.vault-token ]
 then
-   TOKEN_FILE="${HOME}/.vault-token"
+  TOKEN_FILE="${HOME}/.vault-token"
 else
-   echo "Missing VAULT TOKEN file - Exiting"
-   exit 1
+  >&2 echo "Missing VAULT TOKEN file - Exiting"
+  exit 1
 fi
-   
+
 # initialize vars used in multiple config templates
 # location on host where configs should get copied
 APP_DIR=${APP_DIR:-"/app"}
 # location in the clio container where configs will be mounted
 CLIO_CONF_DIR=/etc
+# location on the clio host where logs will be stored
+HOST_LOG_DIR=/local/clio_logs
 # location in the clio container where logs will be mounted
 CLIO_LOG_DIR=/logs
+# relative path within the log dir where the fluentd pos logfile should be stored
+POS_LOG_DIR=pos
 # name of the application config used by the clio instance
 CLIO_APP_CONF=clio.conf
 # name of the logback config used by the clio instance
 CLIO_LOGBACK_CONF=clio-logback.xml
-# name of the env file used to set up clio with docker-compose
-CLIO_ENV_FILE=clio.env
 # port to expose for clio in the clio container
 CONTAINER_CLIO_PORT=8000
 
@@ -84,65 +95,68 @@ SSHCMD="ssh $SSHOPTS ${SSH_USER}@${CLIO_HOST}"
 SCPCMD="scp $SSHOPTS"
 
 # sbt command to disable tests in the docker build
-if [[ "$RUN_TESTS" = "false" ]]; then
-    SET_TESTS="set test in assembly in LocalProject(\"clio-server\") := {}"
+if [[ "$RUN_TESTS" = "false" ]]
+then
+  SET_TESTS="set test in assembly in LocalProject(\"clio-server\") := {}"
 fi
 # sbt command to override the default docker tag
-if [[ ! -z "$DOCKER_TAG" ]]; then
-    SET_VERSION="set version := \"$DOCKER_TAG\""
+if [[ ! -z "$VERSION" ]]
+then
+  SET_VERSION="set version in ThisBuild := \"$VERSION\""
 fi
 
 # build the clio-server docker image
 docker run --rm \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -v ${CLIO_DIR}:/clio \
-    -w="/clio" \
-    broadinstitute/scala:scala-2.12.2-sbt-0.13.15 sbt "$SET_TESTS" "$SET_VERSION" "clio-server/docker"
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v ~/.dockercfg:/root/.dockercfg \
+  -v ${CLIO_DIR}:/clio \
+  -v ~/.ivy2:/root/.ivy2 \
+  -w="/clio" \
+  broadinstitute/scala:scala-2.12.2-sbt-0.13.15 \
+  sbt "$SET_TESTS" "$SET_VERSION" "clio-server/dockerBuildAndPush"
 
 # if no tag was given, read the default tag from the generated resource file
-if [[ -z "$DOCKER_TAG" ]]; then
-    DOCKER_TAG=$(cat ${CLIO_DIR}/clio-server/target/scala-2.12/resource_managed/main/clio-server-version.conf | perl -pe 's/clio\.server\.version:\s+//g')
+if [[ -z "$VERSION" ]]; then
+  VERSION=$(cat ${CLIO_DIR}/clio-server/target/scala-2.12/resource_managed/main/clio-server-version.conf | perl -pe 's/clio\.server\.version:\s+//g')
 fi
 
-# push the docker image
-docker push broadinstitute/clio-server:${DOCKER_TAG}
-
-# TMPDIR
+# create a temp dir to store rendered configs
 TMPDIR=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
-# temporary env file for rendering ctmpls
 CTMPL_ENV_FILE="${TMPDIR}/env-vars.txt"
 
-# populate temp env.txt file with necessary environment
-for var in "ENV" "DOCKER_TAG" "APP_DIR" "CLIO_CONF_DIR" "CLIO_LOG_DIR" "CLIO_APP_CONF" "CLIO_LOGBACK_CONF" "CLIO_ENV_FILE" "CONTAINER_CLIO_PORT"; do
-    echo "${var}=${!var}" >> ${CTMPL_ENV_FILE}
+# populate temp env.txt file with necessary environment for rendering configs
+for var in ENV CLIO_HOST VERSION APP_DIR CLIO_CONF_DIR HOST_LOG_DIR CLIO_LOG_DIR POS_LOG_DIR CLIO_APP_CONF CLIO_LOGBACK_CONF CONTAINER_CLIO_PORT; do
+  echo "${var}=${!var}" >> ${CTMPL_ENV_FILE}
 done
 
 # copy configs to temp dir
+# the render-ctmpl script will replace them with their rendered variants
 cp -r ${CONFIG_DIR}/* ${TMPDIR}/
 
 # render all ctmpls
 docker run --rm \
-    -v ${TMPDIR}:/working \
-    -v ${CLIO_DIR}/jenkins:/scripts \
-    -v ${TOKEN_FILE}:/root/.vault-token:ro \
-    --env-file="${CTMPL_ENV_FILE}" \
-    broadinstitute/dsde-toolbox:latest /scripts/render-ctmpl.sh
+  -v ${TMPDIR}:/working \
+  -v ${CLIO_DIR}/jenkins:/scripts \
+  -v ${TOKEN_FILE}:/root/.vault-token:ro \
+  --env-file="${CTMPL_ENV_FILE}" \
+  broadinstitute/dsde-toolbox:latest /scripts/render-ctmpl.sh
+
 rm -f ${CTMPL_ENV_FILE}
 
 stopcontainer() {
-    # stop running container on host
-    ${SSHCMD} "test -f ${APP_DIR}/docker-compose.yml && docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml stop || echo"
+  # stop running container on host
+  ${SSHCMD} "test -f ${APP_DIR}/docker-compose.yml && docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml stop || echo"
 
-    # docker-compose rm -f
-    ${SSHCMD} "test -f ${APP_DIR}/docker-compose.yml && docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml rm -f || echo"
+  # docker-compose rm -f
+  ${SSHCMD} "test -f ${APP_DIR}/docker-compose.yml && docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml rm -f || echo"
 }
 
 startcontainer() {
-    # docker-compose pull
-    ${SSHCMD} "docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml pull"
+  # docker-compose pull
+  ${SSHCMD} "docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml pull"
 
-    # docker-compose up -d
-    ${SSHCMD} "docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml up -d"
+  # docker-compose up -d
+  ${SSHCMD} "docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml up -d"
 }
 
 # copy configs to temp directory on host
@@ -159,17 +173,19 @@ stopcontainer
 # move /app.old to /app.old.old
 # move /app to /app.old
 # move /app.new to /app
+# create pos log directory if it doesn't already exist
 ${SSHCMD} <<-EOF
-    ([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}.old.old) &&
-    ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_DIR}.old) &&
-    sudo mv ${APP_DIR}.new ${APP_DIR}
+  ([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}.old.old) &&
+  ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_DIR}.old) &&
+  sudo mv ${APP_DIR}.new ${APP_DIR} &&
+  sudo mkdir -p ${HOST_LOG_DIR}/${POS_LOG_DIR}
 EOF
 
 # start running the new container
 startcontainer
 
 STATUS=
-VERSION=
+REPORTED_VERSION=
 
 # try 3 times at 20 second intervals
 attempts=1
@@ -179,30 +195,31 @@ do
   sleep 20
   echo "Attempt $attempts"
   STATUS=$(curl -fs https://"${CLIO_HOST}/health" | jq -r .search)
-  VERSION=$(curl -fs https://"${CLIO_HOST}/version" | jq -r .version)
+  REPORTED_VERSION=$(curl -fs https://"${CLIO_HOST}/version" | jq -r .version)
   attempts=$((attempts + 1))
 done
 
-if [[ "$STATUS" == "OK" && "$VERSION" == "$DOCKER_TAG" ]]; then
-    # rm /app.old.old
-    ${SSHCMD} "sudo rm -rf ${APP_DIR}.old.old"
-    exit 0
+if [[ "$STATUS" == "OK" && "$REPORTED_VERSION" == "$VERSION" ]]; then
+  # rm /app.old.old
+  ${SSHCMD} "sudo rm -rf ${APP_DIR}.old.old"
+  exit 0
 else
-    # roll back the deployment
-    # stop running the new container
-    stopcontainer
+  >&2 echo "Error: Clio failed to report expected health and version, rolling back deploy!!"
 
-    # rm /app
-    # move /app.old to /app
-    # move /app.old.old to /app.old
-    ${SSHCMD} <<-EOF
-        sudo rm -rf ${APP_DIR} &&
-        ([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}) &&
-        ([ ! -d ${APP_DIR}.old.old ] || sudo mv ${APP_DIR}.old.old ${APP_DIR}.old)
+  # stop running the new container
+  stopcontainer
+
+  # rm /app
+  # move /app.old to /app
+  # move /app.old.old to /app.old
+  ${SSHCMD} <<-EOF
+    sudo rm -rf ${APP_DIR} &&
+    ([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}) &&
+    ([ ! -d ${APP_DIR}.old.old ] || sudo mv ${APP_DIR}.old.old ${APP_DIR}.old)
 EOF
 
-    # start running the old container
-    startcontainer
+  # start running the old container
+  startcontainer
 
-    exit 2
+  exit 1
 fi

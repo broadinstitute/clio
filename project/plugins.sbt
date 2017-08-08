@@ -3,8 +3,8 @@
 val SbtAssemblyVersion = "0.14.4"
 val SbtGitVersion = "0.9.3"
 val SbtDockerVersion = "1.4.1"
-val SbtScalafmtVersion = "1.7" // https://github.com/lucidsoftware/neo-sbt-scalafmt/issues/31
-val ScalafmtVersion = "1.0.0" // https://github.com/lucidsoftware/neo-sbt-scalafmt/issues/29
+val SbtScalafmtVersion = "1.9"
+val ScalafmtVersion = "1.1.0"
 val Slf4jVersion = "1.7.25"
 val TypesafeConfigVersion = "1.3.1"
 

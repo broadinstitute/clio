@@ -5,24 +5,35 @@ import org.broadinstitute.clio.sbt._
 
 enablePlugins(GitVersioning)
 
-// Set the scala version used by the project. sbt version set in build.properties.
-val commonSettings: Seq[Setting[_]] = Seq(
-  scalaVersion := "2.12.2",
-  organization := "org.broadinstitute",
-  scalacOptions ++= Compilation.CompilerSettings,
-  scalacOptions in (Compile, doc) ++= Compilation.DocSettings,
-  scalacOptions in (Compile, console) := Compilation.ConsoleSettings,
-  git.baseVersion := Versioning.ClioVersion,
-  git.formattedShaVersion := Versioning.gitShaVersion.value,
-  resourceGenerators in Compile += Versioning.writeVersionConfig.taskValue
+// Settings applied at the scope of the entire build.
+inThisBuild(
+  Seq(
+    scalaVersion := "2.12.2",
+    organization := "org.broadinstitute",
+    scalacOptions ++= Compilation.CompilerSettings,
+    git.baseVersion := Versioning.clioBaseVersion.value,
+    git.formattedShaVersion := Versioning.gitShaVersion.value,
+    scalafmtVersion := Dependencies.ScalafmtVersion,
+    scalafmtOnCompile := true,
+    ignoreErrors in scalafmt := false
+  )
 )
 
+/*
+ * Settings that must be applied to each project individually because
+ * they are scoped to individual configurations / tasks, which don't
+ * exist in the scope of ThisBuild.
+ */
+val commonSettings: Seq[Setting[_]] = Seq(
+  scalacOptions in (Compile, doc) ++= Compilation.DocSettings,
+  scalacOptions in (Compile, console) := Compilation.ConsoleSettings,
+  resourceGenerators in Compile += Versioning.writeVersionConfig.taskValue
+)
 val commonDockerSettings: Seq[Setting[_]] = Seq(
   assemblyJarName in assembly := Versioning.assemblyName.value,
   imageNames in docker := Docker.imageNames.value,
   buildOptions in docker := Docker.buildOptions.value
 )
-
 val commonTestDockerSettings: Seq[Setting[_]] = Seq(
   resourceGenerators in Test += Docker.writeTestImagesConfig.taskValue
 )
@@ -72,9 +83,3 @@ lazy val `clio-server` = project
   .settings(commonDockerSettings)
   .settings(dockerfile in docker := Docker.serverDockerFile.value)
   .settings(commonTestDockerSettings)
-
-val ScalafmtVersion = "1.0.0" // https://github.com/lucidsoftware/neo-sbt-scalafmt/issues/29
-
-scalafmtVersion in ThisBuild := ScalafmtVersion
-scalafmtOnCompile in ThisBuild := true
-ignoreErrors in (ThisBuild, scalafmt) := false
