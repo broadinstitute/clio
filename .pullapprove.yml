@@ -14,22 +14,12 @@ group_defaults:
 
 groups:
   develop-reviewers:
-    required: 1
-    teams:
-      - dsde-pipelines-developers
-    conditions:
-      branches:
-        - develop
-
-  staging-reviewers:
     required: 2
     teams:
       - dsde-pipelines-developers
     conditions:
       branches:
-        - staging
-    reset_on_push:
-      enabled: true
+        - develop
 
   prod-reviewers:
     required: 2
