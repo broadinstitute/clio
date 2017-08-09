@@ -49,7 +49,7 @@ lazy val `clio-integration-test` = project
   .enablePlugins(DockerPlugin)
   .settings(commonDockerSettings)
   .settings(dockerfile in docker := Docker.integrationTestDockerFile.value)
-  .enablePlugins(ClioIntegrationTestPlugin, ClioJenkinsIntegrationTestPlugin)
+  .enablePlugins(ClioIntegrationTestPlugin)
   .settings(commonTestDockerSettings)
 
 lazy val `clio-transfer-model` = project
