@@ -74,11 +74,14 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
   )
 
   /**
-    * Runs docker-compose cluster locally, including an integration test, then shuts down.
+    * Use docker-compose to start a clio server and then run the integration tests. When the
+    * tests are complete, all docker containers are shut down.
     *
     * @return The exit code of the integration test.
     */
   private def tryDockerComposeJenkinsTest(): Try[Int] = Try {
+    // This is run asynchronously because the clio server never shuts down, and we don't care
+    // about its return codes on exit.
     runCommandAsync(
       Seq("docker-compose",
           "--file",
@@ -90,6 +93,8 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
       dockerComposeEnvironment,
       log.info(_)
     )
+    // This must be run using "docker-compose run" instead of "docker-compose up" because the docker
+    // installed on the Jenkins worker doesn't support the "--exit-code-from" command line argument.
     runCommand(
       Seq("docker-compose",
           "--file",
