@@ -35,6 +35,7 @@ case class TransferReadGroupV1QueryOutput(
   sampleLsid: Option[String],
   sampleType: Option[String],
   targetIntervals: Option[String],
+  notes: Option[String],
   ubamMd5: Option[String],
   ubamPath: Option[String],
   ubamSize: Option[Long]
