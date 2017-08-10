@@ -11,12 +11,14 @@ group_defaults:
     approve_regex: '^:+1:'
   author_approval:
     ignored: true
+  teams:
+    - dsde-pipelines-developers
 
 groups:
   develop-reviewers:
     required: 2
-    teams:
-      - dsde-pipelines-developers
     conditions:
       branches:
         - develop
+  other-branch-reviewers:
+    required: 1
