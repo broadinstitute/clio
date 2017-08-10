@@ -20,16 +20,3 @@ groups:
     conditions:
       branches:
         - develop
-
-  prod-reviewers:
-    required: 2
-    # Based on the description of DSDEGP-1420, changes to prod should
-    # only be allowed with the approval of both Jay and KT.
-    users:
-      - jacarey
-      - ktibbett
-    conditions:
-      branches:
-        - master
-    reset_on_push:
-      enabled: true
