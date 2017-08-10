@@ -171,16 +171,17 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     * @param cwd         Directory to run from.
     * @param extraEnv    Other environment variables to pass to the command.
     * @param logFunction A function implementing logging.
+    * @return the process started by the command
     */
-  private def runCommandAsync(command: Seq[String],
-                              cwd: File,
-                              extraEnv: Seq[(String, String)],
-                              logFunction: String => Unit): Unit = {
+  private def runCommandAsync(
+      command: Seq[String],
+      cwd: File,
+      extraEnv: Seq[(String, String)],
+      logFunction: String => Unit): scala.sys.process.Process = {
     import scala.sys.process._
     val process = Process(command, cwd, extraEnv: _*)
     val processLogger = ProcessLogger(logFunction)
     process run processLogger
-    ()
   }
 }
 
