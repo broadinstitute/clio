@@ -4,7 +4,7 @@ import io.circe.Json
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.SearchDAO
 import org.broadinstitute.clio.server.model._
-import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.transfer.model.{TransferReadGroupV1QueryInput, _}
 import org.broadinstitute.clio.util.generic.SameFieldsTypeConverter
 import org.broadinstitute.clio.util.json.JsonSchemas
 
@@ -18,9 +18,14 @@ class ReadGroupService private (
     transferKey: TransferReadGroupV1Key,
     transferMetadata: TransferReadGroupV1Metadata
   ): Future[Unit] = {
+    val updatedTransferMetadata = transferMetadata.copy(
+      documentStatus =
+        Option(transferMetadata.documentStatus.getOrElse(DocumentStatus.Normal))
+    )
+
     SearchService.upsertMetadata(
       transferKey,
-      transferMetadata,
+      updatedTransferMetadata,
       ReadGroupService.ConverterV1Key,
       ReadGroupService.ConverterV1Metadata,
       searchDAO.updateReadGroupMetadata
@@ -28,6 +33,20 @@ class ReadGroupService private (
   }
 
   def queryMetadata(
+    transferInput: TransferReadGroupV1QueryInput
+  ): Future[Seq[TransferReadGroupV1QueryOutput]] = {
+    val transferInputNew =
+      transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
+    queryAllMetadata(transferInputNew)
+//    SearchService.queryMetadata(
+//      transferInputNew,
+//      ReadGroupService.ConverterV1QueryInput,
+//      ReadGroupService.ConverterV1QueryOutput,
+//      searchDAO.queryReadGroup
+//    )
+  }
+
+  def queryAllMetadata(
     transferInput: TransferReadGroupV1QueryInput
   ): Future[Seq[TransferReadGroupV1QueryOutput]] = {
     SearchService.queryMetadata(
