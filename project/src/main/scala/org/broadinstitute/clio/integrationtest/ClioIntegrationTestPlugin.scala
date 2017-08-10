@@ -12,6 +12,10 @@ object ClioIntegrationTestPlugin extends AutoPlugin {
 
     /** The task key for running the integration tests. */
     val testDocker: TaskKey[Unit] = ClioIntegrationTestSettings.testDocker
+
+    /** The task key for running the Jenkins integration tests. */
+    val testDockerJenkins: TaskKey[Unit] =
+      ClioIntegrationTestSettings.testDockerJenkins
   }
 
   /** Add our task to the project(s). */

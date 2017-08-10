@@ -16,6 +16,7 @@ import scala.util.{Failure, Success, Try}
   */
 class ClioIntegrationTestRunner(testClassesDirectory: File,
                                 clioVersion: String,
+                                jenkinsTest: Boolean,
                                 log: Logger) {
 
   /** Runs the integration test. */
@@ -35,7 +36,8 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     val shutdownHook = sys addShutdownHook dockerComposeCleanupInstance
 
     // Go try and run the docker compose test
-    val triedDockerComposeTest = tryDockerComposeTest()
+    val triedDockerComposeTest =
+      if (jenkinsTest) tryDockerComposeJenkinsTest() else tryDockerComposeTest()
 
     // Evaluate our lazy val from above, cleaning up only once
     // While we're here, try to remove our shutdown hook
@@ -70,6 +72,40 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     "CLIO_DOCKER_TAG" -> clioVersion,
     "ELASTICSEARCH_DOCKER_TAG" -> configDocker.getString("elasticsearch")
   )
+
+  /**
+    * Use docker-compose to start a clio server and then run the integration tests. When the
+    * tests are complete, all docker containers are shut down.
+    *
+    * @return The exit code of the integration test.
+    */
+  private def tryDockerComposeJenkinsTest(): Try[Int] = Try {
+    // This is run asynchronously because the clio server never shuts down, and we don't care
+    // about its return codes on exit.
+    runCommandAsync(
+      Seq("docker-compose",
+          "--file",
+          "docker-compose-jenkins.yml",
+          "run",
+          "--service-ports",
+          "clio-server"),
+      dockerComposeDirectory,
+      dockerComposeEnvironment,
+      log.info(_)
+    )
+    // This must be run using "docker-compose run" instead of "docker-compose up" because the docker
+    // installed on the Jenkins worker doesn't support the "--exit-code-from" command line argument.
+    runCommand(
+      Seq("docker-compose",
+          "--file",
+          "docker-compose-jenkins.yml",
+          "run",
+          "clio-jenkins-integration-test"),
+      dockerComposeDirectory,
+      dockerComposeEnvironment,
+      log.info(_)
+    )
+  }
 
   /**
     * Runs docker-compose cluster locally, including an integration test, then shuts down.
@@ -131,6 +167,26 @@ class ClioIntegrationTestRunner(testClassesDirectory: File,
     val process = Process(command, cwd, extraEnv: _*)
     val processLogger = ProcessLogger(logFunction)
     process ! processLogger
+  }
+
+  /**
+    * Run a command asynchronously using scala.sys.process.
+    *
+    * @param command     The command to run.
+    * @param cwd         Directory to run from.
+    * @param extraEnv    Other environment variables to pass to the command.
+    * @param logFunction A function implementing logging.
+    * @return the process started by the command
+    */
+  private def runCommandAsync(
+      command: Seq[String],
+      cwd: File,
+      extraEnv: Seq[(String, String)],
+      logFunction: String => Unit): scala.sys.process.Process = {
+    import scala.sys.process._
+    val process = Process(command, cwd, extraEnv: _*)
+    val processLogger = ProcessLogger(logFunction)
+    process run processLogger
   }
 }
 

@@ -58,7 +58,7 @@ object Docker {
       workDir("/app")
       copy(pythonSource / "requirements.txt", "./")
       run("pip", "install", "-r", "requirements.txt")
-      entryPoint("pytest", "-vv", "-s")
+      entryPoint("pytest", "-s")
 
       // clio-integration-test specifics
       label("CLIO_VERSION", version.value)

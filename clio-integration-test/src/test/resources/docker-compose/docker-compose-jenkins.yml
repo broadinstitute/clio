@@ -1,0 +1,14 @@
+version: '2'
+
+services:
+  clio-jenkins-integration-test:
+    image: broadinstitute/clio-integration-test:${CLIO_DOCKER_TAG}
+    environment:
+      ELASTICSEARCH_HTTP_HOST: elasticsearch1.gotc-dev.broadinstitute.org
+    network_mode: "host"
+  clio-server:
+    image: broadinstitute/clio-server:${CLIO_DOCKER_TAG}
+    environment:
+      JAVA_OPTS: -Dclio.server.elasticsearch.http-hosts.0.hostname=elasticsearch1.gotc-dev.broadinstitute.org
+    ports:
+    - 8080:8080
