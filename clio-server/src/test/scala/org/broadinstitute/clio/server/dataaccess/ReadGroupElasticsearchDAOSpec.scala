@@ -56,6 +56,7 @@ class ReadGroupElasticsearchDAOSpec
       sampleLsid = None,
       sampleType = None,
       targetIntervals = None,
+      notes = None,
       ubamMd5 = None,
       ubamPath = None,
       ubamSize = None
@@ -105,6 +106,7 @@ class ReadGroupElasticsearchDAOSpec
       sampleLsid = None,
       sampleType = None,
       targetIntervals = None,
+      notes = None,
       ubamMd5 = Option("md5"),
       ubamPath = Option(s"expected_path_$id"),
       ubamSize = Option(12345L)
@@ -159,6 +161,7 @@ class ReadGroupElasticsearchDAOSpec
             sampleLsid = None,
             sampleType = None,
             targetIntervals = None,
+            notes = None,
             ubamMd5 = Option("md5"),
             ubamPath = Option(s"expected_path_$id"),
             ubamSize = Option(12345L)

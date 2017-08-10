@@ -114,6 +114,7 @@ def test_read_group_mapping():
                 'sample_lsid',
                 'sample_type',
                 'target_intervals',
+                'notes',
                 'ubam_md5',
                 'ubam_path']
     expected = {k: 'keyword' for k in keywords}
@@ -247,18 +248,33 @@ def test_read_group_metadata_update():
         'library_name': 'library' + new_uuid(),
         'location': 'GCP',
         'project': 'testProject' + new_uuid(),
-        'sample_alias': 'sampleAlias1'
+        'sample_alias': 'sampleAlias1',
+        'notes': ''
     }
-    def querySample():
+    def queryMetadata():
         r = requests.post(read_group_v1_url('query'), json={'project': metadata['project']})
-        return r.json()[0]['sample_alias']
+        return r.json()[0]
     keys = ['flowcell_barcode', 'lane', 'library_name', 'location']
     url = read_group_v1_url('metadata', *[metadata[k] for k in keys])
-    upsert = {k : metadata[k] for k in ['sample_alias', 'project']}
+    upsert = {k : metadata[k] for k in ['sample_alias', 'project', 'notes']}
     assert requests.post(url, json=upsert).ok
-    assert querySample() == 'sampleAlias1'
-    assert requests.post(url, json={'sample_alias': 'sampleAlias2'}).ok
-    assert querySample() == 'sampleAlias2'
+
+    # retrieve the originally posted data
+    metadataRetrieved = queryMetadata()
+    assert metadataRetrieved['sample_alias'] == 'sampleAlias1'
+    assert metadataRetrieved['notes'] == ''
+
+    # change the sample alias, and add a note.
+    assert requests.post(url, json={'sample_alias': 'sampleAlias2', 'notes': 'Breaking news'}).ok
+    metadataRetrieved = queryMetadata()
+    assert metadataRetrieved['sample_alias'] == 'sampleAlias2'
+    assert metadataRetrieved['notes'] == 'Breaking news'
+
+    # don't change the sample alias, but update the note (back to empty)
+    assert requests.post(url, json={'notes': ''}).ok
+    metadataRetrieved = queryMetadata()
+    assert metadataRetrieved['sample_alias'] == 'sampleAlias2'
+    assert metadataRetrieved['notes'] == ''
 
 
 # Allow yellow Elasticsearch cluster health when running outside of
