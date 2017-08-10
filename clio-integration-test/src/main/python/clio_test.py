@@ -241,6 +241,7 @@ def test_query_sample_project():
     for record in sampleJson:
         assert record['sample_alias'] == sample
 
+
 def test_read_group_metadata_update():
     metadata = {
         'flowcell_barcode': 'barcode2',
@@ -249,32 +250,29 @@ def test_read_group_metadata_update():
         'location': 'GCP',
         'project': 'testProject' + new_uuid(),
         'sample_alias': 'sampleAlias1',
-        'notes': ''
+        'notes': 'Breaking news'
     }
     def queryMetadata():
         r = requests.post(read_group_v1_url('query'), json={'project': metadata['project']})
         return r.json()[0]
     keys = ['flowcell_barcode', 'lane', 'library_name', 'location']
     url = read_group_v1_url('metadata', *[metadata[k] for k in keys])
-    upsert = {k : metadata[k] for k in ['sample_alias', 'project', 'notes']}
+    upsert = {k : metadata[k] for k in ['sample_alias', 'project']}
     assert requests.post(url, json=upsert).ok
-
-    # retrieve the originally posted data
-    metadataRetrieved = queryMetadata()
-    assert metadataRetrieved['sample_alias'] == 'sampleAlias1'
-    assert metadataRetrieved['notes'] == ''
-
-    # change the sample alias, and add a note.
-    assert requests.post(url, json={'sample_alias': 'sampleAlias2', 'notes': 'Breaking news'}).ok
-    metadataRetrieved = queryMetadata()
-    assert metadataRetrieved['sample_alias'] == 'sampleAlias2'
-    assert metadataRetrieved['notes'] == 'Breaking news'
-
-    # don't change the sample alias, but update the note (back to empty)
-    assert requests.post(url, json={'notes': ''}).ok
-    metadataRetrieved = queryMetadata()
-    assert metadataRetrieved['sample_alias'] == 'sampleAlias2'
-    assert metadataRetrieved['notes'] == ''
+    original = queryMetadata()
+    assert original['sample_alias'] == 'sampleAlias1'
+    assert not 'notes' in original
+    upsert['notes'] = metadata['notes']
+    assert requests.post(url, json=upsert).ok
+    withNotes = queryMetadata()
+    assert withNotes['sample_alias'] == metadata['sample_alias']
+    assert withNotes['notes'] == metadata['notes']
+    upsert['notes'] = ''
+    upsert['sample_alias'] = 'sampleAlias2'
+    assert requests.post(url, json=upsert).ok
+    emptyNotes = queryMetadata()
+    assert emptyNotes['sample_alias'] == 'sampleAlias2'
+    assert emptyNotes['notes'] == ''
 
 
 # Allow yellow Elasticsearch cluster health when running outside of
