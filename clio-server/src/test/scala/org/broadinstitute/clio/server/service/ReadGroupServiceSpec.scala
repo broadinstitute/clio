@@ -24,7 +24,10 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
       new CaseClassMapper[TransferReadGroupV1Metadata]
     val transferMetadata =
       transferMetadataMapper.newInstance(
-        Map("project" -> Option("testProject"))
+        Map(
+          "project" -> Option("testProject"),
+          "notes" -> Option("notable update")
+        )
       )
     for {
       _ <- readGroupService.upsertMetadata(transferKey, transferMetadata)
@@ -67,6 +70,7 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
               sampleLsid = None,
               sampleType = None,
               targetIntervals = None,
+              notes = Option("notable update"),
               ubamMd5 = None,
               ubamPath = None,
               ubamSize = None
