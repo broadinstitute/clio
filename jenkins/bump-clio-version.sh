@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Turn on verbose
 set -ex
@@ -20,7 +20,7 @@ then
   exit 1
 fi
 
-VERSION_FILE=${CLIO_DIR}/.clio-version
+VERSION_FILE="${CLIO_DIR}/.clio-version"
 if [ ! -f "$VERSION_FILE" ]
 then
   >&2 echo "Error: No version file at '${VERSION_FILE}'!!"
@@ -29,7 +29,7 @@ fi
 
 cd "$CLIO_DIR"
 COMMIT=$(git rev-parse HEAD)
-BASE_VERSION=$(cat ${CLIO_DIR}/.clio-version | tr -d '\n')
+BASE_VERSION=$(cat "${CLIO_DIR}/.clio-version" | tr -d '\n')
 
 # By default, `git describe` searches backwards for the closest tag
 # Passing --exact-match makes it only look at HEAD, but then it raises an error if the HEAD is un-tagged

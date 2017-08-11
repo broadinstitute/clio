@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # turn on verbose
 set -ex
@@ -44,7 +44,7 @@ then
   exit 1
 fi
 
-CONFIG_DIR=${CLIO_DIR}/clio-server/config
+CONFIG_DIR="${CLIO_DIR}/clio-server/config"
 
 if [ ! -d "$CONFIG_DIR" ]
 then
