@@ -4,15 +4,14 @@
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>{{$log_dir}}/clio.log</file>
 
-        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <fileNamePattern>{{$log_dir}}/clio.%i.log.gz</fileNamePattern>
-            <minIndex>1</minIndex>
-            <maxIndex>5</maxIndex>
-        </rollingPolicy>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- roll over daily, inferred by logback from the filename pattern -->
+            <fileNamePattern>{{$log_dir}}/clio-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
 
-        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-            <maxFileSize>10MB</maxFileSize>
-        </triggeringPolicy>
+            <!-- keep 30 days' worth of logs, up to 30GB (3/5 of the disk size for our deployed Clios) -->
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>30GB</totalSizeCap>
+        </rollingPolicy>
 
         <encoder>
             <pattern>%-5marker %date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%level] %msg%n</pattern>
