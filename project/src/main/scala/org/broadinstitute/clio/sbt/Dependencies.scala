@@ -10,7 +10,7 @@ object Dependencies {
   private val AkkaHttpCirceVersion = "1.17.0"
   private val AkkaHttpVersion = "10.0.9"
   private val CirceVersion = "0.8.0"
-  private val Elastic4sVersion = "5.4.6"
+  private val Elastic4sVersion = "5.4.10"
   private val EnumeratumVersion = "1.5.12"
   private val EnumeratumCirceVersion = "1.5.14"
   private val FicusVersion = "1.4.1"
