@@ -6,11 +6,11 @@
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- roll over daily, inferred by logback from the filename pattern -->
-            <fileNamePattern>{{$log_dir}}/clio-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>{{$log_dir}}/clio-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
 
-            <!-- keep 30 days' worth of logs, up to 5GB -->
+            <!-- keep 30 days' worth of logs, up to 30GB (3/5 of the disk size for our deployed Clios) -->
             <maxHistory>30</maxHistory>
-            <totalSizeCap>5GB</totalSizeCap>
+            <totalSizeCap>30GB</totalSizeCap>
         </rollingPolicy>
 
         <encoder>
