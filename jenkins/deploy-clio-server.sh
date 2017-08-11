@@ -18,7 +18,6 @@ CLIO_DIR=$(cd $(dirname $(dirname $0)) && pwd)
 
 # The script expects the following ENV vars set to non-null values
 #   ENV: environment to deploy to, one of "dev", "staging", or "prod"
-#   DOCKER_TAG: the docker tag to deploy
 
 # verify required vars are set to actual values
 if [ -z "$ENV" ]
@@ -34,14 +33,6 @@ else
       exit 1
       ;;
   esac
-fi
-
-CLIO_HOST="clio101.gotc-${ENV}.broadinstitute.org"
-
-if [ -z "$DOCKER_TAG" ]
-then
-  >&2 echo "Error: DOCKER_TAG not set!!"
-  exit 1
 fi
 
 CONFIG_DIR="${CLIO_DIR}/clio-server/config"
@@ -64,6 +55,12 @@ else
   exit 1
 fi
 
+# compute the tag of the Docker image to deploy based on the current commit
+# assumes the image for the current commit has already been built & pushed
+BASE_VERSION=$(cat "${CLIO_DIR}/.clio-version" | tr -d '\n')
+SHORT_SHA=$(git rev-parse HEAD | cut -c1-7)
+DOCKER_TAG="${BASE_VERSION}-g${SHORT_SHA}-SNAP"
+
 # initialize vars used in multiple config templates
 # location on host where configs should get copied
 APP_DIR=${APP_DIR:-"/app"}
@@ -83,6 +80,7 @@ CLIO_LOGBACK_CONF=clio-logback.xml
 CONTAINER_CLIO_PORT=8080
 
 # SSH options
+CLIO_HOST="clio101.gotc-${ENV}.broadinstitute.org"
 SSH_USER=jenkins
 SSHOPTS="-o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o StrictHostKeyChecking=no"
 SSHCMD="ssh $SSHOPTS ${SSH_USER}@${CLIO_HOST}"
@@ -170,6 +168,11 @@ done
 if [[ "$STATUS" == "OK" && "$REPORTED_VERSION" == "$DOCKER_TAG" ]]; then
   # rm /app.old.old
   ${SSHCMD} "sudo rm -rf ${APP_DIR}.old.old"
+
+  # tag the current commit with the name of the environment that was just deployed to
+  # this is a floating tag, so we have to use -f
+  git tag -f "$ENV"
+
   exit 0
 else
   >&2 echo "Error: Clio failed to report expected health and version, rolling back deploy!!"

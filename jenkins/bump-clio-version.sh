@@ -31,6 +31,9 @@ cd "$CLIO_DIR"
 COMMIT=$(git rev-parse HEAD)
 BASE_VERSION=$(cat "${CLIO_DIR}/.clio-version" | tr -d '\n')
 
+# First, tag the current commit with the just-released version.
+git tag "$RELEASED_VERSION"
+
 # By default, `git describe` searches backwards for the closest tag
 # Passing --exact-match makes it only look at HEAD, but then it raises an error if the HEAD is un-tagged
 HEAD_TAG=$(git describe --match dev --exact-match || echo)
