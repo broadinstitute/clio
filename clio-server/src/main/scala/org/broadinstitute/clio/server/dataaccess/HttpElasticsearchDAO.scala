@@ -46,8 +46,8 @@ class HttpElasticsearchDAO private[dataaccess] (
   private[dataaccess] def existsIndexType(
     index: ElasticsearchIndex[_]
   ): Future[Boolean] = {
-    val typesExistsDefinition = typesExist(index.indexName / index.indexType)
-    httpClient.execute(typesExistsDefinition).map(_.exists)
+    val indexExistsDefinition = indexExists(index.indexName)
+    httpClient.execute(indexExistsDefinition).map(_.exists)
   }
 
   private[dataaccess] def createIndexType(
