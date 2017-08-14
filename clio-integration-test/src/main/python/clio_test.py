@@ -7,10 +7,7 @@ import os
 import requests
 import time
 import uuid
-import google.auth
-import google.oauth2.credentials
 import subprocess
-from oauth2client.client import GoogleCredentials
 
 
 def get_environ_url(prefix, scheme='http', host='localhost', port=80):
@@ -33,29 +30,15 @@ def clio_url(*args):
 def read_group_v1_url(*args):
     return clio_url('api', 'v1', 'readgroup', *args)
 
-def get_oauth_token():
-    credentials = google.oauth2.credentials.Credentials('access_token')
-    credentials = GoogleCredentials.get_application_default()
-    print("credentials.token ==", credentials.token)
-    return credentials.token
-
 def get_gcloud_token():
     gcloud = ['gcloud', 'auth', 'print-access-token']
     try:
         return subprocess.check_output(gcloud).decode('utf8').strip()
-    except subprocess.CalledProcessError:
+    except:
         return None
-
-def get_token():
-    credentials, project = google.auth.default()
-    print("project ==", project)
-    print("credentials ==", credentials)
-    print("credentials.token ==", credentials.token)
 
 def request(verb, url, **kwargs):
     headers = kwargs.get('headers') or {}
-    token = get_token()
-    token = get_oauth_token()
     token = get_gcloud_token()
     if token and not 'Authorization' in headers:
         headers['Authorization'] = 'Bearer ' + token
