@@ -171,6 +171,10 @@ if [[ "$STATUS" == "OK" && "$REPORTED_VERSION" == "$DOCKER_TAG" ]]; then
 
   # tag the current commit with the name of the environment that was just deployed to
   # this is a floating tag, so we have to use -f
+  #
+  # NOTE: we can't push the tag here because Jenkins has to run this script with its
+  # GCE SSH key, which doesn't match its GitHub key. We push the tag as a follow-up
+  # step using the git publisher.
   git tag -f "$ENV"
 
   exit 0
