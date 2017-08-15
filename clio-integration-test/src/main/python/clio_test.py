@@ -7,6 +7,7 @@ import os
 import requests
 import time
 import uuid
+import subprocess
 
 
 def get_environ_url(prefix, scheme='http', host='localhost', port=80):
@@ -29,6 +30,26 @@ def clio_url(*args):
 def read_group_v1_url(*args):
     return clio_url('api', 'v1', 'readgroup', *args)
 
+def get_gcloud_token():
+    gcloud = ['gcloud', 'auth', 'print-access-token']
+    try:
+        return subprocess.check_output(gcloud).decode('utf8').strip()
+    except:
+        return None
+
+def request(verb, url, **kwargs):
+    headers = kwargs.get('headers') or {}
+    token = get_gcloud_token()
+    if token and not 'Authorization' in headers:
+        headers['Authorization'] = 'Bearer ' + token
+        kwargs['headers'] = headers
+    return requests.request(verb, url, **kwargs)
+
+def get(url, **kwargs):
+    return request('get', url, **kwargs)
+
+def post(url, **kwargs):
+    return request('post', url, **kwargs)
 
 def get_cluster_health():
     response = requests.get(elasticsearch_url('_cluster', 'health'))
@@ -43,7 +64,8 @@ def test_wait_for_clio(allowYellowHealth=False):
             js = requests.get(clio_url('health')).json()
             clio_status = js['clio']
             search_status = js['search']
-            if allowYellowHealth and 'yellow' == get_cluster_health():
+            health = get_cluster_health()
+            if allowYellowHealth and ('yellow' == health or 'green' == health):
                 print('WARNING: test_wait_for_clio() allows yellow health.')
                 search_status = 'OK'
             if clio_status == 'Started' and search_status == 'OK':
@@ -63,9 +85,10 @@ def test_version():
 def test_health(allowYellowHealth=False):
     js = requests.get(clio_url('health')).json()
     assert js['clio'] == 'Started'
+    health = get_cluster_health()
     if allowYellowHealth:
         print('WARNING: test_health() allowing yellow cluster health.')
-        assert 'yellow' == get_cluster_health()
+        assert 'yellow' == health or 'green' == health
     else:
         assert js['search'] == 'OK'
 
@@ -131,34 +154,6 @@ def test_read_group_mapping():
         assert properties[name]['type'] == type
 
 
-def test_authorization():
-    withoutExpect = { # expected results from testWithout
-        'OIDC_access_token':     'forbidden',
-        'OIDC_CLAIM_expires_in': 'forbidden',
-        'OIDC_CLAIM_email':      'forbidden',
-        'OIDC_CLAIM_sub':        'ok',
-        'OIDC_CLAIM_user_id':    'ok'
-    }
-    def mockHeaders(withoutExpect): # derive mock headers from withoutExpect
-        result = {key : key for key in withoutExpect.keys()}
-        oks = [key for key, value in withoutExpect.items() if value == 'ok']
-        id = ' or '.join(oks)
-        for ok in oks: result[ok] = id
-        result['OIDC_CLAIM_expires_in'] = str(1234567890)
-        return result
-    headers = mockHeaders(withoutExpect)
-    def getAuthStatus(headers):
-        authUrl = clio_url('api', 'authorization')
-        return requests.get(authUrl, headers=headers).status_code
-    def without(header): # a copy of headers without header
-        result = dict(headers)
-        del result[header]
-        return result
-    def testWithout(header, status):
-        assert getAuthStatus(without(header)) == requests.codes[status]
-    for header, expect in withoutExpect.items(): testWithout(header, expect)
-
-
 def new_uuid():
     return str(uuid.uuid4()).replace('-', '')
 
@@ -176,10 +171,11 @@ def read_group_metadata_location(location, upsertAssert):
                                   expected['lane'],
                                   expected['library_name'],
                                   expected['location'])
-    upsertAssert(requests.post(upsertUrl, json=upsert).json())
+    response = post(upsertUrl, json=upsert)
+    upsertAssert(response.json())
     query = {'library_name': expected['library_name']}
     url = read_group_v1_url('query')
-    return requests.post(url, json=query).json(), expected
+    return post(url, json=query).json(), expected
 
 
 def test_read_group_metadata():
@@ -204,13 +200,13 @@ def test_json_schema():
                     'integer': {"type": "integer", "format": "int32"},
                     'long':    {"type": "integer", "format": "int64"},
                     'date':    {"type": "string" , "format": "date-time"} }
-        r = requests.get(elasticsearch_url('read_group', '_mapping', 'default')).json()
+        r = get(elasticsearch_url('read_group', '_mapping', 'default')).json()
         mapping = r['read_group']['mappings']['default']['properties']
         properties = { key: schemas[value['type']] for key, value in mapping.items() }
         return { 'type': 'object',
                  'required': [ 'flowcell_barcode', 'lane', 'library_name', 'location'],
                  'properties': properties }
-    response = requests.get(clio_url('api', 'v1', 'readgroup', 'schema'))
+    response = get(clio_url('api', 'v1', 'readgroup', 'schema'))
     assert response.json() == expected()
 
 
@@ -230,13 +226,13 @@ def test_query_sample_project():
                                       up['library_name'],
                                       up['location'])
         json = {k : up[k] for k in ['sample_alias', 'project']}
-        assert requests.post(upsertUrl, json=json).ok
+        assert post(upsertUrl, json=json).ok
     queryUrl = read_group_v1_url('query')
-    projectJson = requests.post(queryUrl, json={'project': project}).json()
+    projectJson = post(queryUrl, json={'project': project}).json()
     assert len(projectJson) == 3
     for record in projectJson:
         assert record['project'] == project
-    sampleJson = requests.post(queryUrl, json={'sample_alias': sample}).json()
+    sampleJson = post(queryUrl, json={'sample_alias': sample}).json()
     assert len(sampleJson) == 2
     for record in sampleJson:
         assert record['sample_alias'] == sample
@@ -253,23 +249,23 @@ def test_read_group_metadata_update():
         'notes': 'Breaking news'
     }
     def queryMetadata():
-        r = requests.post(read_group_v1_url('query'), json={'project': metadata['project']})
+        r = post(read_group_v1_url('query'), json={'project': metadata['project']})
         return r.json()[0]
     keys = ['flowcell_barcode', 'lane', 'library_name', 'location']
     url = read_group_v1_url('metadata', *[metadata[k] for k in keys])
     upsert = {k : metadata[k] for k in ['sample_alias', 'project']}
-    assert requests.post(url, json=upsert).ok
+    assert post(url, json=upsert).ok
     original = queryMetadata()
     assert original['sample_alias'] == 'sampleAlias1'
     assert not 'notes' in original
     upsert['notes'] = metadata['notes']
-    assert requests.post(url, json=upsert).ok
+    assert post(url, json=upsert).ok
     withNotes = queryMetadata()
     assert withNotes['sample_alias'] == metadata['sample_alias']
     assert withNotes['notes'] == metadata['notes']
     upsert['notes'] = ''
     upsert['sample_alias'] = 'sampleAlias2'
-    assert requests.post(url, json=upsert).ok
+    assert post(url, json=upsert).ok
     emptyNotes = queryMetadata()
     assert emptyNotes['sample_alias'] == 'sampleAlias2'
     assert emptyNotes['notes'] == ''
@@ -285,7 +281,6 @@ if __name__ == '__main__':
     test_bad_method()
     test_bad_path()
     test_read_group_mapping()
-    test_authorization()
     test_read_group_metadata()
     test_json_schema()
     test_query_sample_project()
