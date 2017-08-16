@@ -11,14 +11,14 @@ class CommandDispatchSpec extends BaseClientSpec {
   it should "return false when we dispatch a command that doesn't exist" in {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
-      BaseArgs(command = Some("badCommand"))
+      BaseArgs(command = None)
     ) should be(false)
   }
 
   it should "return true when we dispatch a valid queryReadGroup command" in {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
-      BaseArgs(command = Some(Commands.queryReadGroupBam))
+      BaseArgs(command = Some(Commands.QueryReadGroupBam.apply()))
     ) should be(true)
   }
 
@@ -26,11 +26,11 @@ class CommandDispatchSpec extends BaseClientSpec {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
       BaseArgs(
-        command = Some(Commands.addReadGroupBam),
-        flowcell = Some(testFlowcell),
-        lane = Some(testLane),
-        libraryName = Some(testLibName),
-        location = Some(testLocation),
+        command = Some(Commands.AddReadGroupBam.apply()),
+        flowcell = testFlowcell,
+        lane = testLane,
+        libraryName = testLibName,
+        location = testLocation,
         bearerToken = testBearer,
         metadataLocation = metadataFileLocation
       )

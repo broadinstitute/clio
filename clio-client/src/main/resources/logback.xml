@@ -2,14 +2,14 @@
 <!--suppress ALL -->
 <configuration>
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%-5marker %date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%level] %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="debug">
-        <appender-ref ref="STDOUT"/>
+    <root level="info">
+        <appender-ref ref="STDERR"/>
     </root>
 
 </configuration>

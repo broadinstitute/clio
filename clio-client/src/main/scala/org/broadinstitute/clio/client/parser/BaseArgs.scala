@@ -5,7 +5,9 @@ import java.time.OffsetDateTime
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.Commands
 
-case class BaseArgs(command: Option[String] = None,
+import scala.concurrent.ExecutionContext
+
+case class BaseArgs(command: Option[Commands.Command] = None,
                     bearerToken: String = "",
                     metadataLocation: String = "",
                     flowcell: Option[String] = None,
@@ -18,7 +20,8 @@ case class BaseArgs(command: Option[String] = None,
                     runDateEnd: Option[OffsetDateTime] = None,
                     runDateStart: Option[OffsetDateTime] = None)
 
-class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
+class BaseParser(implicit ec: ExecutionContext)
+    extends scopt.OptionParser[BaseArgs]("clio-client") {
   override def showUsageOnError = true
 
   head("\nclio-client", ClioClientConfig.Version.value + "\n")
@@ -28,8 +31,8 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
     .action((token, conf) => conf.copy(bearerToken = token))
     .text("A valid bearer token for authentication.")
 
-  cmd(Commands.addReadGroupBam)
-    .action((_, c) => c.copy(command = Some(Commands.addReadGroupBam)))
+  cmd(Commands.AddReadGroupBam.apply().commandName)
+    .action((_, c) => c.copy(command = Some(Commands.AddReadGroupBam.apply())))
     .text("This command is used to add a read group group bam.")
     .children(
       opt[String]('m', "meta-data-file")
@@ -61,8 +64,10 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
         .text("The location for this read group. (Required)")
     )
 
-  cmd(Commands.queryReadGroupBam)
-    .action((_, c) => c.copy(command = Some(Commands.queryReadGroupBam)))
+  cmd(Commands.QueryReadGroupBam.apply().commandName)
+    .action(
+      (_, c) => c.copy(command = Some(Commands.QueryReadGroupBam.apply()))
+    )
     .text("This command is used to query a read group group bam.")
     .children(
       opt[String]('f', "flowcell")
