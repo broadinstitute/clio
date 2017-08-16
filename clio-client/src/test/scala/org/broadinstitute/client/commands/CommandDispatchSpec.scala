@@ -18,7 +18,7 @@ class CommandDispatchSpec extends BaseClientSpec {
   it should "return true when we dispatch a valid queryReadGroup command" in {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
-      BaseArgs(command = Some(Commands.QueryWgsUbam))
+      BaseArgs(command = Some(Commands.QueryReadGroupBam.apply()))
     ) should be(true)
   }
 
@@ -26,7 +26,7 @@ class CommandDispatchSpec extends BaseClientSpec {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
       BaseArgs(
-        command = Some(Commands.AddWgsUbam),
+        command = Some(Commands.AddReadGroupBam.apply()),
         flowcell = testFlowcell,
         lane = testLane,
         libraryName = testLibName,

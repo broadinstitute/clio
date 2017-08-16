@@ -5,16 +5,17 @@ import java.time.OffsetDateTime
 import org.broadinstitute.clio.client.commands.Commands
 
 trait TestData {
+  import scala.concurrent.ExecutionContext.Implicits.global
 
-  val metadataFileLocation = Some("clio-client/src/test/resources/testdata/metadata")
+  val metadataFileLocation = "clio-client/src/test/resources/testdata/metadata"
   val badMetadataFileLocation =
-    Some("clio-client/src/test/resources/testdata/badmetadata")
+    "clio-client/src/test/resources/testdata/badmetadata"
   val metadataPlusExtraFieldsFileLocation =
-    Some("clio-client/src/test/resources/testdata/metadataplusextrafields")
+    "clio-client/src/test/resources/testdata/metadataplusextrafields"
   val noCommand = Array("")
   val badCommand = Array("badCommand")
 
-  val testBearer = Some("testBearerToken")
+  val testBearer = "testBearerToken"
   val testFlowcell = Some("testFlowcell")
   val testLibName = Some("testLibName")
   val testLocation = Some("GCP")
@@ -29,9 +30,9 @@ trait TestData {
 
   //missing lane
   val missingRequired = Array(
-    Commands.AddWgsUbam.toString,
+    Commands.AddReadGroupBam.apply().commandName,
     "-m",
-    metadataFileLocation.get,
+    metadataFileLocation,
     "-f",
     testFlowcell.get,
     "-n",
@@ -42,7 +43,7 @@ trait TestData {
 
   //missing lane
   val missingOptional = Array(
-    Commands.QueryWgsUbam.toString,
+    Commands.QueryReadGroupBam.apply().commandName,
     "-f",
     testFlowcell.get,
     "-n",
@@ -52,9 +53,9 @@ trait TestData {
   )
 
   val goodAddCommand = Array(
-    Commands.AddWgsUbam.toString,
+    Commands.AddReadGroupBam.apply().commandName,
     "-m",
-    metadataFileLocation.get,
+    metadataFileLocation,
     "-f",
     testFlowcell.get,
     "-l",
