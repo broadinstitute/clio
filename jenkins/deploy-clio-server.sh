@@ -126,9 +126,9 @@ startcontainer() {
 }
 
 # copy configs to temp directory on host
-# rm -rf /app.new
+# rm -rf /app.new and /app.old.old
 # mkdir /app.new
-${SSHCMD} "sudo rm -rf ${APP_DIR}.new && sudo mkdir ${APP_DIR}.new && sudo chgrp ${SSH_USER} ${APP_DIR}.new && sudo chmod g+w ${APP_DIR}.new"
+${SSHCMD} "sudo rm -rf ${APP_DIR}.new && sudo rm -rf ${APP_DIR}.old.old && sudo mkdir ${APP_DIR}.new && sudo chgrp ${SSH_USER} ${APP_DIR}.new && sudo chmod g+w ${APP_DIR}.new"
 
 # copy configs to /app.new
 ${SCPCMD} -r ${TMPDIR}/* ${SSH_USER}@${CLIO_HOST}:${APP_DIR}.new/
