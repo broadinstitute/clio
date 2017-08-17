@@ -35,5 +35,6 @@ object ClioClientConfig {
     private val clioServer = config.getConfig("server")
     val clioServerHostName: String = clioServer.as[String]("hostname")
     val clioServerPort: Int = clioServer.as[Int]("port")
+    val clioServerUseHttps: Boolean = clioServer.as[Boolean]("use-https")
   }
 }

@@ -10,28 +10,28 @@ import org.broadinstitute.clio.transfer.model.{
   TransferReadGroupV1Metadata
 }
 
+import scala.concurrent.ExecutionContext
+
 class AddReadGroupBam(clioWebClient: ClioWebClient,
                       flowcell: String,
                       lane: Int,
                       libraryName: String,
                       location: String,
                       metadataLocation: String,
-                      bearerToken: String)
-    extends Command(clioWebClient = clioWebClient) {
+                      bearerToken: String)(implicit ec: ExecutionContext)
+    extends Command(Commands.addReadGroupBam) {
 
   override def execute: Boolean = {
     //parse metadata to validate inputs
     val json = parse(IoUtil.readMetadata(metadataLocation)) match {
       case Right(value) => value
       case Left(parsingFailure) =>
-        clioWebClient.shutdown()
         throw parsingFailure
     }
 
     val decoded = json.as[TransferReadGroupV1Metadata] match {
       case Right(value) => value
       case Left(decodingFailure) =>
-        clioWebClient.shutdown()
         throw decodingFailure
     }
 
@@ -47,7 +47,7 @@ class AddReadGroupBam(clioWebClient: ClioWebClient,
         )
       )
 
-    checkResponseAndShutdown(Commands.addReadGroupBam, responseFuture)
+    checkResponse(responseFuture)
   }
 
 }

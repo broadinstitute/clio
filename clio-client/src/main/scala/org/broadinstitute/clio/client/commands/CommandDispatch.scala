@@ -4,8 +4,11 @@ import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
+import scala.concurrent.ExecutionContext
+
 object CommandDispatch extends LazyLogging {
-  def dispatch(webClient: ClioWebClient, config: BaseArgs): Boolean = {
+  def dispatch(webClient: ClioWebClient,
+               config: BaseArgs)(implicit ec: ExecutionContext): Boolean = {
 
     val commandExecute: Option[Command] = config.command.getOrElse("") match {
       case Commands.addReadGroupBam =>
