@@ -125,13 +125,20 @@ startcontainer() {
   ${SSHCMD} "docker-compose -p clio-server -f ${APP_DIR}/docker-compose.yml up -d"
 }
 
-# copy configs to temp directory on host
-# rm -rf /app.new and /app.old.old
-# mkdir /app.new
-${SSHCMD} "sudo rm -rf ${APP_DIR}.new && sudo rm -rf ${APP_DIR}.old.old && sudo mkdir ${APP_DIR}.new && sudo chgrp ${SSH_USER} ${APP_DIR}.new && sudo chmod g+w ${APP_DIR}.new"
+NEW_APP_STAGING_DIR="${APP_DIR}.new"
+PREVIOUS_APP_DIR="${APP_DIR}.old"
+PREVIOUS_APP_BACKUP_DIR="${APP_DIR}.old.old"
+
+# clean up any leftover state from previous failed deploys
+${SSHCMD} <<-EOF
+ sudo rm -rf ${NEW_APP_STAGING_DIR} ${PREVIOUS_APP_BACKUP_DIR} &&
+ sudo mkdir ${NEW_APP_STAGING_DIR} &&
+ sudo chgrp ${SSH_USER} ${NEW_APP_STAGING_DIR} &&
+ sudo chmod g+w ${NEW_APP_STAGING_DIR}
+EOF
 
 # copy configs to /app.new
-${SCPCMD} -r ${TMPDIR}/* ${SSH_USER}@${CLIO_HOST}:${APP_DIR}.new/
+${SCPCMD} -r ${TMPDIR}/* ${SSH_USER}@${CLIO_HOST}:${NEW_APP_STAGING_DIR}
 
 # stop running the existing container
 stopcontainer
@@ -141,9 +148,9 @@ stopcontainer
 # move /app.new to /app
 # create pos log directory if it doesn't already exist
 ${SSHCMD} <<-EOF
-  ([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}.old.old) &&
-  ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_DIR}.old) &&
-  sudo mv ${APP_DIR}.new ${APP_DIR} &&
+  ([ ! -d ${PREVIOUS_APP_DIR} ] || sudo mv ${PREVIOUS_APP_DIR} ${PREVIOUS_APP_BACKUP_DIR}) &&
+  ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${PREVIOUS_APP_DIR}) &&
+  sudo mv ${NEW_APP_STAGING_DIR} ${APP_DIR} &&
   sudo mkdir -p ${HOST_LOG_DIR}/${POS_LOG_DIR}
 EOF
 
@@ -167,7 +174,7 @@ done
 
 if [[ "$STATUS" == "OK" && "$REPORTED_VERSION" == "$DOCKER_TAG" ]]; then
   # rm /app.old.old
-  ${SSHCMD} "sudo rm -rf ${APP_DIR}.old.old"
+  ${SSHCMD} "sudo rm -rf ${PREVIOUS_APP_BACKUP_DIR}"
 
   # tag the current commit with the name of the environment that was just deployed to
   # this is a floating tag, so we have to use -f
@@ -189,8 +196,8 @@ else
   # move /app.old.old to /app.old
   ${SSHCMD} <<-EOF
     sudo rm -rf ${APP_DIR} &&
-    ([ ! -d ${APP_DIR}.old ] || sudo mv ${APP_DIR}.old ${APP_DIR}) &&
-    ([ ! -d ${APP_DIR}.old.old ] || sudo mv ${APP_DIR}.old.old ${APP_DIR}.old)
+    ([ ! -d ${PREVIOUS_APP_DIR} ] || sudo mv ${PREVIOUS_APP_DIR} ${APP_DIR}) &&
+    ([ ! -d ${PREVIOUS_APP_BACKUP_DIR} ] || sudo mv ${PREVIOUS_APP_BACKUP_DIR} ${PREVIOUS_APP_DIR})
 EOF
 
   # start running the old container
