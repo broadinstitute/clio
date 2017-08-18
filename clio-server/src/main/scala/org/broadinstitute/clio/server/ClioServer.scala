@@ -18,7 +18,6 @@ object ClioServer
     extends StatusWebService
     with ReadGroupWebService
     with AuditDirectives
-    with AuthorizationDirectives
     with ExceptionDirectives
     with RejectionDirectives
     with StrictLogging {
@@ -42,9 +41,7 @@ object ClioServer
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
   private val innerRoutes: Route =
-    concat(statusRoutes, pathPrefix("api") {
-      authorizationRoute ~ readGroupRoutes
-    })
+    concat(statusRoutes, pathPrefix("api") { readGroupRoutes })
   private val routes = wrapperDirectives(innerRoutes)
 
   private val serverStatusDAO = CachedServerStatusDAO()
@@ -59,9 +56,6 @@ object ClioServer
   override val auditService = AuditService(app)
   override val statusService = StatusService(app)
   override val readGroupService = ReadGroupService(app)
-
-  override val authorizationService: AuthorizationService =
-    AuthorizationService()
 
   def beginStartup(): Unit = serverService.beginStartup()
 

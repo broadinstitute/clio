@@ -35,9 +35,11 @@ BASE_VERSION=$(cat "$VERSION_FILE" | tr -d '\n')
 git tag "$RELEASED_VERSION"
 git push origin "$RELEASED_VERSION"
 
-# By default, `git describe` searches backwards for the closest tag.
-# Passing --exact-match makes it only look at HEAD, but then it raises an error if the HEAD is un-tagged.
-HEAD_TAG=$(git describe --match dev --exact-match || echo)
+# By default, `git describe` searches backwards for the closest annotated tag.
+#   --tags makes it look for un-annotated tags (which we use) as well
+#   --match restricts the command to only returning "dev" (or an error)
+#   --exact-match makes it only look at HEAD (no backwards search)
+HEAD_TAG=$(git describe --tags --match dev --exact-match || echo)
 
 # We check for the tag dev instead of the branch develop because that's what the stage-RC job does
 # The HEAD of develop might be broken at any given point, but the tag dev is only moved after a successful
