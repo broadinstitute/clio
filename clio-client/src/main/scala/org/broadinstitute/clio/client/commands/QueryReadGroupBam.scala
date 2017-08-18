@@ -8,6 +8,8 @@ import org.broadinstitute.clio.transfer.model.{
   TransferReadGroupV1QueryInput
 }
 
+import scala.concurrent.ExecutionContext
+
 class QueryReadGroupBam(clioWebClient: ClioWebClient,
                         flowcell: Option[String],
                         lane: Option[Int],
@@ -18,8 +20,8 @@ class QueryReadGroupBam(clioWebClient: ClioWebClient,
                         sampleAlias: Option[String],
                         runDateEnd: Option[OffsetDateTime],
                         runDateStart: Option[OffsetDateTime],
-                        bearerToken: String)
-    extends Command(clioWebClient = clioWebClient) {
+                        bearerToken: String)(implicit ec: ExecutionContext)
+    extends Command(Commands.queryReadGroupBam) {
 
   override def execute: Boolean = {
 
@@ -38,7 +40,7 @@ class QueryReadGroupBam(clioWebClient: ClioWebClient,
       )
     )
 
-    checkResponseAndShutdown(Commands.queryReadGroupBam, responseFuture)
+    checkResponse(responseFuture)
   }
 
 }

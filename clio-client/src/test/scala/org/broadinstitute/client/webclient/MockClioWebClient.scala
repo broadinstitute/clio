@@ -18,10 +18,12 @@ import org.broadinstitute.clio.transfer.model.{
   TransferReadGroupV1QueryInput
 }
 
+import akka.actor.ActorSystem
+
 import scala.concurrent.Future
 
-class MockClioWebClient(status: StatusCode)
-    extends ClioWebClient
+class MockClioWebClient(status: StatusCode)(implicit system: ActorSystem)
+    extends ClioWebClient("localhost", 8080, false)
     with TestData {
 
   val version: String = """|{
@@ -61,10 +63,10 @@ class MockClioWebClient(status: StatusCode)
   }
 }
 
-object OkReturningMockClioWebClient
-    extends MockClioWebClient(status = StatusCodes.OK)
-    with TestData
+object MockClioWebClient {
+  def returningOk(implicit system: ActorSystem) =
+    new MockClioWebClient(status = StatusCodes.OK)
 
-object InternalErrorReturningMockClioWebClient
-    extends MockClioWebClient(status = StatusCodes.InternalServerError)
-    with TestData
+  def returningInternalError(implicit system: ActorSystem) =
+    new MockClioWebClient(status = StatusCodes.InternalServerError)
+}
