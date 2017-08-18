@@ -6,12 +6,13 @@ import org.broadinstitute.clio.server.dataaccess.{
   MockHttpServerDAO,
   MockServerStatusDAO
 }
-import org.broadinstitute.clio.server.model.{
+import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
+import org.broadinstitute.clio.status.model.{
   StatusInfo,
   SystemStatusInfo,
   VersionInfo
 }
-import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
+
 import org.scalatest.{FlatSpec, Matchers}
 
 class StatusWebServiceSpec

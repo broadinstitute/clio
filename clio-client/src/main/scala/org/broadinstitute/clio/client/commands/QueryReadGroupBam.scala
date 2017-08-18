@@ -1,12 +1,9 @@
 package org.broadinstitute.clio.client.commands
 
 import java.time.OffsetDateTime
-
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferReadGroupLocation,
-  TransferReadGroupV1QueryInput
-}
+import org.broadinstitute.clio.transfer.model.TransferReadGroupV1QueryInput
+import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.ExecutionContext
 
@@ -31,7 +28,7 @@ class QueryReadGroupBam(clioWebClient: ClioWebClient,
         flowcellBarcode = flowcell,
         lane = lane,
         libraryName = libraryName,
-        location = location.map(s => TransferReadGroupLocation.pathMatcher(s)),
+        location = location.map(s => Location.pathMatcher(s)),
         lcSet = lcSet,
         project = project,
         sampleAlias = sampleAlias,

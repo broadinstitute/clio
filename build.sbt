@@ -8,7 +8,7 @@ enablePlugins(GitVersioning)
 // Settings applied at the scope of the entire build.
 inThisBuild(
   Seq(
-    scalaVersion := "2.12.2",
+    scalaVersion := Dependencies.ScalaVersion,
     organization := "org.broadinstitute",
     scalacOptions ++= Compilation.CompilerSettings,
     git.baseVersion := Versioning.clioBaseVersion.value,
@@ -43,28 +43,34 @@ lazy val clio = project
   .in(file("."))
   .settings(commonSettings)
   .aggregate(
-    `clio-integration-test`,
+    `clio-util`,
     `clio-transfer-model`,
+    `clio-dataaccess-model`,
     `clio-server`,
-    `clio-client`
+    `clio-client`,
+    `clio-integration-test`
   )
   .disablePlugins(AssemblyPlugin)
 
-lazy val `clio-integration-test` = project
-  .settings(commonSettings)
-  .enablePlugins(DockerPlugin)
-  .settings(commonDockerSettings)
-  .settings(dockerfile in docker := Docker.integrationTestDockerFile.value)
-  .enablePlugins(ClioIntegrationTestPlugin)
-  .settings(commonTestDockerSettings)
-
-lazy val `clio-transfer-model` = project
-  .settings(libraryDependencies ++= Dependencies.TransferModelDependencies)
+lazy val `clio-util` = project
   .settings(commonSettings)
   .disablePlugins(AssemblyPlugin)
+  .settings(libraryDependencies ++= Dependencies.UtilDependencies)
+
+lazy val `clio-transfer-model` = project
+  .dependsOn(`clio-util`)
+  .settings(commonSettings)
+  .disablePlugins(AssemblyPlugin)
+  .settings(libraryDependencies ++= Dependencies.TransferModelDependencies)
+
+lazy val `clio-dataaccess-model` = project
+  .dependsOn(`clio-util`)
+  .settings(commonSettings)
+  .disablePlugins(AssemblyPlugin)
+  .settings(libraryDependencies ++= Dependencies.DataaccessModelDependencies)
 
 lazy val `clio-server` = project
-  .dependsOn(`clio-transfer-model`)
+  .dependsOn(`clio-transfer-model`, `clio-dataaccess-model`)
   .settings(
     libraryDependencies ++= Dependencies.ServerDependencies,
     dependencyOverrides ++= Dependencies.ServerOverrideDependencies
@@ -79,6 +85,13 @@ lazy val `clio-client` = project
   .dependsOn(`clio-transfer-model`)
   .settings(libraryDependencies ++= Dependencies.ClientDependencies)
   .settings(commonSettings)
+  .settings(commonTestDockerSettings)
+
+lazy val `clio-integration-test` = project
+  .enablePlugins(DockerPlugin)
+  .settings(commonDockerSettings)
+  .settings(dockerfile in docker := Docker.integrationTestDockerFile.value)
+  .enablePlugins(ClioIntegrationTestPlugin)
   .settings(commonTestDockerSettings)
 
 addCommandAlias(

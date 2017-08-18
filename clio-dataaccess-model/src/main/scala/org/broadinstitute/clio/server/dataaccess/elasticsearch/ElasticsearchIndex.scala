@@ -1,7 +1,8 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import com.sksamuel.elastic4s.mappings.FieldDefinition
 import org.broadinstitute.clio.util.generic.FieldMapper
+
+import com.sksamuel.elastic4s.mappings.FieldDefinition
 
 import scala.reflect.{ClassTag, classTag}
 
@@ -38,7 +39,7 @@ object ElasticsearchIndex {
     *                  https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
     * @return The index.
     */
-  private[elasticsearch] def indexDocument[Document: ClassTag: FieldMapper]
+  private[dataaccess] def indexDocument[Document: ClassTag: FieldMapper]
     : ElasticsearchIndex[Document] = {
     import s_mach.string._
     val nameSnake = classTag[Document].runtimeClass.getSimpleName

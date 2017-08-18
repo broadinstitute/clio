@@ -1,7 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import java.time.OffsetDateTime
-
 import com.sksamuel.elastic4s.HitReader
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.search.SearchResponse

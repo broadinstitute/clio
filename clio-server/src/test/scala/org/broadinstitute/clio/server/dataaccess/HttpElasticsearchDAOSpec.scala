@@ -1,5 +1,10 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  AutoElasticsearchIndex,
+  ElasticsearchIndex
+}
+
 import com.sksamuel.elastic4s.analyzers._
 import com.sksamuel.elastic4s.bulk.BulkDefinition
 import com.sksamuel.elastic4s.cluster.ClusterHealthDefinition
@@ -9,10 +14,6 @@ import com.sksamuel.elastic4s.indexes.CreateIndexDefinition
 import com.sksamuel.elastic4s.searches.SearchDefinition
 import io.circe.parser
 import org.apache.http.util.EntityUtils
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  AutoElasticsearchIndex,
-  ElasticsearchIndex
-}
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.ResponseException
 import org.scalatest._

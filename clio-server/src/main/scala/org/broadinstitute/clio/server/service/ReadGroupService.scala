@@ -6,6 +6,7 @@ import org.broadinstitute.clio.server.dataaccess.SearchDAO
 import org.broadinstitute.clio.server.model._
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.SameFieldsTypeConverter
+import org.broadinstitute.clio.util.json.JsonSchemas
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -37,8 +38,7 @@ class ReadGroupService private (
     )
   }
 
-  def querySchema(): Future[Json] =
-    SchemaService.readGroupSchema
+  def querySchema(): Future[Json] = Future(JsonSchemas.ReadGroup)
 }
 
 object ReadGroupService {

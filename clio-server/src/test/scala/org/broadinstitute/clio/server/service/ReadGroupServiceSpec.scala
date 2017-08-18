@@ -5,6 +5,8 @@ import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
 import org.broadinstitute.clio.server.model._
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.CaseClassMapper
+import org.broadinstitute.clio.util.model.Location
+
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
 class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
@@ -14,12 +16,8 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
     val memorySearchDAO = new MemoryReadGroupSearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val readGroupService = ReadGroupService(app)
-    val transferKey = TransferReadGroupV1Key(
-      "barcode1",
-      2,
-      "library3",
-      TransferReadGroupLocation.GCP
-    )
+    val transferKey =
+      TransferReadGroupV1Key("barcode1", 2, "library3", Location.GCP)
     val transferMetadataMapper =
       new CaseClassMapper[TransferReadGroupV1Metadata]
     val transferMetadata =
@@ -35,12 +33,7 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
       memorySearchDAO.updateReadGroupMetadataCalls should be(
         Seq(
           (
-            ModelReadGroupKey(
-              "barcode1",
-              2,
-              "library3",
-              TransferReadGroupLocation.GCP
-            ),
+            ModelReadGroupKey("barcode1", 2, "library3", Location.GCP),
             ModelReadGroupMetadata(
               analysisType = None,
               baitIntervals = None,

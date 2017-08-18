@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.server.model
+package org.broadinstitute.clio.status.model
 
 import enumeratum._
 

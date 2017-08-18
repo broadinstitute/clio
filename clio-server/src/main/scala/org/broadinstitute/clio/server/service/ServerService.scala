@@ -7,7 +7,7 @@ import org.broadinstitute.clio.server.dataaccess.{
   SearchDAO,
   ServerStatusDAO
 }
-import org.broadinstitute.clio.server.model.ServerStatusInfo
+import org.broadinstitute.clio.status.model.ServerStatusInfo
 
 import scala.concurrent.{ExecutionContext, Future}
 
