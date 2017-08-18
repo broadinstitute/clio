@@ -1,8 +1,8 @@
 package org.broadinstitute.clio.util.generic
 
-import java.lang.reflect.{Constructor, Field, Method}
-
 import scala.reflect.{ClassTag, classTag}
+
+import java.lang.reflect.{Constructor, Field, Method}
 
 /**
   * Facilitates extracting fields from a case class, and creating new instances of a case class from a map.

@@ -5,10 +5,10 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
-  TransferReadGroupLocation,
   TransferReadGroupV1Key,
   TransferReadGroupV1Metadata
 }
+import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.ExecutionContext
 
@@ -43,7 +43,7 @@ class AddReadGroupBam(clioWebClient: ClioWebClient,
           flowcellBarcode = flowcell,
           lane = lane,
           libraryName = libraryName,
-          location = TransferReadGroupLocation.pathMatcher(location)
+          location = Location.pathMatcher(location)
         )
       )
 

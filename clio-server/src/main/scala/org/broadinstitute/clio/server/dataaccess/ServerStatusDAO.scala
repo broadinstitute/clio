@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.server.model.ServerStatusInfo
+import org.broadinstitute.clio.status.model.ServerStatusInfo
 
 import scala.concurrent.Future
 

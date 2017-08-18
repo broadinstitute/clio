@@ -29,7 +29,6 @@ sealed trait FieldMapper[A] {
   * println(fieldMapper.fields)
   * ```
   *
-  * @see [[org.broadinstitute.clio.util.json.StateDecoder]]
   * @see [[org.broadinstitute.clio.util.generic.CaseClassMapper]]
   * @see [[org.broadinstitute.clio.util.generic.CaseClassMapperWithTypes]]
   */

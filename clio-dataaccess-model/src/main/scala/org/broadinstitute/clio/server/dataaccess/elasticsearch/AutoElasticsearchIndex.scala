@@ -1,13 +1,14 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import java.time.OffsetDateTime
+import org.broadinstitute.clio.util.generic.FieldMapper
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import enumeratum.EnumEntry
-import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.runtime.universe.Type
+
+import java.time.OffsetDateTime
 
 /**
   * Builds an ElasticsearchIndex using shapeless and reflection.

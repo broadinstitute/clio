@@ -1,9 +1,9 @@
 package org.broadinstitute.clio.server.dataaccess
 
 import java.util.UUID
-
 import org.broadinstitute.clio.server.model._
-import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.model.Location
+
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
 class ReadGroupElasticsearchDAOSpec
@@ -21,12 +21,7 @@ class ReadGroupElasticsearchDAOSpec
   }
 
   it should "updateReadGroupMetadata" in {
-    val key = ModelReadGroupKey(
-      "barcodeURGM1",
-      2,
-      "library3",
-      TransferReadGroupLocation.GCP
-    )
+    val key = ModelReadGroupKey("barcodeURGM1", 2, "library3", Location.GCP)
     val metadata = ModelReadGroupMetadata(
       analysisType = None,
       baitIntervals = None,
@@ -71,12 +66,7 @@ class ReadGroupElasticsearchDAOSpec
   it should "queryReadGroup" in {
     val id = UUID.randomUUID.toString.replaceAll("-", "")
     val library = "library" + id
-    val key = ModelReadGroupKey(
-      "barcodeQRG1",
-      2,
-      library,
-      TransferReadGroupLocation.OnPrem
-    )
+    val key = ModelReadGroupKey("barcodeQRG1", 2, library, Location.OnPrem)
     val metadata = ModelReadGroupMetadata(
       analysisType = None,
       baitIntervals = None,
@@ -132,7 +122,7 @@ class ReadGroupElasticsearchDAOSpec
             flowcellBarcode = "barcodeQRG1",
             lane = 2,
             libraryName = library,
-            location = TransferReadGroupLocation.OnPrem,
+            location = Location.OnPrem,
             analysisType = None,
             baitIntervals = None,
             dataType = None,

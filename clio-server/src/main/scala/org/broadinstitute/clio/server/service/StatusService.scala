@@ -6,7 +6,7 @@ import org.broadinstitute.clio.server.dataaccess.{
   SearchDAO,
   ServerStatusDAO
 }
-import org.broadinstitute.clio.server.model.{
+import org.broadinstitute.clio.status.model.{
   StatusInfo,
   SystemStatusInfo,
   VersionInfo

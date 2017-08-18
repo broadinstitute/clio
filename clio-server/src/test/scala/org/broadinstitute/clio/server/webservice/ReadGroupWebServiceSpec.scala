@@ -7,8 +7,9 @@ import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
-import org.broadinstitute.clio.server.service.SchemaService
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
+import org.broadinstitute.clio.util.json.JsonSchemas
+
 import org.scalatest.{FlatSpec, Matchers}
 
 class ReadGroupWebServiceSpec
@@ -118,7 +119,7 @@ class ReadGroupWebServiceSpec
   it should "return a JSON schema" in {
     val webService = new MockReadGroupWebService()
     Get("/schema") ~> webService.getSchema ~> check {
-      responseAs[Json] should be(SchemaService.readGroupSchemaJson)
+      responseAs[Json] should be(JsonSchemas.ReadGroup)
     }
   }
 }
