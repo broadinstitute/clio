@@ -1,13 +1,13 @@
 package org.broadinstitute.clio.server.model
 
-import java.time.OffsetDateTime
+import org.broadinstitute.clio.util.model.Location
 
-import org.broadinstitute.clio.transfer.model.TransferReadGroupLocation
+import java.time.OffsetDateTime
 
 case class ModelReadGroupKey(flowcellBarcode: String,
                              lane: Int,
                              libraryName: String,
-                             location: TransferReadGroupLocation)
+                             location: Location)
 
 case class ModelReadGroupMetadata(analysisType: Option[String],
                                   baitIntervals: Option[String],
@@ -45,7 +45,7 @@ case class ModelReadGroupMetadata(analysisType: Option[String],
 case class ModelReadGroupQueryInput(flowcellBarcode: Option[String],
                                     lane: Option[Int],
                                     libraryName: Option[String],
-                                    location: Option[TransferReadGroupLocation],
+                                    location: Option[Location],
                                     lcSet: Option[String],
                                     project: Option[String],
                                     runDateEnd: Option[OffsetDateTime],
@@ -55,7 +55,7 @@ case class ModelReadGroupQueryInput(flowcellBarcode: Option[String],
 case class ModelReadGroupQueryOutput(flowcellBarcode: String,
                                      lane: Int,
                                      libraryName: String,
-                                     location: TransferReadGroupLocation,
+                                     location: Location,
                                      analysisType: Option[String],
                                      baitIntervals: Option[String],
                                      dataType: Option[String],

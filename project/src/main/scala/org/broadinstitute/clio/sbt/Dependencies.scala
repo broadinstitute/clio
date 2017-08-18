@@ -20,6 +20,11 @@ object Dependencies {
   private val ScalaTestVersion = "3.0.3"
   private val Slf4jVersion = "1.7.25"
   private val TestContainersScalaVersion = "0.6.0"
+  private val ScoptVersion = "3.6.0"
+  private val ShapelessVersion = "2.3.2"
+
+  /** Version of Scala to build Clio with. */
+  val ScalaVersion = "2.12.2"
 
   /**
     * Version of scalafmt to pull in via plugin.
@@ -31,11 +36,8 @@ object Dependencies {
   /** Dependencies used in main code, and transitively by the test code. */
   val ServerMainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
-    "com.beachape" %% "enumeratum" % EnumeratumVersion,
-    "com.beachape" %% "enumeratum-circe" % EnumeratumCirceVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,
-    "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
@@ -43,7 +45,6 @@ object Dependencies {
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-generic-extras" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
-    "net.s_mach" %% "string" % S_machStringVersion,
     "org.slf4j" % "slf4j-api" % Slf4jVersion
   )
 
@@ -58,10 +59,6 @@ object Dependencies {
   val ServerDependencies
     : Seq[ModuleID] = ServerMainDependencies ++ ServerTestDependencies
 
-  val TransferModelDependencies: Seq[ModuleID] = Seq(
-    "com.beachape" %% "enumeratum" % EnumeratumVersion
-  )
-
   /** Suppress warning for evicted libraries. */
   val ServerOverrideDependencies: Set[ModuleID] = Set(
     "io.circe" %% "circe-core" % CirceVersion,
@@ -69,4 +66,62 @@ object Dependencies {
     "io.circe" %% "circe-generic-extras" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion
   )
+
+  val ClientMainDependencies: Seq[ModuleID] = Seq(
+    "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
+    "com.iheart" %% "ficus" % FicusVersion,
+    "com.github.scopt" %% "scopt" % ScoptVersion,
+    "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+    "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
+    "io.circe" %% "circe-core" % CirceVersion,
+    "io.circe" %% "circe-generic" % CirceVersion,
+    "io.circe" %% "circe-generic-extras" % CirceVersion,
+    "io.circe" %% "circe-parser" % CirceVersion,
+    "org.slf4j" % "slf4j-api" % Slf4jVersion
+  )
+  private val ClientTestDependencies: Seq[ModuleID] = Seq(
+    "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
+    "org.scalatest" %% "scalatest" % ScalaTestVersion
+  ).map(_ % Test)
+
+  /**The full list of client dependencies. */
+  val ClientDependencies
+    : Seq[ModuleID] = ClientMainDependencies ++ ClientTestDependencies
+
+  val UtilMainDependencies: Seq[ModuleID] = Seq(
+    "com.beachape" %% "enumeratum" % EnumeratumVersion,
+    "com.chuusai" %% "shapeless" % ShapelessVersion,
+    "net.s_mach" %% "string" % S_machStringVersion,
+    "org.scala-lang" % "scala-reflect" % ScalaVersion
+  )
+  private val UtilTestDependencies: Seq[ModuleID] = Seq(
+    "org.scalatest" %% "scalatest" % ScalaTestVersion
+  ).map(_ % Test)
+
+  val UtilDependencies: Seq[ModuleID] =
+    UtilMainDependencies ++ UtilTestDependencies
+
+  val TransferModelMainDependencies: Seq[ModuleID] = Seq(
+    "com.beachape" %% "enumeratum-circe" % EnumeratumCirceVersion,
+    "io.circe" %% "circe-core" % CirceVersion,
+    "io.circe" %% "circe-generic" % CirceVersion,
+    "io.circe" %% "circe-generic-extras" % CirceVersion,
+    "io.circe" %% "circe-parser" % CirceVersion
+  )
+  private val TransferModelTestDependencies: Seq[ModuleID] = Seq(
+    "org.scalatest" %% "scalatest" % ScalaTestVersion
+  ).map(_ % Test)
+
+  val TransferModelDependencies
+    : Seq[ModuleID] = TransferModelMainDependencies ++ TransferModelTestDependencies
+
+  val DataaccessModelMainDependencies: Seq[ModuleID] = Seq(
+    "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion
+  )
+  private val DataaccessModelTestDependencies: Seq[ModuleID] = Seq(
+    "org.scalatest" %% "scalatest" % ScalaTestVersion
+  ).map(_ % Test)
+
+  val DataaccessModelDependencies: Seq[ModuleID] =
+    DataaccessModelMainDependencies ++ DataaccessModelTestDependencies
 }

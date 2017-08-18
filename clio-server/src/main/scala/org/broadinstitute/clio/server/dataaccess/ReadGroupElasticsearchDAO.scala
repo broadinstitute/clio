@@ -1,13 +1,14 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import com.sksamuel.elastic4s.circe._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchDocumentMapper,
   ElasticsearchIndex,
   ElasticsearchQueryMapper
 }
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
 import org.broadinstitute.clio.server.model._
+
+import com.sksamuel.elastic4s.circe._
 
 import scala.concurrent.{ExecutionContext, Future}
 
