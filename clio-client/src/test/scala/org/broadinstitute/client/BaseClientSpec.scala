@@ -14,5 +14,13 @@ abstract class BaseClientSpec
     with TestData
     with Matchers {
 
+  /*
+   * Since our Commands call Await.result, we can't use the default
+   * execution context provided by Scalatest's async test suite, otherwise
+   * the blocking will prevent our tests from ever completing.
+   *
+   * See the "Asynchronous execution model" section of
+   * http://www.scalatest.org/user_guide/async_testing for more info.
+   */
   override implicit val executionContext: ExecutionContext = system.dispatcher
 }
