@@ -49,6 +49,17 @@ object ClioIntegrationTestSettings extends ClioIntegrationTestKeys {
     Seq.concat(
       Defaults.itSettings,
       Seq(
+        /*
+         * Override the top-level `test` definition to be a no-op so running "sbt test"
+         * won't trigger integration tests along with the unit tests in other projects.
+         *
+         * Integration tests should be explicitly run with the keys defined below, or "it:test".
+         */
+        test := {},
+        /*
+         * Define aliases for "it:testOnly XYZ" to make running integration tests against
+         * different setups / environments more convenient.
+         */
         testDocker := (testOnly in IntegrationTest)
           .toTask(" *FullDockerIntegrationSpec")
           .value,
