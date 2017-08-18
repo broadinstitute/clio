@@ -1,42 +1,79 @@
 package org.broadinstitute.clio.integrationtest
 
+import sbt._
 import sbt.Def.{Initialize, Setting}
 import sbt.Keys._
-import sbt._
 
 /**
-  * Settings definitions for the plugin.
+  * Settings for running our integration tests.
   */
-object ClioIntegrationTestSettings extends AutoPlugin {
+object ClioIntegrationTestSettings extends ClioIntegrationTestKeys {
 
-  /** The task key for running the integration tests. */
-  val testDocker: TaskKey[Unit] =
-    taskKey[Unit]("Run clio integration tests via docker.")
+  /** Directory to which all container logs will be sent during Dockerized integration tests. */
+  lazy val itLogDir: Initialize[File] = Def.setting {
+    target.value / "integration-test" / "logs"
+  }
 
-  /** The task key for running the integration tests in Jenkins. */
-  val testDockerJenkins: TaskKey[Unit] =
-    taskKey[Unit]("Run clio integration tests via docker in Jenkins.")
+  /** Task to clear out the IT log dir before running tests. */
+  lazy val resetItLogs: Initialize[Task[File]] = Def.task {
+    val logDir = itLogDir.value
+    IO.delete(logDir)
+    IO.createDirectory(logDir)
+    /*
+     * Our Dockerized integration tests tail the clio log to check
+     * for the "started" message before starting tests, so we ensure
+     * it exists here.
+     */
+    val clioLog = logDir / "clio-server" / "clio.log"
+    IO.touch(clioLog)
+    clioLog
+  }
 
-  private def creatTestTask(jenkinsTest: Boolean) = {
-    Def.task {
-      // Use the settings classDirectory for tests, and the project version
-      val testClassesDirectory = (classDirectory in Test).value
-      val clioVersion = version.value
+  /** Environment variables to inject when running integration tests. */
+  lazy val itEnvVars: Initialize[Task[Map[String, String]]] = Def.task {
+    val logDir = itLogDir.value
+    val confDir = (classDirectory in IntegrationTest).value / "org" / "broadinstitute" / "clio" / "integrationtest"
 
-      // Wait for task test:compile, and the task to create the logs
-      (compile in Test).value
-      val log = streams.value.log
-
-      new ClioIntegrationTestRunner(testClassesDirectory,
-                                    clioVersion,
-                                    jenkinsTest,
-                                    log)
-        .run()
-    }
+    Map(
+      "CLIO_DOCKER_TAG" -> version.value,
+      // TODO: Pull this version from elsewhere in the build.
+      "ELASTICSEARCH_DOCKER_TAG" -> "5.4.0_6",
+      "LOG_DIR" -> logDir.getAbsolutePath,
+      "CONF_DIR" -> confDir.getAbsolutePath
+    )
   }
 
   /** Settings to add to the project */
-  lazy val settings: Seq[Setting[Task[Unit]]] = Seq(
-    testDocker := creatTestTask(false).value,
-    testDockerJenkins := creatTestTask(true).value)
+  lazy val settings: Seq[Setting[_]] = {
+
+    Seq.concat(
+      Defaults.itSettings,
+      Seq(
+        testDocker := (testOnly in IntegrationTest)
+          .toTask(" *FullDockerIntegrationSpec")
+          .value,
+        testDockerJenkins := (testOnly in IntegrationTest)
+          .toTask(" *DockerDevIntegrationSpec")
+          .value,
+        testDev := (testOnly in IntegrationTest)
+          .toTask(" *DevEnvIntegrationSpec")
+          .value,
+        testStaging := (testOnly in IntegrationTest)
+          .toTask(" *StagingEnvIntegrationSpec")
+          .value,
+        /*
+         * Testcontainers registers a JVM shutdown hook to remove the containers
+         * it creates using docker-compose. Forking when running integration tests
+         * makes all containers be removed as soon as tests finish running.
+         *
+         * Forking also allows us to set environment variables for substitution
+         * in our docker-compose files.
+         */
+        fork in IntegrationTest := true,
+        envVars in IntegrationTest ++= itEnvVars.value,
+        resourceGenerators in IntegrationTest +=
+          resetItLogs.map(Seq(_)).taskValue
+      )
+    )
+  }
 }

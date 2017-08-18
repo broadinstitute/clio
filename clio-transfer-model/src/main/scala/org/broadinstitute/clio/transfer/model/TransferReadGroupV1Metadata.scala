@@ -35,5 +35,5 @@ case class TransferReadGroupV1Metadata(
   ubamMd5: Option[String] = None,
   ubamPath: Option[String] = None,
   ubamSize: Option[Long] = None,
-  documentStatus: Option[DocumentStatus]
+  documentStatus: Option[DocumentStatus] = None
 )

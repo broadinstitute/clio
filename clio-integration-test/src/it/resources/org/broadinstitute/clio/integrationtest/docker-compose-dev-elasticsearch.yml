@@ -1,0 +1,11 @@
+version: '2'
+
+# Compose configuration for running Clio against the dev Elasticsearch during integration-testing.
+services:
+  clio-server:
+    image: broadinstitute/clio-server:${CLIO_DOCKER_TAG}
+    environment:
+      JAVA_OPTS: -Dclio.server.elasticsearch.http-hosts.0.hostname=elasticsearch1.gotc-dev.broadinstitute.org  -Dlogback.configurationFile=/app/clio-logback.xml
+    volumes:
+      - ${CONF_DIR}/clio-logback.xml:/app/clio-logback.xml
+      - ${LOG_DIR}/clio-server:/logs
