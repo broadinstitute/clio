@@ -23,6 +23,7 @@ object Dependencies {
   private val TestContainersScalaVersion = "0.7.0"
   private val ScoptVersion = "3.6.0"
   private val ShapelessVersion = "2.3.2"
+  private val SwaggerUi = "3.1.5"
 
   /** Version of Scala to build Clio with. */
   val ScalaVersion = "2.12.2"
@@ -49,7 +50,8 @@ object Dependencies {
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-generic-extras" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
-    "org.slf4j" % "slf4j-api" % Slf4jVersion
+    "org.slf4j" % "slf4j-api" % Slf4jVersion,
+    "org.webjars" % "swagger-ui" % SwaggerUi
   )
 
   /** Dependencies only used by test code. */

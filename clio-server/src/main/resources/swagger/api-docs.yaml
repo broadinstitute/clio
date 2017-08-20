@@ -1,0 +1,383 @@
+swagger: "2.0"
+
+info:
+  description: "This is the API specification for Clio."
+  version: "1.0.0"
+  title: "Clio"
+  contact:
+    email: "greenteam@broadinstitute.org"
+  license:
+    name: "BSD 3-clause"
+    url: "https://opensource.org/licenses/BSD-3-Clause"
+
+host: "localhost:8080"
+basePath: "/api/v1"
+tags:
+  - name: "readgroup"
+    description: "Read group endpoints"
+
+schemes:
+  - "http"
+
+security:
+  - googleoauth:
+      - "openid"
+      - "email"
+      - "profile"
+
+paths:
+  /readgroup/metadata:
+    post:
+      tags:
+         - "readgroup"
+      summary: "Posts read group metadata."
+      operationId: "readGroupMetadata"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      responses:
+        '200':
+          description: "Successful Request"
+  /readgroup/schema:
+    get:
+      tags:
+        - "readgroup"
+      summary: "Gets the json schema for read groups"
+      operationId: "readGroupSchema"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Read group metadata to store"
+          required: true
+          schema:
+            $ref: '#/definitions/TransferReadGroupV1Metadata'
+      responses:
+        '200':
+          description: "Successful Request"
+      security:
+        - googleoauth:
+          - "openid"
+  /readgroup/query:
+    post:
+      tags:
+        - "readgroup"
+      summary: "Query for a read group"
+      operationId: "readGroupQuery"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Read group query to search for"
+          required: true
+          schema:
+            $ref: '#/definitions/TransferReadGroupV1QueryInput'
+      responses:
+        '200':
+          description: "Successful Request"
+          schema:
+            $ref: '#/definitions/TransferReadGroupV1QueryResponse'
+        '405':
+          description: "Invalid input"
+      security:
+        - googleoauth:
+            - "openid"
+
+securityDefinitions:
+  googleoauth:
+    type: "oauth2"
+    authorizationUrl: 'https://accounts.google.com/o/oauth2/auth'
+    flow: "implicit"
+    scopes:
+      openid: "open id authorization"
+      email: "email authorization"
+      profile: "profile authorization"
+
+definitions:
+  TransferReadGroupV1Key:
+     type: "object"
+     properties:
+       flowcell_barcode:
+         type: "string"
+         description: "Flowcell barcode"
+       lane:
+         type: "integer"
+         format: "int32"
+         description: "Flowcell lane"
+       library_name:
+         type: "string"
+         description: "Library name"
+       location:
+         type: "string"
+         description: "Data location"
+         enum:
+           - "GCP"
+           - "OnPrem"
+
+  TransferReadGroupV1QueryInput:
+    type: "object"
+    properties:
+      flowcell_barcode:
+        type: "string"
+        description: "Flowcell barcode"
+      lane:
+        type: "integer"
+        format: "int32"
+        description: "Flowcell lane"
+      library_name:
+        type: "string"
+        description: "Library name"
+      location:
+        type: "string"
+        description: "Data location"
+        enum:
+          - "GCP"
+          - "OnPrem"
+      lc_set:
+        type: "string"
+        description: "LC Set"
+      project:
+        type: "string"
+        description: "Project"
+      run_date_end:
+        type: "string"
+        format: "date-time"
+        description: "Run date end"
+      run_date_start:
+        type: "string"
+        format: "date-time"
+        description: "Run date start"
+      sample_alias:
+        type: "string"
+        description: "Sample alias"
+
+  TransferReadGroupV1QueryResponse:
+    description: "Response to a read group query"
+    type: "array"
+    items:
+        $ref: "#/definitions/TransferReadGroupV1QueryOutput"
+
+  TransferReadGroupV1QueryOutput:
+    type: "object"
+    properties:
+      flowcell_barcode:
+        type: "string"
+        description: "Flowcell barcode"
+      lane:
+        type: "integer"
+        format: "int32"
+        description: "Flowcell lane"
+      library_name:
+        type: "string"
+        description: "Library name"
+      location:
+        type: "string"
+        description: "Data location"
+        enum:
+          - "GCP"
+          - "OnPrem"
+      analysis_type:
+        type: "string"
+        description: "Analysis type"
+      bait_intervals:
+        type: "string"
+        description: "Bait intervals"
+      data_type:
+        type: "string"
+        description: "Data type"
+      individual_alias:
+        type: "string"
+        description: "Individual alias"
+      initiative:
+        type: "string"
+        description: "Initiative"
+      lc_set:
+        type: "string"
+        description: "LC set"
+      library_type:
+        type: "string"
+        description: "Library type"
+      machine_name:
+        type: "string"
+        description: "Machine name"
+      molecular_barcode_name:
+        type: "string"
+        description: "Molecular barcode name"
+      molecular_barcode_sequence:
+        type: "string"
+        description: "Molecular barcode sequence"
+      paired_run:
+        type: "boolean"
+        description: "Paired run"
+      product_family:
+        type: "string"
+        description: "Product family"
+      product_name:
+        type: "string"
+        description: "Product name"
+      product_order_id:
+        type: "string"
+        description: "Product order id"
+      product_part_number:
+        type: "string"
+        description: "Product part number"
+      project:
+        type: "string"
+        description: "Project"
+      read_structure:
+        type: "string"
+        description: "Read structure"
+      research_project_id:
+        type: "string"
+        description: "Research project id"
+      research_project_name:
+        type: "string"
+        description: "Research project name"
+      root_sample_id:
+        type: "string"
+        description: "Root sample id"
+      run_date:
+        type: "string"
+        format: "date-time"
+        description: "Run date"
+      run_name:
+        type: "string"
+        description: "Run name"
+      sample_alias:
+        type: "string"
+        description: "Sample alias"
+      sample_gender:
+        type: "string"
+        description: "Sample gender"
+      sample_id:
+        type: "string"
+        description: "Sample id"
+      sample_lsid:
+        type: "string"
+        description: "Sample LSID"
+      sample_type:
+        type: "string"
+        description: "Sample type"
+      target_intervals:
+        type: "string"
+        description: "Target intervals"
+      notes:
+        type: "string"
+        description: "Notes"
+      ubam_md5:
+        type: "string"
+        description: "Unmapped bam MD5"
+      ubam_path:
+        type: "string"
+        description: "Unmapped bam path"
+      ubam_size:
+        type: "integer"
+        format: "int64"
+        description: "Unmapped bam size"
+
+  TransferReadGroupV1Metadata:
+    type: "object"
+    properties:
+      analysis_type:
+        type: "string"
+        description: "Analysis type"
+      bait_intervals:
+        type: "string"
+        description: "Bait intervals"
+      data_type:
+        type: "string"
+        description: "Data type"
+      individual_alias:
+        type: "string"
+        description: "Individual alias"
+      initiative:
+        type: "string"
+        description: "Initiative"
+      lc_set:
+        type: "string"
+        description: "LC set"
+      library_type:
+        type: "string"
+        description: "Library type"
+      machine_name:
+        type: "string"
+        description: "Machine name"
+      molecular_barcode_name:
+        type: "string"
+        description: "Molecular barcode name"
+      molecular_barcode_sequence:
+        type: "string"
+        description: "Molecular barcode sequence"
+      paired_run:
+        type: "boolean"
+        description: "Paired run"
+      product_family:
+        type: "string"
+        description: "Product family"
+      product_name:
+        type: "string"
+        description: "Product name"
+      product_order_id:
+        type: "string"
+        description: "Product order id"
+      product_part_number:
+        type: "string"
+        description: "Product part number"
+      project:
+        type: "string"
+        description: "Project"
+      read_structure:
+        type: "string"
+        description: "Read structure"
+      research_project_id:
+        type: "string"
+        description: "Research project id"
+      research_project_name:
+        type: "string"
+        description: "Research project name"
+      root_sample_id:
+        type: "string"
+        description: "Root sample id"
+      run_date:
+        type: "string"
+        format: "date-time"
+        description: "Run date"
+      run_name:
+        type: "string"
+        description: "Run name"
+      sample_alias:
+        type: "string"
+        description: "Sample alias"
+      sample_gender:
+        type: "string"
+        description: "Sample gender"
+      sample_id:
+        type: "string"
+        description: "Sample id"
+      sample_lsid:
+        type: "string"
+        description: "Sample LSID"
+      sample_type:
+        type: "string"
+        description: "Sample type"
+      target_intervals:
+        type: "string"
+        description: "Target intervals"
+      notes:
+        type: "string"
+        description: "Notes"
+      ubam_md5:
+        type: "string"
+        description: "Unmapped bam MD5"
+      ubam_path:
+        type: "string"
+        description: "Unmapped bam path"
+      ubam_size:
+        type: "integer"
+        format: "int64"
+        description: "Unmapped bam size"
