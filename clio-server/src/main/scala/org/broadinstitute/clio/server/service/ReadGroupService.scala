@@ -4,7 +4,7 @@ import io.circe.Json
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.SearchDAO
 import org.broadinstitute.clio.server.model._
-import org.broadinstitute.clio.transfer.model.{TransferReadGroupV1QueryInput, _}
+import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.SameFieldsTypeConverter
 import org.broadinstitute.clio.util.model.DocumentStatus
 import org.broadinstitute.clio.util.json.JsonSchemas

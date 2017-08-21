@@ -7,7 +7,7 @@ import shapeless.labelled.FieldType
 import scala.reflect.runtime.universe.{Type, TypeTag, typeOf, typeTag}
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import enumeratum.EnumEntry
 
 /**
   * Generate JSON schema from case classes such as the QueryOutputs.
@@ -103,13 +103,13 @@ object JsonSchema {
       case t if t =:= typeOf[Int]                    => (true, aInt)
       case t if t =:= typeOf[Long]                   => (true, aLong)
       case t if t =:= typeOf[String]                 => (true, aString)
-      case t if t =:= typeOf[Location]               => (true, aString)
+      case t if t <:< typeOf[EnumEntry]              => (true, aString)
       case t if t =:= typeOf[OffsetDateTime]         => (true, aTime)
       case t if t =:= typeOf[Option[Boolean]]        => (false, aBoolean)
       case t if t =:= typeOf[Option[Int]]            => (false, aInt)
       case t if t =:= typeOf[Option[Long]]           => (false, aLong)
       case t if t =:= typeOf[Option[String]]         => (false, aString)
-      case t if t =:= typeOf[Option[DocumentStatus]] => (false, aString)
+      case t if t <:< typeOf[Option[EnumEntry]]      => (false, aString)
       case t if t =:= typeOf[Option[OffsetDateTime]] => (false, aTime)
       case _ =>
         throw new IllegalArgumentException(
