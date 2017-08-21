@@ -16,7 +16,8 @@ inThisBuild(
     scalafmtVersion := Dependencies.ScalafmtVersion,
     scalafmtOnCompile := true,
     ignoreErrors in scalafmt := false,
-    coverageHighlighting := false
+    coverageHighlighting := false,
+    resolvers ++= Dependencies.ThirdPartyDependencies
   )
 )
 

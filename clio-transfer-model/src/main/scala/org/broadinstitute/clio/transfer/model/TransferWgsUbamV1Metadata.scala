@@ -3,6 +3,7 @@ import org.broadinstitute.clio.util.model.DocumentStatus
 import java.time.OffsetDateTime
 
 case class TransferWgsUbamV1Metadata(
+  clioId: Option[Long] = None,
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
   dataType: Option[String] = None,

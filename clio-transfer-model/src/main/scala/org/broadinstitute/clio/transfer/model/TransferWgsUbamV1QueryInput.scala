@@ -9,6 +9,7 @@ case class TransferWgsUbamV1QueryInput(
   lane: Option[Int] = None,
   libraryName: Option[String] = None,
   location: Option[Location] = None,
+  clioId: Option[Long] = None,
   lcSet: Option[String] = None,
   project: Option[String] = None,
   runDateEnd: Option[OffsetDateTime] = None,

@@ -23,6 +23,7 @@ class WgsUbamElasticsearchDAOSpec
   it should "updateWgsUbamMetadata" in {
     val key = ModelWgsUbamKey("barcodeURGM1", 2, "library3", Location.GCP)
     val metadata = ModelWgsUbamMetadata(
+      clioId = None,
       analysisType = None,
       baitIntervals = None,
       dataType = None,
@@ -69,6 +70,7 @@ class WgsUbamElasticsearchDAOSpec
     val library = "library" + id
     val key = ModelWgsUbamKey("barcodeQRG1", 2, library, Location.OnPrem)
     val metadata = ModelWgsUbamMetadata(
+      clioId = None,
       analysisType = None,
       baitIntervals = None,
       dataType = None,
@@ -108,6 +110,7 @@ class WgsUbamElasticsearchDAOSpec
       lane = None,
       libraryName = Option(library),
       location = None,
+      clioId = None,
       lcSet = None,
       project = None,
       runDateEnd = None,
@@ -126,6 +129,7 @@ class WgsUbamElasticsearchDAOSpec
             lane = 2,
             libraryName = library,
             location = Location.OnPrem,
+            clioId = None,
             analysisType = None,
             baitIntervals = None,
             dataType = None,

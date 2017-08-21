@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.server.service
 
+import com.eaio.uuid.UUID
 import io.circe.Json
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.SearchDAO
@@ -18,19 +19,21 @@ class WgsUbamService private (
   def upsertMetadata(
     transferKey: TransferWgsUbamV1Key,
     transferMetadata: TransferWgsUbamV1Metadata
-  ): Future[Unit] = {
+  ): Future[Long] = {
+    val clioId = new UUID().getClockSeqAndNode
     val updatedTransferMetadata = transferMetadata.copy(
-      documentStatus =
-        Option(transferMetadata.documentStatus.getOrElse(DocumentStatus.Normal))
+      documentStatus = Option(
+        transferMetadata.documentStatus.getOrElse(DocumentStatus.Normal)
+      ),
+      clioId = Option(clioId)
     )
-
     SearchService.upsertMetadata(
       transferKey,
       updatedTransferMetadata,
       WgsUbamService.ConverterV1Key,
       WgsUbamService.ConverterV1Metadata,
       searchDAO.updateWgsUbamMetadata
-    )
+    ).map(_ => clioId)
   }
 
   def queryMetadata(

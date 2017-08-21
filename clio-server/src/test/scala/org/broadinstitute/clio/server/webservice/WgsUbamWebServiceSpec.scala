@@ -24,7 +24,8 @@ class WgsUbamWebServiceSpec
       "/metadata/barcodeOnPrem/3/libraryOnPrem/OnPrem",
       Map("project" -> "testOnPremLocation")
     ) ~> webService.postMetadata ~> check {
-      responseAs[Map[String, String]] should be(empty)
+      status shouldEqual StatusCodes.OK
+      responseAs[Long] should not equal 0
     }
   }
 
@@ -34,7 +35,8 @@ class WgsUbamWebServiceSpec
       "/metadata/barcodeGCP/4/libraryGCP/GCP",
       Map("project" -> "testGCPlocation")
     ) ~> webService.postMetadata ~> check {
-      responseAs[Map[String, String]] should be(empty)
+      status shouldEqual StatusCodes.OK
+      responseAs[Long] should not equal 0
     }
   }
 
