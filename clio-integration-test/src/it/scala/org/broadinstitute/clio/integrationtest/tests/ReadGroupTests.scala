@@ -19,14 +19,14 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
 
   it should "create the expected read-group mapping in elasticsearch" in {
     import com.sksamuel.elastic4s.http.ElasticDsl._
-    val expected = ElasticsearchIndex.ReadGroup
 
+    val expected = ElasticsearchIndex.ReadGroup
     val getRequest =
       getMapping(IndexAndType(expected.indexName, expected.indexType))
+
     elasticsearchClient.execute(getRequest).map { mappings =>
       mappings should have length 1
       val readGroupMapping = mappings.head
-
       readGroupMapping should be(indexToMapping(expected))
     }
   }
@@ -66,13 +66,11 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
     val upsertData = TransferReadGroupV1Metadata(project = expected.project)
 
     if (location == Location.Unknown) {
-
       it should "reject read-group inputs with unknown location" in {
         clioWebClient
           .addReadGroupBam(bearerToken, upsertKey, upsertData)
           .map(_.status should be(StatusCodes.NotFound))
       }
-
     } else {
       val queryData = TransferReadGroupV1QueryInput(
         libraryName = Some(expected.libraryName)
@@ -175,15 +173,15 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
       sampleAlias = metadata.sampleAlias,
       project = metadata.project
     )
-
     val queryData = TransferReadGroupV1QueryInput(project = metadata.project)
 
-    def add(data: TransferReadGroupV1Metadata) =
+    def add(data: TransferReadGroupV1Metadata) = {
       clioWebClient
         .addReadGroupBam(bearerToken, upsertKey, data)
         .map(_.status should be(StatusCodes.OK))
+    }
 
-    def query =
+    def query = {
       for {
         response <- clioWebClient.queryReadGroupBam(bearerToken, queryData)
         results <- Unmarshal(response).to[Seq[TransferReadGroupV1QueryOutput]]
@@ -191,6 +189,7 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
         results should have length 1
         results.head
       }
+    }
 
     for {
       _ <- add(upsertData)

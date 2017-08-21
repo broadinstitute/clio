@@ -114,7 +114,7 @@ lazy val `clio-client` = project
   .settings(commonTestDockerSettings)
 
 /**
-  * Integration tests for the clio-server (and eventually the clio-client).
+  * Integration tests for the clio-server and the clio-client.
   */
 lazy val `clio-integration-test` = project
   .dependsOn(`clio-client`, `clio-dataaccess-model`)

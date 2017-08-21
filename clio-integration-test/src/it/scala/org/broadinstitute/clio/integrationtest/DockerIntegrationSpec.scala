@@ -89,19 +89,22 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
 class FullDockerIntegrationSpec
     extends DockerIntegrationSpec("docker-compose.yml", "local") {
 
+  private val esName = "elasticsearch1_1"
+
   override def exposedServices: Map[String, Int] =
-    super.exposedServices + ("elasticsearch1_1" -> 9200)
+    super.exposedServices + (esName -> 9200)
 
   override lazy val elasticsearchUri: Uri =
-    container.getServiceUri("elasticsearch1_1")
+    container.getServiceUri(esName)
 }
 
 /**
-  * The integration spec taht tests Dockerized Clio using the Elasticsearch
+  * The integration spec that tests Dockerized Clio using the Elasticsearch
   * cluster deployed in dev.
   */
 class DockerDevIntegrationSpec
     extends DockerIntegrationSpec("docker-compose-dev-elasticsearch.yml", "dev") {
+
   override val elasticsearchUri: Uri =
     Uri("http://elasticsearch1.gotc-dev.broadinstitute.org:9200")
 }

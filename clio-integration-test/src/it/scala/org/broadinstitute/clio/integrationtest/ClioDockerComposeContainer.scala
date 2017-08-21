@@ -1,31 +1,18 @@
 package org.broadinstitute.clio.integrationtest
 
 import akka.http.scaladsl.model.Uri
-import com.dimafeng.testcontainers.TestContainerProxy
-import com.typesafe.scalalogging.LazyLogging
-import org.testcontainers.containers.DockerComposeContainer
+import com.dimafeng.testcontainers.DockerComposeContainer
 
 import java.io.File
 
 /**
-  * Reimplementation of the important bits from
-  * [[com.dimafeng.testcontainers.DockerComposeContainer]],
+  * Extension of [[com.dimafeng.testcontainers.DockerComposeContainer]],
   * with settings tailored for our integration tests, since
   * testcontainers-scala doesn't make the settings configurable.
   */
 class ClioDockerComposeContainer(composeFile: File,
-                                 exposedServices: Map[String, Int] = Map.empty)
-    extends TestContainerProxy[DockerComposeContainer[_]]
-    with LazyLogging {
-  import scala.language.existentials
-
-  type OTCContainer = DockerComposeContainer[T] forSome {
-    type T <: DockerComposeContainer[T]
-  }
-  override val container: OTCContainer =
-    new DockerComposeContainer(composeFile)
-  exposedServices.foreach(Function.tupled(container.withExposedService))
-
+                                 exposedServices: Map[String, Int])
+    extends DockerComposeContainer(composeFile, exposedServices) {
   /*
    * Skip "docker pull" because it'll fail if we're testing against a non-
    * pushed version of clio-server.
