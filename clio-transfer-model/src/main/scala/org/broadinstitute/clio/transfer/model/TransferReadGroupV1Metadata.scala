@@ -1,5 +1,5 @@
 package org.broadinstitute.clio.transfer.model
-
+import org.broadinstitute.clio.util.model.DocumentStatus
 import java.time.OffsetDateTime
 
 case class TransferReadGroupV1Metadata(
@@ -35,5 +35,5 @@ case class TransferReadGroupV1Metadata(
   ubamMd5: Option[String] = None,
   ubamPath: Option[String] = None,
   ubamSize: Option[Long] = None,
-  documentStatus: Option[DocumentStatus])
+  documentStatus: Option[DocumentStatus]
 )

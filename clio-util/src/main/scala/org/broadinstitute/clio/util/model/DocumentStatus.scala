@@ -1,6 +1,6 @@
-package org.broadinstitute.clio.transfer.model
+package org.broadinstitute.clio.util.model
 
-import enumeratum._
+import enumeratum.{Enum, EnumEntry}
 import scala.collection.immutable.IndexedSeq
 
 sealed trait DocumentStatus extends EnumEntry

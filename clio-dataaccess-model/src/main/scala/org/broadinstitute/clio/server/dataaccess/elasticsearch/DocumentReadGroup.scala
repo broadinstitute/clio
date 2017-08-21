@@ -1,9 +1,8 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import java.time.OffsetDateTime
-import org.broadinstitute.clio.transfer.model.DocumentStatus
 
 case class DocumentReadGroup(flowcellBarcode: String,
                              lane: Int,

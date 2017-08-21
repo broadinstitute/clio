@@ -1,14 +1,13 @@
 package org.broadinstitute.clio.util.json
 
-import org.broadinstitute.clio.util.model.Location
-
 import io.circe.Json
 import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness}
 import shapeless.labelled.FieldType
 
 import scala.reflect.runtime.universe.{Type, TypeTag, typeOf, typeTag}
-
 import java.time.OffsetDateTime
+
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 /**
   * Generate JSON schema from case classes such as the QueryOutputs.
@@ -110,6 +109,7 @@ object JsonSchema {
       case t if t =:= typeOf[Option[Int]]            => (false, aInt)
       case t if t =:= typeOf[Option[Long]]           => (false, aLong)
       case t if t =:= typeOf[Option[String]]         => (false, aString)
+      case t if t =:= typeOf[Option[DocumentStatus]] => (false, aString)
       case t if t =:= typeOf[Option[OffsetDateTime]] => (false, aTime)
       case _ =>
         throw new IllegalArgumentException(

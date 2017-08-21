@@ -5,7 +5,7 @@ import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
 import org.broadinstitute.clio.server.model._
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.CaseClassMapper
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import org.scalatest.{AsyncFlatSpec, Matchers}
 

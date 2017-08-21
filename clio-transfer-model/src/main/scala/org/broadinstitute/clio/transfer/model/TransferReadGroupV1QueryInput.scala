@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.transfer.model
 
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import java.time.OffsetDateTime
 

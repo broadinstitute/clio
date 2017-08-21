@@ -9,7 +9,7 @@ import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.broadinstitute.clio.util.json.JsonSchemas
-import org.broadinstitute.clio.transfer.model.DocumentStatus
+import org.broadinstitute.clio.util.model.DocumentStatus
 import org.scalatest.{FlatSpec, Matchers}
 
 class ReadGroupWebServiceSpec

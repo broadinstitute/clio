@@ -17,6 +17,7 @@ class QueryReadGroupBamSpec extends BaseClientSpec {
       lcSet = Some(testLcSet),
       project = Some(testProject),
       sampleAlias = Some(testSampleAlias),
+      documentStatus = Some(testDocumentStatus),
       runDateEnd = Some(testRunDateEnd),
       runDateStart = Some(testRunDateStart),
       bearerToken = testBearer
@@ -33,6 +34,7 @@ class QueryReadGroupBamSpec extends BaseClientSpec {
       lcSet = Some(testLcSet),
       project = Some(testProject),
       sampleAlias = Some(testSampleAlias),
+      documentStatus = Some(testDocumentStatus),
       runDateEnd = Some(testRunDateEnd),
       runDateStart = Some(testRunDateStart),
       bearerToken = testBearer

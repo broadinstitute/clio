@@ -33,8 +33,9 @@ object CommandDispatch extends LazyLogging {
             libraryName = config.libraryName,
             location = config.location,
             lcSet = config.lcSet,
-            sampleAlias = config.sampleAlias,
             project = config.project,
+            sampleAlias = config.sampleAlias,
+            documentStatus = config.documentStatus,
             runDateEnd = config.runDateEnd,
             runDateStart = config.runDateStart
           )

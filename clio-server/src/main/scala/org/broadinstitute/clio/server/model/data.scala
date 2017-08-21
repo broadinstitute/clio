@@ -1,9 +1,8 @@
 package org.broadinstitute.clio.server.model
 
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import java.time.OffsetDateTime
-import org.broadinstitute.clio.transfer.model.DocumentStatus
 
 case class ModelReadGroupKey(flowcellBarcode: String,
                              lane: Int,
