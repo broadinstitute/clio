@@ -39,12 +39,6 @@ class ReadGroupService private (
     val transferInputNew =
       transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
     queryAllMetadata(transferInputNew)
-//    SearchService.queryMetadata(
-//      transferInputNew,
-//      ReadGroupService.ConverterV1QueryInput,
-//      ReadGroupService.ConverterV1QueryOutput,
-//      searchDAO.queryReadGroup
-//    )
   }
 
   def queryAllMetadata(
