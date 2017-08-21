@@ -89,7 +89,7 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
 class FullDockerIntegrationSpec
     extends DockerIntegrationSpec("docker-compose.yml", "local") {
 
-  private val esName = "elasticsearch1_1"
+  private lazy val esName = "elasticsearch1_1"
 
   override def exposedServices: Map[String, Int] =
     super.exposedServices + (esName -> 9200)
