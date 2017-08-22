@@ -12,6 +12,8 @@ import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.DocumentStatus
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.concurrent.duration._
+
 class WgsUbamWebServiceSpec
     extends FlatSpec
     with Matchers
@@ -177,6 +179,7 @@ class WgsUbamWebServiceSpec
   it should "return a JSON schema" in {
     val webService = new MockWgsUbamWebService()
     Get("/schema") ~> webService.getSchema ~> check {
+      implicit val timeout: Duration = 3.seconds
       responseAs[Json] should be(JsonSchemas.WgsUbam)
     }
   }
