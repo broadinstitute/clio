@@ -27,13 +27,15 @@ class WgsUbamService private (
       ),
       clioId = Option(clioId)
     )
-    SearchService.upsertMetadata(
-      transferKey,
-      updatedTransferMetadata,
-      WgsUbamService.ConverterV1Key,
-      WgsUbamService.ConverterV1Metadata,
-      searchDAO.updateWgsUbamMetadata
-    ).map(_ => clioId)
+    SearchService
+      .upsertMetadata(
+        transferKey,
+        updatedTransferMetadata,
+        WgsUbamService.ConverterV1Key,
+        WgsUbamService.ConverterV1Metadata,
+        searchDAO.updateWgsUbamMetadata
+      )
+      .map(_ => clioId)
   }
 
   def queryMetadata(
