@@ -10,7 +10,7 @@ trait ClioIntegrationTestKeys {
       "Run Clio integration tests against a Clio instance and Elasticsearch cluster running in Docker."
     )
 
-  val testDockerJenkins: TaskKey[Unit] =
+  val testDockerDev: TaskKey[Unit] =
     taskKey[Unit](
       "Run Clio integration tests against a Clio instance running in Docker and the dev Elasticsearch cluster."
     )

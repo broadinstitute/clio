@@ -73,7 +73,7 @@ object ClioIntegrationTestSettings extends ClioIntegrationTestKeys {
         testDocker := (testOnly in IntegrationTest)
           .toTask(" *FullDockerIntegrationSpec")
           .value,
-        testDockerJenkins := (testOnly in IntegrationTest)
+        testDockerDev := (testOnly in IntegrationTest)
           .toTask(" *DockerDevIntegrationSpec")
           .value,
         testDev := (testOnly in IntegrationTest)
