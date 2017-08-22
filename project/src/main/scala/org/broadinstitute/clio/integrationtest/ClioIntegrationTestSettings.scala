@@ -1,6 +1,8 @@
 package org.broadinstitute.clio.integrationtest
 
-import com.lucidchart.sbt.scalafmt.{ScalafmtCorePlugin, ScalafmtPlugin}
+import org.broadinstitute.clio.sbt.{Compilation, Versioning}
+
+import com.lucidchart.sbt.scalafmt.ScalafmtCorePlugin
 import sbt._
 import sbt.Def.{Initialize, Setting}
 import sbt.Keys._
@@ -49,7 +51,13 @@ object ClioIntegrationTestSettings extends ClioIntegrationTestKeys {
 
     Seq.concat(
       Defaults.itSettings,
-      inConfig(IntegrationTest)(ScalafmtCorePlugin.autoImport.scalafmtSettings),
+      inConfig(IntegrationTest) {
+        ScalafmtCorePlugin.autoImport.scalafmtSettings ++ Seq(
+          scalacOptions in doc ++= Compilation.DocSettings,
+          scalacOptions in console := Compilation.ConsoleSettings,
+          resourceGenerators += Versioning.writeVersionConfig.taskValue
+        )
+      },
       Seq(
         /*
          * Override the top-level `test` definition to be a no-op so running "sbt test"
