@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.integrationtest
 
+import com.lucidchart.sbt.scalafmt.ScalafmtPlugin
 import sbt._
 
 /**
@@ -7,18 +8,16 @@ import sbt._
   */
 object ClioIntegrationTestPlugin extends AutoPlugin {
 
-  /** The list of items automatically added to build.sbt, including the testDocker command. */
-  object autoImport {
-
-    /** The task key for running the integration tests. */
-    val testDocker: TaskKey[Unit] = ClioIntegrationTestSettings.testDocker
-
-    /** The task key for running the Jenkins integration tests. */
-    val testDockerJenkins: TaskKey[Unit] =
-      ClioIntegrationTestSettings.testDockerJenkins
-  }
+  /*
+   * Ensure the scalafmt plugin loads before this, so we can
+   * enable it for the IntegrationTest configuration.
+   */
+  override def requires: Plugins = ScalafmtPlugin
 
   /** Add our task to the project(s). */
-  override val projectSettings: Seq[Setting[Task[Unit]]] =
+  override val projectSettings: Seq[Setting[_]] =
     ClioIntegrationTestSettings.settings
+
+  /** Add the IntegrationTest configuration to the project(s). */
+  override val projectConfigurations: Seq[Configuration] = Seq(IntegrationTest)
 }

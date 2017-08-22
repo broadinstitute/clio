@@ -84,7 +84,7 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
       )
     dispatchRequest(
       HttpRequest(
-        uri = "/api/v1/readgroup/query/",
+        uri = "/api/v1/readgroup/query",
         method = HttpMethods.POST,
         entity = entity
       ).addHeader(Authorization(credentials = OAuth2BearerToken(bearerToken)))

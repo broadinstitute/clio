@@ -14,5 +14,5 @@ case class TransferReadGroupV1QueryInput(
   runDateEnd: Option[OffsetDateTime] = None,
   runDateStart: Option[OffsetDateTime] = None,
   sampleAlias: Option[String] = None,
-  documentStatus: Option[DocumentStatus]
+  documentStatus: Option[DocumentStatus] = None
 )

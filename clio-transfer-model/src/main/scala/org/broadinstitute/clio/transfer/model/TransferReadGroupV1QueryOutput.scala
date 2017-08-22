@@ -41,5 +41,5 @@ case class TransferReadGroupV1QueryOutput(
   ubamMd5: Option[String] = None,
   ubamPath: Option[String] = None,
   ubamSize: Option[Long] = None,
-  documentStatus: Option[DocumentStatus]
+  documentStatus: Option[DocumentStatus] = None
 )

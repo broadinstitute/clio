@@ -114,14 +114,14 @@ lazy val `clio-client` = project
   .settings(commonTestDockerSettings)
 
 /**
-  * Integration tests for the clio-server (and eventually the clio-client).
+  * Integration tests for the clio-server and the clio-client.
   */
 lazy val `clio-integration-test` = project
-  .enablePlugins(DockerPlugin)
-  .settings(commonDockerSettings)
-  .settings(dockerfile in docker := Docker.integrationTestDockerFile.value)
+  .dependsOn(`clio-client`, `clio-dataaccess-model`)
   .enablePlugins(ClioIntegrationTestPlugin)
-  .settings(commonTestDockerSettings)
+  .disablePlugins(AssemblyPlugin)
+  .settings(commonSettings)
+  .settings(libraryDependencies ++= Dependencies.IntegrationTestDependencies)
 
 addCommandAlias(
   "testCoverage",

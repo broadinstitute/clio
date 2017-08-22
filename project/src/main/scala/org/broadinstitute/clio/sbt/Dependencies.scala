@@ -9,6 +9,7 @@ object Dependencies {
   // The version numbers of each main and test dependency.
   private val AkkaHttpCirceVersion = "1.17.0"
   private val AkkaHttpVersion = "10.0.9"
+  private val AlpakkaVersion = "0.11"
   private val CirceVersion = "0.8.0"
   private val Elastic4sVersion = "5.4.10"
   private val EnumeratumVersion = "1.5.12"
@@ -19,7 +20,7 @@ object Dependencies {
   private val ScalaLoggingVersion = "3.7.1"
   private val ScalaTestVersion = "3.0.3"
   private val Slf4jVersion = "1.7.25"
-  private val TestContainersScalaVersion = "0.6.0"
+  private val TestContainersScalaVersion = "0.7.0"
   private val ScoptVersion = "3.6.0"
   private val ShapelessVersion = "2.3.2"
 
@@ -32,6 +33,9 @@ object Dependencies {
     * added through the `scalafmtVersion` key, not `libraryDependencies`.
     */
   val ScalafmtVersion = "1.1.0"
+
+  /** Version of our Elasticsearch Docker image to use during integration tests. */
+  val ElasticsearchVersion = "5.4.0_6"
 
   /** Dependencies used in main code, and transitively by the test code. */
   val ServerMainDependencies: Seq[ModuleID] = Seq(
@@ -124,4 +128,15 @@ object Dependencies {
 
   val DataaccessModelDependencies: Seq[ModuleID] =
     DataaccessModelMainDependencies ++ DataaccessModelTestDependencies
+
+  val IntegrationTestDependencies: Seq[ModuleID] = Seq(
+    "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
+    "com.dimafeng" %% "testcontainers-scala" % TestContainersScalaVersion,
+    "com.lightbend.akka" %% "akka-stream-alpakka-file" % AlpakkaVersion,
+    "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
+    "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
+    "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
+    "org.scalatest" %% "scalatest" % ScalaTestVersion,
+    "org.slf4j" % "slf4j-api" % Slf4jVersion
+  ).map(_ % IntegrationTest)
 }
