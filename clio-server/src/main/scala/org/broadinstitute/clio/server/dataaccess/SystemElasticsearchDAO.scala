@@ -28,7 +28,7 @@ trait SystemElasticsearchDAO extends SearchDAO { this: HttpElasticsearchDAO =>
   override def initialize(): Future[Unit] = {
     for {
       _ <- waitForSearchReady()
-      _ <- createOrUpdateIndex(ElasticsearchIndex.ReadGroup)
+      _ <- createOrUpdateIndex(ElasticsearchIndex.WgsUbam)
     } yield ()
   }
 

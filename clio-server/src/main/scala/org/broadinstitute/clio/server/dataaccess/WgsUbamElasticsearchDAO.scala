@@ -12,29 +12,29 @@ import com.sksamuel.elastic4s.circe._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait ReadGroupElasticsearchDAO extends SearchDAO {
+trait WgsUbamElasticsearchDAO extends SearchDAO {
   this: HttpElasticsearchDAO =>
 
   implicit val executionContext: ExecutionContext
 
-  override def updateReadGroupMetadata(
-    key: ModelReadGroupKey,
-    metadata: ModelReadGroupMetadata
+  override def updateWgsUbamMetadata(
+    key: ModelWgsUbamKey,
+    metadata: ModelWgsUbamMetadata
   ): Future[Unit] = {
     updateMetadata(
-      ElasticsearchIndex.ReadGroup,
-      ElasticsearchDocumentMapper.ReadGroup,
+      ElasticsearchIndex.WgsUbam,
+      ElasticsearchDocumentMapper.WgsUbam,
       key,
       metadata
     )
   }
 
-  override def queryReadGroup(
-    queryInput: ModelReadGroupQueryInput
-  ): Future[Seq[ModelReadGroupQueryOutput]] = {
+  override def queryWgsUbam(
+    queryInput: ModelWgsUbamQueryInput
+  ): Future[Seq[ModelWgsUbamQueryOutput]] = {
     searchDocuments(
-      ElasticsearchIndex.ReadGroup,
-      ElasticsearchQueryMapper.ReadGroup,
+      ElasticsearchIndex.WgsUbam,
+      ElasticsearchQueryMapper.WgsUbam,
       queryInput
     )
   }

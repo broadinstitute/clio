@@ -2,7 +2,7 @@ package org.broadinstitute.clio.transfer.model
 import org.broadinstitute.clio.util.model.DocumentStatus
 import java.time.OffsetDateTime
 
-case class TransferReadGroupV1Metadata(
+case class TransferWgsUbamV1Metadata(
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
   dataType: Option[String] = None,

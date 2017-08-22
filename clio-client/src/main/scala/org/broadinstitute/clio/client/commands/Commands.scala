@@ -7,8 +7,8 @@ import org.broadinstitute.clio.client.ClioClientConfig
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 object Commands {
-  val addReadGroupBam = "addReadGroupBam"
-  val queryReadGroupBam = "queryReadGroupBam"
+  val addWgsUbam = "addWgsUbam"
+  val queryWgsUbam = "queryWgsUbam"
 }
 
 abstract class Command(name: String)(implicit ec: ExecutionContext)

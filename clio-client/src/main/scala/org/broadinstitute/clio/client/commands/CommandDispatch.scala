@@ -11,9 +11,9 @@ object CommandDispatch extends LazyLogging {
                config: BaseArgs)(implicit ec: ExecutionContext): Boolean = {
 
     val commandExecute: Option[Command] = config.command.getOrElse("") match {
-      case Commands.addReadGroupBam =>
+      case Commands.`addWgsUbam` =>
         Some(
-          new AddReadGroupBam(
+          new AddWgsUbam(
             clioWebClient = webClient,
             flowcell = config.flowcell.get,
             lane = config.lane.get,
@@ -23,9 +23,9 @@ object CommandDispatch extends LazyLogging {
             bearerToken = config.bearerToken
           )
         )
-      case Commands.queryReadGroupBam =>
+      case Commands.`queryWgsUbam` =>
         Some(
-          new QueryReadGroupBam(
+          new QueryWgsUbam(
             clioWebClient = webClient,
             bearerToken = config.bearerToken,
             flowcell = config.flowcell,

@@ -17,16 +17,16 @@ class MockSearchDAO extends SearchDAO {
     Future.successful(())
   }
 
-  override def updateReadGroupMetadata(
-    key: ModelReadGroupKey,
-    metadata: ModelReadGroupMetadata
+  override def updateWgsUbamMetadata(
+    key: ModelWgsUbamKey,
+    metadata: ModelWgsUbamMetadata
   ): Future[Unit] = {
     Future.successful(())
   }
 
-  override def queryReadGroup(
-    queryInput: ModelReadGroupQueryInput
-  ): Future[Seq[ModelReadGroupQueryOutput]] = {
+  override def queryWgsUbam(
+    queryInput: ModelWgsUbamQueryInput
+  ): Future[Seq[ModelWgsUbamQueryOutput]] = {
     Future.successful(Seq())
   }
 }

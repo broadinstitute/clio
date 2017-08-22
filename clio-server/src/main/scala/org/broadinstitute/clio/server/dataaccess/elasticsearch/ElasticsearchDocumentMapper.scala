@@ -39,9 +39,9 @@ abstract class ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] {
 }
 
 object ElasticsearchDocumentMapper {
-  private[dataaccess] val ReadGroup = AutoElasticsearchDocumentMapper[
-    ModelReadGroupKey,
-    ModelReadGroupMetadata,
-    DocumentReadGroup
+  private[dataaccess] val WgsUbam = AutoElasticsearchDocumentMapper[
+    ModelWgsUbamKey,
+    ModelWgsUbamMetadata,
+    DocumentWgsUbam
   ]
 }

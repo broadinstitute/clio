@@ -27,7 +27,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   val system: ActorSystem)
     extends SearchDAO
     with SystemElasticsearchDAO
-    with ReadGroupElasticsearchDAO
+    with WgsUbamElasticsearchDAO
     with StrictLogging {
 
   private[dataaccess] val httpClient = {

@@ -3,10 +3,10 @@ package org.broadinstitute.clio.integrationtest.tests
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.{
-  TransferReadGroupV1Key,
-  TransferReadGroupV1Metadata,
-  TransferReadGroupV1QueryInput,
-  TransferReadGroupV1QueryOutput
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryInput,
+  TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
@@ -20,33 +20,33 @@ import io.circe.Json
 
 import scala.concurrent.Future
 
-/** Tests of Clio's read-group / uBAM functionality. */
-trait ReadGroupTests { self: BaseIntegrationSpec =>
+/** Tests of Clio's wgs-ubam functionality. */
+trait WgsUbamTests { self: BaseIntegrationSpec =>
 
-  it should "create the expected read-group mapping in elasticsearch" in {
+  it should "create the expected wgs-ubam mapping in elasticsearch" in {
     import com.sksamuel.elastic4s.http.ElasticDsl._
 
-    val expected = ElasticsearchIndex.ReadGroup
+    val expected = ElasticsearchIndex.WgsUbam
     val getRequest =
       getMapping(IndexAndType(expected.indexName, expected.indexType))
 
     elasticsearchClient.execute(getRequest).map { mappings =>
       mappings should have length 1
-      val readGroupMapping = mappings.head
-      readGroupMapping should be(indexToMapping(expected))
+      val wgsUbamMapping = mappings.head
+      wgsUbamMapping should be(indexToMapping(expected))
     }
   }
 
-  it should "report the expected JSON schema for read-groups" in {
+  it should "report the expected JSON schema for wgs-ubams" in {
     clioWebClient
-      .getReadGroupSchema(bearerToken)
+      .getWgsUbamSchema(bearerToken)
       .flatMap(Unmarshal(_).to[Json])
-      .map(_ should be(JsonSchemas.ReadGroup))
+      .map(_ should be(JsonSchemas.WgsUbam))
   }
 
   // Generate a test for every possible Location value.
   Location.values.foreach {
-    it should behave like testReadGroupLocation(_)
+    it should behave like testWgsUbamLocation(_)
   }
 
   /**
@@ -54,8 +54,8 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
     *
     * @see http://www.scalatest.org/user_guide/sharing_tests
     */
-  def testReadGroupLocation(location: Location): Unit = {
-    val expected = TransferReadGroupV1QueryOutput(
+  def testWgsUbamLocation(location: Location): Unit = {
+    val expected = TransferWgsUbamV1QueryOutput(
       flowcellBarcode = "barcode2",
       lane = 2,
       libraryName = s"library$randomId",
@@ -64,34 +64,34 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
       documentStatus = Some(DocumentStatus.Normal)
     )
 
-    val upsertKey = TransferReadGroupV1Key(
+    val upsertKey = TransferWgsUbamV1Key(
       expected.flowcellBarcode,
       expected.lane,
       expected.libraryName,
       location
     )
-    val upsertData = TransferReadGroupV1Metadata(project = expected.project)
+    val upsertData = TransferWgsUbamV1Metadata(project = expected.project)
 
     if (location == Location.Unknown) {
-      it should "reject read-group inputs with unknown location" in {
+      it should "reject wgs-ubam inputs with unknown location" in {
         clioWebClient
-          .addReadGroupBam(bearerToken, upsertKey, upsertData)
+          .addWgsUbam(bearerToken, upsertKey, upsertData)
           .map(_.status should be(StatusCodes.NotFound))
       }
     } else {
-      val queryData = TransferReadGroupV1QueryInput(
+      val queryData = TransferWgsUbamV1QueryInput(
         libraryName = Some(expected.libraryName)
       )
 
-      it should s"handle upserts and queries for read-group location $location" in {
+      it should s"handle upserts and queries for wgs-ubam location $location" in {
         for {
           _ <- clioWebClient
-            .addReadGroupBam(bearerToken, upsertKey, upsertData)
+            .addWgsUbam(bearerToken, upsertKey, upsertData)
             .map(_.status should be(StatusCodes.OK))
           queryResponse <- clioWebClient
-            .queryReadGroupBam(bearerToken, queryData)
+            .queryWgsUbam(bearerToken, queryData)
           outputs <- Unmarshal(queryResponse)
-            .to[Seq[TransferReadGroupV1QueryOutput]]
+            .to[Seq[TransferWgsUbamV1QueryOutput]]
         } yield {
           outputs should have length 1
           outputs.head should be(expected)
@@ -100,7 +100,7 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "handle querying read-groups by sample and project" in {
+  it should "handle querying wgs-ubams by sample and project" in {
     val flowcellBarcode = "barcode2"
     val lane = 2
     val location = Location.GCP
@@ -116,12 +116,12 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
       libraries.zip(samples).map {
         case (library, sample) =>
           val key =
-            TransferReadGroupV1Key(flowcellBarcode, lane, library, location)
-          val data = TransferReadGroupV1Metadata(
+            TransferWgsUbamV1Key(flowcellBarcode, lane, library, location)
+          val data = TransferWgsUbamV1Metadata(
             project = Some(project),
             sampleAlias = Some(sample)
           )
-          clioWebClient.addReadGroupBam(bearerToken, key, data)
+          clioWebClient.addWgsUbam(bearerToken, key, data)
       }
     }
 
@@ -133,22 +133,16 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upsertsStatus
-      queryProject = TransferReadGroupV1QueryInput(project = Some(project))
-      querySample = TransferReadGroupV1QueryInput(
+      queryProject = TransferWgsUbamV1QueryInput(project = Some(project))
+      querySample = TransferWgsUbamV1QueryInput(
         sampleAlias = Some(samples.head)
       )
-      projectResponse <- clioWebClient.queryReadGroupBam(
-        bearerToken,
-        queryProject
-      )
+      projectResponse <- clioWebClient.queryWgsUbam(bearerToken, queryProject)
       projectResults <- Unmarshal(projectResponse)
-        .to[Seq[TransferReadGroupV1QueryOutput]]
-      sampleResponse <- clioWebClient.queryReadGroupBam(
-        bearerToken,
-        querySample
-      )
+        .to[Seq[TransferWgsUbamV1QueryOutput]]
+      sampleResponse <- clioWebClient.queryWgsUbam(bearerToken, querySample)
       sampleResults <- Unmarshal(sampleResponse)
-        .to[Seq[TransferReadGroupV1QueryOutput]]
+        .to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
@@ -161,35 +155,35 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "handle updates to read-group metadata" in {
+  it should "handle updates to wgs-ubam metadata" in {
     val flowcellBarcode = "barcode2"
     val lane = 2
     val libraryName = "library" + randomId
     val location = Location.GCP
-    val metadata = TransferReadGroupV1Metadata(
+    val metadata = TransferWgsUbamV1Metadata(
       project = Some("testProject" + randomId),
       sampleAlias = Some("sampleAlias1"),
       notes = Some("Breaking news")
     )
 
     val upsertKey =
-      TransferReadGroupV1Key(flowcellBarcode, lane, libraryName, location)
-    val upsertData = TransferReadGroupV1Metadata(
+      TransferWgsUbamV1Key(flowcellBarcode, lane, libraryName, location)
+    val upsertData = TransferWgsUbamV1Metadata(
       sampleAlias = metadata.sampleAlias,
       project = metadata.project
     )
-    val queryData = TransferReadGroupV1QueryInput(project = metadata.project)
+    val queryData = TransferWgsUbamV1QueryInput(project = metadata.project)
 
-    def add(data: TransferReadGroupV1Metadata) = {
+    def add(data: TransferWgsUbamV1Metadata) = {
       clioWebClient
-        .addReadGroupBam(bearerToken, upsertKey, data)
+        .addWgsUbam(bearerToken, upsertKey, data)
         .map(_.status should be(StatusCodes.OK))
     }
 
     def query = {
       for {
-        response <- clioWebClient.queryReadGroupBam(bearerToken, queryData)
-        results <- Unmarshal(response).to[Seq[TransferReadGroupV1QueryOutput]]
+        response <- clioWebClient.queryWgsUbam(bearerToken, queryData)
+        results <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
       } yield {
         results should have length 1
         results.head
@@ -221,13 +215,13 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
     val project = "testProject" + randomId
     val sample = "sample688." + randomId
     val keysWithMetadata = (1 to 3).map { lane =>
-      val upsertKey = TransferReadGroupV1Key(
+      val upsertKey = TransferWgsUbamV1Key(
         flowcellBarcode = barcode,
         lane = lane,
         libraryName = "library" + randomId,
         location = Location.GCP
       )
-      val upsertMetadata = TransferReadGroupV1Metadata(
+      val upsertMetadata = TransferWgsUbamV1Metadata(
         project = Some(project),
         sampleAlias = Some(sample),
         ubamPath = Some(s"gs://ubam/$sample.$lane")
@@ -239,7 +233,7 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       keysWithMetadata.map {
         case (key, metadata) =>
-          clioWebClient.addReadGroupBam(bearerToken, key, metadata)
+          clioWebClient.addWgsUbam(bearerToken, key, metadata)
       }
     }
 
@@ -249,15 +243,15 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
       }
     }
 
-    val queryData = TransferReadGroupV1QueryInput(
+    val queryData = TransferWgsUbamV1QueryInput(
       project = Some(project),
       flowcellBarcode = Some(barcode)
     )
 
     def checkQuery(expectedLength: Int) = {
       for {
-        response <- clioWebClient.queryReadGroupBam(bearerToken, queryData)
-        results <- Unmarshal(response).to[Seq[TransferReadGroupV1QueryOutput]]
+        response <- clioWebClient.queryWgsUbam(bearerToken, queryData)
+        results <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
       } yield {
         results.length should be(expectedLength)
         results.foreach { result =>
@@ -272,8 +266,8 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
     for {
       _ <- upsertsStatus
       _ <- checkQuery(expectedLength = 3)
-      // TODO: Weird to use the `addReadGroupBam` method here, even though it works.
-      deleteResponse <- clioWebClient.addReadGroupBam(
+      // TODO: Weird to use the `addWgsUbam` method here, even though it works.
+      deleteResponse <- clioWebClient.addWgsUbam(
         bearerToken,
         deleteKey,
         deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
@@ -284,19 +278,19 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
       // Client doesn't currently have a method for queryAll.
       entity <- Marshal(queryData).to[RequestEntity]
       request = HttpRequest(
-        uri = s"/api/v1/readgroup/queryall",
+        uri = s"/api/v1/wgsubam/queryall",
         method = HttpMethods.POST,
         entity = entity
       ).addCredentials(OAuth2BearerToken(bearerToken))
       response <- clioWebClient.dispatchRequest(request)
-      results <- Unmarshal(response).to[Seq[TransferReadGroupV1QueryOutput]]
+      results <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
       results.length should be(keysWithMetadata.length)
       results.foldLeft(succeed) { (_, result) =>
         result.project should be(Some(project))
         result.sampleAlias should be(Some(sample))
 
-        val resultKey = TransferReadGroupV1Key(
+        val resultKey = TransferWgsUbamV1Key(
           flowcellBarcode = result.flowcellBarcode,
           lane = result.lane,
           libraryName = result.libraryName,

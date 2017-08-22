@@ -28,7 +28,7 @@ trait TestData {
 
   //missing lane
   val missingRequired = Array(
-    Commands.addReadGroupBam,
+    Commands.addWgsUbam,
     "-m",
     metadataFileLocation,
     "-f",
@@ -41,7 +41,7 @@ trait TestData {
 
   //missing lane
   val missingOptional = Array(
-    Commands.queryReadGroupBam,
+    Commands.queryWgsUbam,
     "-f",
     testFlowcell,
     "-n",
@@ -51,7 +51,7 @@ trait TestData {
   )
 
   val goodAddCommand = Array(
-    Commands.addReadGroupBam,
+    Commands.addWgsUbam,
     "-m",
     metadataFileLocation,
     "-f",

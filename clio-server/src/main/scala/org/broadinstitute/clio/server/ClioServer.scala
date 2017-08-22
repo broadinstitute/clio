@@ -16,7 +16,7 @@ import org.broadinstitute.clio.server.webservice._
 
 object ClioServer
     extends StatusWebService
-    with ReadGroupWebService
+    with WgsUbamWebService
     with AuditDirectives
     with ExceptionDirectives
     with RejectionDirectives
@@ -41,7 +41,7 @@ object ClioServer
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
   private val innerRoutes: Route =
-    concat(statusRoutes, pathPrefix("api") { readGroupRoutes })
+    concat(statusRoutes, pathPrefix("api") { wgsUbamRoutes })
   private val routes = wrapperDirectives(innerRoutes)
 
   private val serverStatusDAO = CachedServerStatusDAO()
@@ -55,7 +55,7 @@ object ClioServer
   private val serverService = ServerService(app)
   override val auditService = AuditService(app)
   override val statusService = StatusService(app)
-  override val readGroupService = ReadGroupService(app)
+  override val wgsUbamService = WgsUbamService(app)
 
   def beginStartup(): Unit = serverService.beginStartup()
 

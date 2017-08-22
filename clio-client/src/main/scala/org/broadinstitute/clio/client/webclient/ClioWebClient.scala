@@ -10,9 +10,9 @@ import io.circe.syntax._
 import ClientAutoDerivation._
 import io.circe.Printer
 import org.broadinstitute.clio.transfer.model.{
-  TransferReadGroupV1Key,
-  TransferReadGroupV1Metadata,
-  TransferReadGroupV1QueryInput
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryInput
 }
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -47,25 +47,25 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
     dispatchRequest(HttpRequest(uri = "/health"))
   }
 
-  def getReadGroupSchema(bearerToken: String): Future[HttpResponse] = {
+  def getWgsUbamSchema(bearerToken: String): Future[HttpResponse] = {
     dispatchRequest(
-      HttpRequest(uri = "/api/v1/readgroup/schema")
+      HttpRequest(uri = "/api/v1/wgsubam/schema")
         .addHeader(Authorization(credentials = OAuth2BearerToken(bearerToken)))
     )
   }
 
-  def addReadGroupBam(
+  def addWgsUbam(
     bearerToken: String,
-    input: TransferReadGroupV1Key,
-    transferReadGroupV1Metadata: TransferReadGroupV1Metadata
+    input: TransferWgsUbamV1Key,
+    transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
   ): Future[HttpResponse] = {
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      transferReadGroupV1Metadata.asJson.pretty(implicitly[Printer])
+      transferWgsUbamV1Metadata.asJson.pretty(implicitly[Printer])
     )
     dispatchRequest(
       HttpRequest(
-        uri = "/api/v1/readgroup/metadata/"
+        uri = "/api/v1/wgsubam/metadata/"
           + input.flowcellBarcode + "/" + input.lane + "/" + input.libraryName + "/" + input.location,
         method = HttpMethods.POST,
         entity = entity
@@ -73,10 +73,8 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
     )
   }
 
-  def queryReadGroupBam(
-    bearerToken: String,
-    input: TransferReadGroupV1QueryInput
-  ): Future[HttpResponse] = {
+  def queryWgsUbam(bearerToken: String,
+                   input: TransferWgsUbamV1QueryInput): Future[HttpResponse] = {
     val entity =
       HttpEntity(
         ContentTypes.`application/json`,
@@ -84,7 +82,7 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
       )
     dispatchRequest(
       HttpRequest(
-        uri = "/api/v1/readgroup/query",
+        uri = "/api/v1/wgsubam/query",
         method = HttpMethods.POST,
         entity = entity
       ).addHeader(Authorization(credentials = OAuth2BearerToken(bearerToken)))

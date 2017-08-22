@@ -11,13 +11,13 @@ import org.broadinstitute.clio.util.json.JsonSchemas
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ReadGroupService private (
+class WgsUbamService private (
   searchDAO: SearchDAO
 )(implicit executionContext: ExecutionContext) {
 
   def upsertMetadata(
-    transferKey: TransferReadGroupV1Key,
-    transferMetadata: TransferReadGroupV1Metadata
+    transferKey: TransferWgsUbamV1Key,
+    transferMetadata: TransferWgsUbamV1Metadata
   ): Future[Unit] = {
     val updatedTransferMetadata = transferMetadata.copy(
       documentStatus =
@@ -27,56 +27,53 @@ class ReadGroupService private (
     SearchService.upsertMetadata(
       transferKey,
       updatedTransferMetadata,
-      ReadGroupService.ConverterV1Key,
-      ReadGroupService.ConverterV1Metadata,
-      searchDAO.updateReadGroupMetadata
+      WgsUbamService.ConverterV1Key,
+      WgsUbamService.ConverterV1Metadata,
+      searchDAO.updateWgsUbamMetadata
     )
   }
 
   def queryMetadata(
-    transferInput: TransferReadGroupV1QueryInput
-  ): Future[Seq[TransferReadGroupV1QueryOutput]] = {
+    transferInput: TransferWgsUbamV1QueryInput
+  ): Future[Seq[TransferWgsUbamV1QueryOutput]] = {
     val transferInputNew =
       transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
     queryAllMetadata(transferInputNew)
   }
 
   def queryAllMetadata(
-    transferInput: TransferReadGroupV1QueryInput
-  ): Future[Seq[TransferReadGroupV1QueryOutput]] = {
+    transferInput: TransferWgsUbamV1QueryInput
+  ): Future[Seq[TransferWgsUbamV1QueryOutput]] = {
     SearchService.queryMetadata(
       transferInput,
-      ReadGroupService.ConverterV1QueryInput,
-      ReadGroupService.ConverterV1QueryOutput,
-      searchDAO.queryReadGroup
+      WgsUbamService.ConverterV1QueryInput,
+      WgsUbamService.ConverterV1QueryOutput,
+      searchDAO.queryWgsUbam
     )
   }
 
-  def querySchema(): Future[Json] = Future(JsonSchemas.ReadGroup)
+  def querySchema(): Future[Json] = Future(JsonSchemas.WgsUbam)
 }
 
-object ReadGroupService {
+object WgsUbamService {
   def apply(
     app: ClioApp
-  )(implicit executionContext: ExecutionContext): ReadGroupService = {
-    new ReadGroupService(app.searchDAO)
+  )(implicit executionContext: ExecutionContext): WgsUbamService = {
+    new WgsUbamService(app.searchDAO)
   }
 
   private[service] val ConverterV1Key =
-    SameFieldsTypeConverter[TransferReadGroupV1Key, ModelReadGroupKey]
+    SameFieldsTypeConverter[TransferWgsUbamV1Key, ModelWgsUbamKey]
 
   private[service] val ConverterV1Metadata =
-    SameFieldsTypeConverter[TransferReadGroupV1Metadata, ModelReadGroupMetadata]
+    SameFieldsTypeConverter[TransferWgsUbamV1Metadata, ModelWgsUbamMetadata]
 
   private[service] val ConverterV1QueryInput =
-    SameFieldsTypeConverter[
-      TransferReadGroupV1QueryInput,
-      ModelReadGroupQueryInput
-    ]
+    SameFieldsTypeConverter[TransferWgsUbamV1QueryInput, ModelWgsUbamQueryInput]
 
   private[service] val ConverterV1QueryOutput =
     SameFieldsTypeConverter[
-      ModelReadGroupQueryOutput,
-      TransferReadGroupV1QueryOutput
+      ModelWgsUbamQueryOutput,
+      TransferWgsUbamV1QueryOutput
     ]
 }

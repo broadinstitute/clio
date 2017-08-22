@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.MockClioApp
-import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
+import org.broadinstitute.clio.server.dataaccess.MemoryWgsUbamSearchDAO
 import org.broadinstitute.clio.server.model._
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.CaseClassMapper
@@ -9,8 +9,8 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
-class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
-  behavior of "ReadGroupService"
+class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
+  behavior of "WgsUbamService"
 
   it should "upsertMetadata" in {
     upsertMetadataTest(None, Option(DocumentStatus.Normal))
@@ -31,20 +31,20 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
   }
 
   it should "queryData" in {
-    val memorySearchDAO = new MemoryReadGroupSearchDAO()
+    val memorySearchDAO = new MemoryWgsUbamSearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
-    val readGroupService = ReadGroupService(app)
+    val wgsUbamService = WgsUbamService(app)
     val transferInputMapper =
-      new CaseClassMapper[TransferReadGroupV1QueryInput]
+      new CaseClassMapper[TransferWgsUbamV1QueryInput]
     val transferInput =
       transferInputMapper.newInstance(Map("project" -> Option("testProject")))
     for {
-      _ <- readGroupService.queryMetadata(transferInput)
+      _ <- wgsUbamService.queryMetadata(transferInput)
     } yield {
-      memorySearchDAO.updateReadGroupMetadataCalls should be(empty)
-      memorySearchDAO.queryReadGroupCalls should be(
+      memorySearchDAO.updateWgsUbamMetadataCalls should be(empty)
+      memorySearchDAO.queryWgsUbamCalls should be(
         Seq(
-          ModelReadGroupQueryInput(
+          ModelWgsUbamQueryInput(
             flowcellBarcode = None,
             lane = None,
             libraryName = None,
@@ -65,13 +65,13 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
     documentStatus: Option[DocumentStatus],
     expectedDocumentStatus: Option[DocumentStatus]
   ) = {
-    val memorySearchDAO = new MemoryReadGroupSearchDAO()
+    val memorySearchDAO = new MemoryWgsUbamSearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
-    val readGroupService = ReadGroupService(app)
+    val wgsUbamService = WgsUbamService(app)
     val transferKey =
-      TransferReadGroupV1Key("barcode1", 2, "library3", Location.GCP)
+      TransferWgsUbamV1Key("barcode1", 2, "library3", Location.GCP)
     val transferMetadataMapper =
-      new CaseClassMapper[TransferReadGroupV1Metadata]
+      new CaseClassMapper[TransferWgsUbamV1Metadata]
     val transferMetadata =
       transferMetadataMapper.newInstance(
         Map(
@@ -81,13 +81,13 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
         )
       )
     for {
-      _ <- readGroupService.upsertMetadata(transferKey, transferMetadata)
+      _ <- wgsUbamService.upsertMetadata(transferKey, transferMetadata)
     } yield {
-      memorySearchDAO.updateReadGroupMetadataCalls should be(
+      memorySearchDAO.updateWgsUbamMetadataCalls should be(
         Seq(
           (
-            ModelReadGroupKey("barcode1", 2, "library3", Location.GCP),
-            ModelReadGroupMetadata(
+            ModelWgsUbamKey("barcode1", 2, "library3", Location.GCP),
+            ModelWgsUbamMetadata(
               analysisType = None,
               baitIntervals = None,
               dataType = None,
@@ -125,7 +125,7 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
           )
         )
       )
-      memorySearchDAO.queryReadGroupCalls should be(empty)
+      memorySearchDAO.queryWgsUbamCalls should be(empty)
     }
 
   }
