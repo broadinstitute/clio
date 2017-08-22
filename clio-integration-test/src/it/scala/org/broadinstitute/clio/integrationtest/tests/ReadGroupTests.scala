@@ -13,6 +13,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
@@ -59,7 +60,8 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
       lane = 2,
       libraryName = s"library$randomId",
       location = location,
-      project = Some("testProject")
+      project = Some("testProject"),
+      documentStatus = Some(DocumentStatus.Normal)
     )
 
     val upsertKey = TransferReadGroupV1Key(
@@ -86,10 +88,8 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
           _ <- clioWebClient
             .addReadGroupBam(bearerToken, upsertKey, upsertData)
             .map(_.status should be(StatusCodes.OK))
-          queryResponse <- clioWebClient.queryReadGroupBam(
-            bearerToken,
-            queryData
-          )
+          queryResponse <- clioWebClient
+            .queryReadGroupBam(bearerToken, queryData)
           outputs <- Unmarshal(queryResponse)
             .to[Seq[TransferReadGroupV1QueryOutput]]
         } yield {
@@ -220,7 +220,7 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
     val barcode = "fc5440"
     val project = "testProject" + randomId
     val sample = "sample688." + randomId
-    val keysWithMetadata = (0 until 3).map { lane =>
+    val keysWithMetadata = (1 to 3).map { lane =>
       val upsertKey = TransferReadGroupV1Key(
         flowcellBarcode = barcode,
         lane = lane,
@@ -287,7 +287,7 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
         uri = s"/api/v1/readgroup/queryall",
         method = HttpMethods.POST,
         entity = entity
-      )
+      ).addCredentials(OAuth2BearerToken(bearerToken))
       response <- clioWebClient.dispatchRequest(request)
       results <- Unmarshal(response).to[Seq[TransferReadGroupV1QueryOutput]]
     } yield {
@@ -304,9 +304,9 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
         )
 
         if (resultKey == deleteKey) {
-          result.documentStatus should be(Some(DocumentStatus.Normal))
-        } else {
           result.documentStatus should be(Some(DocumentStatus.Deleted))
+        } else {
+          result.documentStatus should be(Some(DocumentStatus.Normal))
         }
       }
     }

@@ -5,14 +5,13 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchInde
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.client.RequestBuilding
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.Printer
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
@@ -31,9 +30,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     with AsyncFlatSpecLike
     with BeforeAndAfterAll
     with Matchers
-    with RequestBuilding
-    with FailFastCirceSupport
     with ModelAutoDerivation
+    with ErrorAccumulatingCirceSupport
     with LazyLogging {
 
   behavior of clioDescription
