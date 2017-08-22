@@ -1,23 +1,31 @@
 // For more info on these plugins, see https://broadinstitute.atlassian.net/wiki/pages/viewpage.action?pageId=114531509
 
+// Plugins:
 val SbtAssemblyVersion = "0.14.4"
 val SbtGitVersion = "0.9.3"
 val SbtDockerVersion = "1.4.1"
 val SbtScalafmtVersion = "1.9"
+val SbtScoverageVersion = "1.5.0"
+
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % SbtAssemblyVersion)
+addSbtPlugin("com.typesafe.sbt" % "sbt-git" % SbtGitVersion)
+addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % SbtScalafmtVersion)
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % SbtScoverageVersion)
+addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % SbtDockerVersion)
+
+// Libraries used by the plugins:
+val GoogleAuthHttpVersion = "0.7.1"
 val ScalafmtVersion = "1.1.0"
 val Slf4jVersion = "1.7.25"
 val TypesafeConfigVersion = "1.3.1"
+val VaultJavaDriverVersion = "3.0.0"
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-git" % SbtGitVersion)
-libraryDependencies += "org.slf4j" % "slf4j-nop" % Slf4jVersion
-
-addSbtPlugin("com.eed3si9n" % "sbt-assembly" % SbtAssemblyVersion)
-
-addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % SbtDockerVersion)
-
-addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % SbtScalafmtVersion)
-
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.0")
+libraryDependencies ++= Seq(
+  "com.bettercloud" % "vault-java-driver" % VaultJavaDriverVersion,
+  "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
+  "com.typesafe" % "config" % TypesafeConfigVersion,
+  "org.slf4j" % "slf4j-nop" % Slf4jVersion
+)
 
 // Various compiler tweaks for our ClioIntegrationTestPlugin.
 // More info available via:
@@ -42,8 +50,8 @@ scalacOptions ++= Seq(
   "-Ywarn-value-discard",
   "-Xfatal-warnings"
 )
-libraryDependencies += "com.typesafe" % "config" % TypesafeConfigVersion
 
+// Set up scalafmt to also format our build files
 scalafmtVersion in ThisBuild := ScalafmtVersion
 scalafmtOnCompile in ThisBuild := true
 ignoreErrors in (ThisBuild, scalafmt) := false
