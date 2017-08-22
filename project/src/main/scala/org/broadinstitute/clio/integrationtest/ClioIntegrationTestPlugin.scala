@@ -8,10 +8,11 @@ import sbt._
   */
 object ClioIntegrationTestPlugin extends AutoPlugin {
 
+  /*
+   * Ensure the scalafmt plugin loads before this, so we can
+   * enable it for the IntegrationTest configuration.
+   */
   override def requires: Plugins = ScalafmtPlugin
-
-  /** The list of items automatically added to build.sbt, including the testDocker command. */
-  object autoImport extends ClioIntegrationTestKeys {}
 
   /** Add our task to the project(s). */
   override val projectSettings: Seq[Setting[_]] =

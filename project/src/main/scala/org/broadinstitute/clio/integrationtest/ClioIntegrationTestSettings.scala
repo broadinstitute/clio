@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.integrationtest
 
-import org.broadinstitute.clio.sbt.{Compilation, Versioning}
+import org.broadinstitute.clio.sbt.{Compilation, Dependencies, Versioning}
 
 import com.lucidchart.sbt.scalafmt.ScalafmtCorePlugin
 import sbt._
@@ -10,16 +10,21 @@ import sbt.Keys._
 /**
   * Settings for running our integration tests.
   */
-object ClioIntegrationTestSettings extends ClioIntegrationTestKeys {
+object ClioIntegrationTestSettings {
 
   /** Directory to which all container logs will be sent during Dockerized integration tests. */
-  lazy val itLogDir: Initialize[File] = Def.setting {
+  lazy val logTarget: Initialize[File] = Def.setting {
     target.value / "integration-test" / "logs"
   }
 
+  /** File to which Clio-server container logs will be sent during Dockerized integration tests. */
+  lazy val clioLogFile: Initialize[File] = Def.setting {
+    logTarget.value / "clio-server" / "clio.log"
+  }
+
   /** Task to clear out the IT log dir before running tests. */
-  lazy val resetItLogs: Initialize[Task[File]] = Def.task {
-    val logDir = itLogDir.value
+  lazy val resetLogs: Initialize[Task[File]] = Def.task {
+    val logDir = logTarget.value
     IO.delete(logDir)
     IO.createDirectory(logDir)
     /*
@@ -27,21 +32,22 @@ object ClioIntegrationTestSettings extends ClioIntegrationTestKeys {
      * for the "started" message before starting tests, so we ensure
      * it exists here.
      */
-    val clioLog = logDir / "clio-server" / "clio.log"
+    val clioLog = clioLogFile.value
     IO.touch(clioLog)
     clioLog
   }
 
   /** Environment variables to inject when running integration tests. */
   lazy val itEnvVars: Initialize[Task[Map[String, String]]] = Def.task {
-    val logDir = itLogDir.value
+    val logDir = logTarget.value
+    val clioLog = clioLogFile.value
     val confDir = (classDirectory in IntegrationTest).value / "org" / "broadinstitute" / "clio" / "integrationtest"
 
     Map(
       "CLIO_DOCKER_TAG" -> version.value,
-      // TODO: Pull this version from elsewhere in the build.
-      "ELASTICSEARCH_DOCKER_TAG" -> "5.4.0_6",
+      "ELASTICSEARCH_DOCKER_TAG" -> Dependencies.ElasticsearchVersion,
       "LOG_DIR" -> logDir.getAbsolutePath,
+      "CLIO_LOG_FILE" -> clioLog.getAbsolutePath,
       "CONF_DIR" -> confDir.getAbsolutePath
     )
   }
@@ -63,25 +69,10 @@ object ClioIntegrationTestSettings extends ClioIntegrationTestKeys {
          * Override the top-level `test` definition to be a no-op so running "sbt test"
          * won't trigger integration tests along with the unit tests in other projects.
          *
-         * Integration tests should be explicitly run with the keys defined below, or "it:test".
+         * Integration tests should be explicitly run with the keys defined below,
+         * or "it:test" / "it:testOnly XYZ".
          */
         test := {},
-        /*
-         * Define aliases for "it:testOnly XYZ" to make running integration tests against
-         * different setups / environments more convenient.
-         */
-        testDocker := (testOnly in IntegrationTest)
-          .toTask(" *FullDockerIntegrationSpec")
-          .value,
-        testDockerDev := (testOnly in IntegrationTest)
-          .toTask(" *DockerDevIntegrationSpec")
-          .value,
-        testDev := (testOnly in IntegrationTest)
-          .toTask(" *DevEnvIntegrationSpec")
-          .value,
-        testStaging := (testOnly in IntegrationTest)
-          .toTask(" *StagingEnvIntegrationSpec")
-          .value,
         /*
          * Testcontainers registers a JVM shutdown hook to remove the containers
          * it creates using docker-compose. Forking when running integration tests
@@ -93,7 +84,7 @@ object ClioIntegrationTestSettings extends ClioIntegrationTestKeys {
         fork in IntegrationTest := true,
         envVars in IntegrationTest ++= itEnvVars.value,
         resourceGenerators in IntegrationTest +=
-          resetItLogs.map(Seq(_)).taskValue
+          resetLogs.map(Seq(_)).taskValue
       )
     )
   }

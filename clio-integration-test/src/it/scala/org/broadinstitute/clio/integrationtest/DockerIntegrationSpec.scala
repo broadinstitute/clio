@@ -32,6 +32,13 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
     with ForAllTestContainer
     with IntegrationSuite {
 
+  /**
+    * Name of the clio-server instance that will be started by the docker-compose
+    * call, plus its instance number.
+    *
+    * NOTE: If you change the name of the Clio service in the compose files used
+    * for integration testing, you also need to change this value to match.
+    */
   private val clioName = "clio-server_1"
   protected def exposedServices: Map[String, Int] = Map(clioName -> 8080)
 
@@ -61,7 +68,7 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
      */
     val fs = FileSystems.getDefault
     val clioLogLines: Source[String, NotUsed] = FileTailSource.lines(
-      path = fs.getPath(System.getenv("LOG_DIR"), "clio-server", "clio.log"),
+      path = fs.getPath(sys.env("CLIO_LOG_FILE")),
       maxLineSize = 8192,
       pollingInterval = 250.millis
     )
@@ -89,6 +96,13 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
 class FullDockerIntegrationSpec
     extends DockerIntegrationSpec("docker-compose.yml", "local") {
 
+  /**
+    * Name of one of the elasticsearch instances that will be started by
+    * the docker-compose call, plus its instance number.
+    *
+    * NOTE: If you change the name of the elasticserach service in docker-compose.yml,
+    * you also need to change this value to match.
+    */
   private lazy val esName = "elasticsearch1_1"
 
   override def exposedServices: Map[String, Int] =

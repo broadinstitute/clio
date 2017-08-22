@@ -34,6 +34,9 @@ object Dependencies {
     */
   val ScalafmtVersion = "1.1.0"
 
+  /** Version of our Elasticsearch Docker image to use during integration tests. */
+  val ElasticsearchVersion = "5.4.0_6"
+
   /** Dependencies used in main code, and transitively by the test code. */
   val ServerMainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,

@@ -56,7 +56,7 @@ object Docker {
 
   /** The name of the test images. */
   private val TestImages = Map(
-    "elasticsearch" -> "broadinstitute/elasticsearch:5.4.0_6"
+    "elasticsearch" -> s"broadinstitute/elasticsearch:${Dependencies.ElasticsearchVersion}"
   )
 
   /** Write the version information into a configuration file. */
