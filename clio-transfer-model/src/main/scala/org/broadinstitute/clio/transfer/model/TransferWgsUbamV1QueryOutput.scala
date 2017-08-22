@@ -4,7 +4,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import java.time.OffsetDateTime
 
-case class TransferReadGroupV1QueryOutput(
+case class TransferWgsUbamV1QueryOutput(
   flowcellBarcode: String,
   lane: Int,
   libraryName: String,

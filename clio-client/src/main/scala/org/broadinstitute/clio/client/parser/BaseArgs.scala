@@ -30,9 +30,9 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
     .action((token, conf) => conf.copy(bearerToken = token))
     .text("A valid bearer token for authentication.")
 
-  cmd(Commands.addReadGroupBam)
-    .action((_, c) => c.copy(command = Some(Commands.addReadGroupBam)))
-    .text("This command is used to add a read group group bam.")
+  cmd(Commands.addWgsUbam)
+    .action((_, c) => c.copy(command = Some(Commands.addWgsUbam)))
+    .text("This command is used to add a wgs ubam (WGS unmapped bam).")
     .children(
       opt[String]('m', "meta-data-file")
         .required()
@@ -46,59 +46,61 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
       opt[String]('f', "flowcell")
         .required()
         .action((flowcell, config) => config.copy(flowcell = Some(flowcell)))
-        .text("The flowcell for this read group. (Required)"),
+        .text("The flowcell for this wgs ubam (WGS unmapped bam). (Required)"),
       opt[Int]('l', "lane")
         .required()
         .action((lane, config) => config.copy(lane = Some(lane)))
-        .text("The lane for this read group. (Required)"),
+        .text("The lane for this wgs ubam (WGS unmapped bam). (Required)"),
       opt[String]('n', "libraryName")
         .required()
         .action(
           (libraryName, config) => config.copy(libraryName = Some(libraryName))
         )
-        .text("The library name for this read group. (Required)"),
+        .text(
+          "The library name for this wgs ubam (WGS unmapped bam). (Required)"
+        ),
       opt[String]("location")
         .required()
         .action((location, config) => config.copy(location = Some(location)))
-        .text("The location for this read group. (Required)")
+        .text("The location for this wgs ubam (WGS unmapped bam). (Required)")
     )
 
-  cmd(Commands.queryReadGroupBam)
-    .action((_, c) => c.copy(command = Some(Commands.queryReadGroupBam)))
-    .text("This command is used to query a read group group bam.")
+  cmd(Commands.queryWgsUbam)
+    .action((_, c) => c.copy(command = Some(Commands.queryWgsUbam)))
+    .text("This command is used to query a wgs ubam (WGS unmapped bam).")
     .children(
       opt[String]('f', "flowcell")
         .optional()
         .action((flowcell, config) => config.copy(flowcell = Some(flowcell)))
-        .text("The flowcell for this read group."),
+        .text("The flowcell for this wgs ubam (WGS unmapped bam)."),
       opt[Int]('l', "lane")
         .optional()
         .action((lane, config) => config.copy(lane = Some(lane)))
-        .text("The lane for this read group."),
+        .text("The lane for this wgs ubam (WGS unmapped bam)."),
       opt[String]('n', "libraryName")
         .optional()
         .action(
           (libraryName, config) => config.copy(libraryName = Some(libraryName))
         )
-        .text("The library name for this read group."),
+        .text("The library name for this wgs ubam (WGS unmapped bam)."),
       opt[String]("location")
         .optional()
         .action((location, config) => config.copy(location = Some(location)))
-        .text("The location for this read group."),
+        .text("The location for this wgs ubam (WGS unmapped bam)."),
       opt[String]("lc-set")
         .optional()
         .action((lcSet, config) => config.copy(lcSet = Some(lcSet)))
-        .text("The lcSet for this read group."),
+        .text("The lcSet for this wgs ubam (WGS unmapped bam)."),
       opt[String]("sample-alias")
         .optional()
         .action(
           (sampleAlias, config) => config.copy(sampleAlias = Some(sampleAlias))
         )
-        .text("The sample alias for this read group."),
+        .text("The sample alias for this wgs ubam (WGS unmapped bam)."),
       opt[String]("project")
         .optional()
         .action((project, config) => config.copy(project = Some(project)))
-        .text("The project for this read group.")
+        .text("The project for this wgs ubam (WGS unmapped bam).")
     )
 
   checkConfig { config =>

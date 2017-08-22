@@ -2,13 +2,13 @@ package org.broadinstitute.client.commands
 
 import org.broadinstitute.client.BaseClientSpec
 import org.broadinstitute.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.client.commands.QueryReadGroupBam
+import org.broadinstitute.clio.client.commands.QueryWgsUbam
 
-class QueryReadGroupBamSpec extends BaseClientSpec {
-  behavior of "QueryReadGroupBam"
+class QueryWgsUbamSpec extends BaseClientSpec {
+  behavior of "QueryWgsUbam"
 
   it should "return false if there was a server error" in {
-    new QueryReadGroupBam(
+    new QueryWgsUbam(
       clioWebClient = MockClioWebClient.returningInternalError,
       flowcell = Some(testFlowcell),
       lane = Some(testLane),
@@ -25,7 +25,7 @@ class QueryReadGroupBamSpec extends BaseClientSpec {
   }
 
   it should "return true if the server response is OK" in {
-    new QueryReadGroupBam(
+    new QueryWgsUbam(
       clioWebClient = MockClioWebClient.returningOk,
       flowcell = Some(testFlowcell),
       lane = Some(testLane),

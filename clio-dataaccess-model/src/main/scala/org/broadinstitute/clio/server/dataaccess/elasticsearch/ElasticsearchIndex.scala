@@ -27,8 +27,8 @@ abstract class ElasticsearchIndex[Document] {
 }
 
 object ElasticsearchIndex {
-  val ReadGroup: ElasticsearchIndex[DocumentReadGroup] =
-    indexDocument[DocumentReadGroup]
+  val WgsUbam: ElasticsearchIndex[DocumentWgsUbam] =
+    indexDocument[DocumentWgsUbam]
 
   /**
     * Creates an index using shapeless and reflection.

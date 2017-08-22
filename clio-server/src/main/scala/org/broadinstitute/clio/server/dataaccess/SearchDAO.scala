@@ -25,22 +25,22 @@ trait SearchDAO {
   def close(): Future[Unit]
 
   /**
-    * Updates the read group metadata.
+    * Updates the wgs ubam metadata.
     *
-    * @param key      The key to the read group.
+    * @param key      The key to the wgs ubam.
     * @param metadata The new fields for the metadata.
     * @return The result of the update.
     */
-  def updateReadGroupMetadata(key: ModelReadGroupKey,
-                              metadata: ModelReadGroupMetadata): Future[Unit]
+  def updateWgsUbamMetadata(key: ModelWgsUbamKey,
+                            metadata: ModelWgsUbamMetadata): Future[Unit]
 
   /**
-    * Query the read groups.
+    * Query the wgs ubams.
     *
     * @param queryInput The query input.
     * @return The query outputs.
     */
-  def queryReadGroup(
-    queryInput: ModelReadGroupQueryInput
-  ): Future[Seq[ModelReadGroupQueryOutput]]
+  def queryWgsUbam(
+    queryInput: ModelWgsUbamQueryInput
+  ): Future[Seq[ModelWgsUbamQueryOutput]]
 }

@@ -13,9 +13,9 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
-  TransferReadGroupV1Key,
-  TransferReadGroupV1Metadata,
-  TransferReadGroupV1QueryInput
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryInput
 }
 
 import akka.actor.ActorSystem
@@ -42,17 +42,17 @@ class MockClioWebClient(status: StatusCode)(implicit system: ActorSystem)
     )
   }
 
-  override def addReadGroupBam(
+  override def addWgsUbam(
     bearerToken: String,
-    input: TransferReadGroupV1Key,
-    transferReadGroupV1Metadata: TransferReadGroupV1Metadata
+    input: TransferWgsUbamV1Key,
+    transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
   ): Future[HttpResponse] = {
     Future.successful(HttpResponse(status = status))
   }
 
-  override def queryReadGroupBam(
+  override def queryWgsUbam(
     bearerToken: String,
-    input: TransferReadGroupV1QueryInput
+    input: TransferWgsUbamV1QueryInput
   ): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
