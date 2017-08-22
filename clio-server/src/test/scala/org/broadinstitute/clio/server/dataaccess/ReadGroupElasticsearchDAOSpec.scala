@@ -54,7 +54,8 @@ class ReadGroupElasticsearchDAOSpec
       notes = None,
       ubamMd5 = None,
       ubamPath = None,
-      ubamSize = None
+      ubamSize = None,
+      documentStatus = None
     )
     for {
       _ <- readGroupElasticsearchDAO.updateReadGroupMetadata(key, metadata)
@@ -99,7 +100,8 @@ class ReadGroupElasticsearchDAOSpec
       notes = None,
       ubamMd5 = Option("md5"),
       ubamPath = Option(s"expected_path_$id"),
-      ubamSize = Option(12345L)
+      ubamSize = Option(12345L),
+      documentStatus = None
     )
     val queryInput = ModelReadGroupQueryInput(
       flowcellBarcode = None,
@@ -110,7 +112,8 @@ class ReadGroupElasticsearchDAOSpec
       project = None,
       runDateEnd = None,
       runDateStart = None,
-      sampleAlias = None
+      sampleAlias = None,
+      documentStatus = None
     )
     for {
       _ <- readGroupElasticsearchDAO.updateReadGroupMetadata(key, metadata)
@@ -154,7 +157,8 @@ class ReadGroupElasticsearchDAOSpec
             notes = None,
             ubamMd5 = Option("md5"),
             ubamPath = Option(s"expected_path_$id"),
-            ubamSize = Option(12345L)
+            ubamSize = Option(12345L),
+            documentStatus = None
           )
         )
       )

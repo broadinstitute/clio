@@ -5,7 +5,7 @@ import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
 import org.broadinstitute.clio.server.model._
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.CaseClassMapper
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
@@ -13,6 +13,58 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
   behavior of "ReadGroupService"
 
   it should "upsertMetadata" in {
+    upsertMetadataTest(None, Option(DocumentStatus.Normal))
+  }
+
+  it should "upsertMetadata with document_status explicitly set to Normal" in {
+    upsertMetadataTest(
+      Option(DocumentStatus.Normal),
+      Option(DocumentStatus.Normal)
+    )
+  }
+
+  it should "upsertMetadata with document_status explicitly set to Deleted" in {
+    upsertMetadataTest(
+      Option(DocumentStatus.Deleted),
+      Option(DocumentStatus.Deleted)
+    )
+  }
+
+  it should "queryData" in {
+    val memorySearchDAO = new MemoryReadGroupSearchDAO()
+    val app = MockClioApp(searchDAO = memorySearchDAO)
+    val readGroupService = ReadGroupService(app)
+    val transferInputMapper =
+      new CaseClassMapper[TransferReadGroupV1QueryInput]
+    val transferInput =
+      transferInputMapper.newInstance(Map("project" -> Option("testProject")))
+    for {
+      _ <- readGroupService.queryMetadata(transferInput)
+    } yield {
+      memorySearchDAO.updateReadGroupMetadataCalls should be(empty)
+      memorySearchDAO.queryReadGroupCalls should be(
+        Seq(
+          ModelReadGroupQueryInput(
+            flowcellBarcode = None,
+            lane = None,
+            libraryName = None,
+            location = None,
+            lcSet = None,
+            project = Option("testProject"),
+            runDateEnd = None,
+            runDateStart = None,
+            sampleAlias = None,
+            documentStatus = Option(DocumentStatus.Normal)
+          )
+        )
+      )
+    }
+  }
+
+  private def upsertMetadataTest(
+    documentStatus: Option[DocumentStatus],
+    expectedDocumentStatus: Option[DocumentStatus]
+  ) = {
     val memorySearchDAO = new MemoryReadGroupSearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val readGroupService = ReadGroupService(app)
@@ -24,7 +76,8 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
       transferMetadataMapper.newInstance(
         Map(
           "project" -> Option("testProject"),
-          "notes" -> Option("notable update")
+          "notes" -> Option("notable update"),
+          "documentStatus" -> documentStatus
         )
       )
     for {
@@ -66,42 +119,14 @@ class ReadGroupServiceSpec extends AsyncFlatSpec with Matchers {
               notes = Option("notable update"),
               ubamMd5 = None,
               ubamPath = None,
-              ubamSize = None
+              ubamSize = None,
+              documentStatus = expectedDocumentStatus
             )
           )
         )
       )
       memorySearchDAO.queryReadGroupCalls should be(empty)
     }
-  }
 
-  it should "queryData" in {
-    val memorySearchDAO = new MemoryReadGroupSearchDAO()
-    val app = MockClioApp(searchDAO = memorySearchDAO)
-    val readGroupService = ReadGroupService(app)
-    val transferInputMapper =
-      new CaseClassMapper[TransferReadGroupV1QueryInput]
-    val transferInput =
-      transferInputMapper.newInstance(Map("project" -> Option("testProject")))
-    for {
-      _ <- readGroupService.queryMetadata(transferInput)
-    } yield {
-      memorySearchDAO.updateReadGroupMetadataCalls should be(empty)
-      memorySearchDAO.queryReadGroupCalls should be(
-        Seq(
-          ModelReadGroupQueryInput(
-            flowcellBarcode = None,
-            lane = None,
-            libraryName = None,
-            location = None,
-            lcSet = None,
-            project = Option("testProject"),
-            runDateEnd = None,
-            runDateStart = None,
-            sampleAlias = None
-          )
-        )
-      )
-    }
   }
 }

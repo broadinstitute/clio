@@ -9,7 +9,7 @@ import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemoryReadGroupSearchDAO
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.broadinstitute.clio.util.json.JsonSchemas
-
+import org.broadinstitute.clio.util.model.DocumentStatus
 import org.scalatest.{FlatSpec, Matchers}
 
 class ReadGroupWebServiceSpec
@@ -80,6 +80,64 @@ class ReadGroupWebServiceSpec
       secondQuery.project should be(Some("testProject1"))
       secondQuery.sampleAlias should be(Some("sample1"))
     }
+  }
+
+  it should "upsert a record, delete it and then fail to find it with query, but find it with queryall" in {
+    val memorySearchDAO = new MemoryReadGroupSearchDAO()
+    val app = MockClioApp(searchDAO = memorySearchDAO)
+    val webService = new MockReadGroupWebService(app)
+    Post(
+      "/metadata/FC123/1/lib1/GCP",
+      Map(
+        "project" -> "G123",
+        "sample_alias" -> "sample1",
+        "ubam_path" -> "gs://path/ubam.bam"
+      )
+    ) ~> webService.postMetadata ~> check {
+      status shouldEqual StatusCodes.OK
+      memorySearchDAO.updateReadGroupMetadataCalls should have length 1
+      val firstUpdate = memorySearchDAO.updateReadGroupMetadataCalls.head
+      firstUpdate._2.project should be(Some("G123"))
+      firstUpdate._2.sampleAlias should be(Some("sample1"))
+      firstUpdate._2.ubamPath should be(Some("gs://path/ubam.bam"))
+    }
+
+    // We have to test the MemorySearchDAO because we're not going to implement
+    // Elasticsearch logic in our test specs. Here, we're just verifying that
+    // the web service passes the appropriate queries onto the search DAO.
+    Post("/query", Map("flowcell_barcode" -> "FC123")) ~> webService.query ~> check {
+      memorySearchDAO.queryReadGroupCalls should have length 1
+      val firstQuery = memorySearchDAO.queryReadGroupCalls.head
+      firstQuery.flowcellBarcode should be(Some("FC123"))
+    }
+
+    Post(
+      "/metadata/FC123/1/lib1/GCP",
+      Map(
+        "project" -> "G123",
+        "sample_alias" -> "sample1",
+        "document_status" -> "Deleted",
+        "ubam_path" -> ""
+      )
+    ) ~> webService.postMetadata ~> check {
+      status shouldEqual StatusCodes.OK
+      memorySearchDAO.updateReadGroupMetadataCalls should have length 2
+      val secondUpdate = memorySearchDAO.updateReadGroupMetadataCalls(1)
+      secondUpdate._2.project should be(Some("G123"))
+      secondUpdate._2.sampleAlias should be(Some("sample1"))
+      secondUpdate._2.documentStatus should be(Some(DocumentStatus.Deleted))
+      secondUpdate._2.ubamPath should be(Some(""))
+    }
+
+    // We have to test the MemorySearchDAO because we're not going to implement
+    // Elasticsearch logic in our test specs. Here, we're just verifying that
+    // the web service passes the appropriate queries onto the search DAO.
+    Post("/query", Map("flowcell_barcode" -> "FC123")) ~> webService.queryall ~> check {
+      memorySearchDAO.queryReadGroupCalls should have length 1
+      val secondQuery = memorySearchDAO.queryReadGroupCalls.head
+      secondQuery.flowcellBarcode should be(Some("FC123"))
+    }
+
   }
 
   it should "query with a BoGuS project and sample and return nothing" in {

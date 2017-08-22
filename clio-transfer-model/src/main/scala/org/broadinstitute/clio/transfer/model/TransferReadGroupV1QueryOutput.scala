@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.transfer.model
 
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import java.time.OffsetDateTime
 
@@ -40,5 +40,6 @@ case class TransferReadGroupV1QueryOutput(
   notes: Option[String] = None,
   ubamMd5: Option[String] = None,
   ubamPath: Option[String] = None,
-  ubamSize: Option[Long] = None
+  ubamSize: Option[Long] = None,
+  documentStatus: Option[DocumentStatus]
 )

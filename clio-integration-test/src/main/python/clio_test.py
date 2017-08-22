@@ -139,7 +139,8 @@ def test_read_group_mapping():
                 'target_intervals',
                 'notes',
                 'ubam_md5',
-                'ubam_path']
+                'ubam_path',
+                'document_status']
     expected = {k: 'keyword' for k in keywords}
     expected.update({k: 'integer' for k in ['lane']})
     expected.update({k: 'boolean' for k in ['paired_run']})
@@ -163,7 +164,8 @@ def read_group_metadata_location(location, upsertAssert):
         'lane': 2,
         'library_name': 'library' + new_uuid(),
         'location' : location,
-        'project': 'testProject'
+        'project': 'testProject',
+        'document_status': 'Normal'
     }
     upsert = {'project': expected['project']}
     upsertUrl = read_group_v1_url('metadata',
@@ -270,6 +272,77 @@ def test_read_group_metadata_update():
     assert emptyNotes['sample_alias'] == 'sampleAlias2'
     assert emptyNotes['notes'] == ''
 
+def test_query_delete_queryall():
+    project = 'testProject' + new_uuid()
+    sample_alias = 'sample688.' + new_uuid()
+    metadata = [{'flowcell_barcode': 'fc5440',
+               'lane': _,
+               'library_name': 'library' + new_uuid(),
+               'location': 'GCP',
+               'project': project,
+               'sample_alias': sample_alias,
+               'ubam_path': 'gs://ubam/' + sample_alias + '.' + str(_)} for _ in range(3)]
+
+    for m in metadata:
+        upsertUrl = read_group_v1_url('metadata',
+                                      m['flowcell_barcode'],
+                                      m['lane'],
+                                      m['library_name'],
+                                      m['location'])
+        json = {k : m[k] for k in ['sample_alias', 'project', 'ubam_path']}
+        assert requests.post(upsertUrl, json=json).ok
+
+    def assertAgainstMetadata(record, metadata):
+        assert record['project'] == metadata['project']
+        assert record['sample_alias'] == metadata['sample_alias']
+
+    # We've loaded three records, should find three records with query..
+    queryUrl = read_group_v1_url('query')
+    projectJson = requests.post(queryUrl, json={'project': project, 'flowcell_barcode': 'fc5440'}).json()
+    assert len(projectJson) == len(metadata)
+    for index in range(1,len(projectJson)):
+        assertAgainstMetadata(projectJson[index], metadata[index])
+        assert projectJson[index]['document_status'] == 'Normal'
+
+    # We've loaded three records, should find three records with queryall (since none are deleted)..
+    queryallUrl = read_group_v1_url('queryall')
+    projectJson = requests.post(queryallUrl, json={'project': project, 'flowcell_barcode': 'fc5440'}).json()
+    assert len(projectJson) == len(metadata)
+    for index in range(1,len(projectJson)):
+        assertAgainstMetadata(projectJson[index], metadata[index])
+        assert projectJson[index]['document_status'] == 'Normal'
+
+    # Let's 'delete' one (the first one)
+    upsertUrl = read_group_v1_url('metadata',
+                                  metadata[0]['flowcell_barcode'],
+                                  metadata[0]['lane'],
+                                  metadata[0]['library_name'],
+                                  metadata[0]['location'])
+    json = {k : metadata[0][k] for k in ['sample_alias', 'project', 'ubam_path']}
+    json['document_status'] = 'Deleted'
+    json['ubam_path'] = ''
+    json['notes'] = 'This ubam has been deleted.'
+    assert requests.post(upsertUrl, json=json).ok
+
+    # now query should only return two records
+    queryUrl = read_group_v1_url('query')
+    projectJson = requests.post(queryUrl, json={'project': project, 'flowcell_barcode': 'fc5440'}).json()
+    assert len(projectJson) == len(metadata) - 1
+    for index in range(1,len(projectJson)):
+        assertAgainstMetadata(projectJson[index], metadata[index])
+        assert projectJson[index]['document_status'] == 'Normal'
+
+    # and queryall should return all 3.
+    queryallUrl = read_group_v1_url('queryall')
+    projectJson = requests.post(queryallUrl, json={'project': project, 'flowcell_barcode': 'fc5440'}).json()
+    assert len(projectJson) == len(metadata)
+    for index in range(1,len(projectJson)):
+        assertAgainstMetadata(projectJson[index], metadata[index])
+        if (projectJson[index]['lane'] == 0):
+            assert projectJson[index]['document_status'] == 'Deleted'
+        else:
+            assert projectJson[index]['document_status'] == 'Normal'
+
 
 # Allow yellow Elasticsearch cluster health when running outside of
 # the standard dockerized test.
@@ -285,4 +358,5 @@ if __name__ == '__main__':
     test_json_schema()
     test_query_sample_project()
     test_read_group_metadata_update()
+    test_query_delete_queryall()
     print('tests passed')

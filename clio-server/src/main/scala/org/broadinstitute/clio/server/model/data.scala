@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.server.model
 
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import java.time.OffsetDateTime
 
@@ -40,7 +40,8 @@ case class ModelReadGroupMetadata(analysisType: Option[String],
                                   notes: Option[String],
                                   ubamMd5: Option[String],
                                   ubamPath: Option[String],
-                                  ubamSize: Option[Long])
+                                  ubamSize: Option[Long],
+                                  documentStatus: Option[DocumentStatus])
 
 case class ModelReadGroupQueryInput(flowcellBarcode: Option[String],
                                     lane: Option[Int],
@@ -50,7 +51,8 @@ case class ModelReadGroupQueryInput(flowcellBarcode: Option[String],
                                     project: Option[String],
                                     runDateEnd: Option[OffsetDateTime],
                                     runDateStart: Option[OffsetDateTime],
-                                    sampleAlias: Option[String])
+                                    sampleAlias: Option[String],
+                                    documentStatus: Option[DocumentStatus])
 
 case class ModelReadGroupQueryOutput(flowcellBarcode: String,
                                      lane: Int,
@@ -87,4 +89,5 @@ case class ModelReadGroupQueryOutput(flowcellBarcode: String,
                                      notes: Option[String],
                                      ubamMd5: Option[String],
                                      ubamPath: Option[String],
-                                     ubamSize: Option[Long])
+                                     ubamSize: Option[Long],
+                                     documentStatus: Option[DocumentStatus])

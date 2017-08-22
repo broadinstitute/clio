@@ -3,6 +3,7 @@ package org.broadinstitute.client.util
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.client.commands.Commands
+import org.broadinstitute.clio.util.model.DocumentStatus
 
 trait TestData {
   val metadataFileLocation = "clio-client/src/test/resources/testdata/metadata"
@@ -21,6 +22,7 @@ trait TestData {
   val testLcSet = "testLcSet"
   val testProject = "testProject"
   val testSampleAlias = "testSampleAlias"
+  val testDocumentStatus = DocumentStatus.Normal
   val testRunDateStart: OffsetDateTime = OffsetDateTime.now()
   val testRunDateEnd: OffsetDateTime = testRunDateStart.plusHours(1)
 
