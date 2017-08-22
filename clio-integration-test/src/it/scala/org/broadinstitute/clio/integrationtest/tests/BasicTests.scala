@@ -1,7 +1,12 @@
 package org.broadinstitute.clio.integrationtest.tests
 
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.status.model.{ServerStatusInfo, StatusInfo, SystemStatusInfo, VersionInfo}
+import org.broadinstitute.clio.status.model.{
+  ServerStatusInfo,
+  StatusInfo,
+  SystemStatusInfo,
+  VersionInfo
+}
 
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal

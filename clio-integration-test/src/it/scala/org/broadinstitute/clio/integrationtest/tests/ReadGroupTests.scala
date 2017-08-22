@@ -2,7 +2,12 @@ package org.broadinstitute.clio.integrationtest.tests
 
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.{TransferReadGroupV1Key, TransferReadGroupV1Metadata, TransferReadGroupV1QueryInput, TransferReadGroupV1QueryOutput}
+import org.broadinstitute.clio.transfer.model.{
+  TransferReadGroupV1Key,
+  TransferReadGroupV1Metadata,
+  TransferReadGroupV1QueryInput,
+  TransferReadGroupV1QueryOutput
+}
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -248,6 +253,7 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
       project = Some(project),
       flowcellBarcode = Some(barcode)
     )
+
     def checkQuery(expectedLength: Int) = {
       for {
         response <- clioWebClient.queryReadGroupBam(bearerToken, queryData)
@@ -266,8 +272,7 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
     for {
       _ <- upsertsStatus
       _ <- checkQuery(expectedLength = 3)
-      // TODO: Weird to use the `addReadGroupBam` method here,
-      // even though it works.
+      // TODO: Weird to use the `addReadGroupBam` method here, even though it works.
       deleteResponse <- clioWebClient.addReadGroupBam(
         bearerToken,
         deleteKey,
@@ -279,7 +284,7 @@ trait ReadGroupTests { self: BaseIntegrationSpec =>
       // Client doesn't currently have a method for queryAll.
       entity <- Marshal(queryData).to[RequestEntity]
       request = HttpRequest(
-        uri = s"/api/v1/readgroup/queryAll",
+        uri = s"/api/v1/readgroup/queryall",
         method = HttpMethods.POST,
         entity = entity
       )

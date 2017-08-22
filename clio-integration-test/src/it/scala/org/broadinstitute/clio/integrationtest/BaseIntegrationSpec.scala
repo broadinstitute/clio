@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.integrationtest
 
-
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
@@ -83,9 +82,11 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * instances into an [[com.sksamuel.elastic4s.http.index.mappings.IndexMappings]], for comparison.
     */
   def indexToMapping(index: ElasticsearchIndex[_]): IndexMappings = {
-    val fields = index.fields.map { field =>
-      field.name -> Map("type" -> field.`type`)
-    }.toMap[String, Any]
+    val fields = index.fields
+      .map { field =>
+        field.name -> Map("type" -> field.`type`)
+      }
+      .toMap[String, Any]
 
     IndexMappings(index.indexName, Map(index.indexType -> fields))
   }
