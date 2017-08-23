@@ -3,7 +3,7 @@ package org.broadinstitute.clio.client.commands
 import akka.http.scaladsl.model.HttpResponse
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.TransferReadGroupV1QueryInput
+import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1QueryInput
 import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -12,9 +12,9 @@ object QueryWgsUbamCommand extends Command {
   def execute(webClient: ClioWebClient, config: BaseArgs)(
     implicit ec: ExecutionContext
   ): Future[HttpResponse] = {
-    webClient.queryReadGroupBam(
+    webClient.queryWgsUbam(
       bearerToken = config.bearerToken.getOrElse(""),
-      TransferReadGroupV1QueryInput(
+      TransferWgsUbamV1QueryInput(
         flowcellBarcode = config.flowcell,
         lane = config.lane,
         libraryName = config.libraryName,
@@ -23,7 +23,8 @@ object QueryWgsUbamCommand extends Command {
         project = config.project,
         sampleAlias = config.sampleAlias,
         runDateEnd = config.runDateEnd,
-        runDateStart = config.runDateStart
+        runDateStart = config.runDateStart,
+        documentStatus = config.documentStatus
       )
     )
   }
