@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
-import akka.http.scaladsl.testkit.{RouteTestTimeout, ScalatestRouteTest}
+import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
@@ -12,8 +12,6 @@ import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.DocumentStatus
 
 import org.scalatest.{FlatSpec, Matchers}
-
-import scala.concurrent.duration._
 
 class WgsUbamWebServiceSpec
     extends FlatSpec
@@ -178,7 +176,6 @@ class WgsUbamWebServiceSpec
   }
 
   it should "return a JSON schema" in {
-    implicit val timeout: RouteTestTimeout = RouteTestTimeout(3.seconds)
     val webService = new MockWgsUbamWebService()
     Get("/schema") ~> webService.getSchema ~> check {
       responseAs[Json] should be(JsonSchemas.WgsUbam)
