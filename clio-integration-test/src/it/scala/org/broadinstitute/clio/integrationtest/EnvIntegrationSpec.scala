@@ -28,7 +28,7 @@ abstract class EnvIntegrationSpec(env: String)
   /**
     * Path within Vault to the service account info Jenkins should use when talking to Clio.
     */
-  private val vaultPath = "secret/dsde/gotc/dev/clio/clio-test.json"
+  private val vaultPath = "secret/dsde/gotc/clio/test/clio-account.json"
 
   /** List of possible token-file locations, in order of preference. */
   private val vaultTokenFiles = Seq(
