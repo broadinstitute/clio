@@ -6,11 +6,11 @@ import akka.http.scaladsl.model.Uri
 import com.bettercloud.vault.{Vault, VaultConfig}
 import com.google.auth.oauth2.ServiceAccountCredentials
 
+import scala.collection.JavaConverters._
+
 import java.io.File
 import java.net.URI
 import java.nio.file.Files
-import scala.collection.JavaConverters._
-import scala.sys.process._
 
 /**
   * An integration spec that runs entirely against a Clio instance
@@ -52,49 +52,46 @@ abstract class EnvIntegrationSpec(env: String)
     s"http://elasticsearch1.gotc-$env.broadinstitute.org:9200"
   )
 
+  /*
+   * When testing against deployed Clio, we authenticate as the
+   * clio-test service account.
+   */
   override lazy val bearerToken: String = {
-    if (sys.env.get("JENKINS_URL").isEmpty) {
-      // If we're not running in Jenkins, we can just shell out to gcloud
-      "gcloud auth print-access-token".!!.stripLineEnd
-    } else {
-      // Otherwise, we have to go through Vault to get a service account's
-      // info, through which we can get an access token
-      val vaultToken = sys.env
-        .get("VAULT_TOKEN")
-        .orElse {
-          vaultTokenFiles
-            .find(_.exists)
-            .map { file =>
-              new String(Files.readAllBytes(file.toPath)).stripLineEnd
-            }
-        }
-        .getOrElse {
-          sys.error(
-            "Vault token not given or found on filesystem, can't get bearer token!"
-          )
-        }
-
-      val vaultConfig = new VaultConfig()
-        .address(vaultUrl)
-        .token(vaultToken)
-        .build()
-
-      val vaultDriver = new Vault(vaultConfig)
-      val accountInfo = vaultDriver.logical().read(vaultPath).getData
-
-      val credential =
-        ServiceAccountCredentials.fromPkcs8(
-          accountInfo.get("client_id"),
-          accountInfo.get("client_email"),
-          accountInfo.get("private_key"),
-          accountInfo.get("private_key_id"),
-          authScopes.asJava,
-          null,
-          new URI(accountInfo.get("token_uri"))
+    val vaultToken = sys.env
+      .get("VAULT_TOKEN")
+      .orElse {
+        vaultTokenFiles
+          .find(_.exists)
+          .map { file =>
+            new String(Files.readAllBytes(file.toPath)).stripLineEnd
+          }
+      }
+      .getOrElse {
+        sys.error(
+          "Vault token not given or found on filesystem, can't get bearer token!"
         )
+      }
 
-      credential.refreshAccessToken().getTokenValue
-    }
+    val vaultConfig = new VaultConfig()
+      .address(vaultUrl)
+      .token(vaultToken)
+      .build()
+
+    val vaultDriver = new Vault(vaultConfig)
+    val accountInfo = vaultDriver.logical().read(vaultPath).getData
+
+    val credential =
+      ServiceAccountCredentials.fromPkcs8(
+        accountInfo.get("client_id"),
+        accountInfo.get("client_email"),
+        accountInfo.get("private_key"),
+        accountInfo.get("private_key_id"),
+        authScopes.asJava,
+        null,
+        new URI(accountInfo.get("token_uri"))
+      )
+
+    credential.refreshAccessToken().getTokenValue
   }
 }
 
