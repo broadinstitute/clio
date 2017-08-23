@@ -74,7 +74,7 @@ object ClioIntegrationTestSettings {
       val vaultDriver = {
         val vaultToken = sys.env
           .get("VAULT_TOKEN")
-          .orElse(vaultTokenFiles.find(_.exists).map(IO.read(_)))
+          .orElse(vaultTokenFiles.find(_.exists).map(IO.read(_).stripLineEnd))
           .getOrElse {
             sys.error(
               "Vault token not given or found on filesystem, can't get bearer token!"
