@@ -19,11 +19,11 @@ object Dependencies {
   private val S_machStringVersion = "2.1.0"
   private val ScalaLoggingVersion = "3.7.1"
   private val ScalaTestVersion = "3.0.3"
-  private val Slf4jVersion = "1.7.25"
-  private val TestContainersScalaVersion = "0.7.0"
   private val ScoptVersion = "3.6.0"
   private val ShapelessVersion = "2.3.2"
+  private val Slf4jVersion = "1.7.25"
   private val SwaggerUi = "3.1.5"
+  private val TestContainersScalaVersion = "0.7.0"
 
   /** Version of Scala to build Clio with. */
   val ScalaVersion = "2.12.2"

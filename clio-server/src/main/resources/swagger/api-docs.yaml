@@ -13,8 +13,8 @@ info:
 host: "localhost:8080"
 basePath: "/api/v1"
 tags:
-  - name: "readgroup"
-    description: "Read group endpoints"
+  - name: "wgsubam"
+    description: "Whole genome unmapped bam endpoints"
 
 schemes:
   - "http"
@@ -29,9 +29,9 @@ paths:
   /readgroup/metadata:
     post:
       tags:
-         - "readgroup"
-      summary: "Posts read group metadata."
-      operationId: "readGroupMetadata"
+         - "wgsubam"
+      summary: "Posts whole genome unmapped bam metadata."
+      operationId: "wgsUbamMetadata"
       consumes:
         - "application/json"
       produces:
@@ -39,18 +39,18 @@ paths:
       responses:
         '200':
           description: "Successful Request"
-  /readgroup/schema:
+  /wgsubam/schema:
     get:
       tags:
-        - "readgroup"
-      summary: "Gets the json schema for read groups"
-      operationId: "readGroupSchema"
+        - "wgsubam"
+      summary: "Gets the json schema for whole genome unmapped bams"
+      operationId: "wgsUbamSchema"
       produces:
         - "application/json"
       parameters:
         - in: "body"
           name: "body"
-          description: "Read group metadata to store"
+          description: "Whole genome unmapped bam metadata to store"
           required: true
           schema:
             $ref: '#/definitions/TransferReadGroupV1Metadata'
@@ -60,12 +60,12 @@ paths:
       security:
         - googleoauth:
           - "openid"
-  /readgroup/query:
+  /wgsubam/query:
     post:
       tags:
-        - "readgroup"
-      summary: "Query for a read group"
-      operationId: "readGroupQuery"
+        - "wgsubam"
+      summary: "Query for a whole genome unmapped bam"
+      operationId: "wgsUbamQuery"
       consumes:
         - "application/json"
       produces:
@@ -73,15 +73,15 @@ paths:
       parameters:
         - in: "body"
           name: "body"
-          description: "Read group query to search for"
+          description: "Whole genome unmapped bam query to search for"
           required: true
           schema:
-            $ref: '#/definitions/TransferReadGroupV1QueryInput'
+            $ref: '#/definitions/TransferWgsUbamV1QueryInput'
       responses:
         '200':
           description: "Successful Request"
           schema:
-            $ref: '#/definitions/TransferReadGroupV1QueryResponse'
+            $ref: '#/definitions/TransferWgsUbamV1QueryResponse'
         '405':
           description: "Invalid input"
       security:
@@ -99,7 +99,7 @@ securityDefinitions:
       profile: "profile authorization"
 
 definitions:
-  TransferReadGroupV1Key:
+  TransferWgsUbamV1Key:
      type: "object"
      properties:
        flowcell_barcode:
@@ -119,7 +119,7 @@ definitions:
            - "GCP"
            - "OnPrem"
 
-  TransferReadGroupV1QueryInput:
+  TransferWgsUbamV1QueryInput:
     type: "object"
     properties:
       flowcell_barcode:
@@ -156,13 +156,13 @@ definitions:
         type: "string"
         description: "Sample alias"
 
-  TransferReadGroupV1QueryResponse:
-    description: "Response to a read group query"
+  TransferWgsUbamV1QueryResponse:
+    description: "Response to a whole genome unmapped bam query"
     type: "array"
     items:
-        $ref: "#/definitions/TransferReadGroupV1QueryOutput"
+        $ref: "#/definitions/TransferWgsUbamV1QueryOutput"
 
-  TransferReadGroupV1QueryOutput:
+  TransferWgsUbamV1QueryOutput:
     type: "object"
     properties:
       flowcell_barcode:
@@ -280,7 +280,7 @@ definitions:
         format: "int64"
         description: "Unmapped bam size"
 
-  TransferReadGroupV1Metadata:
+  TransferWgsUbamV1Metadata:
     type: "object"
     properties:
       analysis_type:
