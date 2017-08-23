@@ -1,48 +1,58 @@
 package org.broadinstitute.clio.client.commands
 
+import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.clio.client.ClioClientConfig
+import org.broadinstitute.clio.client.commands.Commands.{
+  AddWgsUbam,
+  QueryWgsUbam
+}
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 object CommandDispatch extends LazyLogging {
+
+  def execute(command: CommandType, webClient: ClioWebClient, config: BaseArgs)(
+    implicit ec: ExecutionContext
+  ): Future[HttpResponse] = {
+    command match {
+      case AddWgsUbam   => AddWgsUbamCommand.execute(webClient, config)
+      case QueryWgsUbam => QueryWgsUbamCommand.execute(webClient, config)
+    }
+  }
+
   def dispatch(webClient: ClioWebClient,
                config: BaseArgs)(implicit ec: ExecutionContext): Boolean = {
+    config.command
+      .map(command => execute(command, webClient, config))
+      .exists(responseFuture => { checkResponse(responseFuture) })
+  }
 
-    val commandExecute: Option[Command] = config.command.getOrElse("") match {
-      case Commands.`addWgsUbam` =>
-        Some(
-          new AddWgsUbam(
-            clioWebClient = webClient,
-            flowcell = config.flowcell.get,
-            lane = config.lane.get,
-            libraryName = config.libraryName.get,
-            location = config.location.get,
-            metadataLocation = config.metadataLocation,
-            bearerToken = config.bearerToken
-          )
-        )
-      case Commands.`queryWgsUbam` =>
-        Some(
-          new QueryWgsUbam(
-            clioWebClient = webClient,
-            bearerToken = config.bearerToken,
-            flowcell = config.flowcell,
-            lane = config.lane,
-            libraryName = config.libraryName,
-            location = config.location,
-            lcSet = config.lcSet,
-            project = config.project,
-            sampleAlias = config.sampleAlias,
-            documentStatus = config.documentStatus,
-            runDateEnd = config.runDateEnd,
-            runDateStart = config.runDateStart
-          )
-        )
-      case _ => None
-    }
+  def checkResponse(
+    responseFuture: Future[HttpResponse]
+  )(implicit ec: ExecutionContext): Boolean = {
+    Await.result(
+      responseFuture.map[Boolean] { response =>
+        val isSuccess = response.status.isSuccess()
 
-    commandExecute.exists(cmd => cmd.execute)
+        if (isSuccess) {
+          logger.info(
+            s"Successfully completed command." +
+              s" Response code: ${response.status}"
+          )
+          logger.info(response.toString)
+        } else {
+          logger.error(
+            s"Error executing command." +
+              s" Response code: ${response.status}"
+          )
+          logger.info(response.toString)
+        }
+        isSuccess
+      },
+      ClioClientConfig.responseTimeout
+    )
   }
 }

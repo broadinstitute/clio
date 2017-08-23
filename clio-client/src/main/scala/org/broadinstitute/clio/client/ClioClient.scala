@@ -25,10 +25,9 @@ object ClioClient extends App {
 
 class ClioClient(val webClient: ClioWebClient) {
 
-  val parser = new BaseParser
-
   def execute(args: Array[String])(implicit ec: ExecutionContext): Int = {
-    val success = parser.parse(args, BaseArgs()) match {
+    val parser: BaseParser = new BaseParser
+    val success: Boolean = parser.parse(args, BaseArgs()) match {
       case Some(config) => CommandDispatch.dispatch(webClient, config)
       case None         => false
     }

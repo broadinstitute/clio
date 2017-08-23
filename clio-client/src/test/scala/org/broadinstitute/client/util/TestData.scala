@@ -4,64 +4,68 @@ import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.client.commands.Commands
 import org.broadinstitute.clio.util.model.DocumentStatus
+import org.broadinstitute.clio.util.model.DocumentStatus
 
 trait TestData {
-  val metadataFileLocation = "clio-client/src/test/resources/testdata/metadata"
+
+  val metadataFileLocation = Some("clio-client/src/test/resources/testdata/metadata")
   val badMetadataFileLocation =
-    "clio-client/src/test/resources/testdata/badmetadata"
+    Some("clio-client/src/test/resources/testdata/badmetadata")
   val metadataPlusExtraFieldsFileLocation =
-    "clio-client/src/test/resources/testdata/metadataplusextrafields"
+    Some("clio-client/src/test/resources/testdata/metadataplusextrafields")
   val noCommand = Array("")
   val badCommand = Array("badCommand")
 
-  val testBearer = "testBearerToken"
-  val testFlowcell = "testFlowcell"
-  val testLibName = "testLibName"
-  val testLocation = "GCP"
-  val testLane = 1
-  val testLcSet = "testLcSet"
-  val testProject = "testProject"
-  val testSampleAlias = "testSampleAlias"
-  val testDocumentStatus = DocumentStatus.Normal
-  val testRunDateStart: OffsetDateTime = OffsetDateTime.now()
-  val testRunDateEnd: OffsetDateTime = testRunDateStart.plusHours(1)
+  val testBearer = Some("testBearerToken")
+  val testFlowcell = Some("testFlowcell")
+  val testLibName = Some("testLibName")
+  val testLocation = Some("GCP")
+  val testLane = Some(1)
+  val testLcSet = Some("testLcSet")
+  val testProject = Some("testProject")
+  val testSampleAlias = Some("testSampleAlias")
+  val testDocumentStatus = Some(DocumentStatus.Normal)
+  val testRunDateStart: Option[OffsetDateTime] = Some(OffsetDateTime.now())
+  val testRunDateEnd: Option[OffsetDateTime] = Some(
+    OffsetDateTime.now().plusHours(1)
+  )
 
   //missing lane
   val missingRequired = Array(
-    Commands.addWgsUbam,
+    Commands.AddWgsUbam.toString,
     "-m",
-    metadataFileLocation,
+    metadataFileLocation.get,
     "-f",
-    testFlowcell,
+    testFlowcell.get,
     "-n",
-    testLibName,
+    testLibName.get,
     "--location",
-    testLocation
+    testLocation.get
   )
 
   //missing lane
   val missingOptional = Array(
-    Commands.queryWgsUbam,
+    Commands.QueryWgsUbam.toString,
     "-f",
-    testFlowcell,
+    testFlowcell.get,
     "-n",
-    testLibName,
+    testLibName.get,
     "--location",
-    testLocation
+    testLocation.get
   )
 
   val goodAddCommand = Array(
-    Commands.addWgsUbam,
+    Commands.AddWgsUbam.toString,
     "-m",
-    metadataFileLocation,
+    metadataFileLocation.get,
     "-f",
-    testFlowcell,
+    testFlowcell.get,
     "-l",
     "1",
     "-n",
-    testLibName,
+    testLibName.get,
     "--location",
-    testLocation
+    testLocation.get
   )
 
 }

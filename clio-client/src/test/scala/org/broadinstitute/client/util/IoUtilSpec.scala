@@ -8,7 +8,7 @@ class IoUtilSpec extends AsyncFlatSpec with Matchers with TestData {
   behavior of "IoUtil"
 
   it should "read a metadata file from file location" in {
-    IoUtil.readMetadata(metadataFileLocation) should startWith("{")
+    IoUtil.readMetadata(metadataFileLocation.get) should startWith("{")
   }
 
 }
