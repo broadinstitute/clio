@@ -59,6 +59,9 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
       useHttps = false
     )
 
+  // No bearer token needed for talking to local Clio.
+  override val bearerToken = "dummy-token"
+
   override def beforeAll(): Unit = {
     super.beforeAll()
 
