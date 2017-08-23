@@ -87,7 +87,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         for {
           httpResponse <- clioWebClient
             .addWgsUbam(bearerToken, upsertKey, upsertData)
-          returnedClioId <- Unmarshal(httpResponse).to[Long]
+          returnedClioId <- Unmarshal(httpResponse).to[String]
           queryResponse <- clioWebClient.queryWgsUbam(bearerToken, queryData)
           outputs <- Unmarshal(queryResponse)
             .to[Seq[TransferWgsUbamV1QueryOutput]]

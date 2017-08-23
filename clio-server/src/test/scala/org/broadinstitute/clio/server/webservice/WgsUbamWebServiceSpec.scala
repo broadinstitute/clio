@@ -25,7 +25,7 @@ class WgsUbamWebServiceSpec
       Map("project" -> "testOnPremLocation")
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
-      responseAs[Long] should not equal 0
+      responseAs[String] should not be empty
     }
   }
 
@@ -36,7 +36,7 @@ class WgsUbamWebServiceSpec
       Map("project" -> "testGCPlocation")
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
-      responseAs[Long] should not equal 0
+      responseAs[String] should not be empty
     }
   }
 

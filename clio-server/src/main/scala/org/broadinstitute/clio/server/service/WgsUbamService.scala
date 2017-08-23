@@ -19,8 +19,8 @@ class WgsUbamService private (
   def upsertMetadata(
     transferKey: TransferWgsUbamV1Key,
     transferMetadata: TransferWgsUbamV1Metadata
-  ): Future[Long] = {
-    val clioId = new UUID().getClockSeqAndNode
+  ): Future[String] = {
+    val clioId = new UUID().toString
     val updatedTransferMetadata = transferMetadata.copy(
       documentStatus = Option(
         transferMetadata.documentStatus.getOrElse(DocumentStatus.Normal)

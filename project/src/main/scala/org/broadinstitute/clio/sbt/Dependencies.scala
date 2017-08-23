@@ -142,7 +142,7 @@ object Dependencies {
     "org.slf4j" % "slf4j-api" % Slf4jVersion
   ).map(_ % IntegrationTest)
 
-  val ThirdPartyDependencies: Seq[MavenRepository] = Seq(
+  val ThirdPartyResolvers: Seq[MavenRepository] = Seq(
     "eaio Repository" at "http://repo.eaio.com/maven2"
   )
 }
