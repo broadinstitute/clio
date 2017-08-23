@@ -3,7 +3,7 @@ package org.broadinstitute.clio.client.parser
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.client.ClioClientConfig
-import org.broadinstitute.clio.client.commands.{CommandType, Commands}
+import org.broadinstitute.clio.client.commands.{CommandType}
 import org.broadinstitute.clio.client.commands.Commands
 import org.broadinstitute.clio.util.model.DocumentStatus
 
@@ -17,6 +17,7 @@ case class BaseArgs(command: Option[CommandType] = None,
                     lcSet: Option[String] = None,
                     project: Option[String] = None,
                     sampleAlias: Option[String] = None,
+                    ubamPath: Option[String] = None,
                     documentStatus: Option[DocumentStatus] = None,
                     runDateEnd: Option[OffsetDateTime] = None,
                     runDateStart: Option[OffsetDateTime] = None)
@@ -102,6 +103,34 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
         .optional()
         .action((project, config) => config.copy(project = Some(project)))
         .text("The project for this whole genome unmapped bam.")
+    )
+
+  cmd(Commands.MoveWgsUbam.toString)
+    .action((_, c) => c.copy(command = Some(Commands.MoveWgsUbam)))
+    .text("This command is used to copy a unmapped bam from one location to another. Only implemented for cloud unmapped bams")
+    .children(
+      opt[String]('f', "flowcell")
+        .required()
+        .action((flowcell, config) => config.copy(flowcell = Some(flowcell)))
+        .text("The flowcell for this whole genome unmapped bam."),
+      opt[Int]('l', "lane")
+        .required()
+        .action((lane, config) => config.copy(lane = Some(lane)))
+        .text("The lane for this whole genome unmapped bam."),
+      opt[String]('n', "libraryName")
+        .required()
+        .action(
+          (libraryName, config) => config.copy(libraryName = Some(libraryName))
+        )
+        .text("The library name for this whole genome unmapped bam."),
+      opt[String]("location")
+        .required()
+        .action((location, config) => config.copy(location = Some(location)))
+        .text("The location for this whole genome unmapped bam."),
+      opt[String]("destination")
+        .required()
+        .action((ubamPath, config) => config.copy(ubamPath = Some(ubamPath)))
+        .text("The destination path for the unmapped bam.")
     )
 
   checkConfig { config =>

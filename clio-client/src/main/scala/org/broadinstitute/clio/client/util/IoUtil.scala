@@ -4,6 +4,7 @@ import java.io.File
 import java.nio.file.{FileVisitOption, Files, Path}
 import java.util.Comparator
 
+import scala.concurrent.Future
 import scala.io.Source
 import scala.sys.process.Process
 
@@ -38,10 +39,22 @@ object IoUtil {
       .map[File](path => path.toFile)
       .forEach(file => file.deleteOnExit())
   }
+
+  def moveGoogleObject(from: String, to: String): Future[Unit] = {
+    val gs = new GsUtil(None)
+    gs.mv(from, to)
+  }
 }
 
 //we should consider moving this to api usage instead of gsutil
 class GsUtil(stateDir: Option[Path]) {
+
+  def mv(from: String, to: String): Future[Unit] = {
+    runGsUtilAndGetExitCode(Seq(from, to)) match {
+      case 0 => Future.successful(())
+      case _ => Future.failed(new Exception(s"The gsutil move command from $from to $to failed"))
+    }
+  }
 
   def cat(objectLocation: String): String = {
     runGsUtilAndGetStdout(Seq("cat", objectLocation))
@@ -50,6 +63,11 @@ class GsUtil(stateDir: Option[Path]) {
   def runGsUtilAndGetStdout(gsUtilArgs: Seq[String]): String = {
     val str = getGsUtilCmdWithStateDir(gsUtilArgs).mkString(" ")
     Process(str).!!
+  }
+
+  def runGsUtilAndGetExitCode(gsUtilArgs: Seq[String]): Int = {
+    val str = getGsUtilCmdWithStateDir(gsUtilArgs).mkString("")
+    Process(str).!
   }
 
   def getGsUtilCmdWithStateDir(gsUtilArgs: Seq[String]): Seq[String] = {

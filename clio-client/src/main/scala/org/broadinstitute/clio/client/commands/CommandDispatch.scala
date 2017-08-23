@@ -3,10 +3,7 @@ package org.broadinstitute.clio.client.commands
 import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.ClioClientConfig
-import org.broadinstitute.clio.client.commands.Commands.{
-  AddWgsUbam,
-  QueryWgsUbam
-}
+import org.broadinstitute.clio.client.commands.Commands.{AddWgsUbam, MoveWgsUbam, QueryWgsUbam}
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
@@ -20,6 +17,7 @@ object CommandDispatch extends LazyLogging {
     command match {
       case AddWgsUbam   => AddWgsUbamCommand.execute(webClient, config)
       case QueryWgsUbam => QueryWgsUbamCommand.execute(webClient, config)
+      case MoveWgsUbam  => MoveWgsUbamCommand.execute(webClient, config)
     }
   }
 
