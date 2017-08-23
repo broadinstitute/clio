@@ -85,16 +85,16 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
       it should s"handle upserts and queries for wgs-ubam location $location" in {
         for {
-          _ <- clioWebClient
+          httpResponse <- clioWebClient
             .addWgsUbam(bearerToken, upsertKey, upsertData)
-            .map(_.status should be(StatusCodes.OK))
-          queryResponse <- clioWebClient
-            .queryWgsUbam(bearerToken, queryData)
+          returnedClioId <- Unmarshal(httpResponse).to[String]
+          queryResponse <- clioWebClient.queryWgsUbam(bearerToken, queryData)
           outputs <- Unmarshal(queryResponse)
             .to[Seq[TransferWgsUbamV1QueryOutput]]
         } yield {
+          httpResponse.status should be(StatusCodes.OK)
           outputs should have length 1
-          outputs.head should be(expected)
+          outputs.head should be(expected.copy(clioId = Option(returnedClioId)))
         }
       }
     }

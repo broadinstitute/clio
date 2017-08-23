@@ -9,6 +9,7 @@ case class TransferWgsUbamV1QueryOutput(
   lane: Int,
   libraryName: String,
   location: Location,
+  clioId: Option[String] = None,
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
   dataType: Option[String] = None,
