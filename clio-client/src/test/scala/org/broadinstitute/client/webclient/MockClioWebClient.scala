@@ -30,7 +30,7 @@ class MockClioWebClient(status: StatusCode)(implicit system: ActorSystem)
                            |  "version" : "0.0.1"
                            |}""".stripMargin
 
-  val json: Json = parse(IoUtil.readMetadata(metadataFileLocation)) match {
+  val json: Json = parse(IoUtil.readMetadata(metadataFileLocation.get)) match {
     case Right(value) => value
     case Left(parsingFailure) =>
       throw parsingFailure

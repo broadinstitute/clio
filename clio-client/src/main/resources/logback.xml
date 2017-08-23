@@ -3,6 +3,9 @@
 <configuration>
 
     <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+        <target>
+            System.err
+        </target>
         <encoder>
             <pattern>%-5marker %date{"yyyy-MM-dd'T'HH:mm:ss,SSSXXX", UTC} [%level] %msg%n</pattern>
         </encoder>
