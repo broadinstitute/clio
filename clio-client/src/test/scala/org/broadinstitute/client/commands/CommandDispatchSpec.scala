@@ -15,14 +15,14 @@ class CommandDispatchSpec extends BaseClientSpec {
     ) should be(false)
   }
 
-  it should "return true when we dispatch a valid queryReadGroup command" in {
+  it should "return true when we dispatch a valid queryWgsUbam command" in {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
       BaseArgs(command = Some(Commands.QueryWgsUbam))
     ) should be(true)
   }
 
-  it should "return true when we dispatch a valid addReadGroup command" in {
+  it should "return true when we dispatch a valid addWgsUbam command" in {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
       BaseArgs(

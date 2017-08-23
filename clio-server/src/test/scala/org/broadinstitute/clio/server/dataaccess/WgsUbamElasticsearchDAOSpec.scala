@@ -6,23 +6,23 @@ import org.broadinstitute.clio.util.model.Location
 
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
-class ReadGroupElasticsearchDAOSpec
-    extends AbstractElasticsearchDAOSpec("ReadGroupElasticsearchDAOSpec")
+class WgsUbamElasticsearchDAOSpec
+    extends AbstractElasticsearchDAOSpec("WgsUbamElasticsearchDAOSpec")
     with AsyncFlatSpecLike
     with Matchers {
 
-  behavior of "ReadGroupElasticsearchDAO"
+  behavior of "WgsUbamElasticsearchDAO"
 
-  lazy val readGroupElasticsearchDAO: ReadGroupElasticsearchDAO =
+  lazy val wgsUbamElasticsearchDAO: WgsUbamElasticsearchDAO =
     httpElasticsearchDAO
 
   it should "initialize" in {
     initialize()
   }
 
-  it should "updateReadGroupMetadata" in {
-    val key = ModelReadGroupKey("barcodeURGM1", 2, "library3", Location.GCP)
-    val metadata = ModelReadGroupMetadata(
+  it should "updateWgsUbamMetadata" in {
+    val key = ModelWgsUbamKey("barcodeURGM1", 2, "library3", Location.GCP)
+    val metadata = ModelWgsUbamMetadata(
       analysisType = None,
       baitIntervals = None,
       dataType = None,
@@ -54,20 +54,21 @@ class ReadGroupElasticsearchDAOSpec
       notes = None,
       ubamMd5 = None,
       ubamPath = None,
-      ubamSize = None
+      ubamSize = None,
+      documentStatus = None
     )
     for {
-      _ <- readGroupElasticsearchDAO.updateReadGroupMetadata(key, metadata)
+      _ <- wgsUbamElasticsearchDAO.updateWgsUbamMetadata(key, metadata)
     } yield {
       succeed
     }
   }
 
-  it should "queryReadGroup" in {
+  it should "queryWgsUbam" in {
     val id = UUID.randomUUID.toString.replaceAll("-", "")
     val library = "library" + id
-    val key = ModelReadGroupKey("barcodeQRG1", 2, library, Location.OnPrem)
-    val metadata = ModelReadGroupMetadata(
+    val key = ModelWgsUbamKey("barcodeQRG1", 2, library, Location.OnPrem)
+    val metadata = ModelWgsUbamMetadata(
       analysisType = None,
       baitIntervals = None,
       dataType = None,
@@ -99,9 +100,10 @@ class ReadGroupElasticsearchDAOSpec
       notes = None,
       ubamMd5 = Option("md5"),
       ubamPath = Option(s"expected_path_$id"),
-      ubamSize = Option(12345L)
+      ubamSize = Option(12345L),
+      documentStatus = None
     )
-    val queryInput = ModelReadGroupQueryInput(
+    val queryInput = ModelWgsUbamQueryInput(
       flowcellBarcode = None,
       lane = None,
       libraryName = Option(library),
@@ -110,15 +112,16 @@ class ReadGroupElasticsearchDAOSpec
       project = None,
       runDateEnd = None,
       runDateStart = None,
-      sampleAlias = None
+      sampleAlias = None,
+      documentStatus = None
     )
     for {
-      _ <- readGroupElasticsearchDAO.updateReadGroupMetadata(key, metadata)
-      queryOutputs <- readGroupElasticsearchDAO.queryReadGroup(queryInput)
+      _ <- wgsUbamElasticsearchDAO.updateWgsUbamMetadata(key, metadata)
+      queryOutputs <- wgsUbamElasticsearchDAO.queryWgsUbam(queryInput)
     } yield {
       queryOutputs should be(
         Seq(
-          ModelReadGroupQueryOutput(
+          ModelWgsUbamQueryOutput(
             flowcellBarcode = "barcodeQRG1",
             lane = 2,
             libraryName = library,
@@ -154,7 +157,8 @@ class ReadGroupElasticsearchDAOSpec
             notes = None,
             ubamMd5 = Option("md5"),
             ubamPath = Option(s"expected_path_$id"),
-            ubamSize = Option(12345L)
+            ubamSize = Option(12345L),
+            documentStatus = None
           )
         )
       )

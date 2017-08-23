@@ -4,6 +4,8 @@ import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{CommandType, Commands}
+import org.broadinstitute.clio.client.commands.Commands
+import org.broadinstitute.clio.util.model.DocumentStatus
 
 case class BaseArgs(command: Option[CommandType] = None,
                     bearerToken: Option[String] = None,
@@ -15,6 +17,7 @@ case class BaseArgs(command: Option[CommandType] = None,
                     lcSet: Option[String] = None,
                     project: Option[String] = None,
                     sampleAlias: Option[String] = None,
+                    documentStatus: Option[DocumentStatus] = None,
                     runDateEnd: Option[OffsetDateTime] = None,
                     runDateStart: Option[OffsetDateTime] = None)
 

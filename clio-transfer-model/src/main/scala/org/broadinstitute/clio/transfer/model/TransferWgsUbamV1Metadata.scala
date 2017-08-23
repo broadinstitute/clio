@@ -1,14 +1,8 @@
 package org.broadinstitute.clio.transfer.model
-
-import org.broadinstitute.clio.util.model.Location
-
+import org.broadinstitute.clio.util.model.DocumentStatus
 import java.time.OffsetDateTime
 
-case class TransferReadGroupV1QueryOutput(
-  flowcellBarcode: String,
-  lane: Int,
-  libraryName: String,
-  location: Location,
+case class TransferWgsUbamV1Metadata(
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
   dataType: Option[String] = None,
@@ -40,5 +34,6 @@ case class TransferReadGroupV1QueryOutput(
   notes: Option[String] = None,
   ubamMd5: Option[String] = None,
   ubamPath: Option[String] = None,
-  ubamSize: Option[Long] = None
+  ubamSize: Option[Long] = None,
+  documentStatus: Option[DocumentStatus] = None
 )

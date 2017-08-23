@@ -10,6 +10,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
   behavior of "AddReadGroupBam"
 
   it should "throw a parsing failure if the metadata is not valid json" in {
+
     a [ParsingFailure] should be thrownBy {
       val config = BaseArgs(
         flowcell = testFlowcell,

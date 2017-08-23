@@ -6,8 +6,8 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.search.SearchResponse
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import org.broadinstitute.clio.server.model.{
-  ModelReadGroupQueryInput,
-  ModelReadGroupQueryOutput
+  ModelWgsUbamQueryInput,
+  ModelWgsUbamQueryOutput
 }
 
 /**
@@ -53,11 +53,11 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput,
 }
 
 object ElasticsearchQueryMapper {
-  private[dataaccess] val ReadGroup =
+  private[dataaccess] val WgsUbam =
     AutoElasticsearchQueryMapper[
-      ModelReadGroupQueryInput,
-      ModelReadGroupQueryOutput,
-      DocumentReadGroup
+      ModelWgsUbamQueryInput,
+      ModelWgsUbamQueryOutput,
+      DocumentWgsUbam
     ]
 
   /**
