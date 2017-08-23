@@ -27,10 +27,8 @@ object ClioIntegrationTestSettings {
 
   /**
     * Path within Vault to the service account info Jenkins should use when talking to Clio.
-    *
-    * TODO: Once we set up a service account for Clio itself, we should use that account.
     */
-  private val vaultPath = "secret/dsde/gotc/dev/picard/picard-account.pem"
+  private val vaultPath = "secret/dsde/gotc/dev/clio/clio-test.json"
 
   /** Scopes needed from Google to get past Clio's auth proxy. */
   private val authScopes = Seq(
@@ -71,27 +69,24 @@ object ClioIntegrationTestSettings {
     } else {
       // Otherwise, we have to go through Vault to get a service account's
       // info, through which we can get an access token
-      val vaultDriver = {
-        val vaultToken = sys.env
-          .get("VAULT_TOKEN")
-          .orElse(vaultTokenFiles.find(_.exists).map(IO.read(_).stripLineEnd))
-          .getOrElse {
-            sys.error(
-              "Vault token not given or found on filesystem, can't get bearer token!"
-            )
-          }
+      val vaultToken = sys.env
+        .get("VAULT_TOKEN")
+        .orElse(vaultTokenFiles.find(_.exists).map(IO.read(_).stripLineEnd))
+        .getOrElse {
+          sys.error(
+            "Vault token not given or found on filesystem, can't get bearer token!"
+          )
+        }
 
-        val vaultConfig = new VaultConfig()
-          .address(vaultUrl)
-          .token(vaultToken)
-          .build()
+      val vaultConfig = new VaultConfig()
+        .address(vaultUrl)
+        .token(vaultToken)
+        .build()
 
-        new Vault(vaultConfig)
-      }
+      val vaultDriver = new Vault(vaultConfig)
+      val accountInfo = vaultDriver.logical().read(vaultPath).getData
 
-      val credential = {
-        val accountInfo = vaultDriver.logical().read(vaultPath).getData
-
+      val credential =
         ServiceAccountCredentials.fromPkcs8(
           accountInfo.get("client_id"),
           accountInfo.get("client_email"),
@@ -101,10 +96,8 @@ object ClioIntegrationTestSettings {
           null,
           new URI(accountInfo.get("token_uri"))
         )
-      }
 
-      val token = credential.refreshAccessToken()
-      token.getTokenValue
+      credential.refreshAccessToken().getTokenValue
     }
   }
 
