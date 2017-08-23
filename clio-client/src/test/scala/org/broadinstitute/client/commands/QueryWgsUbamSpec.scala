@@ -5,7 +5,7 @@ import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.commands.{CommandDispatch, QueryWgsUbamCommand}
 import org.broadinstitute.clio.client.parser.BaseArgs
 
-class QueryReadGroupBamSpec extends BaseClientSpec {
+class QueryWgsUbamSpec extends BaseClientSpec {
   behavior of "QueryReadGroupBam"
 
   val config = BaseArgs(
@@ -22,9 +22,8 @@ class QueryReadGroupBamSpec extends BaseClientSpec {
   )
 
   it should "return false if there was a server error" in {
-    CommandDispatch.checkResponse(QueryWgsUbamCommand.execute(MockClioWebClient.returningInternalError, config)) should be(
-      false
-    )
+    CommandDispatch.checkResponse(
+      QueryWgsUbamCommand.execute(MockClioWebClient.returningInternalError, config)) should be(false)
   }
 
   it should "return true if the server response is OK" in {

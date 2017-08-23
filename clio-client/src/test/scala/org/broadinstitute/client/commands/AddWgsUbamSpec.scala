@@ -6,7 +6,7 @@ import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.commands.{AddWgsUbamCommand, CommandDispatch}
 import org.broadinstitute.clio.client.parser.BaseArgs
 
-class AddReadGroupBamSpec extends BaseClientSpec {
+class AddWgsUbamSpec extends BaseClientSpec {
   behavior of "AddReadGroupBam"
 
   it should "throw a parsing failure if the metadata is not valid json" in {
