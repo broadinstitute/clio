@@ -3,13 +3,11 @@ package org.broadinstitute.clio.client.parser
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.client.ClioClientConfig
-import org.broadinstitute.clio.client.commands.Commands
+import org.broadinstitute.clio.client.commands.{CommandType, Commands}
 
-import scala.concurrent.ExecutionContext
-
-case class BaseArgs(command: Option[Commands.Command] = None,
-                    bearerToken: String = "",
-                    metadataLocation: String = "",
+case class BaseArgs(command: Option[CommandType] = None,
+                    bearerToken: Option[String] = None,
+                    metadataLocation: Option[String] = None,
                     flowcell: Option[String] = None,
                     lane: Option[Int] = None,
                     libraryName: Option[String] = None,
@@ -20,26 +18,25 @@ case class BaseArgs(command: Option[Commands.Command] = None,
                     runDateEnd: Option[OffsetDateTime] = None,
                     runDateStart: Option[OffsetDateTime] = None)
 
-class BaseParser(implicit ec: ExecutionContext)
-    extends scopt.OptionParser[BaseArgs]("clio-client") {
+class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
   override def showUsageOnError = true
 
   head("\nclio-client", ClioClientConfig.Version.value + "\n")
 
   opt[String]('t', "bearer-token")
     .optional()
-    .action((token, conf) => conf.copy(bearerToken = token))
+    .action((token, conf) => conf.copy(bearerToken = Some(token)))
     .text("A valid bearer token for authentication.")
 
-  cmd(Commands.AddReadGroupBam.apply().commandName)
-    .action((_, c) => c.copy(command = Some(Commands.AddReadGroupBam.apply())))
+  cmd(Commands.AddWgsUbam.toString)
+    .action((_, c) => c.copy(command = Some(Commands.AddWgsUbam)))
     .text("This command is used to add a read group group bam.")
     .children(
       opt[String]('m', "meta-data-file")
         .required()
         .action(
           (metadataLocation, config) =>
-            config.copy(metadataLocation = metadataLocation)
+            config.copy(metadataLocation = Some(metadataLocation))
         )
         .text(
           "The location of the file or object containing bam metadata. (Required)"
@@ -64,10 +61,8 @@ class BaseParser(implicit ec: ExecutionContext)
         .text("The location for this read group. (Required)")
     )
 
-  cmd(Commands.QueryReadGroupBam.apply().commandName)
-    .action(
-      (_, c) => c.copy(command = Some(Commands.QueryReadGroupBam.apply()))
-    )
+  cmd(Commands.QueryWgsUbam.toString)
+    .action((_, c) => c.copy(command = Some(Commands.QueryWgsUbam)))
     .text("This command is used to query a read group group bam.")
     .children(
       opt[String]('f', "flowcell")
