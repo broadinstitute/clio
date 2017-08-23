@@ -15,6 +15,7 @@ object Dependencies {
   private val EnumeratumVersion = "1.5.12"
   private val EnumeratumCirceVersion = "1.5.14"
   private val FicusVersion = "1.4.1"
+  private val GoogleAuthHttpVersion = "0.7.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
   private val ScalaLoggingVersion = "3.7.1"
@@ -23,6 +24,7 @@ object Dependencies {
   private val TestContainersScalaVersion = "0.7.0"
   private val ScoptVersion = "3.6.0"
   private val ShapelessVersion = "2.3.2"
+  private val VaultJavaDriverVersion = "3.0.0"
 
   /** Version of Scala to build Clio with. */
   val ScalaVersion = "2.12.2"
@@ -131,7 +133,9 @@ object Dependencies {
 
   val IntegrationTestDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
+    "com.bettercloud" % "vault-java-driver" % VaultJavaDriverVersion,
     "com.dimafeng" %% "testcontainers-scala" % TestContainersScalaVersion,
+    "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
     "com.lightbend.akka" %% "akka-stream-alpakka-file" % AlpakkaVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,

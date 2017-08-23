@@ -23,11 +23,16 @@ object AddWgsUbamCommand extends Command {
 
     decodedOrError.fold(
       Future.failed, { decoded =>
-        webClient.addWgsUbam(bearerToken = config.bearerToken.getOrElse(""), transferWgsUbamV1Metadata = decoded,
-          input = TransferWgsUbamV1Key(flowcellBarcode = config.flowcell.get,
+        webClient.addWgsUbam(
+          bearerToken = config.bearerToken.getOrElse(""),
+          transferWgsUbamV1Metadata = decoded,
+          input = TransferWgsUbamV1Key(
+            flowcellBarcode = config.flowcell.get,
             lane = config.lane.get,
             libraryName = config.libraryName.get,
-            location = Location.pathMatcher(config.location.get)))
+            location = Location.pathMatcher(config.location.get)
+          )
+        )
       }
     )
   }

@@ -66,12 +66,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     HttpClient.fromRestClient(restClient)
   }
 
-  /**
-    * The bearer token to use when hitting the /api route of Clio.
-    *
-    * Injected by SBT as an environment variable.
-    */
-  val bearerToken: String = sys.env("BEARER_TOKEN")
+  /** The bearer token to use when hitting the /api route of Clio. */
+  def bearerToken: String
 
   /**
     * Convert one of our [[org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex]]
