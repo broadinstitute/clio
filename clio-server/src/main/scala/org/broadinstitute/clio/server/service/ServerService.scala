@@ -1,13 +1,14 @@
 package org.broadinstitute.clio.server.service
 
 import com.typesafe.scalalogging.StrictLogging
-import org.broadinstitute.clio.server.ClioApp
+import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
 import org.broadinstitute.clio.server.dataaccess.{
   HttpServerDAO,
   SearchDAO,
   ServerStatusDAO
 }
 import org.broadinstitute.clio.status.model.ServerStatusInfo
+import org.broadinstitute.clio.util.auth.VaultUtil
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -22,6 +23,13 @@ class ServerService private (
     * Kick off a startup, and return immediately.
     */
   def beginStartup(): Unit = {
+    // Simple no-op for now, illustrating how to load credentials.
+    val environment = ClioServerConfig.Environment.value
+    val credentials = new VaultUtil(environment).credentialForScopes(Seq.empty)
+    logger.info(
+      s"Using service account with email ${credentials.getClientEmail}"
+    )
+
     val startupAttempt = startup()
     startupAttempt.failed foreach { exception =>
       logger.error(

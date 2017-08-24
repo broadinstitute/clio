@@ -1,6 +1,8 @@
 include "application.conf"
 
 clio.server {
+    environment: {{env "ENV"}}
+
     http-server.port: {{env "CONTAINER_CLIO_PORT"}}
 
     elasticsearch.http-hosts: [

@@ -96,7 +96,9 @@ object Dependencies {
 
   val UtilMainDependencies: Seq[ModuleID] = Seq(
     "com.beachape" %% "enumeratum" % EnumeratumVersion,
+    "com.bettercloud" % "vault-java-driver" % VaultJavaDriverVersion,
     "com.chuusai" %% "shapeless" % ShapelessVersion,
+    "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
     "net.s_mach" %% "string" % S_machStringVersion,
     "org.scala-lang" % "scala-reflect" % ScalaVersion
   )
@@ -133,9 +135,7 @@ object Dependencies {
 
   val IntegrationTestDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
-    "com.bettercloud" % "vault-java-driver" % VaultJavaDriverVersion,
     "com.dimafeng" %% "testcontainers-scala" % TestContainersScalaVersion,
-    "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
     "com.lightbend.akka" %% "akka-stream-alpakka-file" % AlpakkaVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
