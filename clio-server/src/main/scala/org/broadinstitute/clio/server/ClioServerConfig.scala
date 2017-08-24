@@ -1,32 +1,46 @@
 package org.broadinstitute.clio.server
 
-import org.broadinstitute.clio.util.model.Env
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.ServiceAccount
 
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 import net.ceedubs.ficus.readers.ValueReader
 
+import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
+
+import java.nio.file.{Files, Path}
 
 /**
   * Configuration file accessors.
   */
 object ClioServerConfig {
-  private val config = ClioConfig.getConfig("server")
+  private val server = ClioConfig.getConfig("server")
 
-  object Environment {
-    implicit val envReader: ValueReader[Env] = new ValueReader[Env] {
-      override def read(config: Config, path: String): Env = {
-        val maybeEnv = config.as[String](path)
-        Env.withName(maybeEnv)
+  object Persistence extends ModelAutoDerivation {
+    implicit val pathReader: ValueReader[Path] =
+      (config: Config, path: String) => ???
+
+    private val persistence = server.as[Config]("persistence")
+    private val jsonPath = persistence.getAs[Path]("service-account-json")
+    lazy val serviceAccount: Option[ServiceAccount] =
+      jsonPath.map { path =>
+        import io.circe.parser._
+        val jsonBlob =
+          Files.readAllLines(path).asScala.mkString("\n").stripMargin
+        decode[ServiceAccount](jsonBlob).fold({ error =>
+          throw new RuntimeException(
+            s"Could not decode service account JSON at $path",
+            error
+          )
+        }, account => account)
       }
-    }
-    val value: Env = config.as[Env]("environment")
   }
 
   object HttpServer {
-    private val http = config.getConfig("http-server")
+    private val http = server.getConfig("http-server")
     val interface: String = http.getString("interface")
     val port: Int = http.getInt("port")
     val shutdownTimeout: FiniteDuration =
@@ -34,7 +48,7 @@ object ClioServerConfig {
   }
 
   object Version {
-    val value: String = config.getString("version")
+    val value: String = server.getString("version")
   }
 
   object Elasticsearch {
@@ -42,7 +56,7 @@ object ClioServerConfig {
                                      port: Int = 9200,
                                      scheme: String = "http")
 
-    private val elasticsearch = config.getConfig("elasticsearch")
+    private val elasticsearch = server.getConfig("elasticsearch")
     val replicateIndices: Boolean =
       elasticsearch.getBoolean("replicate-indices")
     val httpHosts: Seq[ElasticsearchHttpHost] =
