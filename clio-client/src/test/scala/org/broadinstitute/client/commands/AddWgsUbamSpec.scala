@@ -11,42 +11,39 @@ class AddWgsUbamSpec extends BaseClientSpec {
   it should "throw a parsing failure if the metadata is not valid json" in {
 
     a[ParsingFailure] should be thrownBy {
-      CommandDispatch.checkResponse(
+      CommandDispatch.dispatch( MockClioWebClient.returningOk,
         AddWgsUbam(
           metadataLocation = badMetadataFileLocation,
-          transferWgsUbamV1Key = testTransferV1Key
-        ).execute(MockClioWebClient.returningOk, testBearer)
+          transferWgsUbamV1Key = testTransferV1Key),
+        testBearer,
       )
     }
   }
 
   it should "throw a decoding failure if the json is valid but we can't unmarshal it" in {
     a[DecodingFailure] should be thrownBy {
-      CommandDispatch.checkResponse(
+      CommandDispatch.dispatch(MockClioWebClient.returningOk,
         AddWgsUbam(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
           transferWgsUbamV1Key = testTransferV1Key
-        ).execute(MockClioWebClient.returningOk, testBearer)
-      )
+        ),  testBearer)
     }
   }
 
   it should "return false if there was a server error" in {
-    CommandDispatch.checkResponse(
+    CommandDispatch.dispatch(MockClioWebClient.returningInternalError,
       AddWgsUbam(
         metadataLocation = metadataFileLocation,
         transferWgsUbamV1Key = testTransferV1Key
-      ).execute(MockClioWebClient.returningInternalError, testBearer)
-    ) should be(false)
+      ),testBearer) should be(false)
   }
 
   it should "return true if the server response is OK" in {
-    CommandDispatch.checkResponse(
+    CommandDispatch.dispatch(MockClioWebClient.returningOk,
       AddWgsUbam(
         metadataLocation = metadataFileLocation,
         transferWgsUbamV1Key = testTransferV1Key
-      ).execute(MockClioWebClient.returningOk, testBearer)
-    ) should be(true)
+      ),testBearer) should be(true)
   }
 
 }

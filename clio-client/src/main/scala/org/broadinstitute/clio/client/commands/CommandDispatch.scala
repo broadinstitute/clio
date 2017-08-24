@@ -9,10 +9,24 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 object CommandDispatch extends LazyLogging {
 
-  def dispatch(webClient: ClioWebClient, command: Command, bearerToken: String)(
-    implicit ec: ExecutionContext
-  ): Boolean = {
-    checkResponse(command.execute(webClient, bearerToken = bearerToken))
+  def execute(
+    command: CommandType,
+    webClient: ClioWebClient,
+    bearerToken: String
+  )(implicit ec: ExecutionContext): Future[HttpResponse] = {
+    command match {
+      case commandType: AddWgsUbam =>
+        new AddWgsUbamExecutor(commandType)
+          .execute(webClient, bearerToken)
+      case commandType: QueryWgsUbam =>
+        new QueryWgsUbamExecutor(commandType).execute(webClient, bearerToken)
+    }
+  }
+
+  def dispatch(webClient: ClioWebClient,
+               command: CommandType,
+               bearerToken: String)(implicit ec: ExecutionContext): Boolean = {
+    checkResponse(execute(command, webClient, bearerToken = bearerToken))
   }
 
   def checkResponse(
