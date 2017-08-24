@@ -13,7 +13,10 @@ import org.broadinstitute.clio.client.webclient.ClioWebClient
 import scala.concurrent.ExecutionContext
 
 object ClioClient extends CommandAppWithPreCommand[CommonOptions, Command] {
+  override val progName = "clio-client"
+  override val appName = "Clio Client"
 
+  override val appVersion = ClioClientConfig.Version.value
   //added to stop Intellij from removing import
   locationParser
 
