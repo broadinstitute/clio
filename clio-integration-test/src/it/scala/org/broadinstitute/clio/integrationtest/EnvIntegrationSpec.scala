@@ -2,6 +2,7 @@ package org.broadinstitute.clio.integrationtest
 
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.auth.VaultUtil
+import org.broadinstitute.clio.util.model.Env
 
 import akka.http.scaladsl.model.Uri
 

@@ -16,7 +16,7 @@ object ClioServerConfig {
   private val config = ClioConfig.getConfig("server")
 
   object Environment {
-    implicit val envReader = new ValueReader[Env] {
+    implicit val envReader: ValueReader[Env] = new ValueReader[Env] {
       override def read(config: Config, path: String): Env = {
         val maybeEnv = config.as[String](path)
         Env.withName(maybeEnv)

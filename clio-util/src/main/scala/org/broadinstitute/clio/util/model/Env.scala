@@ -13,5 +13,6 @@ object Env extends Enum[Env] {
   case object Dev extends Env
   case object Staging extends Env
   case object Prod extends Env
+  // Used by the integration-test runner.
   case object Test extends Env
 }

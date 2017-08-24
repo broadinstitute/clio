@@ -17,24 +17,9 @@ import java.nio.file.Files
   */
 class VaultUtil(env: Env) {
   private val vaultDriver: Vault = {
-    val token = sys.env
-      .get("VAULT_TOKEN")
-      .orElse {
-        VaultUtil.vaultTokenFiles
-          .find(_.exists)
-          .map { file =>
-            new String(Files.readAllBytes(file.toPath)).stripLineEnd
-          }
-      }
-      .getOrElse {
-        sys.error(
-          "Vault token not given or found on filesystem, can't get bearer token!"
-        )
-      }
-
     val config = new VaultConfig()
       .address(VaultUtil.vaultUrl)
-      .token(token)
+      .token(VaultUtil.token)
       .build()
 
     new Vault(config)
@@ -62,12 +47,26 @@ object VaultUtil {
   /** URL of vault server to use when getting bearer tokens for service accounts. */
   private val vaultUrl = "https://clotho.broadinstitute.org:8200/"
 
+  /** Prefix in Vault for all Clio secrets. */
+  private val vaultClioPrefix = "secret/dsde/gotc/clio"
+
   /** List of possible token-file locations, in order of preference. */
   private val vaultTokenFiles = Seq(
     new File("/etc/vault-token-dsde"),
     new File(s"${System.getProperty("user.home")}/.vault-token")
   )
 
-  /** Prefix in Vault for all Clio secrets. */
-  private val vaultClioPrefix = "secret/dsde/gotc/clio"
+  def token: String =
+    sys.env
+      .get("VAULT_TOKEN")
+      .orElse {
+        VaultUtil.vaultTokenFiles
+          .find(_.exists)
+          .map { file =>
+            new String(Files.readAllBytes(file.toPath)).stripLineEnd
+          }
+      }
+      .getOrElse {
+        sys.error("Vault token not given or found on filesystem!")
+      }
 }
