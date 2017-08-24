@@ -8,18 +8,14 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.syntax._
 import ClientAutoDerivation._
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.Printer
-import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput, TransferWgsUbamV1QueryOutput}
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   implicit system: ActorSystem
-) extends ModelAutoDerivation
-with ErrorAccumulatingCirceSupport {
+) {
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -87,10 +83,5 @@ with ErrorAccumulatingCirceSupport {
         entity = entity
       ).addHeader(Authorization(credentials = OAuth2BearerToken(bearerToken)))
     )
-  }
-
-  def getWgsUbamModels(bearerToken: String,
-                       input: TransferWgsUbamV1QueryInput): Future[Seq[TransferWgsUbamV1QueryOutput]] = {
-    queryWgsUbam(bearerToken, input).flatMap(Unmarshal(_).to[Seq[TransferWgsUbamV1QueryOutput]])
   }
 }

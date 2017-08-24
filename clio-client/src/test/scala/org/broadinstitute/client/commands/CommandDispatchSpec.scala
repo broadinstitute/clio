@@ -4,6 +4,7 @@ import org.broadinstitute.client.BaseClientSpec
 import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.commands.{CommandDispatch, Commands}
 import org.broadinstitute.clio.client.parser.BaseArgs
+import org.broadinstitute.clio.client.util.IoUtil
 
 class CommandDispatchSpec extends BaseClientSpec {
   behavior of "CommandDispatch"
@@ -35,6 +36,23 @@ class CommandDispatchSpec extends BaseClientSpec {
         metadataLocation = metadataFileLocation
       )
     ) should be(true)
+  }
+
+  it should "return true when we dispatch a valid moveWgsUbam command" in {
+
+    IoUtil.copyGoogleObject(mockUbamPath, "gs://broad-gotc-dev-storage/clio/ubam1")
+
+    CommandDispatch.dispatch(MockClioWebClient.returningOk,
+      BaseArgs(
+        command = Some(Commands.MoveWgsUbam),
+        flowcell = testFlowcell,
+        lane = testLane,
+        libraryName = testLibName,
+        location = testLocation,
+        bearerToken = testBearer,
+        ubamPath = testUbamPath
+      )
+    )should be(true)
   }
 
 }

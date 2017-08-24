@@ -44,13 +44,26 @@ object IoUtil {
     val gs = new GsUtil(None)
     gs.mv(from, to)
   }
+
+  def copyGoogleObject(from: String, to: String): Future[Unit] = {
+    val gs = new GsUtil(None)
+    gs.cp(from, to)
+  }
+
 }
 
 //we should consider moving this to api usage instead of gsutil
 class GsUtil(stateDir: Option[Path]) {
 
+  def cp(from: String, to: String): Future[Unit] = {
+    runGsUtilAndGetExitCode(Seq("cp", from, to)) match {
+      case 0 => Future.successful(())
+      case _ => Future.failed(new Exception(s"The gsutil copy command from $from to $to failed"))
+    }
+  }
+
   def mv(from: String, to: String): Future[Unit] = {
-    runGsUtilAndGetExitCode(Seq(from, to)) match {
+    runGsUtilAndGetExitCode(Seq("mv", from, to)) match {
       case 0 => Future.successful(())
       case _ => Future.failed(new Exception(s"The gsutil move command from $from to $to failed"))
     }
@@ -66,7 +79,7 @@ class GsUtil(stateDir: Option[Path]) {
   }
 
   def runGsUtilAndGetExitCode(gsUtilArgs: Seq[String]): Int = {
-    val str = getGsUtilCmdWithStateDir(gsUtilArgs).mkString("")
+    val str = getGsUtilCmdWithStateDir(gsUtilArgs).mkString(" ")
     Process(str).!
   }
 

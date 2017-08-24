@@ -31,6 +31,10 @@ trait TestData {
   val testRunDateEnd: Option[OffsetDateTime] = Some(
     OffsetDateTime.now().plusHours(1)
   )
+  val testUbamPath: Option[String] =
+    Some("gs://broad-gotc-dev-storage/clio/ubam2")
+
+  val mockUbamPath = "clio-client/src/test/resources/testdata/ubam1"
 
   //missing lane
   val missingRequired = Array(
@@ -68,6 +72,22 @@ trait TestData {
     testLibName.get,
     "--location",
     testLocation.get
+  )
+
+  val goodMoveCommand = Array(
+    Commands.AddWgsUbam.toString,
+    "-m",
+    metadataFileLocation.get,
+    "-f",
+    testFlowcell.get,
+    "-l",
+    "1",
+    "-n",
+    testLibName.get,
+    "--location",
+    testLocation.get,
+    "--ubamPath",
+    testUbamPath.get
   )
 
 }

@@ -1,23 +1,13 @@
 package org.broadinstitute.client.webclient
 
-import akka.http.scaladsl.model.{
-  HttpEntity,
-  HttpResponse,
-  StatusCode,
-  StatusCodes
-}
+import akka.http.scaladsl.model._
 import io.circe.Json
 import io.circe.parser.parse
 import org.broadinstitute.client.util.TestData
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput
-}
-
+import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput}
 import akka.actor.ActorSystem
 
 import scala.concurrent.Future
@@ -57,7 +47,7 @@ class MockClioWebClient(status: StatusCode)(implicit system: ActorSystem)
     Future.successful(
       HttpResponse(
         status = status,
-        entity = HttpEntity(json.pretty(implicitly))
+        entity = HttpEntity(ContentTypes.`application/json`, Json.arr(json).pretty(implicitly))
       )
     )
   }
