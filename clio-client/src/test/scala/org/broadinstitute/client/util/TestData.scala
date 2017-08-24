@@ -2,13 +2,22 @@ package org.broadinstitute.client.util
 
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.client.commands.Commands
-import org.broadinstitute.clio.util.model.DocumentStatus
-import org.broadinstitute.clio.util.model.DocumentStatus
+import org.broadinstitute.clio.client.commands.{
+  AddWgsUbam,
+  CommonOptions,
+  QueryWgsUbam
+}
+import org.broadinstitute.clio.transfer.model.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1QueryInput
+}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 trait TestData {
 
-  val metadataFileLocation = Some("clio-client/src/test/resources/testdata/metadata")
+  val metadataFileLocation = Some(
+    "clio-client/src/test/resources/testdata/metadata"
+  )
   val badMetadataFileLocation =
     Some("clio-client/src/test/resources/testdata/badmetadata")
   val metadataPlusExtraFieldsFileLocation =
@@ -29,11 +38,18 @@ trait TestData {
   val testRunDateEnd: Option[OffsetDateTime] = Some(
     OffsetDateTime.now().plusHours(1)
   )
+  val testCommon = CommonOptions(bearerToken = testBearer.get)
+  val testTransferV1Key = TransferWgsUbamV1Key(
+    flowcellBarcode = testFlowcell.get,
+    lane = testLane.get,
+    libraryName = testLibName.get,
+    location = Location.pathMatcher(testLocation.get)
+  )
 
   //missing lane
   val missingRequired = Array(
-    Commands.AddWgsUbam.toString,
-    "-m",
+    // Commands.AddWgsUbam.toString,
+    "--meta-data-",
     metadataFileLocation.get,
     "-f",
     testFlowcell.get,
@@ -45,7 +61,7 @@ trait TestData {
 
   //missing lane
   val missingOptional = Array(
-    Commands.QueryWgsUbam.toString,
+    // Commands.QueryWgsUbam.toString,
     "-f",
     testFlowcell.get,
     "-n",
@@ -54,18 +70,13 @@ trait TestData {
     testLocation.get
   )
 
-  val goodAddCommand = Array(
-    Commands.AddWgsUbam.toString,
-    "-m",
-    metadataFileLocation.get,
-    "-f",
-    testFlowcell.get,
-    "-l",
-    "1",
-    "-n",
-    testLibName.get,
-    "--location",
-    testLocation.get
+  val goodQueryCommand = QueryWgsUbam(
+    transferWgsUbamV1QueryInput = TransferWgsUbamV1QueryInput()
+  )
+
+  val goodAddCommand = AddWgsUbam(
+    metadataLocation = metadataFileLocation.get,
+    transferWgsUbamV1Key = testTransferV1Key
   )
 
 }

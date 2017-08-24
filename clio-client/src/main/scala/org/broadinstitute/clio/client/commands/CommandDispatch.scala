@@ -3,31 +3,16 @@ package org.broadinstitute.clio.client.commands
 import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.ClioClientConfig
-import org.broadinstitute.clio.client.commands.Commands.{
-  AddWgsUbam,
-  QueryWgsUbam
-}
-import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 object CommandDispatch extends LazyLogging {
 
-  def execute(command: CommandType, webClient: ClioWebClient, config: BaseArgs)(
+  def dispatch(webClient: ClioWebClient, command: Command, bearerToken: String)(
     implicit ec: ExecutionContext
-  ): Future[HttpResponse] = {
-    command match {
-      case AddWgsUbam   => AddWgsUbamCommand.execute(webClient, config)
-      case QueryWgsUbam => QueryWgsUbamCommand.execute(webClient, config)
-    }
-  }
-
-  def dispatch(webClient: ClioWebClient,
-               config: BaseArgs)(implicit ec: ExecutionContext): Boolean = {
-    config.command
-      .map(command => execute(command, webClient, config))
-      .exists(responseFuture => { checkResponse(responseFuture) })
+  ): Boolean = {
+    checkResponse(command.execute(webClient, bearerToken = bearerToken))
   }
 
   def checkResponse(
