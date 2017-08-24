@@ -1,7 +1,11 @@
 package org.broadinstitute.clio.server
 
+import org.broadinstitute.clio.util.model.Env
+
+import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
+import net.ceedubs.ficus.readers.ValueReader
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -10,6 +14,16 @@ import scala.concurrent.duration.FiniteDuration
   */
 object ClioServerConfig {
   private val config = ClioConfig.getConfig("server")
+
+  object Environment {
+    implicit val envReader: ValueReader[Env] = new ValueReader[Env] {
+      override def read(config: Config, path: String): Env = {
+        val maybeEnv = config.as[String](path)
+        Env.withName(maybeEnv)
+      }
+    }
+    val value: Env = config.as[Env]("environment")
+  }
 
   object HttpServer {
     private val http = config.getConfig("http-server")

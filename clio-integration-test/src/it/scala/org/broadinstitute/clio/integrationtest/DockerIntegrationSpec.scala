@@ -33,6 +33,11 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
     with IntegrationSuite {
 
   /**
+    * The hostname of the Elasticsearch instance to which the Dockerized Clio should connect.
+    */
+  def elasticsearchHostname: String
+
+  /**
     * Name of the clio-server instance that will be started by the docker-compose
     * call, plus its instance number.
     *
@@ -45,6 +50,7 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
   override val container =
     new ClioDockerComposeContainer(
       new File(getClass.getResource(composeFile).toURI),
+      elasticsearchHostname,
       exposedServices
     )
 
@@ -82,7 +88,7 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
     )
     val logStream = clioLogLines
       .map { line =>
-        if (line.contains("INFO")) println(line)
+        if (!line.contains("DEBUG")) println(line)
         line
       }
       .takeWhile(line => !line.contains("Server started"))
@@ -99,29 +105,32 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
 class FullDockerIntegrationSpec
     extends DockerIntegrationSpec("docker-compose.yml", "local") {
 
-  /**
-    * Name of one of the elasticsearch instances that will be started by
-    * the docker-compose call, plus its instance number.
-    *
-    * NOTE: If you change the name of the elasticserach service in docker-compose.yml,
-    * you also need to change this value to match.
-    */
-  private lazy val esName = "elasticsearch1_1"
+  /*
+   * Name of one of the elasticsearch instances that will be started by
+   * the docker-compose call.
+   *
+   * NOTE: If you change the name of the elasticserach service in docker-compose.yml,
+   * you also need to change this value to match.
+   */
+  override lazy val elasticsearchHostname: String = "elasticsearch1"
 
   override def exposedServices: Map[String, Int] =
-    super.exposedServices + (esName -> 9200)
+    super.exposedServices + (s"${elasticsearchHostname}_1" -> 9200)
 
   override lazy val elasticsearchUri: Uri =
-    container.getServiceUri(esName)
+    container.getServiceUri(s"${elasticsearchHostname}_1")
 }
 
 /**
   * The integration spec that tests Dockerized Clio using the Elasticsearch
-  * cluster deployed in dev.
+  * cluster deployed in dev .
   */
 class DockerDevIntegrationSpec
     extends DockerIntegrationSpec("docker-compose-dev-elasticsearch.yml", "dev") {
 
+  override lazy val elasticsearchHostname =
+    "elasticsearch1.gotc-dev.broadinstitute.org"
+
   override val elasticsearchUri: Uri =
-    Uri("http://elasticsearch1.gotc-dev.broadinstitute.org:9200")
+    Uri(s"http://$elasticsearchHostname:9200")
 }

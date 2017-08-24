@@ -8,7 +8,9 @@ import org.broadinstitute.clio.util.model.DocumentStatus
 
 trait TestData {
 
-  val metadataFileLocation = Some("clio-client/src/test/resources/testdata/metadata")
+  val metadataFileLocation = Some(
+    "clio-client/src/test/resources/testdata/metadata"
+  )
   val badMetadataFileLocation =
     Some("clio-client/src/test/resources/testdata/badmetadata")
   val metadataPlusExtraFieldsFileLocation =
