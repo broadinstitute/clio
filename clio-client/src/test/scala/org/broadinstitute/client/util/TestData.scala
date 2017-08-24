@@ -31,8 +31,10 @@ trait TestData {
   val testRunDateEnd: Option[OffsetDateTime] = Some(
     OffsetDateTime.now().plusHours(1)
   )
-  val testUbamPath: Option[String] =
+  val testUbamCloudDestinationPath: Option[String] =
     Some("gs://broad-gotc-dev-storage/clio/ubam2")
+  val testUbamCloudSourcePath: Option[String] =
+    Some("gs://broad-gotc-dev-storage/clio/ubam1")
 
   val mockUbamPath = "clio-client/src/test/resources/testdata/ubam1"
 
@@ -87,7 +89,7 @@ trait TestData {
     "--location",
     testLocation.get,
     "--ubamPath",
-    testUbamPath.get
+    testUbamCloudDestinationPath.get
   )
 
 }

@@ -13,8 +13,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
   behavior of "AddReadGroupBam"
 
   it should "throw a parsing failure if the metadata is not valid json" in {
-
-    a[ParsingFailure] should be thrownBy {
+    recoverToSucceededIf[ParsingFailure] {
       val config = BaseArgs(
         flowcell = testFlowcell,
         lane = testLane,
@@ -23,7 +22,6 @@ class AddWgsUbamSpec extends BaseClientSpec {
         metadataLocation = badMetadataFileLocation,
         bearerToken = testBearer
       )
-
       CommandDispatch.checkResponse(
         AddWgsUbamCommand
           .execute(MockClioWebClient.returningOk, config)
@@ -32,7 +30,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw a decoding failure if the json is valid but we can't unmarshal it" in {
-    a[DecodingFailure] should be thrownBy {
+    recoverToSucceededIf[DecodingFailure] {
       val config = BaseArgs(
         flowcell = testFlowcell,
         lane = testLane,
@@ -56,10 +54,12 @@ class AddWgsUbamSpec extends BaseClientSpec {
       metadataLocation = metadataFileLocation,
       bearerToken = testBearer
     )
-    CommandDispatch.checkResponse(
-      AddWgsUbamCommand
-        .execute(MockClioWebClient.returningInternalError, config)
-    ) should be(false)
+    CommandDispatch
+      .checkResponse(
+        AddWgsUbamCommand
+          .execute(MockClioWebClient.returningInternalError, config)
+      )
+      .map(_ should be(false))
   }
 
   it should "return true if the server response is OK" in {
@@ -71,9 +71,11 @@ class AddWgsUbamSpec extends BaseClientSpec {
       metadataLocation = metadataFileLocation,
       bearerToken = testBearer
     )
-    CommandDispatch.checkResponse(
-      AddWgsUbamCommand.execute(MockClioWebClient.returningOk, config)
-    ) should be(true)
+    CommandDispatch
+      .checkResponse(
+        AddWgsUbamCommand.execute(MockClioWebClient.returningOk, config)
+      )
+      .map(_ should be(true))
   }
 
 }

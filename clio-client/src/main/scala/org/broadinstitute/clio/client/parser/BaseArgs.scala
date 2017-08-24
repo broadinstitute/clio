@@ -107,7 +107,9 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
 
   cmd(Commands.MoveWgsUbam.toString)
     .action((_, c) => c.copy(command = Some(Commands.MoveWgsUbam)))
-    .text("This command is used to copy a unmapped bam from one location to another. Only implemented for cloud unmapped bams")
+    .text(
+      "This command is used to copy a unmapped bam from one location to another. Only implemented for cloud unmapped bams"
+    )
     .children(
       opt[String]('f', "flowcell")
         .required()

@@ -2,9 +2,12 @@ package org.broadinstitute.client
 
 import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.ClioClient
+import scala.concurrent.ExecutionContext
 
 class ClioClientSpec extends BaseClientSpec {
   behavior of "ClioClient"
+
+  override implicit val executionContext: ExecutionContext = system.dispatcher
 
   val client: ClioClient = {
     val mockWebClient = MockClioWebClient.returningOk

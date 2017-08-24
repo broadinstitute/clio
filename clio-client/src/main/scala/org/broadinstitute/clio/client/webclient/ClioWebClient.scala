@@ -8,14 +8,20 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.syntax._
 import ClientAutoDerivation._
-import io.circe.Printer
-import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput}
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import io.circe.{Json, Printer}
+import org.broadinstitute.clio.transfer.model.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryInput
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   implicit system: ActorSystem
-) {
+) extends FailFastCirceSupport {
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -82,6 +88,23 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
         method = HttpMethods.POST,
         entity = entity
       ).addHeader(Authorization(credentials = OAuth2BearerToken(bearerToken)))
+    )
+  }
+
+  def getResponseAsJson(httpResponse: Future[HttpResponse]): Future[Json] = {
+    httpResponse.flatMap(Unmarshal(_).to[Json])
+  }
+
+  def ensureOkResponse(
+    httpResponse: Future[HttpResponse]
+  ): Future[HttpResponse] = {
+    httpResponse.flatMap(
+      r =>
+        r.status match {
+          case StatusCodes.OK => Future.successful(r)
+          case _ =>
+            Future.failed(new Exception("Error while upserting the WgsUbam"))
+      }
     )
   }
 }

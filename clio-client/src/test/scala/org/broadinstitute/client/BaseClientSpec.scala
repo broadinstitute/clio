@@ -6,7 +6,7 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
-import scala.concurrent.ExecutionContext
+//import scala.concurrent.ExecutionContext
 
 abstract class BaseClientSpec
     extends TestKit(ActorSystem("ClioClientSpec"))
@@ -22,5 +22,5 @@ abstract class BaseClientSpec
    * See the "Asynchronous execution model" section of
    * http://www.scalatest.org/user_guide/async_testing for more info.
    */
-  override implicit val executionContext: ExecutionContext = system.dispatcher
+//  override implicit val executionContext: ExecutionContext = system.dispatcher
 }

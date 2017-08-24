@@ -10,49 +10,58 @@ class CommandDispatchSpec extends BaseClientSpec {
   behavior of "CommandDispatch"
 
   it should "return false when we dispatch a command that doesn't exist" in {
-    CommandDispatch.dispatch(
-      MockClioWebClient.returningOk,
-      BaseArgs(command = None)
-    ) should be(false)
+    CommandDispatch
+      .dispatch(MockClioWebClient.returningOk, BaseArgs(command = None))
+      .map(_ should be(false))
   }
 
   it should "return true when we dispatch a valid queryWgsUbam command" in {
-    CommandDispatch.dispatch(
-      MockClioWebClient.returningOk,
-      BaseArgs(command = Some(Commands.QueryWgsUbam))
-    ) should be(true)
+    CommandDispatch
+      .dispatch(
+        MockClioWebClient.returningOk,
+        BaseArgs(command = Some(Commands.QueryWgsUbam))
+      )
+      .map(_ should be(true))
   }
 
   it should "return true when we dispatch a valid addWgsUbam command" in {
-    CommandDispatch.dispatch(
-      MockClioWebClient.returningOk,
-      BaseArgs(
-        command = Some(Commands.AddWgsUbam),
-        flowcell = testFlowcell,
-        lane = testLane,
-        libraryName = testLibName,
-        location = testLocation,
-        bearerToken = testBearer,
-        metadataLocation = metadataFileLocation
+    CommandDispatch
+      .dispatch(
+        MockClioWebClient.returningOk,
+        BaseArgs(
+          command = Some(Commands.AddWgsUbam),
+          flowcell = testFlowcell,
+          lane = testLane,
+          libraryName = testLibName,
+          location = testLocation,
+          bearerToken = testBearer,
+          metadataLocation = metadataFileLocation
+        )
       )
-    ) should be(true)
+      .map(_ should be(true))
   }
 
   it should "return true when we dispatch a valid moveWgsUbam command" in {
 
-    IoUtil.copyGoogleObject(mockUbamPath, "gs://broad-gotc-dev-storage/clio/ubam1")
+    IoUtil.copyGoogleObject(
+      mockUbamPath,
+      "gs://broad-gotc-dev-storage/clio/ubam1"
+    )
 
-    CommandDispatch.dispatch(MockClioWebClient.returningOk,
-      BaseArgs(
-        command = Some(Commands.MoveWgsUbam),
-        flowcell = testFlowcell,
-        lane = testLane,
-        libraryName = testLibName,
-        location = testLocation,
-        bearerToken = testBearer,
-        ubamPath = testUbamPath
+    CommandDispatch
+      .dispatch(
+        MockClioWebClient.returningOk,
+        BaseArgs(
+          command = Some(Commands.MoveWgsUbam),
+          flowcell = testFlowcell,
+          lane = testLane,
+          libraryName = testLibName,
+          location = testLocation,
+          bearerToken = testBearer,
+          ubamPath = testUbamCloudDestinationPath
+        )
       )
-    )should be(true)
+      .map(_ should be(true))
   }
 
 }

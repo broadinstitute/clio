@@ -2,12 +2,15 @@ package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.clio.client.ClioClientConfig
-import org.broadinstitute.clio.client.commands.Commands.{AddWgsUbam, MoveWgsUbam, QueryWgsUbam}
+import org.broadinstitute.clio.client.commands.Commands.{
+  AddWgsUbam,
+  MoveWgsUbam,
+  QueryWgsUbam
+}
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 object CommandDispatch extends LazyLogging {
 
@@ -21,36 +24,33 @@ object CommandDispatch extends LazyLogging {
     }
   }
 
-  def dispatch(webClient: ClioWebClient,
-               config: BaseArgs)(implicit ec: ExecutionContext): Boolean = {
+  def dispatch(webClient: ClioWebClient, config: BaseArgs)(
+    implicit ec: ExecutionContext
+  ): Future[Boolean] = {
     config.command
       .map(command => execute(command, webClient, config))
-      .exists(responseFuture => { checkResponse(responseFuture) })
+      .fold(Future(false))(checkResponse)
   }
 
   def checkResponse(
     responseFuture: Future[HttpResponse]
-  )(implicit ec: ExecutionContext): Boolean = {
-    Await.result(
-      responseFuture.map[Boolean] { response =>
-        val isSuccess = response.status.isSuccess()
-
-        if (isSuccess) {
-          logger.info(
-            s"Successfully completed command." +
-              s" Response code: ${response.status}"
-          )
-          logger.info(response.toString)
-        } else {
-          logger.error(
-            s"Error executing command." +
-              s" Response code: ${response.status}"
-          )
-          logger.info(response.toString)
-        }
-        isSuccess
-      },
-      ClioClientConfig.responseTimeout
-    )
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
+    responseFuture.map(response => {
+      val isSuccess = response.status.isSuccess()
+      if (isSuccess) {
+        logger.info(
+          s"Successfully completed command." +
+            s" Response code: ${response.status}"
+        )
+        logger.info(response.toString)
+      } else {
+        logger.error(
+          s"Error executing command." +
+            s" Response code: ${response.status}"
+        )
+        logger.info(response.toString)
+      }
+      isSuccess
+    })
   }
 }
