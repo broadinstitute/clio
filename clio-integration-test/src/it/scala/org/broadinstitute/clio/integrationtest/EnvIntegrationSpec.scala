@@ -80,11 +80,14 @@ abstract class EnvIntegrationSpec(env: String)
         .asJson
 
     val serviceAccount: ServiceAccount =
-      accountJSON.as[ServiceAccount].getOrElse {
-        sys.error(
-          s"Failed to decode service-account JSON at vault path $vaultPath"
-        )
-      }
+      accountJSON
+        .as[ServiceAccount]
+        .fold({ err =>
+          throw new RuntimeException(
+            s"Failed to decode service account JSON from Vault at $vaultPath",
+            err
+          )
+        }, json => json)
 
     val credential = serviceAccount.credentialForScopes(authScopes)
     credential.refreshAccessToken().getTokenValue

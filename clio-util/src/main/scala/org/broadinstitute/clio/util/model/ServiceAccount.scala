@@ -6,11 +6,23 @@ import scala.collection.JavaConverters._
 
 import java.net.URI
 
-case class ServiceAccount(clientId: String,
+/**
+  * Representation of service-account JSON produced by GCloud,
+  * used for persisting Clio updates to cloud storage / for
+  * communicating through Clio's OpenIDC proxy.
+  */
+case class ServiceAccount(authProviderX509CertUrl: URI,
+                          authUri: URI,
                           clientEmail: String,
+                          clientId: String,
+                          clientX509CertUrl: URI,
                           privateKey: String,
                           privateKeyId: String,
-                          tokenUri: URI) {
+                          projectId: String,
+                          tokenUri: URI,
+                          `type`: String) {
+
+  assert(`type` == "service_account")
 
   def credentialForScopes(scopes: Seq[String]): ServiceAccountCredentials = {
     ServiceAccountCredentials.fromPkcs8(

@@ -11,6 +11,7 @@ import net.ceedubs.ficus.readers.ValueReader
 import scala.collection.JavaConverters._
 import scala.concurrent.duration.FiniteDuration
 
+import java.io.File
 import java.nio.file.{Files, Path}
 
 /**
@@ -21,7 +22,7 @@ object ClioServerConfig {
 
   object Persistence extends ModelAutoDerivation {
     implicit val pathReader: ValueReader[Path] =
-      (config: Config, path: String) => ???
+      (config: Config, path: String) => new File(config.getString(path)).toPath
 
     private val persistence = server.as[Config]("persistence")
     private val jsonPath = persistence.getAs[Path]("service-account-json")
