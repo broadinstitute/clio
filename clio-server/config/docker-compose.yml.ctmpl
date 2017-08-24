@@ -3,10 +3,6 @@ version: "2"
 services:
   app:
     image: broadinstitute/clio-server:{{env "DOCKER_TAG"}}
-    logging:
-      driver: "syslog"
-      options:
-        tag: "clio-server"
     env_file:
       - {{$app_dir}}/clio.env
     volumes:
@@ -23,10 +19,6 @@ services:
   proxy:
     image: broadinstitute/openidc-proxy:latest
     hostname: {{env "CLIO_HOST"}}
-    logging:
-      driver: "syslog"
-      options:
-        tag: "clio-proxy"
     links:
       - app:app
       - logger
