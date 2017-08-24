@@ -40,17 +40,19 @@ object MoveWgsUbamCommand extends Command with LazyLogging {
         "Could not query the WgsUbam. No files have been moved"
       firstJson <- getFirstObject(wgsUbamsResponse) withErrorMsg
         "Could not get only 1 WgsUbam from Clio. No files have been moved"
-      moveWgsUbam <- moveGoogleObject(
-        firstJson.asObject.get("ubamPath").get.asString,
-        config.ubamPath
-      ) withErrorMsg
+      copyWgsUbam <- copyGoogleObject(firstJson.asObject.get("ubamPath").get.asString, config.ubamPath) withErrorMsg
         "An error occurred while moving the files in google cloud. No files have been moved"
       upsertUbam <- upsertUpdatedWgsUbam(webClient, config) withErrorMsg
         """An error occurred while upserting the WgsUbam. The state of clio is now inconsistent.
-          |Please verify that the unmapped bam was moved in google cloud.
-          |Then, try upserting (not moving) the unmapped bam with the correct path.
+          |The ubam exists in both at both the old and the new locations.
+          |At this time, Clio only knows about the bam at the old location.
+          |Then, try upserting (not moving) the unmapped bam with the correct path then deleting the old bam.
           |If the state of Clio cannot be fixed, please contact the Green Team at greenteam@broadinstitute.org
         """.stripMargin
+      deleteUbam <- deleteGoogleObject(firstJson.asObject.get("ubamPath").get.asString) withErrorMsg
+        """The old bam was not able to be deleted. Clio has been updated to point to the new bam.
+          | Please delete the old bam. If this cannot be done, contact Green Team at greenteam@broadinstitute.org
+          | """.stripMargin
     } yield {
       upsertUbam
     }
@@ -76,12 +78,20 @@ object MoveWgsUbamCommand extends Command with LazyLogging {
     webClient.getResponseAsJson(httpResponse)
   }
 
-  private def moveGoogleObject(source: Option[String],
+  private def copyGoogleObject(source: Option[String],
                                destination: Option[String]): Future[Unit] = {
-    IoUtil.moveGoogleObject(source.get, destination.get) match {
+    IoUtil.copyGoogleObject(source.get, destination.get) match {
       case 0 => Future.successful(())
       case _ =>
         Future.failed(new Exception("Copy files in google cloud failed"))
+    }
+  }
+
+  private def deleteGoogleObject(path: Option[String]): Future[Unit] = {
+    IoUtil.deleteGoogleObject(path.get) match {
+      case 0 => Future.successful(())
+      case _ =>
+        Future.failed(new Exception("Delete files in google cloud failed"))
     }
   }
 
