@@ -6,9 +6,7 @@ import java.util.Comparator
 
 import scala.io.Source
 import scala.sys.process.Process
-
-object IoUtil {
-
+trait IoUtilTrait {
   val googleCloudStorageScheme = "gs://"
 
   def isGoogleObject(location: String): Boolean =
@@ -39,11 +37,6 @@ object IoUtil {
       .forEach(file => file.deleteOnExit())
   }
 
-  def moveGoogleObject(from: String, to: String): Int = {
-    val gs = new GsUtil(None)
-    gs.mv(from, to)
-  }
-
   def copyGoogleObject(from: String, to: String): Int = {
     val gs = new GsUtil(None)
     gs.cp(from, to)
@@ -60,6 +53,7 @@ object IoUtil {
   }
 
 }
+object IoUtil extends IoUtilTrait {}
 
 //we should consider moving this to api usage instead of gsutil
 class GsUtil(stateDir: Option[Path]) {

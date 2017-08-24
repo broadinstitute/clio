@@ -1,16 +1,17 @@
 package org.broadinstitute.client.commands
 
 import org.broadinstitute.client.BaseClientSpec
+import org.broadinstitute.client.util.MockIoUtil
 import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.commands.{
   CommandDispatch,
   MoveWgsUbamCommand
 }
 import org.broadinstitute.clio.client.parser.BaseArgs
-import org.broadinstitute.clio.client.util.IoUtil
-import org.scalatest.BeforeAndAfterAll
+import org.broadinstitute.clio.client.util.IoUtilTrait
 
-class MoveWgsUbamSpec extends BaseClientSpec with BeforeAndAfterAll {
+class MoveWgsUbamSpec extends BaseClientSpec {
+  override implicit val ioUtil: IoUtilTrait = MockIoUtil
   behavior of "MoveWgsUbam"
 
   it should "throw an exception if the destination path scheme is invalid" in {
@@ -46,7 +47,8 @@ class MoveWgsUbamSpec extends BaseClientSpec with BeforeAndAfterAll {
   }
 
   it should "throw an exception if the source and destination paths are the same" in {
-    IoUtil.copyGoogleObject(mockUbamPath, testUbamCloudSourcePath.get)
+    MockIoUtil.deleteAllInCloud()
+    MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
         flowcell = testFlowcell,
@@ -97,7 +99,8 @@ class MoveWgsUbamSpec extends BaseClientSpec with BeforeAndAfterAll {
   }
 
   it should "throw an exception if Clio can't upsert the new WgsUbam" in {
-    IoUtil.copyGoogleObject(mockUbamPath, testUbamCloudSourcePath.get)
+    MockIoUtil.deleteAllInCloud()
+    MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
         flowcell = testFlowcell,
@@ -115,7 +118,8 @@ class MoveWgsUbamSpec extends BaseClientSpec with BeforeAndAfterAll {
   }
 
   it should "move clio unmapped bams if no errors are encountered" in {
-    IoUtil.copyGoogleObject(mockUbamPath, testUbamCloudSourcePath.get)
+    MockIoUtil.deleteAllInCloud()
+    MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     val config = BaseArgs(
       flowcell = testFlowcell,
       lane = testLane,
@@ -130,13 +134,5 @@ class MoveWgsUbamSpec extends BaseClientSpec with BeforeAndAfterAll {
           .execute(MockClioWebClient.returningOk, config)
       )
       .map(_ should be(true))
-  }
-
-  override protected def afterAll(): Unit = {
-    if (IoUtil.googleObjectExists(testUbamCloudSourcePath.get))
-      IoUtil.deleteGoogleObject(testUbamCloudSourcePath.get)
-    if (IoUtil.googleObjectExists(testUbamCloudDestinationPath.get))
-      IoUtil.deleteGoogleObject(testUbamCloudDestinationPath.get)
-    ()
   }
 }

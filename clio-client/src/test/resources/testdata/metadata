@@ -28,6 +28,6 @@
     "sampleType" : "sampleType",
     "targetIntervals" : "targetIntervals",
     "ubamMd5" : "ubamMd5",
-    "ubamPath" : "gs://broad-gotc-dev-storage/clio/ubam1",
+    "ubamPath" : "gs://testProject/testSample/ubamPath1.unmapped.bam",
     "ubamSize" : 1
 }

@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.{LazyLogging, Logger}
 import io.circe.Json
 import org.broadinstitute.clio.client.parser.BaseArgs
-import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.util.IoUtilTrait
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
@@ -33,14 +33,18 @@ object MoveWgsUbamCommand extends Command with LazyLogging {
   }
 
   override def execute(webClient: ClioWebClient, config: BaseArgs)(
-    implicit ec: ExecutionContext
+    implicit ec: ExecutionContext,
+    ioUtil: IoUtilTrait
   ): Future[HttpResponse] = {
     for {
       wgsUbamsResponse <- queryForWgsUbam(webClient, config) withErrorMsg
         "Could not query the WgsUbam. No files have been moved"
       firstJson <- getFirstObject(wgsUbamsResponse) withErrorMsg
         "Could not get only 1 WgsUbam from Clio. No files have been moved"
-      copyWgsUbam <- copyGoogleObject(firstJson.asObject.get("ubamPath").get.asString, config.ubamPath) withErrorMsg
+      copyWgsUbam <- copyGoogleObject(
+        firstJson.asObject.get("ubamPath").get.asString,
+        config.ubamPath
+      ) withErrorMsg
         "An error occurred while moving the files in google cloud. No files have been moved"
       upsertUbam <- upsertUpdatedWgsUbam(webClient, config) withErrorMsg
         """An error occurred while upserting the WgsUbam. The state of clio is now inconsistent.
@@ -49,7 +53,9 @@ object MoveWgsUbamCommand extends Command with LazyLogging {
           |Then, try upserting (not moving) the unmapped bam with the correct path then deleting the old bam.
           |If the state of Clio cannot be fixed, please contact the Green Team at greenteam@broadinstitute.org
         """.stripMargin
-      deleteUbam <- deleteGoogleObject(firstJson.asObject.get("ubamPath").get.asString) withErrorMsg
+      deleteUbam <- deleteGoogleObject(
+        firstJson.asObject.get("ubamPath").get.asString
+      ) withErrorMsg
         """The old bam was not able to be deleted. Clio has been updated to point to the new bam.
           | Please delete the old bam. If this cannot be done, contact Green Team at greenteam@broadinstitute.org
           | """.stripMargin
@@ -78,17 +84,21 @@ object MoveWgsUbamCommand extends Command with LazyLogging {
     webClient.getResponseAsJson(httpResponse)
   }
 
-  private def copyGoogleObject(source: Option[String],
-                               destination: Option[String]): Future[Unit] = {
-    IoUtil.copyGoogleObject(source.get, destination.get) match {
+  private def copyGoogleObject(
+    source: Option[String],
+    destination: Option[String]
+  )(implicit ioUtil: IoUtilTrait): Future[Unit] = {
+    ioUtil.copyGoogleObject(source.get, destination.get) match {
       case 0 => Future.successful(())
       case _ =>
         Future.failed(new Exception("Copy files in google cloud failed"))
     }
   }
 
-  private def deleteGoogleObject(path: Option[String]): Future[Unit] = {
-    IoUtil.deleteGoogleObject(path.get) match {
+  private def deleteGoogleObject(
+    path: Option[String]
+  )(implicit ioUtil: IoUtilTrait): Future[Unit] = {
+    ioUtil.deleteGoogleObject(path.get) match {
       case 0 => Future.successful(())
       case _ =>
         Future.failed(new Exception("Delete files in google cloud failed"))

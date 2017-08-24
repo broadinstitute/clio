@@ -1,10 +1,11 @@
 package org.broadinstitute.client.commands
 
 import org.broadinstitute.client.BaseClientSpec
+import org.broadinstitute.client.util.MockIoUtil
 import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.commands.{CommandDispatch, Commands}
 import org.broadinstitute.clio.client.parser.BaseArgs
-import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.util.IoUtilTrait
 
 class CommandDispatchSpec extends BaseClientSpec {
   behavior of "CommandDispatch"
@@ -41,13 +42,10 @@ class CommandDispatchSpec extends BaseClientSpec {
       .map(_ should be(true))
   }
 
+  override implicit val ioUtil: IoUtilTrait = MockIoUtil
   it should "return true when we dispatch a valid moveWgsUbam command" in {
-
-    IoUtil.copyGoogleObject(
-      mockUbamPath,
-      "gs://broad-gotc-dev-storage/clio/ubam1"
-    )
-
+    MockIoUtil.deleteAllInCloud()
+    MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     CommandDispatch
       .dispatch(
         MockClioWebClient.returningOk,

@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.commands
 import akka.http.scaladsl.model.HttpResponse
 import enumeratum._
 import org.broadinstitute.clio.client.parser.BaseArgs
+import org.broadinstitute.clio.client.util.IoUtilTrait
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
 import scala.collection.immutable.IndexedSeq
@@ -27,6 +28,7 @@ object Commands extends Enum[CommandType] {
 
 trait Command {
   def execute(webClient: ClioWebClient, config: BaseArgs)(
-    implicit ec: ExecutionContext
+    implicit ec: ExecutionContext,
+    ioUtil: IoUtilTrait
   ): Future[HttpResponse]
 }

@@ -1,12 +1,10 @@
 package org.broadinstitute.client
 
 import org.broadinstitute.client.util.TestData
-
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
+import org.broadinstitute.clio.client.util.{IoUtil, IoUtilTrait}
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
-
-//import scala.concurrent.ExecutionContext
 
 abstract class BaseClientSpec
     extends TestKit(ActorSystem("ClioClientSpec"))
@@ -22,5 +20,5 @@ abstract class BaseClientSpec
    * See the "Asynchronous execution model" section of
    * http://www.scalatest.org/user_guide/async_testing for more info.
    */
-//  override implicit val executionContext: ExecutionContext = system.dispatcher
+  implicit val ioUtil: IoUtilTrait = IoUtil
 }

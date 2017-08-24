@@ -31,12 +31,11 @@ trait TestData {
   val testRunDateEnd: Option[OffsetDateTime] = Some(
     OffsetDateTime.now().plusHours(1)
   )
-  val testUbamCloudDestinationPath: Option[String] =
-    Some("gs://broad-gotc-dev-storage/clio/ubam2")
-  val testUbamCloudSourcePath: Option[String] =
-    Some("gs://broad-gotc-dev-storage/clio/ubam1")
 
-  val mockUbamPath = "clio-client/src/test/resources/testdata/ubam1"
+  val testUbamCloudSourcePath: Option[String] =
+    Some("gs://testProject/testSample/ubamPath1.unmapped.bam")
+  val testUbamCloudDestinationPath: Option[String] =
+    Some("gs://testProject/testSample/ubamPath2.unmapped.bam")
 
   //missing lane
   val missingRequired = Array(
