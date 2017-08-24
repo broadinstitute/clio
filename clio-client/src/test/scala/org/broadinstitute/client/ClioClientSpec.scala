@@ -8,12 +8,12 @@ class ClioClientSpec extends BaseClientSpec {
 
   val client: ClioClient = {
     val mockWebClient = MockClioWebClient.returningOk
-    new ClioClient(mockWebClient, goodAddCommand, testBearer.get)
+    new ClioClient(mockWebClient, goodAddCommand, testBearer)
   }
 
   val badClient: ClioClient = {
     val mockClioWebClient = MockClioWebClient.returningInternalError
-    new ClioClient(mockClioWebClient, goodAddCommand, testBearer.get)
+    new ClioClient(mockClioWebClient, goodAddCommand, testBearer)
   }
 
   it should "exit 1 if given a bad command" in {

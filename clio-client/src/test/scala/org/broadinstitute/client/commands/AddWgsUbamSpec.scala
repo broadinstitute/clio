@@ -13,9 +13,9 @@ class AddWgsUbamSpec extends BaseClientSpec {
     a[ParsingFailure] should be thrownBy {
       CommandDispatch.checkResponse(
         AddWgsUbam(
-          metadataLocation = badMetadataFileLocation.get,
+          metadataLocation = badMetadataFileLocation,
           transferWgsUbamV1Key = testTransferV1Key
-        ).execute(MockClioWebClient.returningOk, testBearer.get)
+        ).execute(MockClioWebClient.returningOk, testBearer)
       )
     }
   }
@@ -24,9 +24,9 @@ class AddWgsUbamSpec extends BaseClientSpec {
     a[DecodingFailure] should be thrownBy {
       CommandDispatch.checkResponse(
         AddWgsUbam(
-          metadataLocation = metadataPlusExtraFieldsFileLocation.get,
+          metadataLocation = metadataPlusExtraFieldsFileLocation,
           transferWgsUbamV1Key = testTransferV1Key
-        ).execute(MockClioWebClient.returningOk, testBearer.get)
+        ).execute(MockClioWebClient.returningOk, testBearer)
       )
     }
   }
@@ -34,18 +34,18 @@ class AddWgsUbamSpec extends BaseClientSpec {
   it should "return false if there was a server error" in {
     CommandDispatch.checkResponse(
       AddWgsUbam(
-        metadataLocation = metadataFileLocation.get,
+        metadataLocation = metadataFileLocation,
         transferWgsUbamV1Key = testTransferV1Key
-      ).execute(MockClioWebClient.returningInternalError, testBearer.get)
+      ).execute(MockClioWebClient.returningInternalError, testBearer)
     ) should be(false)
   }
 
   it should "return true if the server response is OK" in {
     CommandDispatch.checkResponse(
       AddWgsUbam(
-        metadataLocation = metadataFileLocation.get,
+        metadataLocation = metadataFileLocation,
         transferWgsUbamV1Key = testTransferV1Key
-      ).execute(MockClioWebClient.returningOk, testBearer.get)
+      ).execute(MockClioWebClient.returningOk, testBearer)
     ) should be(true)
   }
 

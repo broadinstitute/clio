@@ -11,7 +11,7 @@ class CommandDispatchSpec extends BaseClientSpec {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
       goodQueryCommand,
-      testBearer.get
+      testBearer
     ) should be(true)
   }
 
@@ -19,7 +19,7 @@ class CommandDispatchSpec extends BaseClientSpec {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
       goodAddCommand,
-      testBearer.get
+      testBearer
     ) should be(true)
   }
 
