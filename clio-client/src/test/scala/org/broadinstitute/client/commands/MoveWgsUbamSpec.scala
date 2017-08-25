@@ -41,6 +41,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw an exception if the source and destination paths are the same" in {
+    MockIoUtil.resetMockState()
     MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
@@ -87,6 +88,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw an exception if Clio can't upsert the new WgsUbam" in {
+    MockIoUtil.resetMockState()
     MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
@@ -134,6 +136,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "move clio unmapped bams if no errors are encountered" in {
+    MockIoUtil.resetMockState()
     MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     val config = BaseArgs(
       command = Some(MoveWgsUbam),
