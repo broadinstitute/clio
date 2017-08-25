@@ -27,8 +27,6 @@ object ClioClient extends App {
 
 class ClioClient(commandDispatch: CommandDispatch) {
 
-  val ioUtil: IoUtil = IoUtil
-
   def execute(args: Array[String])(implicit ec: ExecutionContext): Int = {
     val parser: BaseParser = new BaseParser
     val success: Boolean = parser.parse(args, BaseArgs()) match {

@@ -107,7 +107,9 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
         if (r.status.isSuccess()) {
           r
         } else {
-          throw new Exception("Error while upserting the WgsUbam")
+          throw new Exception(
+            s"Error while upserting the WgsUbam. Status code: ${r.status}"
+          )
       }
     )
   }

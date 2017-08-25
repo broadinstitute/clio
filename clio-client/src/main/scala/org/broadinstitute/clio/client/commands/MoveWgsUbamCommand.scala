@@ -31,6 +31,11 @@ object MoveWgsUbamCommand
     config: BaseArgs,
     ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
+    config.location.foreach {
+      case "GCP" => ()
+      case _ =>
+        throw new Exception("Only GCP unmapped bams are supported at this time")
+    }
     for {
       wgsUbam <- queryForWgsUbam(webClient, config) withErrorMsg
         """Could not query the WgsUbam. There may have been the incorrect number of WgsUbams returned.
