@@ -7,6 +7,7 @@ object MockIoUtil extends IoUtil {
   var filesInCloud: Seq[String] = Seq()
 
   override def copyGoogleObject(from: String, to: String): Int = {
+    if (from.startsWith("error://") || to.startsWith("error://")) return 1
     if (from equals to) return 1
     if (!filesInCloud.contains(from)) return 1
     putFileInCloud(to)
@@ -14,6 +15,7 @@ object MockIoUtil extends IoUtil {
   }
 
   override def deleteGoogleObject(path: String): Int = {
+    if (path.startsWith("error://")) return 1
     filesInCloud = filesInCloud.filterNot(_ equals path)
     0
   }

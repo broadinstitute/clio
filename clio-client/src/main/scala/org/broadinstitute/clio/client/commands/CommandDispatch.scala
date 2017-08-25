@@ -15,12 +15,11 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object CommandDispatch extends LazyLogging {
 
-  private def execute(command: CommandType,
-                      webClient: ClioWebClient,
-                      config: BaseArgs)(
-    implicit ec: ExecutionContext,
-    ioUtil: IoUtil
-  ): Future[HttpResponse] = {
+  private def execute(
+    command: CommandType,
+    webClient: ClioWebClient,
+    config: BaseArgs
+  )(implicit ec: ExecutionContext, ioUtil: IoUtil): Future[HttpResponse] = {
     command match {
       case AddWgsUbam   => AddWgsUbamCommand.execute(webClient, config)
       case QueryWgsUbam => QueryWgsUbamCommand.execute(webClient, config)

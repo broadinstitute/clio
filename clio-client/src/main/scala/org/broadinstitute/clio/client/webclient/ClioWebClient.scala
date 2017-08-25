@@ -11,7 +11,11 @@ import ClientAutoDerivation._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.Printer
-import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput}
+import org.broadinstitute.clio.transfer.model.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryInput
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -19,7 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   implicit system: ActorSystem
 ) extends FailFastCirceSupport
-with ModelAutoDerivation {
+    with ModelAutoDerivation {
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -89,7 +93,9 @@ with ModelAutoDerivation {
     )
   }
 
-  def unmarshal[A: FromEntityUnmarshaller](httpResponse: Future[HttpResponse]): Future[A] = {
+  def unmarshal[A: FromEntityUnmarshaller](
+    httpResponse: Future[HttpResponse]
+  ): Future[A] = {
     httpResponse.flatMap(Unmarshal(_).to[A])
   }
 
@@ -102,7 +108,7 @@ with ModelAutoDerivation {
           r
         } else {
           throw new Exception("Error while upserting the WgsUbam")
-        }
+      }
     )
   }
 }
