@@ -3,16 +3,13 @@ version: "2"
 services:
   app:
     image: broadinstitute/clio-server:{{env "DOCKER_TAG"}}
-    logging:
-      driver: "syslog"
-      options:
-        tag: "clio-server"
     env_file:
       - {{$app_dir}}/clio.env
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - {{$app_dir}}/{{env "CLIO_APP_CONF"}}:{{$conf_dir}}/{{env "CLIO_APP_CONF"}}:ro
       - {{$app_dir}}/{{env "CLIO_LOGBACK_CONF"}}:{{$conf_dir}}/{{env "CLIO_LOGBACK_CONF"}}:ro
+      - {{$app_dir}}/{{env "CLIO_SERVICE_ACCOUNT_JSON"}}:{{$conf_dir}}/{{env "CLIO_SERVICE_ACCOUNT_JSON"}}:ro
     restart: always
     links:
       - logger
@@ -22,10 +19,6 @@ services:
   proxy:
     image: broadinstitute/openidc-proxy:latest
     hostname: {{env "CLIO_HOST"}}
-    logging:
-      driver: "syslog"
-      options:
-        tag: "clio-proxy"
     links:
       - app:app
       - logger
