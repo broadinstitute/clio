@@ -87,7 +87,7 @@ abstract class EnvIntegrationSpec(env: String)
             s"Failed to decode service account JSON from Vault at $vaultPath",
             err
           )
-        }, json => json)
+        }, identity)
 
     val credential = serviceAccount.credentialForScopes(authScopes)
     credential.refreshAccessToken().getTokenValue
