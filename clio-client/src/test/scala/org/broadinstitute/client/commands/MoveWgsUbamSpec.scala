@@ -19,7 +19,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         libraryName = testLibName,
         location = testLocation,
         bearerToken = testBearer,
-        ubamPath = Some("error://not_a_valid_path")
+        ubamPath = Some("gs://not_a_valid_path")
       )
       succeedingDispatcher.dispatch(config)
     }
@@ -102,6 +102,36 @@ class MoveWgsUbamSpec extends BaseClientSpec {
       )
       new CommandDispatch(MockClioWebClient.failingToAddWgsUbam, MockIoUtil)
         .dispatch(config)
+    }
+  }
+
+  it should "throw and exception if given a non-GCP unmapped bam" in {
+    a[Exception] should be thrownBy {
+      val config = BaseArgs(
+        command = Some(MoveWgsUbam),
+        flowcell = testFlowcell,
+        lane = testLane,
+        libraryName = testLibName,
+        location = Some("OnPrem"),
+        bearerToken = testBearer,
+        ubamPath = testUbamCloudDestinationPath
+      )
+      succeedingDispatcher.dispatch(config)
+    }
+  }
+
+  it should "throw and exception if the destination path is not in GCP" in {
+    a[Exception] should be thrownBy {
+      val config = BaseArgs(
+        command = Some(MoveWgsUbam),
+        flowcell = testFlowcell,
+        lane = testLane,
+        libraryName = testLibName,
+        location = Some("OnPrem"),
+        bearerToken = testBearer,
+        ubamPath = Some("/this/is/a/local/path")
+      )
+      succeedingDispatcher.dispatch(config)
     }
   }
 

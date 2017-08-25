@@ -38,7 +38,7 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
   def checkResponse(
     responseFuture: Future[HttpResponse]
   )(implicit ec: ExecutionContext): Future[Boolean] = {
-    responseFuture.map(response => {
+    responseFuture.map { response =>
       val isSuccess = response.status.isSuccess()
       if (isSuccess) {
         logger.info(
@@ -53,6 +53,6 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
       }
       logger.info(response.toString)
       isSuccess
-    })
+    }
   }
 }

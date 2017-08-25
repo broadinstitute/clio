@@ -36,6 +36,10 @@ object MoveWgsUbamCommand
       case _ =>
         throw new Exception("Only GCP unmapped bams are supported at this time")
     }
+    config.ubamPath.foreach {
+      case loc if loc.startsWith("gs://") => ()
+      case _ => throw new Exception("The destination of the ubam must be a cloud path")
+    }
     for {
       wgsUbam <- queryForWgsUbam(webClient, config) withErrorMsg
         """Could not query the WgsUbam. There may have been the incorrect number of WgsUbams returned.
