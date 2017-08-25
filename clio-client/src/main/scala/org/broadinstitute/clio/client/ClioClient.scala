@@ -18,21 +18,23 @@ object ClioClient extends App {
     ClioClientConfig.ClioServer.clioServerPort,
     ClioClientConfig.ClioServer.clioServerUseHttps
   )
-  val client = new ClioClient(webClient)
+  val commandDispatch = new CommandDispatch(webClient, IoUtil)
+
+  val client = new ClioClient(commandDispatch)
 
   System.exit(client.execute(args))
 }
 
-class ClioClient(val webClient: ClioWebClient) {
+class ClioClient(commandDispatch: CommandDispatch) {
 
-  implicit val ioUtil: IoUtil = IoUtil
+  val ioUtil: IoUtil = IoUtil
 
   def execute(args: Array[String])(implicit ec: ExecutionContext): Int = {
     val parser: BaseParser = new BaseParser
     val success: Boolean = parser.parse(args, BaseArgs()) match {
       case Some(config) =>
         Await.result(
-          CommandDispatch.dispatch(webClient, config),
+          commandDispatch.dispatch(config),
           ClioClientConfig.responseTimeout
         )
       case None => false

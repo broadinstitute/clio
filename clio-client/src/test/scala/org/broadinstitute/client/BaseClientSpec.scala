@@ -3,7 +3,8 @@ package org.broadinstitute.client
 import org.broadinstitute.client.util.{MockIoUtil, TestData}
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.client.webclient.MockClioWebClient
+import org.broadinstitute.clio.client.commands.CommandDispatch
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
 abstract class BaseClientSpec
@@ -12,5 +13,8 @@ abstract class BaseClientSpec
     with TestData
     with Matchers {
 
-  implicit val ioUtil: IoUtil = MockIoUtil
+  val succeedingDispatcher =
+    new CommandDispatch(MockClioWebClient.returningOk, MockIoUtil)
+  val failingDispatcher =
+    new CommandDispatch(MockClioWebClient.returningInternalError, MockIoUtil)
 }

@@ -10,10 +10,9 @@ import org.broadinstitute.clio.util.model.Location
 import scala.concurrent.{ExecutionContext, Future}
 
 object QueryWgsUbamCommand extends Command {
-  def execute(
-    webClient: ClioWebClient,
-    config: BaseArgs
-  )(implicit ec: ExecutionContext, ioUtil: IoUtil): Future[HttpResponse] = {
+  def execute(webClient: ClioWebClient, config: BaseArgs, ioUtil: IoUtil)(
+    implicit ec: ExecutionContext
+  ): Future[HttpResponse] = {
     webClient.queryWgsUbam(
       bearerToken = config.bearerToken.getOrElse(""),
       TransferWgsUbamV1QueryInput(

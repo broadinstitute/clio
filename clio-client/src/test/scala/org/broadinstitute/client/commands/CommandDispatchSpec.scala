@@ -2,32 +2,27 @@ package org.broadinstitute.client.commands
 
 import org.broadinstitute.client.BaseClientSpec
 import org.broadinstitute.client.util.MockIoUtil
-import org.broadinstitute.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.client.commands.{CommandDispatch, Commands}
+import org.broadinstitute.clio.client.commands.Commands
 import org.broadinstitute.clio.client.parser.BaseArgs
 
 class CommandDispatchSpec extends BaseClientSpec {
   behavior of "CommandDispatch"
 
   it should "return false when we dispatch a command that doesn't exist" in {
-    CommandDispatch
-      .dispatch(MockClioWebClient.returningOk, BaseArgs(command = None))
+    succeedingDispatcher
+      .dispatch(BaseArgs(command = None))
       .map(_ should be(false))
   }
 
   it should "return true when we dispatch a valid queryWgsUbam command" in {
-    CommandDispatch
-      .dispatch(
-        MockClioWebClient.returningOk,
-        BaseArgs(command = Some(Commands.QueryWgsUbam))
-      )
+    succeedingDispatcher
+      .dispatch(BaseArgs(command = Some(Commands.QueryWgsUbam)))
       .map(_ should be(true))
   }
 
   it should "return true when we dispatch a valid addWgsUbam command" in {
-    CommandDispatch
+    succeedingDispatcher
       .dispatch(
-        MockClioWebClient.returningOk,
         BaseArgs(
           command = Some(Commands.AddWgsUbam),
           flowcell = testFlowcell,
@@ -44,9 +39,8 @@ class CommandDispatchSpec extends BaseClientSpec {
   it should "return true when we dispatch a valid moveWgsUbam command" in {
     MockIoUtil.deleteAllInCloud()
     MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
-    CommandDispatch
+    succeedingDispatcher
       .dispatch(
-        MockClioWebClient.returningOk,
         BaseArgs(
           command = Some(Commands.MoveWgsUbam),
           flowcell = testFlowcell,

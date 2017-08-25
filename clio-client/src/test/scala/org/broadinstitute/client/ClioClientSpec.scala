@@ -1,7 +1,10 @@
 package org.broadinstitute.client
 
+import org.broadinstitute.client.util.MockIoUtil
 import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.ClioClient
+import org.broadinstitute.clio.client.commands.CommandDispatch
+
 import scala.concurrent.ExecutionContext
 
 class ClioClientSpec extends BaseClientSpec {
@@ -11,7 +14,8 @@ class ClioClientSpec extends BaseClientSpec {
 
   val client: ClioClient = {
     val mockWebClient = MockClioWebClient.returningOk
-    new ClioClient(mockWebClient)
+    val commandDispatch = new CommandDispatch(mockWebClient, MockIoUtil)
+    new ClioClient(commandDispatch)
   }
 
   it should "exit 1 if given a bad command" in {

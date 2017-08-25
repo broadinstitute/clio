@@ -28,13 +28,14 @@ object MoveWgsUbamCommand
 
   override def execute(
     webClient: ClioWebClient,
-    config: BaseArgs
-  )(implicit ec: ExecutionContext, ioUtil: IoUtil): Future[HttpResponse] = {
+    config: BaseArgs,
+    ioUtil: IoUtil
+  )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     for {
       wgsUbam <- queryForWgsUbam(webClient, config) withErrorMsg
         """Could not query the WgsUbam. There may have been the incorrect number of WgsUbams returned.
           |No files have been moved""".stripMargin
-      _ <- copyGoogleObject(wgsUbam.ubamPath, config.ubamPath) withErrorMsg
+      _ <- copyGoogleObject(wgsUbam.ubamPath, config.ubamPath, ioUtil) withErrorMsg
         "An error occurred while moving the files in google cloud. No files have been moved"
       upsertUbam <- upsertUpdatedWgsUbam(webClient, config) withErrorMsg
         """An error occurred while upserting the WgsUbam. The state of clio is now inconsistent.
@@ -43,7 +44,7 @@ object MoveWgsUbamCommand
           |Then, try upserting (not moving) the unmapped bam with the correct path then deleting the old bam.
           |If the state of Clio cannot be fixed, please contact the Green Team at greenteam@broadinstitute.org
         """.stripMargin
-      _ <- deleteGoogleObject(wgsUbam.ubamPath) withErrorMsg
+      _ <- deleteGoogleObject(wgsUbam.ubamPath, ioUtil) withErrorMsg
         """The old bam was not able to be deleted. Clio has been updated to point to the new bam.
           | Please delete the old bam. If this cannot be done, contact Green Team at greenteam@broadinstitute.org
           | """.stripMargin
@@ -84,10 +85,9 @@ object MoveWgsUbamCommand
       })
   }
 
-  private def copyGoogleObject(
-    source: Option[String],
-    destination: Option[String]
-  )(implicit ioUtil: IoUtil): Future[Unit] = {
+  private def copyGoogleObject(source: Option[String],
+                               destination: Option[String],
+                               ioUtil: IoUtil): Future[Unit] = {
     ioUtil.copyGoogleObject(source.get, destination.get) match {
       case 0 => Future.successful(())
       case _ =>
@@ -95,9 +95,8 @@ object MoveWgsUbamCommand
     }
   }
 
-  private def deleteGoogleObject(
-    path: Option[String]
-  )(implicit ioUtil: IoUtil): Future[Unit] = {
+  private def deleteGoogleObject(path: Option[String],
+                                 ioUtil: IoUtil): Future[Unit] = {
     ioUtil.deleteGoogleObject(path.get) match {
       case 0 => Future.successful(())
       case _ =>

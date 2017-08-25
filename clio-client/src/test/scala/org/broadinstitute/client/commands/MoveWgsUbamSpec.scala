@@ -3,10 +3,8 @@ package org.broadinstitute.client.commands
 import org.broadinstitute.client.BaseClientSpec
 import org.broadinstitute.client.util.MockIoUtil
 import org.broadinstitute.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.client.commands.{
-  CommandDispatch,
-  MoveWgsUbamCommand
-}
+import org.broadinstitute.clio.client.commands.CommandDispatch
+import org.broadinstitute.clio.client.commands.Commands.MoveWgsUbam
 import org.broadinstitute.clio.client.parser.BaseArgs
 
 class MoveWgsUbamSpec extends BaseClientSpec {
@@ -15,6 +13,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   it should "throw an exception if the destination path scheme is invalid" in {
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
+        command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
         lane = testLane,
         libraryName = testLibName,
@@ -22,15 +21,14 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         bearerToken = testBearer,
         ubamPath = Some("error://not_a_valid_path")
       )
-      CommandDispatch.checkResponse(
-        MoveWgsUbamCommand.execute(MockClioWebClient.returningOk, config)
-      )
+      succeedingDispatcher.dispatch(config)
     }
   }
 
   it should "throw an exception if the unmapped bam file does not exist" in {
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
+        command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
         lane = testLane,
         libraryName = testLibName,
@@ -38,9 +36,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         bearerToken = testBearer,
         ubamPath = testUbamCloudSourcePath
       )
-      CommandDispatch.checkResponse(
-        MoveWgsUbamCommand.execute(MockClioWebClient.returningOk, config)
-      )
+      succeedingDispatcher.dispatch(config)
     }
   }
 
@@ -49,6 +45,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
+        command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
         lane = testLane,
         libraryName = testLibName,
@@ -56,15 +53,14 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         bearerToken = testBearer,
         ubamPath = testUbamCloudSourcePath
       )
-      CommandDispatch.checkResponse(
-        MoveWgsUbamCommand.execute(MockClioWebClient.returningOk, config)
-      )
+      succeedingDispatcher.dispatch(config)
     }
   }
 
   it should "throw an exception if Clio returns an error" in {
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
+        command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
         lane = testLane,
         libraryName = testLibName,
@@ -72,16 +68,14 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         bearerToken = testBearer,
         ubamPath = testUbamCloudSourcePath
       )
-      CommandDispatch.checkResponse(
-        MoveWgsUbamCommand
-          .execute(MockClioWebClient.returningInternalError, config)
-      )
+      succeedingDispatcher.dispatch(config)
     }
   }
 
   it should "throw an exception if Clio doesn't return a Ubam" in {
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
+        command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
         lane = testLane,
         libraryName = testLibName,
@@ -89,10 +83,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         bearerToken = testBearer,
         ubamPath = testUbamCloudSourcePath
       )
-      CommandDispatch.checkResponse(
-        MoveWgsUbamCommand
-          .execute(MockClioWebClient.returningNoWgsUbam, config)
-      )
+      succeedingDispatcher.dispatch(config)
     }
   }
 
@@ -101,6 +92,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
+        command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
         lane = testLane,
         libraryName = testLibName,
@@ -108,10 +100,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         bearerToken = testBearer,
         ubamPath = testUbamCloudDestinationPath
       )
-      CommandDispatch.checkResponse(
-        MoveWgsUbamCommand
-          .execute(MockClioWebClient.failingToAddWgsUbam, config)
-      )
+      new CommandDispatch(MockClioWebClient.failingToAddWgsUbam, MockIoUtil)
+        .dispatch(config)
     }
   }
 
@@ -119,6 +109,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     MockIoUtil.deleteAllInCloud()
     MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     val config = BaseArgs(
+      command = Some(MoveWgsUbam),
       flowcell = testFlowcell,
       lane = testLane,
       libraryName = testLibName,
@@ -126,11 +117,6 @@ class MoveWgsUbamSpec extends BaseClientSpec {
       bearerToken = testBearer,
       ubamPath = testUbamCloudDestinationPath
     )
-    CommandDispatch
-      .checkResponse(
-        MoveWgsUbamCommand
-          .execute(MockClioWebClient.returningOk, config)
-      )
-      .map(_ should be(true))
+    succeedingDispatcher.dispatch(config).map(_ should be(true))
   }
 }

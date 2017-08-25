@@ -27,8 +27,7 @@ object Commands extends Enum[CommandType] {
 }
 
 trait Command {
-  def execute(webClient: ClioWebClient, config: BaseArgs)(
+  def execute(webClient: ClioWebClient, config: BaseArgs, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    ioUtil: IoUtil
   ): Future[HttpResponse]
 }
