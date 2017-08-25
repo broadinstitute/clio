@@ -3,10 +3,10 @@ package org.broadinstitute.clio.client
 import org.broadinstitute.clio.client.commands.CommandDispatch
 import org.broadinstitute.clio.client.parser.{BaseArgs, BaseParser}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-
 import akka.actor.ActorSystem
+import org.broadinstitute.clio.client.util.IoUtil
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Await, ExecutionContext}
 
 object ClioClient extends App {
   implicit val system: ActorSystem = ActorSystem("clio-client")
@@ -18,18 +18,24 @@ object ClioClient extends App {
     ClioClientConfig.ClioServer.clioServerPort,
     ClioClientConfig.ClioServer.clioServerUseHttps
   )
-  val client = new ClioClient(webClient)
+  val commandDispatch = new CommandDispatch(webClient, IoUtil)
+
+  val client = new ClioClient(commandDispatch)
 
   System.exit(client.execute(args))
 }
 
-class ClioClient(val webClient: ClioWebClient) {
+class ClioClient(commandDispatch: CommandDispatch) {
 
   def execute(args: Array[String])(implicit ec: ExecutionContext): Int = {
     val parser: BaseParser = new BaseParser
     val success: Boolean = parser.parse(args, BaseArgs()) match {
-      case Some(config) => CommandDispatch.dispatch(webClient, config)
-      case None         => false
+      case Some(config) =>
+        Await.result(
+          commandDispatch.dispatch(config),
+          ClioClientConfig.responseTimeout
+        )
+      case None => false
     }
     if (success) 0 else 1
   }

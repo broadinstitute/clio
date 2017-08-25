@@ -15,10 +15,11 @@ import io.circe.parser._
 import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 
 object AddWgsUbamCommand extends Command {
-  def execute(webClient: ClioWebClient, config: BaseArgs)(
+
+  def execute(webClient: ClioWebClient, config: BaseArgs, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[HttpResponse] = {
-    val decodedOrError = parse(IoUtil.readMetadata(config.metadataLocation.get))
+    val decodedOrError = parse(ioUtil.readMetadata(config.metadataLocation.get))
       .flatMap(_.as[TransferWgsUbamV1Metadata])
 
     decodedOrError.fold(

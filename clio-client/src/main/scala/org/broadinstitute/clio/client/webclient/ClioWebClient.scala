@@ -8,18 +8,22 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.syntax._
 import ClientAutoDerivation._
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.Printer
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput
 }
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   implicit system: ActorSystem
-) {
+) extends FailFastCirceSupport
+    with ModelAutoDerivation {
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -86,6 +90,27 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
         method = HttpMethods.POST,
         entity = entity
       ).addHeader(Authorization(credentials = OAuth2BearerToken(bearerToken)))
+    )
+  }
+
+  def unmarshal[A: FromEntityUnmarshaller](
+    httpResponse: Future[HttpResponse]
+  ): Future[A] = {
+    httpResponse.flatMap(Unmarshal(_).to[A])
+  }
+
+  def ensureOkResponse(
+    httpResponse: Future[HttpResponse]
+  ): Future[HttpResponse] = {
+    httpResponse.map(
+      r =>
+        if (r.status.isSuccess()) {
+          r
+        } else {
+          throw new Exception(
+            s"Error while upserting the WgsUbam. Status code: ${r.status}"
+          )
+      }
     )
   }
 }

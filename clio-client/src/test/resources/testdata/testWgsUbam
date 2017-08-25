@@ -1,4 +1,8 @@
 {
+    "flowcellBarcode": "flowcellBarcode",
+    "libraryName": "libraryName",
+    "lane": 1,
+    "location": "GCP",
     "analysisType" : "analysisType",
     "baitIntervals" : "baitIntervals",
     "dataType" : "dataType",

@@ -1,11 +1,6 @@
 package org.broadinstitute.client.webclient
 
-import akka.http.scaladsl.model.{
-  HttpEntity,
-  HttpResponse,
-  StatusCode,
-  StatusCodes
-}
+import akka.http.scaladsl.model._
 import io.circe.Json
 import io.circe.parser.parse
 import org.broadinstitute.client.util.TestData
@@ -17,7 +12,6 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput
 }
-
 import akka.actor.ActorSystem
 
 import scala.concurrent.Future
@@ -26,11 +20,12 @@ class MockClioWebClient(status: StatusCode)(implicit system: ActorSystem)
     extends ClioWebClient("localhost", 8080, false)
     with TestData {
 
-  val version: String = """|{
-                           |  "version" : "0.0.1"
-                           |}""".stripMargin
+  val version: String =
+    """|{
+       |  "version" : "0.0.1"
+       |}""".stripMargin
 
-  val json: Json = parse(IoUtil.readMetadata(metadataFileLocation.get)) match {
+  val json: Json = parse(IoUtil.readMetadata(testWgsUbamLocation.get)) match {
     case Right(value) => value
     case Left(parsingFailure) =>
       throw parsingFailure
@@ -57,7 +52,10 @@ class MockClioWebClient(status: StatusCode)(implicit system: ActorSystem)
     Future.successful(
       HttpResponse(
         status = status,
-        entity = HttpEntity(json.pretty(implicitly))
+        entity = HttpEntity(
+          ContentTypes.`application/json`,
+          Json.arr(json).pretty(implicitly)
+        )
       )
     )
   }
@@ -69,4 +67,41 @@ object MockClioWebClient {
 
   def returningInternalError(implicit system: ActorSystem) =
     new MockClioWebClient(status = StatusCodes.InternalServerError)
+
+  def returningNoWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
+    class MockClioWebClientNoReturn
+        extends MockClioWebClient(status = StatusCodes.OK) {
+      override def queryWgsUbam(
+        bearerToken: String,
+        input: TransferWgsUbamV1QueryInput
+      ): Future[HttpResponse] = {
+        Future.successful(
+          HttpResponse(
+            status = StatusCodes.OK,
+            entity = HttpEntity(
+              ContentTypes.`application/json`,
+              Json.arr().pretty(implicitly)
+            )
+          )
+        )
+      }
+    }
+    new MockClioWebClientNoReturn
+  }
+
+  def failingToAddWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
+    class MockClioWebClientCantAdd
+        extends MockClioWebClient(status = StatusCodes.OK) {
+      override def addWgsUbam(
+        bearerToken: String,
+        input: TransferWgsUbamV1Key,
+        transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
+      ): Future[HttpResponse] = {
+        Future.successful(
+          HttpResponse(status = StatusCodes.InternalServerError)
+        )
+      }
+    }
+    new MockClioWebClientCantAdd
+  }
 }

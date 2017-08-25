@@ -11,6 +11,9 @@ trait TestData {
   val metadataFileLocation = Some(
     "clio-client/src/test/resources/testdata/metadata"
   )
+  val testWgsUbamLocation = Some(
+    "clio-client/src/test/resources/testdata/testWgsUbam"
+  )
   val badMetadataFileLocation =
     Some("clio-client/src/test/resources/testdata/badmetadata")
   val metadataPlusExtraFieldsFileLocation =
@@ -31,6 +34,11 @@ trait TestData {
   val testRunDateEnd: Option[OffsetDateTime] = Some(
     OffsetDateTime.now().plusHours(1)
   )
+
+  val testUbamCloudSourcePath: Option[String] =
+    Some("gs://testProject/testSample/ubamPath1.unmapped.bam")
+  val testUbamCloudDestinationPath: Option[String] =
+    Some("gs://testProject/testSample/ubamPath2.unmapped.bam")
 
   //missing lane
   val missingRequired = Array(
@@ -68,6 +76,22 @@ trait TestData {
     testLibName.get,
     "--location",
     testLocation.get
+  )
+
+  val goodMoveCommand = Array(
+    Commands.AddWgsUbam.toString,
+    "-m",
+    metadataFileLocation.get,
+    "-f",
+    testFlowcell.get,
+    "-l",
+    "1",
+    "-n",
+    testLibName.get,
+    "--location",
+    testLocation.get,
+    "--ubamPath",
+    testUbamCloudDestinationPath.get
   )
 
 }
