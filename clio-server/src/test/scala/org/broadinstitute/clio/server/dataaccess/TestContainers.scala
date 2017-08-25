@@ -1,9 +1,10 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import java.util.concurrent.TimeUnit
+import org.broadinstitute.clio.util.config.ClioConfig
 
-import com.typesafe.config.ConfigFactory
-import org.broadinstitute.clio.server.ClioConfig
+import java.util.concurrent.TimeUnit
+import com.typesafe.config.{Config, ConfigFactory}
+import net.ceedubs.ficus.Ficus._
 import org.testcontainers.images.RemoteDockerImage
 
 import scala.concurrent.duration._
@@ -20,9 +21,9 @@ object TestContainers {
   )
 
   object DockerImages {
-    private val docker = config.getConfig("docker")
+    private val docker = config.as[Config]("clio.docker")
     val elasticsearch: String = findRealImageName(
-      docker.getString("elasticsearch")
+      docker.as[String]("elasticsearch")
     )
   }
 

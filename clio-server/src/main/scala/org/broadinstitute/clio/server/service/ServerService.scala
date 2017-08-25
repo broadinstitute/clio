@@ -8,7 +8,6 @@ import org.broadinstitute.clio.server.dataaccess.{
   ServerStatusDAO
 }
 import org.broadinstitute.clio.status.model.ServerStatusInfo
-import org.broadinstitute.clio.util.auth.VaultUtil
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -23,12 +22,18 @@ class ServerService private (
     * Kick off a startup, and return immediately.
     */
   def beginStartup(): Unit = {
-    // Simple no-op for now, illustrating how to load credentials.
-    val environment = ClioServerConfig.Environment.value
-    val credentials = new VaultUtil(environment).credentialForScopes(Seq.empty)
-    logger.info(
-      s"Using service account with email ${credentials.getClientEmail}"
-    )
+    // Simple no-op for now, illustrating how credentials can be loaded.
+    val serviceAccount = ClioServerConfig.Persistence.serviceAccount
+    serviceAccount.fold {
+      logger.warn(
+        "No GCS service account given, using local filesystem for persistence"
+      )
+    } { account =>
+      val credential = account.credentialForScopes(Seq.empty)
+      logger.info(
+        s"Using service account with email ${credential.getClientEmail}"
+      )
+    }
 
     val startupAttempt = startup()
     startupAttempt.failed foreach { exception =>

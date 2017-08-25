@@ -20,10 +20,11 @@ object Dependencies {
   private val S_machStringVersion = "2.1.0"
   private val ScalaLoggingVersion = "3.7.1"
   private val ScalaTestVersion = "3.0.3"
-  private val Slf4jVersion = "1.7.25"
-  private val TestContainersScalaVersion = "0.7.0"
   private val ScoptVersion = "3.6.0"
   private val ShapelessVersion = "2.3.2"
+  private val Slf4jVersion = "1.7.25"
+  private val TestContainersScalaVersion = "0.7.0"
+  private val TypesafeConfigVersion = "1.3.1"
   private val VaultJavaDriverVersion = "3.0.0"
 
   /** Version of Scala to build Clio with. */
@@ -42,7 +43,6 @@ object Dependencies {
   /** Dependencies used in main code, and transitively by the test code. */
   val ServerMainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
-    "com.iheart" %% "ficus" % FicusVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
@@ -75,7 +75,6 @@ object Dependencies {
 
   val ClientMainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
-    "com.iheart" %% "ficus" % FicusVersion,
     "com.github.scopt" %% "scopt" % ScoptVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
@@ -97,9 +96,10 @@ object Dependencies {
 
   val UtilMainDependencies: Seq[ModuleID] = Seq(
     "com.beachape" %% "enumeratum" % EnumeratumVersion,
-    "com.bettercloud" % "vault-java-driver" % VaultJavaDriverVersion,
     "com.chuusai" %% "shapeless" % ShapelessVersion,
     "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
+    "com.iheart" %% "ficus" % FicusVersion,
+    "com.typesafe" % "config" % TypesafeConfigVersion,
     "net.s_mach" %% "string" % S_machStringVersion,
     "org.scala-lang" % "scala-reflect" % ScalaVersion
   )
@@ -136,6 +136,7 @@ object Dependencies {
 
   val IntegrationTestDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
+    "com.bettercloud" % "vault-java-driver" % VaultJavaDriverVersion,
     "com.dimafeng" %% "testcontainers-scala" % TestContainersScalaVersion,
     "com.lightbend.akka" %% "akka-stream-alpakka-file" % AlpakkaVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,

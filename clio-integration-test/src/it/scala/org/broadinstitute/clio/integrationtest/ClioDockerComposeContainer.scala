@@ -1,7 +1,5 @@
 package org.broadinstitute.clio.integrationtest
 
-import org.broadinstitute.clio.util.auth.VaultUtil
-
 import akka.http.scaladsl.model.Uri
 import com.dimafeng.testcontainers.DockerComposeContainer
 
@@ -36,13 +34,6 @@ class ClioDockerComposeContainer(composeFile: File,
    * from suite to suite so we set it here instead.
    */
   container.withEnv("ELASTICSEARCH_HOST", elasticsearchHostname)
-
-  /*
-   * Rather than mount the vault-token file (which could be in a variable location)
-   * into the container, we just read the file and inject its contents into the
-   * compose environment.
-   */
-  container.withEnv("VAULT_TOKEN", VaultUtil.token)
 
   /**
     * Get the exposed hostname for one of the exposed services running in the underlying container.
