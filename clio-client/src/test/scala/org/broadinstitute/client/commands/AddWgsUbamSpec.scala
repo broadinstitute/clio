@@ -39,18 +39,19 @@ class AddWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "return false if there was a server error" in {
-    val config = BaseArgs(
-      command = Some(AddWgsUbam),
-      flowcell = testFlowcell,
-      lane = testLane,
-      libraryName = testLibName,
-      location = testLocation,
-      metadataLocation = metadataFileLocation,
-      bearerToken = testBearer
-    )
-    failingDispatcher
-      .dispatch(config)
-      .map(_ should be(false))
+    recoverToSucceededIf[Exception] {
+      val config = BaseArgs(
+        command = Some(AddWgsUbam),
+        flowcell = testFlowcell,
+        lane = testLane,
+        libraryName = testLibName,
+        location = testLocation,
+        metadataLocation = metadataFileLocation,
+        bearerToken = testBearer
+      )
+      failingDispatcher
+        .dispatch(config)
+    }
   }
 
   it should "return true if the server response is OK" in {
@@ -65,7 +66,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
     )
     succeedingDispatcher
       .dispatch(config)
-      .map(_ should be(true))
+      .map(_ should be(()))
   }
 
 }

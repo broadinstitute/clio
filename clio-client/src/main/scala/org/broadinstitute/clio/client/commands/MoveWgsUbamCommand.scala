@@ -34,17 +34,21 @@ object MoveWgsUbamCommand
     config.location.foreach {
       case "GCP" => ()
       case _ =>
-        throw new Exception("Only GCP unmapped bams are supported at this time")
+        throw new NotImplementedError(
+          "Only GCP unmapped bams are supported at this time"
+        )
     }
     config.ubamPath.foreach {
       case loc if loc.startsWith("gs://") => ()
       case _ =>
-        throw new Exception("The destination of the ubam must be a cloud path")
+        throw new NotImplementedError(
+          "The destination of the ubam must be a cloud path"
+        )
     }
     for {
       wgsUbam <- queryForWgsUbam(webClient, config) withErrorMsg
-        """Could not query the WgsUbam. There may have been the incorrect number of WgsUbams returned.
-          |No files have been moved""".stripMargin
+        "Could not query the WgsUbam. There may have been the incorrect number of WgsUbams returned. " +
+          "No files have been moved"
       _ <- copyGoogleObject(wgsUbam.ubamPath, config.ubamPath, ioUtil) withErrorMsg
         "An error occurred while moving the files in google cloud. No files have been moved"
       upsertUbam <- upsertUpdatedWgsUbam(webClient, config) withErrorMsg

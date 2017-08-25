@@ -106,7 +106,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw and exception if given a non-GCP unmapped bam" in {
-    a[Exception] should be thrownBy {
+    a[NotImplementedError] should be thrownBy {
       val config = BaseArgs(
         command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
@@ -121,7 +121,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw and exception if the destination path is not in GCP" in {
-    a[Exception] should be thrownBy {
+    a[NotImplementedError] should be thrownBy {
       val config = BaseArgs(
         command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
@@ -147,6 +147,6 @@ class MoveWgsUbamSpec extends BaseClientSpec {
       bearerToken = testBearer,
       ubamPath = testUbamCloudDestinationPath
     )
-    succeedingDispatcher.dispatch(config).map(_ should be(true))
+    succeedingDispatcher.dispatch(config).map(_ should be(()))
   }
 }

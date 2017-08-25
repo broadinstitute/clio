@@ -9,15 +9,16 @@ class CommandDispatchSpec extends BaseClientSpec {
   behavior of "CommandDispatch"
 
   it should "return false when we dispatch a command that doesn't exist" in {
-    succeedingDispatcher
-      .dispatch(BaseArgs(command = None))
-      .map(_ should be(false))
+    recoverToSucceededIf[Exception] {
+      succeedingDispatcher
+        .dispatch(BaseArgs(command = None))
+    }
   }
 
   it should "return true when we dispatch a valid queryWgsUbam command" in {
     succeedingDispatcher
       .dispatch(BaseArgs(command = Some(Commands.QueryWgsUbam)))
-      .map(_ should be(true))
+      .map(_ should be(()))
   }
 
   it should "return true when we dispatch a valid addWgsUbam command" in {
@@ -33,7 +34,7 @@ class CommandDispatchSpec extends BaseClientSpec {
           metadataLocation = metadataFileLocation
         )
       )
-      .map(_ should be(true))
+      .map(_ should be(()))
   }
 
   it should "return true when we dispatch a valid moveWgsUbam command" in {
@@ -51,7 +52,7 @@ class CommandDispatchSpec extends BaseClientSpec {
           ubamPath = testUbamCloudDestinationPath
         )
       )
-      .map(_ should be(true))
+      .map(_ should be(()))
   }
 
 }

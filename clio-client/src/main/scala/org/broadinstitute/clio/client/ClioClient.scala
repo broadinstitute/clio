@@ -6,7 +6,8 @@ import org.broadinstitute.clio.client.webclient.ClioWebClient
 import akka.actor.ActorSystem
 import org.broadinstitute.clio.client.util.IoUtil
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 object ClioClient extends App {
   implicit val system: ActorSystem = ActorSystem("clio-client")
@@ -22,22 +23,24 @@ object ClioClient extends App {
 
   val client = new ClioClient(commandDispatch)
 
-  System.exit(client.execute(args))
+  client.execute(args) onComplete {
+    case Success(_) => System.exit(0)
+    case Failure(_) => System.exit(1)
+  }
 }
 
 class ClioClient(commandDispatch: CommandDispatch) {
 
-  def execute(args: Array[String])(implicit ec: ExecutionContext): Int = {
+  def execute(
+    args: Array[String]
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     val parser: BaseParser = new BaseParser
-    val success: Boolean = parser.parse(args, BaseArgs()) match {
+    parser.parse(args, BaseArgs()) match {
       case Some(config) =>
-        Await.result(
-          commandDispatch.dispatch(config),
-          ClioClientConfig.responseTimeout
-        )
-      case None => false
+        commandDispatch.dispatch(config)
+      case None =>
+        Future.failed(new Exception("Could not parse arguments"))
     }
-    if (success) 0 else 1
   }
 
 }

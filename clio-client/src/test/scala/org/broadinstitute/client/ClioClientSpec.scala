@@ -19,10 +19,12 @@ class ClioClientSpec extends BaseClientSpec {
   }
 
   it should "exit 1 if given a bad command" in {
-    client.execute(badCommand) should be(1)
+    recoverToSucceededIf[Exception] {
+      client.execute(badCommand)
+    }
   }
 
   it should "exit 0 if the command is run successfully" in {
-    client.execute(goodAddCommand) should be(0)
+    client.execute(goodAddCommand).map(_ should be(()))
   }
 }
