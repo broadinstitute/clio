@@ -10,6 +10,11 @@ import java.net.URI
   * Representation of service-account JSON produced by GCloud,
   * used for persisting Clio updates to cloud storage / for
   * communicating through Clio's OpenIDC proxy.
+  *
+  * NOTE: We include all the fields present in gcloud's service
+  * account JSON, even though we don't use all of them, because
+  * Circe will complain about leftover fields during decoding if
+  * we don't.
   */
 case class ServiceAccount(authProviderX509CertUrl: URI,
                           authUri: URI,
