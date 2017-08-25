@@ -10,7 +10,7 @@ import org.broadinstitute.clio.client.commands.{
 import org.broadinstitute.clio.client.parser.BaseArgs
 
 class AddWgsUbamSpec extends BaseClientSpec {
-  behavior of "AddReadGroupBam"
+  behavior of "AddWgsUBam"
 
   it should "throw a parsing failure if the metadata is not valid json" in {
     recoverToSucceededIf[ParsingFailure] {
