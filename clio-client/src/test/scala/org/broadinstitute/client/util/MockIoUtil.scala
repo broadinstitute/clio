@@ -25,5 +25,5 @@ object MockIoUtil extends IoUtil {
 
   def putFileInCloud(path: String) = filesInCloud = filesInCloud :+ path
 
-  def deleteAllInCloud() = filesInCloud = Seq()
+  def resetMockState() = filesInCloud = Seq()
 }

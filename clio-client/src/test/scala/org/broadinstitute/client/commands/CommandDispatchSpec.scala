@@ -37,7 +37,6 @@ class CommandDispatchSpec extends BaseClientSpec {
   }
 
   it should "return true when we dispatch a valid moveWgsUbam command" in {
-    MockIoUtil.deleteAllInCloud()
     MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     succeedingDispatcher
       .dispatch(
