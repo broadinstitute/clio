@@ -1,24 +1,15 @@
 package org.broadinstitute.client.webclient
 
-import akka.http.scaladsl.model.{
-  HttpEntity,
-  HttpResponse,
-  StatusCode,
-  StatusCodes
-}
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCode, StatusCodes}
 import io.circe.Json
 import io.circe.parser.parse
 import org.broadinstitute.client.util.TestData
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput
-}
-
+import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput}
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 import scala.concurrent.Future
 
@@ -43,17 +34,15 @@ class MockClioWebClient(status: StatusCode)(implicit system: ActorSystem)
   }
 
   override def addWgsUbam(
-    bearerToken: String,
     input: TransferWgsUbamV1Key,
     transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
-  ): Future[HttpResponse] = {
+  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     Future.successful(HttpResponse(status = status))
   }
 
   override def queryWgsUbam(
-    bearerToken: String,
     input: TransferWgsUbamV1QueryInput
-  ): Future[HttpResponse] = {
+  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
         status = status,

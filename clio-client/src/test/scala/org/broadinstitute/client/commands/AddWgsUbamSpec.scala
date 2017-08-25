@@ -15,7 +15,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
         AddWgsUbam(
           metadataLocation = badMetadataFileLocation,
           transferWgsUbamV1Key = testTransferV1Key),
-        testBearer,
+
       )
     }
   }
@@ -26,7 +26,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
         AddWgsUbam(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
           transferWgsUbamV1Key = testTransferV1Key
-        ),  testBearer)
+        ))
     }
   }
 
@@ -35,7 +35,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
       AddWgsUbam(
         metadataLocation = metadataFileLocation,
         transferWgsUbamV1Key = testTransferV1Key
-      ),testBearer) should be(false)
+      )) should be(false)
   }
 
   it should "return true if the server response is OK" in {
@@ -43,7 +43,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
       AddWgsUbam(
         metadataLocation = metadataFileLocation,
         transferWgsUbamV1Key = testTransferV1Key
-      ),testBearer) should be(true)
+      )) should be(true)
   }
 
 }

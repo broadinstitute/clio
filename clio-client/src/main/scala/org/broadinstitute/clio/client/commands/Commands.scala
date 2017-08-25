@@ -2,33 +2,39 @@ package org.broadinstitute.clio.client.commands
 
 import java.time.OffsetDateTime
 
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp.Recurse
 import caseapp.core.ArgParser
-import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1QueryInput}
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import enumeratum.{Enum, EnumEntry}
+import org.broadinstitute.clio.transfer.model.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1QueryInput
+}
 
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 object CustomArgParsers {
-  implicit def locationParser: ArgParser[Location] = {
-    ArgParser.instance[Location]("location") { location =>
-      if (Location.pathMatcher.contains(location)) {
-        Right(Location.pathMatcher(location))
-      } else {
-        Left(s"Unknown location type: $location")
-      }
-    }
-  }
-  implicit def documentStatusParser: ArgParser[DocumentStatus] = {
-    ArgParser.instance[DocumentStatus]("documentStatus") { documentStatus =>
-      val docStatusValue = DocumentStatus.namesToValuesMap.get(documentStatus)
+  implicit def enumEntryParser[T <: EnumEntry: Enum](
+    implicit c: ClassTag[T]
+  ): ArgParser[T] = {
+    ArgParser.instance[T]("entry") { entry =>
+      val value = implicitly[Enum[T]].withNameOption(entry)
       Either.cond(
-        docStatusValue.isDefined,
-        docStatusValue.get,
-        "Unknown document status."
+        value.isDefined,
+        value.get,
+        s"Unknown enum value $entry for type ${c.runtimeClass.getName} "
       )
     }
   }
+
+  implicit def oauthBearerTokenParser: ArgParser[OAuth2BearerToken] = {
+    ArgParser.instance[OAuth2BearerToken]("token") { token =>
+      //no need for left since this should never fail
+      Right(OAuth2BearerToken(token))
+    }
+  }
+
   implicit def offsetDateTimeParser: ArgParser[OffsetDateTime] = {
     ArgParser.instance[OffsetDateTime]("date") { offsetDateAndTime =>
       Try(OffsetDateTime.parse(offsetDateAndTime)) match {
@@ -39,16 +45,18 @@ object CustomArgParsers {
   }
 }
 
-final case class CommonOptions(bearerToken: String = "")
+final case class CommonOptions(
+  bearerToken: OAuth2BearerToken = OAuth2BearerToken("")
+)
 
 sealed trait CommandType
 
 final case class AddWgsUbam(metadataLocation: String,
                             @Recurse
                             transferWgsUbamV1Key: TransferWgsUbamV1Key)
-  extends CommandType
+    extends CommandType
 
 final case class QueryWgsUbam(
-                               @Recurse
-                               transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput,
-                             ) extends CommandType
+  @Recurse
+  transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput,
+) extends CommandType

@@ -10,16 +10,14 @@ class CommandDispatchSpec extends BaseClientSpec {
   it should "return true when we dispatch a valid queryWgsUbam command" in {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
-      goodQueryCommand,
-      testBearer
+      goodQueryCommand
     ) should be(true)
   }
 
   it should "return true when we dispatch a valid addWgsUbam command" in {
     CommandDispatch.dispatch(
       MockClioWebClient.returningOk,
-      goodAddCommand,
-      testBearer
+      goodAddCommand
     ) should be(true)
   }
 
