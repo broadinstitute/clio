@@ -73,11 +73,6 @@ object MoveWgsUbamCommand
         lane = config.lane,
         libraryName = config.libraryName,
         location = Option(Location.GCP),
-        lcSet = None,
-        project = None,
-        sampleAlias = None,
-        runDateEnd = None,
-        runDateStart = None,
         documentStatus = Option(DocumentStatus.Normal)
       )
     )
