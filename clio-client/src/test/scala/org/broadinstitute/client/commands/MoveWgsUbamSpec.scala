@@ -127,7 +127,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         flowcell = testFlowcell,
         lane = testLane,
         libraryName = testLibName,
-        location = Some("OnPrem"),
+        location = testLocation,
         bearerToken = testBearer,
         ubamPath = Some("/this/is/a/local/path")
       )
