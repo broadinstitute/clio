@@ -46,7 +46,6 @@ object CommandDispatch extends LazyLogging {
           s"Successfully completed command." +
             s" Response code: ${response.status}"
         )
-        logger.info(response.toString)
       } else {
         logger.error(
           s"Error executing command." +
