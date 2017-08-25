@@ -2,7 +2,7 @@ package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.HttpResponse
 import org.broadinstitute.clio.client.parser.BaseArgs
-import org.broadinstitute.clio.client.util.IoUtilTrait
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
@@ -17,7 +17,7 @@ import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 object AddWgsUbamCommand extends Command {
   def execute(webClient: ClioWebClient, config: BaseArgs)(
     implicit ec: ExecutionContext,
-    ioUtil: IoUtilTrait
+    ioUtil: IoUtil
   ): Future[HttpResponse] = {
     val decodedOrError = parse(ioUtil.readMetadata(config.metadataLocation.get))
       .flatMap(_.as[TransferWgsUbamV1Metadata])

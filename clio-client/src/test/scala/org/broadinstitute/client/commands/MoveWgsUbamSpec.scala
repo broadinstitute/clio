@@ -8,10 +8,8 @@ import org.broadinstitute.clio.client.commands.{
   MoveWgsUbamCommand
 }
 import org.broadinstitute.clio.client.parser.BaseArgs
-import org.broadinstitute.clio.client.util.IoUtilTrait
 
 class MoveWgsUbamSpec extends BaseClientSpec {
-  override implicit val ioUtil: IoUtilTrait = MockIoUtil
   behavior of "MoveWgsUbam"
 
   it should "throw an exception if the destination path scheme is invalid" in {

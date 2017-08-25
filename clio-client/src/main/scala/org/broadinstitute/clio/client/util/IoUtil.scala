@@ -6,7 +6,8 @@ import java.util.Comparator
 
 import scala.io.Source
 import scala.sys.process.Process
-trait IoUtilTrait {
+
+trait IoUtil {
   val googleCloudStorageScheme = "gs://"
 
   def isGoogleObject(location: String): Boolean =
@@ -53,7 +54,7 @@ trait IoUtilTrait {
   }
 
 }
-object IoUtil extends IoUtilTrait {}
+object IoUtil extends IoUtil {}
 
 //we should consider moving this to api usage instead of gsutil
 class GsUtil(stateDir: Option[Path]) {

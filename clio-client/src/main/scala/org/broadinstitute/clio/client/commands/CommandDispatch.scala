@@ -8,7 +8,7 @@ import org.broadinstitute.clio.client.commands.Commands.{
   QueryWgsUbam
 }
 import org.broadinstitute.clio.client.parser.BaseArgs
-import org.broadinstitute.clio.client.util.IoUtilTrait
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -19,7 +19,7 @@ object CommandDispatch extends LazyLogging {
                       webClient: ClioWebClient,
                       config: BaseArgs)(
     implicit ec: ExecutionContext,
-    ioUtil: IoUtilTrait
+    ioUtil: IoUtil
   ): Future[HttpResponse] = {
     command match {
       case AddWgsUbam   => AddWgsUbamCommand.execute(webClient, config)
@@ -31,7 +31,7 @@ object CommandDispatch extends LazyLogging {
   def dispatch(
     webClient: ClioWebClient,
     config: BaseArgs
-  )(implicit ec: ExecutionContext, ioUtil: IoUtilTrait): Future[Boolean] = {
+  )(implicit ec: ExecutionContext, ioUtil: IoUtil): Future[Boolean] = {
     config.command
       .map(command => execute(command, webClient, config))
       .fold(Future(false))(checkResponse)
@@ -53,8 +53,8 @@ object CommandDispatch extends LazyLogging {
           s"Error executing command." +
             s" Response code: ${response.status}"
         )
-        logger.info(response.toString)
       }
+      logger.info(response.toString)
       isSuccess
     })
   }

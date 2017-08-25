@@ -2,7 +2,7 @@ package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.HttpResponse
 import org.broadinstitute.clio.client.parser.BaseArgs
-import org.broadinstitute.clio.client.util.IoUtilTrait
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1QueryInput
 import org.broadinstitute.clio.util.model.Location
@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object QueryWgsUbamCommand extends Command {
   def execute(webClient: ClioWebClient, config: BaseArgs)(
     implicit ec: ExecutionContext,
-    ioUtil: IoUtilTrait
+    ioUtil: IoUtil
   ): Future[HttpResponse] = {
     webClient.queryWgsUbam(
       bearerToken = config.bearerToken.getOrElse(""),

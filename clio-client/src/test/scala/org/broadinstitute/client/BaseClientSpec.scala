@@ -1,9 +1,9 @@
 package org.broadinstitute.client
 
-import org.broadinstitute.client.util.TestData
+import org.broadinstitute.client.util.{MockIoUtil, TestData}
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import org.broadinstitute.clio.client.util.{IoUtil, IoUtilTrait}
+import org.broadinstitute.clio.client.util.IoUtil
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
 abstract class BaseClientSpec
@@ -12,13 +12,5 @@ abstract class BaseClientSpec
     with TestData
     with Matchers {
 
-  /*
-   * Since our Commands call Await.result, we can't use the default
-   * execution context provided by Scalatest's async test suite, otherwise
-   * the blocking will prevent our tests from ever completing.
-   *
-   * See the "Asynchronous execution model" section of
-   * http://www.scalatest.org/user_guide/async_testing for more info.
-   */
-  implicit val ioUtil: IoUtilTrait = IoUtil
+  implicit val ioUtil: IoUtil = MockIoUtil
 }

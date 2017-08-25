@@ -8,20 +8,18 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.syntax._
 import ClientAutoDerivation._
-import akka.http.scaladsl.unmarshalling.Unmarshal
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import io.circe.{Json, Printer}
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput
-}
+import io.circe.Printer
+import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   implicit system: ActorSystem
-) extends FailFastCirceSupport {
+) extends FailFastCirceSupport
+with ModelAutoDerivation {
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -91,20 +89,20 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
     )
   }
 
-  def getResponseAsJson(httpResponse: Future[HttpResponse]): Future[Json] = {
-    httpResponse.flatMap(Unmarshal(_).to[Json])
+  def unmarshal[A: FromEntityUnmarshaller](httpResponse: Future[HttpResponse]): Future[A] = {
+    httpResponse.flatMap(Unmarshal(_).to[A])
   }
 
   def ensureOkResponse(
     httpResponse: Future[HttpResponse]
   ): Future[HttpResponse] = {
-    httpResponse.flatMap(
+    httpResponse.map(
       r =>
-        r.status match {
-          case StatusCodes.OK => Future.successful(r)
-          case _ =>
-            Future.failed(new Exception("Error while upserting the WgsUbam"))
-      }
+        if (r.status.isSuccess()) {
+          r
+        } else {
+          throw new Exception("Error while upserting the WgsUbam")
+        }
     )
   }
 }

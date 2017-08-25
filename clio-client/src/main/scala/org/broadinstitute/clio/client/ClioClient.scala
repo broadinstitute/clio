@@ -4,7 +4,7 @@ import org.broadinstitute.clio.client.commands.CommandDispatch
 import org.broadinstitute.clio.client.parser.{BaseArgs, BaseParser}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import akka.actor.ActorSystem
-import org.broadinstitute.clio.client.util.{IoUtil, IoUtilTrait}
+import org.broadinstitute.clio.client.util.IoUtil
 
 import scala.concurrent.{Await, ExecutionContext}
 
@@ -25,7 +25,7 @@ object ClioClient extends App {
 
 class ClioClient(val webClient: ClioWebClient) {
 
-  implicit val ioUtil: IoUtilTrait = IoUtil
+  implicit val ioUtil: IoUtil = IoUtil
 
   def execute(args: Array[String])(implicit ec: ExecutionContext): Int = {
     val parser: BaseParser = new BaseParser
