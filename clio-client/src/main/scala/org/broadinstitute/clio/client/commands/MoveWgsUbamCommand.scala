@@ -10,7 +10,7 @@ import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgs
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.broadinstitute.clio.client.util.FutureWithErrorMessage.FutureErrorMessage
+import org.broadinstitute.clio.client.util.FutureWithErrorMessage.FutureWithErrorMessage
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 object MoveWgsUbamCommand extends Command with LazyLogging with FailFastCirceSupport with ModelAutoDerivation {

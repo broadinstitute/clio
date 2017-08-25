@@ -6,7 +6,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 object FutureWithErrorMessage {
-  implicit class FutureErrorMessage[A](future: Future[A]) {
+  implicit class FutureWithErrorMessage[A](future: Future[A]) {
     def withErrorMsg(message: String)(implicit ec: ExecutionContext,
                                       logger: Logger): Future[A] = {
       future andThen {
