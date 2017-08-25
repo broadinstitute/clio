@@ -38,7 +38,8 @@ object MoveWgsUbamCommand
     }
     config.ubamPath.foreach {
       case loc if loc.startsWith("gs://") => ()
-      case _ => throw new Exception("The destination of the ubam must be a cloud path")
+      case _ =>
+        throw new Exception("The destination of the ubam must be a cloud path")
     }
     for {
       wgsUbam <- queryForWgsUbam(webClient, config) withErrorMsg
