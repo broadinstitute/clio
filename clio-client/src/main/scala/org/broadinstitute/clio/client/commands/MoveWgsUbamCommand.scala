@@ -89,6 +89,7 @@ object MoveWgsUbamCommand
           throw new Exception()
         case s if s == 0 =>
           logger.error(s"No WgsUbams were found for Key(${prettyKey(config)})")
+          logger.error("You can add this WgsUbam using the AddWgsUbam command in the Clio client.")
           throw new Exception()
       }
     }
