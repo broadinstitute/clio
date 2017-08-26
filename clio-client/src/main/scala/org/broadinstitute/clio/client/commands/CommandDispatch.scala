@@ -3,9 +3,9 @@ package org.broadinstitute.clio.client.commands
 import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.commands.Commands.{
-AddWgsUbam,
-MoveWgsUbam,
-QueryWgsUbam
+  AddWgsUbam,
+  MoveWgsUbam,
+  QueryWgsUbam
 }
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
@@ -15,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
-  extends LazyLogging {
+    extends LazyLogging {
 
   private def execute(command: CommandType, config: BaseArgs)(
     implicit ec: ExecutionContext
@@ -31,12 +31,14 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
   def dispatch(config: BaseArgs)(implicit ec: ExecutionContext): Future[Unit] = {
     config.command
       .map(command => execute(command, config))
-      .fold(Future.failed[Unit]
-        (new Exception("The config command was empty")))(checkResponse)
+      .fold(Future.failed[Unit](new Exception("The config command was empty")))(
+        checkResponse
+      )
   }
 
-  def checkResponse(responseFuture: Future[HttpResponse])
-                   (implicit ec: ExecutionContext): Future[Unit] = {
+  def checkResponse(
+    responseFuture: Future[HttpResponse]
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     responseFuture.transformWith {
       case Success(response) =>
         if (response.status.isSuccess()) {

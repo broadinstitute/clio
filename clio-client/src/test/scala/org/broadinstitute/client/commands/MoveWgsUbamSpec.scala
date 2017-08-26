@@ -1,5 +1,6 @@
 package org.broadinstitute.client.commands
 
+import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.client.BaseClientSpec
 import org.broadinstitute.client.util.MockIoUtil
 import org.broadinstitute.client.webclient.MockClioWebClient
@@ -106,7 +107,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw and exception if given a non-GCP unmapped bam" in {
-    a[NotImplementedError] should be thrownBy {
+    recoverToSucceededIf[Exception] {
       val config = BaseArgs(
         command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
@@ -121,7 +122,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw and exception if the destination path is not in GCP" in {
-    a[NotImplementedError] should be thrownBy {
+    recoverToSucceededIf[Exception] {
       val config = BaseArgs(
         command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
@@ -147,6 +148,11 @@ class MoveWgsUbamSpec extends BaseClientSpec {
       bearerToken = testBearer,
       ubamPath = testUbamCloudDestinationPath
     )
-    succeedingDispatcher.dispatch(config).map(_ should be(()))
+
+    val dispatcher = new CommandDispatch(
+      new MockClioWebClient(StatusCodes.OK, snakeCaseMetadataFileLocation.get),
+      MockIoUtil
+    )
+    dispatcher.dispatch(config).map(_ should be(()))
   }
 }

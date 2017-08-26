@@ -11,7 +11,9 @@ object FutureWithErrorMessage {
                                       logger: Logger): Future[A] = {
       future andThen {
         case Success(_) => ()
-        case Failure(_) =>
+        case Failure(ex) =>
+          if (Option(ex.getMessage).isDefined)
+            logger.error(ex.getMessage)
           logger.error(message)
       }
     }
