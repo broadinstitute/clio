@@ -1,14 +1,13 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import org.broadinstitute.clio.util.generic.FieldMapper
-
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import enumeratum.EnumEntry
 
 import scala.reflect.runtime.universe.Type
-
 import java.time.OffsetDateTime
+import java.util.UUID
 
 /**
   * Builds an ElasticsearchIndex using shapeless and reflection.
@@ -54,6 +53,7 @@ object AutoElasticsearchIndex {
       case tpe if tpe =:= typeOf[Option[Double]]    => doubleField(nameSnake)
       case tpe if tpe =:= typeOf[Option[String]]    => keywordField(nameSnake)
       case tpe if tpe <:< typeOf[Option[EnumEntry]] => keywordField(nameSnake)
+      case tpe if tpe =:= typeOf[Option[UUID]]      => keywordField(nameSnake)
       case tpe if tpe =:= typeOf[Option[OffsetDateTime]] =>
         dateField(nameSnake)
       case _ =>

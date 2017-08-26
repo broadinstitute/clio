@@ -10,11 +10,12 @@ import org.broadinstitute.clio.transfer.model.{
 }
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
-
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import com.fasterxml.uuid.{EthernetAddress, Generators}
+import com.fasterxml.uuid.impl.{TimeBasedGenerator, UUIDUtil}
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 
@@ -85,18 +86,71 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
       it should s"handle upserts and queries for wgs-ubam location $location" in {
         for {
-          _ <- clioWebClient
+          upsertResponse <- clioWebClient
             .addWgsUbam(bearerToken, upsertKey, upsertData)
-            .map(_.status should be(StatusCodes.OK))
+          returnedClioId <- Unmarshal(upsertResponse).to[String]
           queryResponse <- clioWebClient
             .queryWgsUbam(bearerToken, queryData)
           outputs <- Unmarshal(queryResponse)
             .to[Seq[TransferWgsUbamV1QueryOutput]]
         } yield {
+          upsertResponse.status should be(StatusCodes.OK)
           outputs should have length 1
-          outputs.head should be(expected)
+          outputs.head should be(
+            expected.copy(clioId = Some(UUIDUtil.uuid(returnedClioId)))
+          )
         }
       }
+    }
+  }
+
+  it should "assign different clioIds to different WgsUbam upserts" in {
+    val upsertKey = TransferWgsUbamV1Key(
+      flowcellBarcode = "testClioIdBarcode",
+      lane = 2,
+      libraryName = s"library$randomId",
+      location = Location.GCP,
+    )
+    val upsertData = TransferWgsUbamV1Metadata(project = Some("testProject1"))
+
+    for {
+      clioId1 <- clioWebClient
+        .addWgsUbam(bearerToken, upsertKey, upsertData)
+        .flatMap(Unmarshal(_).to[String])
+      clioId2 <- clioWebClient
+        .addWgsUbam(
+          bearerToken,
+          upsertKey,
+          upsertData.copy(project = Some("testProject2"))
+        )
+        .flatMap(Unmarshal(_).to[String])
+    } yield {
+      clioId1 should not equal clioId2
+    }
+  }
+
+  it should "decode clioIds and supply a new one on upserts" in {
+    val generator: TimeBasedGenerator =
+      Generators.timeBasedGenerator(EthernetAddress.fromInterface())
+    val oldClioId = generator.generate()
+
+    val upsertKey = TransferWgsUbamV1Key(
+      flowcellBarcode = "testClioIdBarcode",
+      lane = 2,
+      libraryName = s"library$randomId",
+      location = Location.GCP,
+    )
+    val upsertData = TransferWgsUbamV1Metadata(clioId = Some(oldClioId))
+
+    for {
+      response <- clioWebClient
+        .addWgsUbam(bearerToken, upsertKey, upsertData)
+      newClioId <- Unmarshal(response).to[String]
+    } yield {
+      response.status should be(StatusCodes.OK)
+      val newUuid = UUIDUtil.uuid(newClioId)
+      newUuid should not equal oldClioId
+      newUuid.compareTo(oldClioId) should be(1)
     }
   }
 

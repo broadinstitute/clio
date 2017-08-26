@@ -20,6 +20,7 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers {
   it should "fields for indexDocument" in {
     val index = ElasticsearchIndex.indexDocument[DocumentMock]
     index.fields should contain theSameElementsInOrderAs Seq(
+      keywordField("mock_clio_id"),
       dateField("mock_field_date"),
       doubleField("mock_field_double"),
       intField("mock_field_int"),

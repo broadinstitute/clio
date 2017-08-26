@@ -1,15 +1,16 @@
 package org.broadinstitute.clio.server.model
 
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
-
 import java.time.OffsetDateTime
+import java.util.UUID
 
 case class ModelWgsUbamKey(flowcellBarcode: String,
                            lane: Int,
                            libraryName: String,
                            location: Location)
 
-case class ModelWgsUbamMetadata(analysisType: Option[String],
+case class ModelWgsUbamMetadata(clioId: Option[UUID],
+                                analysisType: Option[String],
                                 baitIntervals: Option[String],
                                 dataType: Option[String],
                                 individualAlias: Option[String],
@@ -58,6 +59,7 @@ case class ModelWgsUbamQueryOutput(flowcellBarcode: String,
                                    lane: Int,
                                    libraryName: String,
                                    location: Location,
+                                   clioId: Option[UUID],
                                    analysisType: Option[String],
                                    baitIntervals: Option[String],
                                    dataType: Option[String],
