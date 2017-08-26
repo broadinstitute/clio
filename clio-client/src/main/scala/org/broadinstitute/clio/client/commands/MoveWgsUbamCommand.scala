@@ -7,22 +7,19 @@ import io.circe.Json
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput,
-}
+import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.broadinstitute.clio.client.util.FutureWithErrorMessage.FutureWithErrorMessage
+import org.broadinstitute.clio.client.util.FutureWithErrorMessage
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 object MoveWgsUbamCommand
     extends Command
     with LazyLogging
     with FailFastCirceSupport
-    with ModelAutoDerivation {
+    with ModelAutoDerivation
+    with FutureWithErrorMessage {
 
   implicit val implicitLogger: Logger = logger
 

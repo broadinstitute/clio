@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.Logger
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-object FutureWithErrorMessage {
+trait FutureWithErrorMessage {
   implicit class FutureWithErrorMessage[A](future: Future[A]) {
     def withErrorMsg(message: String)(implicit ec: ExecutionContext,
                                       logger: Logger): Future[A] = {
