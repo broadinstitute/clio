@@ -8,10 +8,10 @@ import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
-TransferWgsUbamV1Key,
-TransferWgsUbamV1Metadata,
-TransferWgsUbamV1QueryInput,
-TransferWgsUbamV1QueryOutput
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryInput,
+  TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -20,7 +20,7 @@ import org.broadinstitute.clio.client.util.FutureWithErrorMessage
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 object MoveWgsUbamCommand
-  extends Command
+    extends Command
     with LazyLogging
     with FailFastCirceSupport
     with ModelAutoDerivation
@@ -29,10 +29,10 @@ object MoveWgsUbamCommand
   implicit val implicitLogger: Logger = logger
 
   override def execute(
-                        webClient: ClioWebClient,
-                        config: BaseArgs,
-                        ioUtil: IoUtil
-                      )(implicit ec: ExecutionContext): Future[HttpResponse] = {
+    webClient: ClioWebClient,
+    config: BaseArgs,
+    ioUtil: IoUtil
+  )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     for {
       _ <- verifyPath(webClient, config) withErrorMsg
         "Clio client can only handle cloud operations right now."
@@ -85,8 +85,8 @@ object MoveWgsUbamCommand
     implicit val ec: ExecutionContext = webClient.executionContext
 
     def ensureOnlyOne(
-                       wgsUbams: Seq[TransferWgsUbamV1QueryOutput]
-                     ): TransferWgsUbamV1QueryOutput = {
+      wgsUbams: Seq[TransferWgsUbamV1QueryOutput]
+    ): TransferWgsUbamV1QueryOutput = {
       wgsUbams.size match {
         case 1 =>
           wgsUbams.head
@@ -132,10 +132,8 @@ object MoveWgsUbamCommand
       case 0 => Future.successful(())
       case _ =>
         Future.failed(
-          new Exception(s"Copy files in the cloud failed from '${
-            source
-              .getOrElse("")
-          }' to '${destination.getOrElse("")}'")
+          new Exception(s"Copy files in the cloud failed from '${source
+            .getOrElse("")}' to '${destination.getOrElse("")}'")
         )
     }
   }
@@ -172,10 +170,8 @@ object MoveWgsUbamCommand
   }
 
   private def prettyKey(config: BaseArgs): String = {
-    s"FlowcellBarcode: ${config.flowcell.getOrElse("")}, LibraryName: ${
-      config.libraryName
-        .getOrElse("")
-    }, " +
+    s"FlowcellBarcode: ${config.flowcell.getOrElse("")}, LibraryName: ${config.libraryName
+      .getOrElse("")}, " +
       s"Lane: ${config.lane.getOrElse("")}, Location: ${config.location.getOrElse("")}"
   }
 
