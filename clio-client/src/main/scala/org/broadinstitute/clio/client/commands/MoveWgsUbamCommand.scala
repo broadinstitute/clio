@@ -79,10 +79,11 @@ object MoveWgsUbamCommand
       wgsUbams.asArray.getOrElse(throw new Exception()).size match {
         case 1 =>
           wgsUbams.asArray.get.head
-        case s if s > 1 =>
-          throw new Exception(s"$s WgsUbams were returned for Key(${prettyKey(config)}), expected 1. You can see what was returned by running the QueryWgsUbam command.")
-        case _ =>
+        case 0 =>
           throw new Exception(s"No WgsUbams were found for Key(${prettyKey(config)}). You can add this WgsUbam using the AddWgsUbam command in the Clio client.")
+        case s =>
+          throw new Exception(s"$s WgsUbams were returned for Key(${prettyKey(config)}), expected 1. You can see what was returned by running the QueryWgsUbam command in the Clio client.")
+
       }
     }
 
