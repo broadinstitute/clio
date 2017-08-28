@@ -101,10 +101,6 @@ object MoveWgsUbamCommand
       }
     }
 
-    // Using JSON instead of TransferWgsUbamV1QueryOutput here on purpose.
-    // Currently, the clio server spits json out in snake_case.
-    // Clio client expects it json keys to be in camelCase.
-    // This should be changed to use the transfer model once the issue is fixed
     webClient
       .queryWgsUbam(
         config.bearerToken.getOrElse(""),
