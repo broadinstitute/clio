@@ -2,7 +2,7 @@ package org.broadinstitute.client.util
 
 import org.broadinstitute.clio.client.util.IoUtil
 
-object MockIoUtil extends IoUtil {
+class MockIoUtil extends IoUtil {
 
   var filesInCloud: Seq[String] = Seq()
 

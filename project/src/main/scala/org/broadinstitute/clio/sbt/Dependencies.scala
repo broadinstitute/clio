@@ -85,6 +85,7 @@ object Dependencies {
     "io.circe" %% "circe-parser" % CirceVersion,
     "org.slf4j" % "slf4j-api" % Slf4jVersion
   )
+
   private val ClientTestDependencies: Seq[ModuleID] = Seq(
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "org.scalatest" %% "scalatest" % ScalaTestVersion

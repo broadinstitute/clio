@@ -25,4 +25,6 @@ object ClioClientConfig {
     val clioServerPort: Int = clioServer.as[Int]("port")
     val clioServerUseHttps: Boolean = clioServer.as[Boolean]("use-https")
   }
+
+  val greenTeamEmail: String = config.as[String]("greenteam.email")
 }

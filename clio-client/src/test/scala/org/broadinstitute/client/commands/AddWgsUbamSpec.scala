@@ -1,5 +1,6 @@
 package org.broadinstitute.client.commands
 
+import akka.http.scaladsl.model.StatusCodes
 import io.circe.{DecodingFailure, ParsingFailure}
 import org.broadinstitute.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.Commands.AddWgsUbam
@@ -38,22 +39,23 @@ class AddWgsUbamSpec extends BaseClientSpec {
     }
   }
 
-  it should "return false if there was a server error" in {
-    val config = BaseArgs(
-      command = Some(AddWgsUbam),
-      flowcell = testFlowcell,
-      lane = testLane,
-      libraryName = testLibName,
-      location = testLocation,
-      metadataLocation = metadataFileLocation,
-      bearerToken = testBearer
-    )
-    failingDispatcher
-      .dispatch(config)
-      .map(_ should be(false))
+  it should "return a failing HttpResponse if there was a server error" in {
+    recoverToSucceededIf[Exception] {
+      val config = BaseArgs(
+        command = Some(AddWgsUbam),
+        flowcell = testFlowcell,
+        lane = testLane,
+        libraryName = testLibName,
+        location = testLocation,
+        metadataLocation = metadataFileLocation,
+        bearerToken = testBearer
+      )
+      failingDispatcher
+        .dispatch(config)
+    }
   }
 
-  it should "return true if the server response is OK" in {
+  it should "return successful HttpResponse if the server response is OK" in {
     val config = BaseArgs(
       command = Some(AddWgsUbam),
       flowcell = testFlowcell,
@@ -65,7 +67,8 @@ class AddWgsUbamSpec extends BaseClientSpec {
     )
     succeedingDispatcher
       .dispatch(config)
-      .map(_ should be(true))
+      .map(_.status should be(StatusCodes.OK))
+
   }
 
 }

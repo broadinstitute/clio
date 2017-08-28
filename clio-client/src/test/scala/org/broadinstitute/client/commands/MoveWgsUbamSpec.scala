@@ -1,5 +1,6 @@
 package org.broadinstitute.client.commands
 
+import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.client.BaseClientSpec
 import org.broadinstitute.client.util.MockIoUtil
 import org.broadinstitute.client.webclient.MockClioWebClient
@@ -8,6 +9,7 @@ import org.broadinstitute.clio.client.commands.Commands.MoveWgsUbam
 import org.broadinstitute.clio.client.parser.BaseArgs
 
 class MoveWgsUbamSpec extends BaseClientSpec {
+
   behavior of "MoveWgsUbam"
 
   it should "throw an exception if the destination path scheme is invalid" in {
@@ -41,8 +43,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw an exception if the source and destination paths are the same" in {
-    MockIoUtil.resetMockState()
-    MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
         command = Some(MoveWgsUbam),
@@ -53,7 +55,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         bearerToken = testBearer,
         ubamPath = testUbamCloudSourcePath
       )
-      succeedingDispatcher.dispatch(config)
+      succeedingReturningDispatcher(mockIoUtil).dispatch(config)
     }
   }
 
@@ -88,8 +90,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw an exception if Clio can't upsert the new WgsUbam" in {
-    MockIoUtil.resetMockState()
-    MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
         command = Some(MoveWgsUbam),
@@ -100,13 +102,13 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         bearerToken = testBearer,
         ubamPath = testUbamCloudDestinationPath
       )
-      new CommandDispatch(MockClioWebClient.failingToAddWgsUbam, MockIoUtil)
+      new CommandDispatch(MockClioWebClient.failingToAddWgsUbam, mockIoUtil)
         .dispatch(config)
     }
   }
 
   it should "throw and exception if given a non-GCP unmapped bam" in {
-    a[Exception] should be thrownBy {
+    recoverToSucceededIf[Exception] {
       val config = BaseArgs(
         command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
@@ -121,7 +123,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw and exception if the destination path is not in GCP" in {
-    a[Exception] should be thrownBy {
+    recoverToSucceededIf[Exception] {
       val config = BaseArgs(
         command = Some(MoveWgsUbam),
         flowcell = testFlowcell,
@@ -136,8 +138,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "move clio unmapped bams if no errors are encountered" in {
-    MockIoUtil.resetMockState()
-    MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     val config = BaseArgs(
       command = Some(MoveWgsUbam),
       flowcell = testFlowcell,
@@ -147,6 +149,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
       bearerToken = testBearer,
       ubamPath = testUbamCloudDestinationPath
     )
-    succeedingDispatcher.dispatch(config).map(_ should be(true))
+    succeedingReturningDispatcher(mockIoUtil)
+      .dispatch(config)
+      .map(_.status should be(StatusCodes.OK))
   }
 }

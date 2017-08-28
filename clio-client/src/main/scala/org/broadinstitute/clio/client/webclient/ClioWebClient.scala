@@ -43,6 +43,7 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
       .via(connectionFlow)
       .runWith(Sink.head)
   }
+
   def getClioServerVersion: Future[HttpResponse] = {
     dispatchRequest(HttpRequest(uri = "/version"))
   }
@@ -94,23 +95,8 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   }
 
   def unmarshal[A: FromEntityUnmarshaller](
-    httpResponse: Future[HttpResponse]
+    httpResponse: HttpResponse
   ): Future[A] = {
-    httpResponse.flatMap(Unmarshal(_).to[A])
-  }
-
-  def ensureOkResponse(
-    httpResponse: Future[HttpResponse]
-  ): Future[HttpResponse] = {
-    httpResponse.map(
-      r =>
-        if (r.status.isSuccess()) {
-          r
-        } else {
-          throw new Exception(
-            s"Error while upserting the WgsUbam. Status code: ${r.status}"
-          )
-      }
-    )
+    Unmarshal(httpResponse).to[A]
   }
 }
