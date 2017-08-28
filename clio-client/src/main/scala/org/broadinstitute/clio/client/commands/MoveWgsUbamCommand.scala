@@ -8,10 +8,10 @@ import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput,
-  TransferWgsUbamV1QueryOutput
+TransferWgsUbamV1Key,
+TransferWgsUbamV1Metadata,
+TransferWgsUbamV1QueryInput,
+TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -20,7 +20,7 @@ import org.broadinstitute.clio.client.util.FutureWithErrorMessage
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 object MoveWgsUbamCommand
-    extends Command
+  extends Command
     with LazyLogging
     with FailFastCirceSupport
     with ModelAutoDerivation
@@ -29,10 +29,10 @@ object MoveWgsUbamCommand
   implicit val implicitLogger: Logger = logger
 
   override def execute(
-    webClient: ClioWebClient,
-    config: BaseArgs,
-    ioUtil: IoUtil
-  )(implicit ec: ExecutionContext): Future[HttpResponse] = {
+                        webClient: ClioWebClient,
+                        config: BaseArgs,
+                        ioUtil: IoUtil
+                      )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     for {
       _ <- verifyPath(webClient, config) withErrorMsg
         "Clio client can only handle cloud operations right now."
@@ -42,15 +42,15 @@ object MoveWgsUbamCommand
         "An error occurred while copying the files in the cloud. No files have been moved."
       upsertUbam <- upsertUpdatedWgsUbam(webClient, config) withErrorMsg
         s"""An error occurred while upserting the WgsUbam.
-          |The ubam exists in both at both the old and the new locations.
-          |At this time, Clio only knows about the bam at the old location.
-          |Try removing the ubam at the new location and re-running this command.
-          |If this cannot be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.
+           |The ubam exists in both at both the old and the new locations.
+           |At this time, Clio only knows about the bam at the old location.
+           |Try removing the ubam at the new location and re-running this command.
+           |If this cannot be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.
         """.stripMargin
       _ <- deleteGoogleObject(wgsUbamPath, ioUtil) withErrorMsg
         s"""The old bam was not able to be deleted. Clio has been updated to point to the new bam.
-          | Please delete the old bam. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
-          | """.stripMargin
+           | Please delete the old bam. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
+           | """.stripMargin
     } yield {
       logger.info(
         s"Successfully moved '${wgsUbamPath.get}' to '${config.ubamPath.get}'"
@@ -62,20 +62,21 @@ object MoveWgsUbamCommand
   private def verifyPath(webClient: ClioWebClient,
                          config: BaseArgs): Future[Unit] = {
     implicit val executionContext: ExecutionContext = webClient.executionContext
-    Future(config.location.foreach {
-      case "GCP" => ()
-      case _ =>
-        throw new Exception(
-          "Only GCP unmapped bams are supported at this time."
-        )
-    }).flatMap { _ =>
-      Future(config.ubamPath.foreach {
+    Future {
+      config.location.foreach {
+        case "GCP" => ()
+        case _ =>
+          throw new Exception(
+            "Only GCP unmapped bams are supported at this time."
+          )
+      }
+      config.ubamPath.foreach {
         case loc if loc.startsWith("gs://") => ()
         case _ =>
           throw new Exception(
             s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path."
           )
-      })
+      }
     }
   }
 
@@ -84,8 +85,8 @@ object MoveWgsUbamCommand
     implicit val ec: ExecutionContext = webClient.executionContext
 
     def ensureOnlyOne(
-      wgsUbams: Seq[TransferWgsUbamV1QueryOutput]
-    ): TransferWgsUbamV1QueryOutput = {
+                       wgsUbams: Seq[TransferWgsUbamV1QueryOutput]
+                     ): TransferWgsUbamV1QueryOutput = {
       wgsUbams.size match {
         case 1 =>
           wgsUbams.head
@@ -131,8 +132,10 @@ object MoveWgsUbamCommand
       case 0 => Future.successful(())
       case _ =>
         Future.failed(
-          new Exception(s"Copy files in the cloud failed from '${source
-            .getOrElse("")}' to '${destination.getOrElse("")}'")
+          new Exception(s"Copy files in the cloud failed from '${
+            source
+              .getOrElse("")
+          }' to '${destination.getOrElse("")}'")
         )
     }
   }
@@ -169,8 +172,10 @@ object MoveWgsUbamCommand
   }
 
   private def prettyKey(config: BaseArgs): String = {
-    s"FlowcellBarcode: ${config.flowcell.getOrElse("")}, LibraryName: ${config.libraryName
-      .getOrElse("")}, " +
+    s"FlowcellBarcode: ${config.flowcell.getOrElse("")}, LibraryName: ${
+      config.libraryName
+        .getOrElse("")
+    }, " +
       s"Lane: ${config.lane.getOrElse("")}, Location: ${config.location.getOrElse("")}"
   }
 
