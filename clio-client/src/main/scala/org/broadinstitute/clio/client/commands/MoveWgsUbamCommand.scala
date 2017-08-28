@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.{LazyLogging, Logger}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.Json
+import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -34,17 +35,17 @@ object MoveWgsUbamCommand
       wgsUbamPath <- queryForWgsUbamPath(webClient, config) withErrorMsg
         "Could not query the WgsUbam. No files have been moved."
       _ <- copyGoogleObject(wgsUbamPath, config.ubamPath, ioUtil) withErrorMsg
-        "An error occurred while copying the files in google cloud. No files have been moved."
+        "An error occurred while copying the files in the cloud. No files have been moved."
       upsertUbam <- upsertUpdatedWgsUbam(webClient, config) withErrorMsg
-        """An error occurred while upserting the WgsUbam. The state of clio is now inconsistent.
+        s"""An error occurred while upserting the WgsUbam.
           |The ubam exists in both at both the old and the new locations.
           |At this time, Clio only knows about the bam at the old location.
-          |Then, try upserting (not moving) the unmapped bam with the correct path then deleting the old bam.
-          |If the state of Clio cannot be fixed, please contact the Green Team at greenteam@broadinstitute.org.
+          |Try removing the ubam at the new location and re-running this command.
+          |If this cannot be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.
         """.stripMargin
       _ <- deleteGoogleObject(wgsUbamPath, ioUtil) withErrorMsg
-        """The old bam was not able to be deleted. Clio has been updated to point to the new bam.
-          | Please delete the old bam. If this cannot be done, contact Green Team at greenteam@broadinstitute.org.
+        s"""The old bam was not able to be deleted. Clio has been updated to point to the new bam.
+          | Please delete the old bam. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
           | """.stripMargin
     } yield {
       logger.info(
@@ -60,16 +61,12 @@ object MoveWgsUbamCommand
     Future(config.location.foreach {
       case "GCP" => ()
       case _ =>
-        logger.error("Only GCP unmapped bams are supported at this time.")
-        throw new Exception()
+        throw new Exception("Only GCP unmapped bams are supported at this time.")
     }).flatMap { _ =>
       Future(config.ubamPath.foreach {
         case loc if loc.startsWith("gs://") => ()
         case _ =>
-          logger.error(
-            s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path."
-          )
-          throw new Exception()
+          throw new Exception(s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path.")
       })
     }
   }
@@ -83,14 +80,9 @@ object MoveWgsUbamCommand
         case 1 =>
           wgsUbams.asArray.get.head
         case s if s > 1 =>
-          logger.error(
-            s"$s WgsUbams were returned for Key(${prettyKey(config)}), expected 1."
-          )
-          throw new Exception()
-        case s if s == 0 =>
-          logger.error(s"No WgsUbams were found for Key(${prettyKey(config)})")
-          logger.error("You can add this WgsUbam using the AddWgsUbam command in the Clio client.")
-          throw new Exception()
+          throw new Exception(s"$s WgsUbams were returned for Key(${prettyKey(config)}), expected 1. You can see what was returned by running the QueryWgsUbam command.")
+        case _ =>
+          throw new Exception(s"No WgsUbams were found for Key(${prettyKey(config)}). You can add this WgsUbam using the AddWgsUbam command in the Clio client.")
       }
     }
 
@@ -111,8 +103,7 @@ object MoveWgsUbamCommand
       )
       .recoverWith {
         case ex: Exception =>
-          logger.error("There was an error contacting the Clio server")
-          Future.failed(new Exception(ex))
+          Future.failed(new Exception("There was an error contacting the Clio server", ex))
       }
       .map(ensureOkResponse)
       .flatMap(webClient.unmarshal[Json])
@@ -126,9 +117,8 @@ object MoveWgsUbamCommand
     ioUtil.copyGoogleObject(source.get, destination.get) match {
       case 0 => Future.successful(())
       case _ =>
-        logger.error(s"Copy files in google cloud failed from '${source
-          .getOrElse("")}' to '${destination.getOrElse("")}'")
-        Future.failed(new Exception())
+        Future.failed(new Exception(s"Copy files in the cloud failed from '${source
+          .getOrElse("")}' to '${destination.getOrElse("")}'"))
     }
   }
 
@@ -137,10 +127,7 @@ object MoveWgsUbamCommand
     ioUtil.deleteGoogleObject(path.get) match {
       case 0 => Future.successful(())
       case _ =>
-        logger.error(
-          s"Deleting file in google cloud failed for path '${path.getOrElse("")}'"
-        )
-        Future.failed(new Exception())
+        Future.failed(new Exception(s"Deleting file in the cloud failed for path '${path.getOrElse("")}'"))
     }
   }
 
@@ -172,10 +159,7 @@ object MoveWgsUbamCommand
     if (httpResponse.status.isSuccess()) {
       httpResponse
     } else {
-      logger.error(
-        s"Got an error from the Clio server. Status code: ${httpResponse.status}"
-      )
-      throw new Exception()
+      throw new Exception(s"Got an error from the Clio server. Status code: ${httpResponse.status}")
     }
   }
 }

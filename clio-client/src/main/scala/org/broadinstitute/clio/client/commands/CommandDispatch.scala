@@ -46,7 +46,7 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
             s"Successfully completed command." +
               s" Response code: ${response.status}"
           )
-          Future.successful(())
+          responseFuture
         } else {
           logger.error(
             s"Error executing command." +
