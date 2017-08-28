@@ -4,6 +4,7 @@ import org.broadinstitute.clio.client.commands.CommandDispatch
 import org.broadinstitute.clio.client.parser.{BaseArgs, BaseParser}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpResponse
 import org.broadinstitute.clio.client.util.IoUtil
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,7 +34,7 @@ class ClioClient(commandDispatch: CommandDispatch) {
 
   def execute(
     args: Array[String]
-  )(implicit ec: ExecutionContext): Future[Unit] = {
+  )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     val parser: BaseParser = new BaseParser
     parser.parse(args, BaseArgs()) match {
       case Some(config) =>

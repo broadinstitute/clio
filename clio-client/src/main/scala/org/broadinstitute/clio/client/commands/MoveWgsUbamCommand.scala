@@ -8,7 +8,11 @@ import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput}
+import org.broadinstitute.clio.transfer.model.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryInput
+}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -61,12 +65,16 @@ object MoveWgsUbamCommand
     Future(config.location.foreach {
       case "GCP" => ()
       case _ =>
-        throw new Exception("Only GCP unmapped bams are supported at this time.")
+        throw new Exception(
+          "Only GCP unmapped bams are supported at this time."
+        )
     }).flatMap { _ =>
       Future(config.ubamPath.foreach {
         case loc if loc.startsWith("gs://") => ()
         case _ =>
-          throw new Exception(s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path.")
+          throw new Exception(
+            s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path."
+          )
       })
     }
   }
@@ -80,9 +88,13 @@ object MoveWgsUbamCommand
         case 1 =>
           wgsUbams.asArray.get.head
         case 0 =>
-          throw new Exception(s"No WgsUbams were found for Key(${prettyKey(config)}). You can add this WgsUbam using the AddWgsUbam command in the Clio client.")
+          throw new Exception(
+            s"No WgsUbams were found for Key(${prettyKey(config)}). You can add this WgsUbam using the AddWgsUbam command in the Clio client."
+          )
         case s =>
-          throw new Exception(s"$s WgsUbams were returned for Key(${prettyKey(config)}), expected 1. You can see what was returned by running the QueryWgsUbam command in the Clio client.")
+          throw new Exception(
+            s"$s WgsUbams were returned for Key(${prettyKey(config)}), expected 1. You can see what was returned by running the QueryWgsUbam command in the Clio client."
+          )
 
       }
     }
@@ -104,7 +116,9 @@ object MoveWgsUbamCommand
       )
       .recoverWith {
         case ex: Exception =>
-          Future.failed(new Exception("There was an error contacting the Clio server", ex))
+          Future.failed(
+            new Exception("There was an error contacting the Clio server", ex)
+          )
       }
       .map(ensureOkResponse)
       .flatMap(webClient.unmarshal[Json])
@@ -118,8 +132,10 @@ object MoveWgsUbamCommand
     ioUtil.copyGoogleObject(source.get, destination.get) match {
       case 0 => Future.successful(())
       case _ =>
-        Future.failed(new Exception(s"Copy files in the cloud failed from '${source
-          .getOrElse("")}' to '${destination.getOrElse("")}'"))
+        Future.failed(
+          new Exception(s"Copy files in the cloud failed from '${source
+            .getOrElse("")}' to '${destination.getOrElse("")}'")
+        )
     }
   }
 
@@ -128,7 +144,11 @@ object MoveWgsUbamCommand
     ioUtil.deleteGoogleObject(path.get) match {
       case 0 => Future.successful(())
       case _ =>
-        Future.failed(new Exception(s"Deleting file in the cloud failed for path '${path.getOrElse("")}'"))
+        Future.failed(
+          new Exception(
+            s"Deleting file in the cloud failed for path '${path.getOrElse("")}'"
+          )
+        )
     }
   }
 
@@ -160,7 +180,9 @@ object MoveWgsUbamCommand
     if (httpResponse.status.isSuccess()) {
       httpResponse
     } else {
-      throw new Exception(s"Got an error from the Clio server. Status code: ${httpResponse.status}")
+      throw new Exception(
+        s"Got an error from the Clio server. Status code: ${httpResponse.status}"
+      )
     }
   }
 }
