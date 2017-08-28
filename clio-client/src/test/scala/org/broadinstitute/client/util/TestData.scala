@@ -11,9 +11,6 @@ trait TestData {
   val metadataFileLocation = Some(
     "clio-client/src/test/resources/testdata/metadata"
   )
-  val snakeCaseMetadataFileLocation = Some(
-    "clio-client/src/test/resources/testdata/snake_metadata"
-  )
   val testWgsUbamLocation = Some(
     "clio-client/src/test/resources/testdata/testWgsUbam"
   )

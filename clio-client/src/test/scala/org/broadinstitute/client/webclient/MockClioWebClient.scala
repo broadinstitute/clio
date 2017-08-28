@@ -16,8 +16,10 @@ import akka.actor.ActorSystem
 
 import scala.concurrent.Future
 
-class MockClioWebClient(status: StatusCode,
-                        metadataLocation: String)(implicit system: ActorSystem)
+class MockClioWebClient(
+  status: StatusCode,
+  metadataLocationOption: Option[String]
+)(implicit system: ActorSystem)
     extends ClioWebClient("localhost", 8080, false)
     with TestData {
 
@@ -26,11 +28,14 @@ class MockClioWebClient(status: StatusCode,
        |  "version" : "0.0.1"
        |}""".stripMargin
 
-  val json: Json = parse(IoUtil.readMetadata(metadataLocation)) match {
-    case Right(value) => value
-    case Left(parsingFailure) =>
-      throw parsingFailure
-  }
+  val json: Option[Json] = metadataLocationOption.map(
+    metadataLocation =>
+      parse(IoUtil.readMetadata(metadataLocation)) match {
+        case Right(value) => value
+        case Left(parsingFailure) =>
+          throw parsingFailure
+    }
+  )
 
   override def getClioServerVersion: Future[HttpResponse] = {
     Future.successful(
@@ -55,7 +60,7 @@ class MockClioWebClient(status: StatusCode,
         status = status,
         entity = HttpEntity(
           ContentTypes.`application/json`,
-          Json.arr(json).pretty(implicitly)
+          json.map(_.pretty(implicitly)).getOrElse("")
         )
       )
     )
@@ -64,20 +69,20 @@ class MockClioWebClient(status: StatusCode,
 
 object MockClioWebClient extends TestData {
   def returningOk(implicit system: ActorSystem) =
-    new MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation.get)
+    new MockClioWebClient(status = StatusCodes.OK, None)
 
   def returningInternalError(implicit system: ActorSystem) =
     new MockClioWebClient(
       status = StatusCodes.InternalServerError,
-      testWgsUbamLocation.get
+      testWgsUbamLocation
     )
 
+  def returningWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
+    new MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation)
+  }
   def returningNoWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
     class MockClioWebClientNoReturn
-        extends MockClioWebClient(
-          status = StatusCodes.OK,
-          testWgsUbamLocation.get
-        ) {
+        extends MockClioWebClient(status = StatusCodes.OK, None) {
       override def queryWgsUbam(
         bearerToken: String,
         input: TransferWgsUbamV1QueryInput
@@ -99,8 +104,8 @@ object MockClioWebClient extends TestData {
   def failingToAddWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
     class MockClioWebClientCantAdd
         extends MockClioWebClient(
-          status = StatusCodes.OK,
-          testWgsUbamLocation.get
+          status = StatusCodes.InternalServerError,
+          None
         ) {
       override def addWgsUbam(
         bearerToken: String,

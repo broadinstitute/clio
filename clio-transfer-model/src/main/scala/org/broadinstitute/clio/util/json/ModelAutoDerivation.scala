@@ -36,7 +36,8 @@ trait ModelAutoDerivation extends AutoDerivation {
     * NOTE: We're extending from generic.extras.AutoDerivation instead of generic.AutoDerivation
     * Otherwise this config isn't used.
     */
-  implicit val config: Configuration = Configuration.default.withSnakeCaseKeys
+  implicit val jsonConfig: Configuration =
+    Configuration.default.withSnakeCaseKeys
 
   /**
     * When decoding, don't allow extra fields.

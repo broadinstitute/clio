@@ -15,7 +15,7 @@ class ClioClientSpec extends BaseClientSpec {
 
   val client: ClioClient = {
     val mockWebClient = MockClioWebClient.returningOk
-    val commandDispatch = new CommandDispatch(mockWebClient, MockIoUtil)
+    val commandDispatch = new CommandDispatch(mockWebClient, new MockIoUtil)
     new ClioClient(commandDispatch)
   }
 
@@ -28,6 +28,6 @@ class ClioClientSpec extends BaseClientSpec {
   it should "exit 0 if the command is run successfully" in {
     client
       .execute(goodAddCommand)
-      .map(_.status should be(StatusCodes.OK))
+      .map(r => r.status should be(StatusCodes.OK))
   }
 }

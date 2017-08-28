@@ -3,8 +3,7 @@ package org.broadinstitute.client.commands
 import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.client.BaseClientSpec
 import org.broadinstitute.client.util.MockIoUtil
-import org.broadinstitute.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.client.commands.{CommandDispatch, Commands}
+import org.broadinstitute.clio.client.commands.Commands
 import org.broadinstitute.clio.client.parser.BaseArgs
 
 class CommandDispatchSpec extends BaseClientSpec {
@@ -40,8 +39,8 @@ class CommandDispatchSpec extends BaseClientSpec {
   }
 
   it should "return true when we dispatch a valid moveWgsUbam command" in {
-    MockIoUtil.resetMockState()
-    MockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
     val config = BaseArgs(
       command = Some(Commands.MoveWgsUbam),
       flowcell = testFlowcell,
@@ -51,11 +50,7 @@ class CommandDispatchSpec extends BaseClientSpec {
       bearerToken = testBearer,
       ubamPath = testUbamCloudDestinationPath
     )
-    val dispatcher = new CommandDispatch(
-      new MockClioWebClient(StatusCodes.OK, snakeCaseMetadataFileLocation.get),
-      MockIoUtil
-    )
-    dispatcher
+    succeedingReturningDispatcher(mockIoUtil)
       .dispatch(config)
       .map(_.status should be(StatusCodes.OK))
   }

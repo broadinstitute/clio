@@ -3,7 +3,6 @@ package org.broadinstitute.clio.client.commands
 import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.{LazyLogging, Logger}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import io.circe.Json
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
@@ -11,7 +10,8 @@ import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput
+  TransferWgsUbamV1QueryInput,
+  TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -83,10 +83,12 @@ object MoveWgsUbamCommand
                                   config: BaseArgs): Future[Option[String]] = {
     implicit val ec: ExecutionContext = webClient.executionContext
 
-    def ensureOnlyOneJson(wgsUbams: Json): Json = {
-      wgsUbams.asArray.getOrElse(throw new Exception()).size match {
+    def ensureOnlyOne(
+      wgsUbams: Seq[TransferWgsUbamV1QueryOutput]
+    ): TransferWgsUbamV1QueryOutput = {
+      wgsUbams.size match {
         case 1 =>
-          wgsUbams.asArray.get.head
+          wgsUbams.head
         case 0 =>
           throw new Exception(
             s"No WgsUbams were found for Key(${prettyKey(config)}). You can add this WgsUbam using the AddWgsUbam command in the Clio client."
@@ -121,9 +123,9 @@ object MoveWgsUbamCommand
           )
       }
       .map(ensureOkResponse)
-      .flatMap(webClient.unmarshal[Json])
-      .map(ensureOnlyOneJson)
-      .map(_.asObject.get("ubam_path").get.asString)
+      .flatMap(webClient.unmarshal[Seq[TransferWgsUbamV1QueryOutput]])
+      .map(ensureOnlyOne)
+      .map(_.ubamPath)
   }
 
   private def copyGoogleObject(source: Option[String],
