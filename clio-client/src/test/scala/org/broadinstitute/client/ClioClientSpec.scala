@@ -1,5 +1,6 @@
 package org.broadinstitute.client
 
+import akka.http.scaladsl.model.StatusCodes
 import org.broadinstitute.client.util.MockIoUtil
 import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.ClioClient
@@ -25,6 +26,8 @@ class ClioClientSpec extends BaseClientSpec {
   }
 
   it should "exit 0 if the command is run successfully" in {
-    client.execute(goodAddCommand).map(_ should be(()))
+    client
+      .execute(goodAddCommand)
+      .map(_.status should be(StatusCodes.OK))
   }
 }

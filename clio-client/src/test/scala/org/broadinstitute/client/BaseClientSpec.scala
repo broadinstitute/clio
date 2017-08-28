@@ -2,6 +2,7 @@ package org.broadinstitute.client
 
 import org.broadinstitute.client.util.{MockIoUtil, TestData}
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.StatusCodes
 import akka.testkit.TestKit
 import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.commands.CommandDispatch
@@ -13,8 +14,12 @@ abstract class BaseClientSpec
     with TestData
     with Matchers {
 
-  val succeedingDispatcher =
+  val succeedingDispatcherCamel =
     new CommandDispatch(MockClioWebClient.returningOk, MockIoUtil)
+  val succeedingDispatcher = new CommandDispatch(
+    new MockClioWebClient(StatusCodes.OK, snakeCaseMetadataFileLocation.get),
+    MockIoUtil
+  )
   val failingDispatcher =
     new CommandDispatch(MockClioWebClient.returningInternalError, MockIoUtil)
 }

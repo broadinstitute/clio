@@ -28,12 +28,15 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
     }
   }
 
-  def dispatch(config: BaseArgs)(implicit ec: ExecutionContext): Future[HttpResponse] = {
+  def dispatch(
+    config: BaseArgs
+  )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     config.command
       .map(command => execute(command, config))
-      .fold(Future.failed[HttpResponse](new Exception("The config command was empty")))(
-        checkResponse
-      )
+      .fold(
+        Future
+          .failed[HttpResponse](new Exception("The config command was empty"))
+      )(checkResponse)
   }
 
   def checkResponse(

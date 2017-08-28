@@ -9,6 +9,12 @@ import org.broadinstitute.clio.client.commands.Commands.MoveWgsUbam
 import org.broadinstitute.clio.client.parser.BaseArgs
 
 class MoveWgsUbamSpec extends BaseClientSpec {
+
+  val dispatcher = new CommandDispatch(
+    new MockClioWebClient(StatusCodes.OK, snakeCaseMetadataFileLocation.get),
+    MockIoUtil
+  )
+
   behavior of "MoveWgsUbam"
 
   it should "throw an exception if the destination path scheme is invalid" in {
@@ -148,11 +154,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
       bearerToken = testBearer,
       ubamPath = testUbamCloudDestinationPath
     )
-
-    val dispatcher = new CommandDispatch(
-      new MockClioWebClient(StatusCodes.OK, snakeCaseMetadataFileLocation.get),
-      MockIoUtil
-    )
-    dispatcher.dispatch(config).map(_ should be(()))
+    dispatcher
+      .dispatch(config)
+      .map(_.status should be(StatusCodes.OK))
   }
 }

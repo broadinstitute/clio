@@ -83,7 +83,10 @@ object Dependencies {
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-generic-extras" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
-    "org.slf4j" % "slf4j-api" % Slf4jVersion
+    "org.slf4j" % "slf4j-api" % Slf4jVersion,
+    "org.typelevel" %% "cats-core" % "1.0.0-MF",
+    "org.typelevel" %% "cats-free" % "1.0.0-MF",
+    "org.typelevel" %% "cats-kernel" % "1.0.0-MF"
   )
   private val ClientTestDependencies: Seq[ModuleID] = Seq(
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,

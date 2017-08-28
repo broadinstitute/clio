@@ -18,9 +18,9 @@ class CommandDispatchSpec extends BaseClientSpec {
   }
 
   it should "return true when we dispatch a valid queryWgsUbam command" in {
-    succeedingDispatcher
+    succeedingDispatcherCamel
       .dispatch(BaseArgs(command = Some(Commands.QueryWgsUbam)))
-      .map(_ should be(()))
+      .map(_.status should be(StatusCodes.OK))
   }
 
   it should "return true when we dispatch a valid addWgsUbam command" in {
@@ -36,7 +36,7 @@ class CommandDispatchSpec extends BaseClientSpec {
           metadataLocation = metadataFileLocation
         )
       )
-      .map(_ should be(()))
+      .map(_.status should be(StatusCodes.OK))
   }
 
   it should "return true when we dispatch a valid moveWgsUbam command" in {
@@ -55,6 +55,8 @@ class CommandDispatchSpec extends BaseClientSpec {
       new MockClioWebClient(StatusCodes.OK, snakeCaseMetadataFileLocation.get),
       MockIoUtil
     )
-    dispatcher.dispatch(config).map(_ should be(()))
+    dispatcher
+      .dispatch(config)
+      .map(_.status should be(StatusCodes.OK))
   }
 }
