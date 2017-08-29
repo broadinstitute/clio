@@ -125,7 +125,28 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         )
         .flatMap(Unmarshal(_).to[String])
     } yield {
-      clioId1 should not equal clioId2
+      UUIDUtil.uuid(clioId2).compareTo(UUIDUtil.uuid(clioId1)) should be(1)
+    }
+  }
+
+  it should "assign different clioIds to equal WgsUbam upserts" in {
+    val upsertKey = TransferWgsUbamV1Key(
+      flowcellBarcode = "testClioIdBarcode",
+      lane = 2,
+      libraryName = s"library$randomId",
+      location = Location.GCP,
+    )
+    val upsertData = TransferWgsUbamV1Metadata(project = Some("testProject1"))
+
+    for {
+      clioId1 <- clioWebClient
+        .addWgsUbam(bearerToken, upsertKey, upsertData)
+        .flatMap(Unmarshal(_).to[String])
+      clioId2 <- clioWebClient
+        .addWgsUbam(bearerToken, upsertKey, upsertData)
+        .flatMap(Unmarshal(_).to[String])
+    } yield {
+      UUIDUtil.uuid(clioId2).compareTo(UUIDUtil.uuid(clioId1)) should be(1)
     }
   }
 
