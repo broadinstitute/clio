@@ -81,13 +81,17 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
         )
       )
     for {
-      _ <- wgsUbamService.upsertMetadata(transferKey, transferMetadata)
+      returnedClioId <- wgsUbamService.upsertMetadata(
+        transferKey,
+        transferMetadata
+      )
     } yield {
       memorySearchDAO.updateWgsUbamMetadataCalls should be(
         Seq(
           (
             ModelWgsUbamKey("barcode1", 2, "library3", Location.GCP),
             ModelWgsUbamMetadata(
+              clioId = Some(returnedClioId),
               analysisType = None,
               baitIntervals = None,
               dataType = None,
