@@ -9,7 +9,12 @@ import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput, TransferWgsUbamV1QueryOutput}
+import org.broadinstitute.clio.transfer.model.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryInput,
+  TransferWgsUbamV1QueryOutput
+}
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -33,8 +38,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "report the expected JSON schema for wgs-ubams" in {
-    clioWebClient
-      .getWgsUbamSchema
+    clioWebClient.getWgsUbamSchema
       .flatMap(Unmarshal(_).to[Json])
       .map(_ should be(JsonSchemas.WgsUbam))
   }
@@ -84,7 +88,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
             .addWgsUbam(upsertKey, upsertData)
           returnedClioId <- Unmarshal(upsertResponse).to[String]
           queryResponse <- clioWebClient
-            .queryWgsUbam( queryData)
+            .queryWgsUbam(queryData)
           outputs <- Unmarshal(queryResponse)
             .to[Seq[TransferWgsUbamV1QueryOutput]]
         } yield {
@@ -109,13 +113,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     for {
       clioId1 <- clioWebClient
-        .addWgsUbam( upsertKey, upsertData)
+        .addWgsUbam(upsertKey, upsertData)
         .flatMap(Unmarshal(_).to[String])
       clioId2 <- clioWebClient
-        .addWgsUbam(
-          upsertKey,
-          upsertData.copy(project = Some("testProject2"))
-        )
+        .addWgsUbam(upsertKey, upsertData.copy(project = Some("testProject2")))
         .flatMap(Unmarshal(_).to[String])
     } yield {
       UUIDUtil.uuid(clioId2).compareTo(UUIDUtil.uuid(clioId1)) should be(1)
@@ -205,7 +206,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       querySample = TransferWgsUbamV1QueryInput(
         sampleAlias = Some(samples.head)
       )
-      projectResponse <- clioWebClient.queryWgsUbam( queryProject)
+      projectResponse <- clioWebClient.queryWgsUbam(queryProject)
       projectResults <- Unmarshal(projectResponse)
         .to[Seq[TransferWgsUbamV1QueryOutput]]
       sampleResponse <- clioWebClient.queryWgsUbam(querySample)

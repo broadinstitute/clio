@@ -3,9 +3,9 @@ package org.broadinstitute.client.util
 import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.clio.client.commands.Commands.CommonOptions
 import org.broadinstitute.clio.client.commands.{
   AddWgsUbam,
-  CommonOptions,
   MoveWgsUbam,
   QueryWgsUbam
 }

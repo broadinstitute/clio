@@ -56,7 +56,9 @@ class DockerIntegrationSpec
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)
 
   // No bearer token needed for talking to local Clio.
-  override implicit val bearerToken: OAuth2BearerToken = OAuth2BearerToken("dummy-token")
+  override implicit val bearerToken: OAuth2BearerToken = OAuth2BearerToken(
+    "dummy-token"
+  )
 
   override def beforeAll(): Unit = {
     super.beforeAll()

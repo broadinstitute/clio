@@ -3,16 +3,12 @@ package org.broadinstitute.clio.client
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import caseapp._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.clio.client.commands.CustomArgParsers._
-import org.broadinstitute.clio.client.commands.{
-  CommandDispatch,
-  CommandType,
-  CommonOptions
-}
+import org.broadinstitute.clio.client.commands.{CommandDispatch, CommandType}
+import org.broadinstitute.clio.client.commands.Commands._
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import caseapp._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -27,7 +23,6 @@ object ClioClient
 
   //not sure this is the best way to pass common opts but case-app docs are spotty at best
   var commonOptions: CommonOptions = _
-  UUIDParser
 
   override def beforeCommand(options: CommonOptions,
                              remainingArgs: Seq[String]): Unit = {

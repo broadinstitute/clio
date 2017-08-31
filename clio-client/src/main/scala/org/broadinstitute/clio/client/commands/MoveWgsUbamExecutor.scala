@@ -15,7 +15,6 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.{ExecutionContext, Future}
-
 class MoveWgsUbamExecutor(moveWgsUbamCommand: MoveWgsUbam)
     extends Executor
     with LazyLogging

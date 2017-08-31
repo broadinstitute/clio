@@ -16,7 +16,12 @@ import caseapp._
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
-object CustomArgParsers {
+object Commands {
+
+  final case class CommonOptions(
+    bearerToken: OAuth2BearerToken = OAuth2BearerToken("")
+  )
+
   implicit def enumEntryParser[T <: EnumEntry: Enum](
     implicit c: ClassTag[T]
   ): core.ArgParser[T] = {
@@ -55,10 +60,6 @@ object CustomArgParsers {
     }
   }
 }
-
-final case class CommonOptions(
-  bearerToken: OAuth2BearerToken = OAuth2BearerToken("")
-)
 
 sealed trait CommandType
 
