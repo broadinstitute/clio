@@ -5,13 +5,13 @@ import java.util.UUID
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp.Recurse
-import caseapp.core.ArgParser
 import enumeratum.{Enum, EnumEntry}
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput
 }
+import caseapp._
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
@@ -19,8 +19,8 @@ import scala.util.{Failure, Success, Try}
 object CustomArgParsers {
   implicit def enumEntryParser[T <: EnumEntry: Enum](
     implicit c: ClassTag[T]
-  ): ArgParser[T] = {
-    ArgParser.instance[T]("entry") { entry =>
+  ): core.ArgParser[T] = {
+    core.ArgParser.instance[T]("entry") { entry =>
       val value = implicitly[Enum[T]].withNameOption(entry)
       Either.cond(
         value.isDefined,
@@ -30,15 +30,15 @@ object CustomArgParsers {
     }
   }
 
-  implicit def oauthBearerTokenParser: ArgParser[OAuth2BearerToken] = {
-    ArgParser.instance[OAuth2BearerToken]("token") { token =>
+  implicit def oauthBearerTokenParser: core.ArgParser[OAuth2BearerToken] = {
+    core.ArgParser.instance[OAuth2BearerToken]("token") { token =>
       //no need for left since this should never fail
       Right(OAuth2BearerToken(token))
     }
   }
 
-  implicit def UUIDParser: ArgParser[UUID] = {
-    ArgParser.instance[UUID]("uuid") { uuid =>
+  implicit def UUIDParser: core.ArgParser[UUID] = {
+    core.ArgParser.instance[UUID]("uuid") { uuid =>
       Try(UUID.fromString(uuid)) match {
         case Success(value)     => Right(value)
         case Failure(exception) => Left(exception.getMessage)
@@ -46,8 +46,8 @@ object CustomArgParsers {
     }
   }
 
-  implicit def offsetDateTimeParser: ArgParser[OffsetDateTime] = {
-    ArgParser.instance[OffsetDateTime]("date") { offsetDateAndTime =>
+  implicit def offsetDateTimeParser: core.ArgParser[OffsetDateTime] = {
+    core.ArgParser.instance[OffsetDateTime]("date") { offsetDateAndTime =>
       Try(OffsetDateTime.parse(offsetDateAndTime)) match {
         case Success(value)     => Right(value)
         case Failure(exception) => Left(exception.getMessage)

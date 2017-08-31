@@ -9,7 +9,7 @@ import org.broadinstitute.clio.client.commands.CommandDispatch
 
 import scala.concurrent.ExecutionContext
 
-class ClioClientSpec extends SystemExitSpec {
+class ClioClientSpec extends BaseClientSpec {
   behavior of "ClioClient"
 
   override implicit val executionContext: ExecutionContext = system.dispatcher
@@ -19,13 +19,6 @@ class ClioClientSpec extends SystemExitSpec {
     val mockWebClient = MockClioWebClient.returningOk
     val commandDispatch = new CommandDispatch(mockWebClient, new MockIoUtil)
     new ClioClient(commandDispatch)
-  }
-
-  it should "exit 255 if given a bad command" in {
-    val thrown = the[ExitException] thrownBy ClioClient.main(
-      Array("badCommand")
-    )
-    thrown.status should be(255)
   }
 
   it should "exit 0 if the command is run successfully" in {

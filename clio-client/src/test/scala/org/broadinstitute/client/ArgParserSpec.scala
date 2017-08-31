@@ -2,13 +2,11 @@ package org.broadinstitute.client
 
 import java.time.OffsetDateTime
 
-import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.ClioClient
 import org.broadinstitute.clio.client.commands.QueryWgsUbam
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
-import org.scalatest.BeforeAndAfterAll
 
-class ArgParserSpec extends SystemExitSpec with BeforeAndAfterAll {
+class ArgParserSpec extends BaseClientSpec {
 
   it should "properly parse a Location type " in {
     val parsed = ClioClient.commandParser.detailedParse(
@@ -26,17 +24,31 @@ class ArgParserSpec extends SystemExitSpec with BeforeAndAfterAll {
           case Left(_) => fail("Could not parse subcommand.")
         }
         innerLocation
-      case Left(_) => fail("Could not parser outer command.")
+      case Left(_) => fail("Could not parse outer command.")
     }
     location should be(Location.pathMatcher(testLocation))
   }
 
   it should "throw an exception when given an invalid Location type" in {
-    ClioClient.webClient = MockClioWebClient.returningOk
-    val thrown = the[ExitException] thrownBy ClioClient.main(
+    val parsed = ClioClient.commandParser.detailedParse(
       Array("query-wgs-ubam", "--location", "BadValue")
+    )(ClioClient.beforeCommandParser)
+    val errorMessage = parsed match {
+      case Right((_, _, optCmd)) =>
+        optCmd.get match {
+          case Right((_, query, _, _)) =>
+            query
+              .asInstanceOf[QueryWgsUbam]
+              .transferWgsUbamV1QueryInput
+              .location
+              .get
+          case Left(error) => error
+        }
+      case Left(_) => fail("Could not parse outer command.")
+    }
+    errorMessage should be(
+      "Unknown enum value BadValue for type org.broadinstitute.clio.util.model.Location "
     )
-    thrown.status should be(255)
   }
 
   it should "properly parse a DocumentStatus type" in {
@@ -55,7 +67,7 @@ class ArgParserSpec extends SystemExitSpec with BeforeAndAfterAll {
           case Left(_) => fail("Could not parse subcommand.")
         }
         innerDocStatus
-      case Left(_) => fail("Could not parser outer command.")
+      case Left(_) => fail("Could not parse outer command.")
     }
     docStatus should be(testDocumentStatus)
   }
@@ -76,14 +88,19 @@ class ArgParserSpec extends SystemExitSpec with BeforeAndAfterAll {
           case Left(_) => fail("Could not parse subcommand.")
         }
         innerRunDateStart
-      case Left(_) => fail("Could not parser outer command.")
+      case Left(_) => fail("Could not parse outer command.")
     }
     runDateStart should be(testRunDateStart)
   }
 
   it should "properly parse a string into a bearerToken" in {
-    ClioClient.webClient = MockClioWebClient.returningOk
-    ClioClient.main(Array("--bearer-token", testBearer.token, "query-wgs-ubam"))
-    ClioClient.commonOptions.bearerToken should be(testBearer)
+    val parsed = ClioClient.commandParser.detailedParse(
+      Array("--bearer-token", testBearer.token, "query-wgs-ubam")
+    )(ClioClient.beforeCommandParser)
+    val bearerToken = parsed match {
+      case Right((common, _, _)) => common.bearerToken
+      case Left(_)               => fail("Could not parse outer command")
+    }
+    bearerToken should be(testBearer)
   }
 }
