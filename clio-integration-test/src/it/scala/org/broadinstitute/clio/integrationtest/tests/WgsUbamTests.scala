@@ -1,23 +1,17 @@
 package org.broadinstitute.clio.integrationtest.tests
 
-import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput,
-  TransferWgsUbamV1QueryOutput
-}
-import org.broadinstitute.clio.util.json.JsonSchemas
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.fasterxml.uuid.{EthernetAddress, Generators}
 import com.fasterxml.uuid.impl.{TimeBasedGenerator, UUIDUtil}
+import com.fasterxml.uuid.{EthernetAddress, Generators}
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
+import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.transfer.model.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryInput, TransferWgsUbamV1QueryOutput}
+import org.broadinstitute.clio.util.json.JsonSchemas
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.Future
 
@@ -40,7 +34,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
   it should "report the expected JSON schema for wgs-ubams" in {
     clioWebClient
-      .getWgsUbamSchema(bearerToken)
+      .getWgsUbamSchema
       .flatMap(Unmarshal(_).to[Json])
       .map(_ should be(JsonSchemas.WgsUbam))
   }
@@ -76,7 +70,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     if (location == Location.Unknown) {
       it should "reject wgs-ubam inputs with unknown location" in {
         clioWebClient
-          .addWgsUbam(bearerToken, upsertKey, upsertData)
+          .addWgsUbam(upsertKey, upsertData)
           .map(_.status should be(StatusCodes.NotFound))
       }
     } else {
@@ -87,10 +81,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       it should s"handle upserts and queries for wgs-ubam location $location" in {
         for {
           upsertResponse <- clioWebClient
-            .addWgsUbam(bearerToken, upsertKey, upsertData)
+            .addWgsUbam(upsertKey, upsertData)
           returnedClioId <- Unmarshal(upsertResponse).to[String]
           queryResponse <- clioWebClient
-            .queryWgsUbam(bearerToken, queryData)
+            .queryWgsUbam( queryData)
           outputs <- Unmarshal(queryResponse)
             .to[Seq[TransferWgsUbamV1QueryOutput]]
         } yield {
@@ -115,11 +109,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     for {
       clioId1 <- clioWebClient
-        .addWgsUbam(bearerToken, upsertKey, upsertData)
+        .addWgsUbam( upsertKey, upsertData)
         .flatMap(Unmarshal(_).to[String])
       clioId2 <- clioWebClient
         .addWgsUbam(
-          bearerToken,
           upsertKey,
           upsertData.copy(project = Some("testProject2"))
         )
@@ -140,10 +133,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     for {
       clioId1 <- clioWebClient
-        .addWgsUbam(bearerToken, upsertKey, upsertData)
+        .addWgsUbam(upsertKey, upsertData)
         .flatMap(Unmarshal(_).to[String])
       clioId2 <- clioWebClient
-        .addWgsUbam(bearerToken, upsertKey, upsertData)
+        .addWgsUbam(upsertKey, upsertData)
         .flatMap(Unmarshal(_).to[String])
     } yield {
       UUIDUtil.uuid(clioId2).compareTo(UUIDUtil.uuid(clioId1)) should be(1)
@@ -165,7 +158,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     for {
       response <- clioWebClient
-        .addWgsUbam(bearerToken, upsertKey, upsertData)
+        .addWgsUbam(upsertKey, upsertData)
       newClioId <- Unmarshal(response).to[String]
     } yield {
       response.status should be(StatusCodes.OK)
@@ -196,7 +189,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
             project = Some(project),
             sampleAlias = Some(sample)
           )
-          clioWebClient.addWgsUbam(bearerToken, key, data)
+          clioWebClient.addWgsUbam(key, data)
       }
     }
 
@@ -212,10 +205,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       querySample = TransferWgsUbamV1QueryInput(
         sampleAlias = Some(samples.head)
       )
-      projectResponse <- clioWebClient.queryWgsUbam(bearerToken, queryProject)
+      projectResponse <- clioWebClient.queryWgsUbam( queryProject)
       projectResults <- Unmarshal(projectResponse)
         .to[Seq[TransferWgsUbamV1QueryOutput]]
-      sampleResponse <- clioWebClient.queryWgsUbam(bearerToken, querySample)
+      sampleResponse <- clioWebClient.queryWgsUbam(querySample)
       sampleResults <- Unmarshal(sampleResponse)
         .to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
@@ -251,13 +244,13 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     def add(data: TransferWgsUbamV1Metadata) = {
       clioWebClient
-        .addWgsUbam(bearerToken, upsertKey, data)
+        .addWgsUbam(upsertKey, data)
         .map(_.status should be(StatusCodes.OK))
     }
 
     def query = {
       for {
-        response <- clioWebClient.queryWgsUbam(bearerToken, queryData)
+        response <- clioWebClient.queryWgsUbam(queryData)
         results <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
       } yield {
         results should have length 1
@@ -308,7 +301,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       keysWithMetadata.map {
         case (key, metadata) =>
-          clioWebClient.addWgsUbam(bearerToken, key, metadata)
+          clioWebClient.addWgsUbam(key, metadata)
       }
     }
 
@@ -325,7 +318,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        response <- clioWebClient.queryWgsUbam(bearerToken, queryData)
+        response <- clioWebClient.queryWgsUbam(queryData)
         results <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
       } yield {
         results.length should be(expectedLength)
@@ -343,7 +336,6 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       _ <- checkQuery(expectedLength = 3)
       // TODO: Weird to use the `addWgsUbam` method here, even though it works.
       deleteResponse <- clioWebClient.addWgsUbam(
-        bearerToken,
         deleteKey,
         deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
       )
@@ -356,7 +348,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         uri = s"/api/v1/wgsubam/queryall",
         method = HttpMethods.POST,
         entity = entity
-      ).addCredentials(OAuth2BearerToken(bearerToken))
+      ).addCredentials(bearerToken)
       response <- clioWebClient.dispatchRequest(request)
       results <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {

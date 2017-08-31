@@ -45,7 +45,6 @@ class MockClioWebClient(
   }
 
   override def addWgsUbam(
-    bearerToken: String,
     input: TransferWgsUbamV1Key,
     transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
   )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
@@ -53,7 +52,6 @@ class MockClioWebClient(
   }
 
   override def queryWgsUbam(
-    bearerToken: String,
     input: TransferWgsUbamV1QueryInput
   )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     Future.successful(
@@ -85,9 +83,8 @@ object MockClioWebClient extends TestData {
     class MockClioWebClientNoReturn
         extends MockClioWebClient(status = StatusCodes.OK, None) {
       override def queryWgsUbam(
-        bearerToken: String,
         input: TransferWgsUbamV1QueryInput
-      ): Future[HttpResponse] = {
+      )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(
             status = StatusCodes.OK,
@@ -109,10 +106,9 @@ object MockClioWebClient extends TestData {
           None
         ) {
       override def addWgsUbam(
-        bearerToken: String,
         input: TransferWgsUbamV1Key,
         transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
-      ): Future[HttpResponse] = {
+      )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(status = StatusCodes.InternalServerError)
         )

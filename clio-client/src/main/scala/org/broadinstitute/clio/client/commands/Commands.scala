@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.client.commands
 
 import java.time.OffsetDateTime
+import java.util.UUID
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp.Recurse
@@ -8,6 +9,7 @@ import caseapp.core.ArgParser
 import enumeratum.{Enum, EnumEntry}
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput
 }
 
@@ -32,6 +34,15 @@ object CustomArgParsers {
     ArgParser.instance[OAuth2BearerToken]("token") { token =>
       //no need for left since this should never fail
       Right(OAuth2BearerToken(token))
+    }
+  }
+
+  implicit def UUIDParser: ArgParser[UUID] = {
+    ArgParser.instance[UUID]("uuid") { uuid =>
+      Try(UUID.fromString(uuid)) match {
+        case Success(value)     => Right(value)
+        case Failure(exception) => Left(exception.getMessage)
+      }
     }
   }
 
@@ -60,3 +71,9 @@ final case class QueryWgsUbam(
   @Recurse
   transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput,
 ) extends CommandType
+
+final case class MoveWgsUbam(@Recurse
+                             metadata: TransferWgsUbamV1Metadata,
+                             @Recurse
+                             transferWgsUbamV1Key: TransferWgsUbamV1Key)
+    extends CommandType

@@ -11,7 +11,7 @@ import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1Metadata
 import scala.concurrent.{ExecutionContext, Future}
 
 class AddWgsUbamExecutor(addWgsUbam: AddWgsUbam) extends Executor {
-  override def execute(webClient: ClioWebClient)(
+  override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {

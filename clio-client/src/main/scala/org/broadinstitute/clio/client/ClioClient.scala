@@ -1,8 +1,8 @@
 package org.broadinstitute.clio.client
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import caseapp.{CommandAppWithPreCommand, RemainingArgs}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.commands.CustomArgParsers._
 import org.broadinstitute.clio.client.commands.{
@@ -10,7 +10,12 @@ import org.broadinstitute.clio.client.commands.{
   CommandType,
   CommonOptions
 }
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
+import caseapp._
+
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 object ClioClient
     extends CommandAppWithPreCommand[CommonOptions, CommandType]
@@ -19,11 +24,10 @@ object ClioClient
   override val appName = "Clio Client"
 
   override val appVersion: String = ClioClientConfig.Version.value
-  //added to stop Intellij from removing import
-  offsetDateTimeParser
 
   //not sure this is the best way to pass common opts but case-app docs are spotty at best
   var commonOptions: CommonOptions = _
+  UUIDParser
 
   override def beforeCommand(options: CommonOptions,
                              remainingArgs: Seq[String]): Unit = {
@@ -46,11 +50,25 @@ object ClioClient
 
   override def run(command: CommandType, remainingArgs: RemainingArgs): Unit = {
     implicit val bearerToken: OAuth2BearerToken = commonOptions.bearerToken
-    val success = command match {
-      case command: CommandType =>
-        CommandDispatch.dispatch(webClient, command)
+
+    val commandDispatch = new CommandDispatch(webClient, IoUtil)
+
+    val client = new ClioClient(commandDispatch)
+
+    client.execute(command) onComplete {
+      case Success(_) => sys.exit(0)
+      case Failure(_) => sys.exit(1)
     }
-    sys.exit(if (success) 0 else 1)
+  }
+}
+
+class ClioClient(commandDispatch: CommandDispatch) {
+
+  def execute(command: CommandType)(
+    implicit ec: ExecutionContext,
+    bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
+    commandDispatch.dispatch(command)
   }
 
 }

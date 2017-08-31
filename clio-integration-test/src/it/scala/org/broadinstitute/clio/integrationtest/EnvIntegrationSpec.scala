@@ -2,15 +2,15 @@ package org.broadinstitute.clio.integrationtest
 
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.model.ServiceAccount
-
 import akka.http.scaladsl.model.Uri
 import io.circe.syntax._
 import com.bettercloud.vault.{Vault, VaultConfig}
 
 import scala.collection.JavaConverters._
-
 import java.io.File
 import java.nio.file.Files
+
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 /**
   * An integration spec that runs entirely against a Clio instance
@@ -54,7 +54,7 @@ abstract class EnvIntegrationSpec(env: String)
    * We use the Google credential from the Test environment
    * to talk through the OpenIDC proxy.
    */
-  override lazy val bearerToken: String = {
+  override lazy implicit val bearerToken: OAuth2BearerToken = {
     val vaultToken: String = vaultTokenFiles
       .find(_.exists)
       .map { file =>
@@ -90,7 +90,7 @@ abstract class EnvIntegrationSpec(env: String)
         }, identity)
 
     val credential = serviceAccount.credentialForScopes(authScopes)
-    credential.refreshAccessToken().getTokenValue
+    OAuth2BearerToken(credential.refreshAccessToken().getTokenValue)
   }
 }
 

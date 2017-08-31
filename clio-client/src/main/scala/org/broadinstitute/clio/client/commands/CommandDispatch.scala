@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.commands
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,18 +18,18 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
   ): Future[HttpResponse] = {
     command match {
       case add: AddWgsUbam =>
-        new AddWgsUbamExecutor(add)
-          .execute(webClient)
+        new AddWgsUbamExecutor(add).execute(webClient, ioUtil)
       case query: QueryWgsUbam =>
-        new QueryWgsUbamExecutor(query).execute(webClient)
-        //TODO MOVE
+        new QueryWgsUbamExecutor(query).execute(webClient, ioUtil)
+      case move: MoveWgsUbam =>
+        new MoveWgsUbamExecutor(move).execute(webClient, ioUtil)
     }
   }
 
-  def dispatch(
-    webClient: ClioWebClient,
-    command: CommandType
-  )(implicit ec: ExecutionContext, bearerToken: OAuth2BearerToken): Boolean = {
+  def dispatch(command: CommandType)(
+    implicit ec: ExecutionContext,
+    bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
     checkResponse(execute(command, webClient))
   }
 
