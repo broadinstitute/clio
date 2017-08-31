@@ -64,10 +64,11 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
     input: TransferWgsUbamV1Key,
     transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
   ): Future[HttpResponse] = {
-    val entity = HttpEntity(
-      ContentTypes.`application/json`,
-      transferWgsUbamV1Metadata.asJson.pretty(implicitly[Printer])
-    )
+    val entity =
+      HttpEntity(
+        ContentTypes.`application/json`,
+        transferWgsUbamV1Metadata.asJson.pretty(implicitly[Printer])
+      )
     dispatchRequest(
       HttpRequest(
         uri = "/api/v1/wgsubam/metadata/"
@@ -98,5 +99,15 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
     httpResponse: HttpResponse
   ): Future[A] = {
     Unmarshal(httpResponse).to[A]
+  }
+
+  def ensureOkResponse(httpResponse: HttpResponse): HttpResponse = {
+    if (httpResponse.status.isSuccess()) {
+      httpResponse
+    } else {
+      throw new Exception(
+        s"Got an error from the Clio server. Status code: ${httpResponse.status}"
+      )
+    }
   }
 }

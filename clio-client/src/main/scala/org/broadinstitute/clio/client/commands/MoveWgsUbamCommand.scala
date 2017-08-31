@@ -1,8 +1,6 @@
 package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.HttpResponse
-import com.typesafe.scalalogging.{LazyLogging, Logger}
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
@@ -16,17 +14,8 @@ import org.broadinstitute.clio.transfer.model.{
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.broadinstitute.clio.client.util.FutureWithErrorMessage
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
-object MoveWgsUbamCommand
-    extends Command
-    with LazyLogging
-    with FailFastCirceSupport
-    with ModelAutoDerivation
-    with FutureWithErrorMessage {
-
-  implicit val implicitLogger: Logger = logger
+object MoveWgsUbamCommand extends Command {
 
   override def execute(
     webClient: ClioWebClient,
@@ -34,20 +23,20 @@ object MoveWgsUbamCommand
     ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     for {
-      _ <- verifyPath(webClient, config) withErrorMsg
+      _ <- verifyCloudPaths(config) logErrorMsg
         "Clio client can only handle cloud operations right now."
-      wgsUbamPath <- queryForWgsUbamPath(webClient, config) withErrorMsg
+      wgsUbamPath <- queryForWgsUbamPath(webClient, config) logErrorMsg
         "Could not query the WgsUbam. No files have been moved."
-      _ <- copyGoogleObject(wgsUbamPath, config.ubamPath, ioUtil) withErrorMsg
+      _ <- copyGoogleObject(wgsUbamPath, config.ubamPath, ioUtil) logErrorMsg
         "An error occurred while copying the files in the cloud. No files have been moved."
-      upsertUbam <- upsertUpdatedWgsUbam(webClient, config) withErrorMsg
+      upsertUbam <- upsertUpdatedWgsUbam(webClient, config) logErrorMsg
         s"""An error occurred while upserting the WgsUbam.
            |The ubam exists in both at both the old and the new locations.
            |At this time, Clio only knows about the bam at the old location.
            |Try removing the ubam at the new location and re-running this command.
            |If this cannot be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.
         """.stripMargin
-      _ <- deleteGoogleObject(wgsUbamPath, ioUtil) withErrorMsg
+      _ <- deleteGoogleObject(wgsUbamPath, ioUtil) logErrorMsg
         s"""The old bam was not able to be deleted. Clio has been updated to point to the new bam.
            | Please delete the old bam. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
            | """.stripMargin
@@ -56,27 +45,6 @@ object MoveWgsUbamCommand
         s"Successfully moved '${wgsUbamPath.get}' to '${config.ubamPath.get}'"
       )
       upsertUbam
-    }
-  }
-
-  private def verifyPath(webClient: ClioWebClient,
-                         config: BaseArgs): Future[Unit] = {
-    implicit val executionContext: ExecutionContext = webClient.executionContext
-    Future {
-      config.location.foreach {
-        case "GCP" => ()
-        case _ =>
-          throw new Exception(
-            "Only GCP unmapped bams are supported at this time."
-          )
-      }
-      config.ubamPath.foreach {
-        case loc if loc.startsWith("gs://") => ()
-        case _ =>
-          throw new Exception(
-            s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path."
-          )
-      }
     }
   }
 
@@ -119,7 +87,7 @@ object MoveWgsUbamCommand
             new Exception("There was an error contacting the Clio server", ex)
           )
       }
-      .map(ensureOkResponse)
+      .map(webClient.ensureOkResponse)
       .flatMap(webClient.unmarshal[Seq[TransferWgsUbamV1QueryOutput]])
       .map(ensureOnlyOne)
       .map(_.ubamPath)
@@ -166,7 +134,7 @@ object MoveWgsUbamCommand
         transferWgsUbamV1Metadata =
           TransferWgsUbamV1Metadata(ubamPath = config.ubamPath)
       )
-      .map(ensureOkResponse)
+      .map(webClient.ensureOkResponse)
   }
 
   private def prettyKey(config: BaseArgs): String = {
@@ -175,13 +143,28 @@ object MoveWgsUbamCommand
       s"Lane: ${config.lane.getOrElse("")}, Location: ${config.location.getOrElse("")}"
   }
 
-  def ensureOkResponse(httpResponse: HttpResponse): HttpResponse = {
-    if (httpResponse.status.isSuccess()) {
-      httpResponse
-    } else {
-      throw new Exception(
-        s"Got an error from the Clio server. Status code: ${httpResponse.status}"
-      )
+  private def verifyCloudPaths(config: BaseArgs): Future[Unit] = {
+    val errorOption = for {
+      locationError <- config.location.map {
+        case "GCP" => ""
+        case _ =>
+          "Only GCP unmapped bams are supported at this time."
+      }
+      pathError <- config.ubamPath.map {
+        case loc if loc.startsWith("gs://") => ""
+        case _ =>
+          s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path."
+      }
+    } yield {
+      if (locationError.isEmpty && pathError.isEmpty) {
+        Future.successful(())
+      } else {
+        Future.failed(new Exception(String.join(" ", locationError, pathError)))
+      }
     }
+    errorOption.getOrElse(
+      Future
+        .failed(new Exception("Either location or ubamPath were not supplied"))
+    )
   }
 }

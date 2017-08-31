@@ -16,9 +16,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
 
 class StatusService private (
-  serverStatusDAO: ServerStatusDAO,
-  httpServerDAO: HttpServerDAO,
-  searchDAO: SearchDAO
+    serverStatusDAO: ServerStatusDAO,
+    httpServerDAO: HttpServerDAO,
+    searchDAO: SearchDAO
 )(implicit executionContext: ExecutionContext) {
   def getStatus: Future[StatusInfo] = {
     for {
@@ -34,7 +34,7 @@ class StatusService private (
 
 object StatusService {
   def apply(
-    app: ClioApp
+      app: ClioApp
   )(implicit executionContext: ExecutionContext): StatusService = {
     new StatusService(app.serverStatusDAO, app.httpServerDAO, app.searchDAO)
   }

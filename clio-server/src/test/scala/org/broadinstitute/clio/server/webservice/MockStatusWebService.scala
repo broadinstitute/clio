@@ -6,7 +6,7 @@ import org.broadinstitute.clio.server.{ClioApp, MockClioApp}
 import scala.concurrent.ExecutionContext
 
 class MockStatusWebService(
-  app: ClioApp = MockClioApp()
+    app: ClioApp = MockClioApp()
 )(implicit executionContext: ExecutionContext)
     extends StatusWebService {
   override lazy val statusService: StatusService = StatusService(app)

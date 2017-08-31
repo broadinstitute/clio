@@ -12,7 +12,6 @@ import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.{ExecutionContext, Future}
 import io.circe.parser._
-import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 
 object AddWgsUbamCommand extends Command {
 

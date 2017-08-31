@@ -18,8 +18,8 @@ trait WgsUbamElasticsearchDAO extends SearchDAO {
   implicit val executionContext: ExecutionContext
 
   override def updateWgsUbamMetadata(
-    key: ModelWgsUbamKey,
-    metadata: ModelWgsUbamMetadata
+      key: ModelWgsUbamKey,
+      metadata: ModelWgsUbamMetadata
   ): Future[Unit] = {
     updateMetadata(
       ElasticsearchIndex.WgsUbam,
@@ -30,7 +30,7 @@ trait WgsUbamElasticsearchDAO extends SearchDAO {
   }
 
   override def queryWgsUbam(
-    queryInput: ModelWgsUbamQueryInput
+      queryInput: ModelWgsUbamQueryInput
   ): Future[Seq[ModelWgsUbamQueryOutput]] = {
     searchDocuments(
       ElasticsearchIndex.WgsUbam,

@@ -17,9 +17,8 @@ import org.broadinstitute.clio.server.model.{
   * @tparam ModelQueryOutput The type of the query output.
   * @tparam Document         The Elasticsearch documents being queried.
   */
-abstract class ElasticsearchQueryMapper[ModelQueryInput,
-                                        ModelQueryOutput,
-                                        Document] {
+abstract class ElasticsearchQueryMapper[
+    ModelQueryInput, ModelQueryOutput, Document] {
 
   /**
     * Returns true if the client sent a query that doesn't contain any filters.
@@ -46,7 +45,7 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput,
   def toQueryOutput(document: Document): ModelQueryOutput
 
   private[dataaccess] def toQueryOutputs(
-    searchResponse: SearchResponse
+      searchResponse: SearchResponse
   )(implicit hitReader: HitReader[Document]): Seq[ModelQueryOutput] = {
     searchResponse.to[Document].map(toQueryOutput)
   }
@@ -68,8 +67,8 @@ object ElasticsearchQueryMapper {
     * @return The query definition.
     */
   private[dataaccess] def queryOnOrAfter(
-    name: String,
-    value: OffsetDateTime
+      name: String,
+      value: OffsetDateTime
   ): QueryDefinition = {
     rangeQuery(name).gte(value.toString)
   }
@@ -82,8 +81,8 @@ object ElasticsearchQueryMapper {
     * @return The query definition.
     */
   private[dataaccess] def queryOnOrBefore(
-    name: String,
-    value: OffsetDateTime
+      name: String,
+      value: OffsetDateTime
   ): QueryDefinition = {
     rangeQuery(name).lte(value.toString)
   }
