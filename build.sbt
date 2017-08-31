@@ -61,6 +61,7 @@ lazy val clio = project
   * Project holding:
   *   1. Generic shapeless utilities to map between types / fields / case classes.
   *   2. Generic types not really tied to any specific class of model, i.e. Location.
+  *   3. Common configuration-parsing utilities.
   */
 lazy val `clio-util` = project
   .settings(commonSettings)

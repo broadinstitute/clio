@@ -47,4 +47,20 @@ trait TestData {
     transferWgsUbamV1Key = testTransferV1Key
   )
 
+  val goodMoveCommand = Array(
+    Commands.AddWgsUbam.toString,
+    "-m",
+    metadataFileLocation.get,
+    "-f",
+    testFlowcell.get,
+    "-l",
+    "1",
+    "-n",
+    testLibName.get,
+    "--location",
+    testLocation.get,
+    "--ubamPath",
+    testUbamCloudDestinationPath.get
+  )
+
 }

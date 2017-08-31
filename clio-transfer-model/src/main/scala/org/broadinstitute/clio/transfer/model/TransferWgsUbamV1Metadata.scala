@@ -1,8 +1,10 @@
 package org.broadinstitute.clio.transfer.model
 import org.broadinstitute.clio.util.model.DocumentStatus
 import java.time.OffsetDateTime
+import java.util.UUID
 
 case class TransferWgsUbamV1Metadata(
+  clioId: Option[UUID] = None,
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
   dataType: Option[String] = None,

@@ -4,20 +4,21 @@ val SbtAssemblyVersion = "0.14.4"
 val SbtGitVersion = "0.9.3"
 val SbtDockerVersion = "1.4.1"
 val SbtScalafmtVersion = "1.9"
+val SbtScoverageVersion = "1.5.0"
 val ScalafmtVersion = "1.1.0"
 val Slf4jVersion = "1.7.25"
 val TypesafeConfigVersion = "1.3.1"
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-git" % SbtGitVersion)
-libraryDependencies += "org.slf4j" % "slf4j-nop" % Slf4jVersion
-
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % SbtAssemblyVersion)
-
-addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % SbtDockerVersion)
-
 addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % SbtScalafmtVersion)
+addSbtPlugin("com.typesafe.sbt" % "sbt-git" % SbtGitVersion)
+addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % SbtDockerVersion)
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % SbtScoverageVersion)
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.5.0")
+libraryDependencies ++= Seq(
+  "com.typesafe" % "config" % TypesafeConfigVersion,
+  "org.slf4j" % "slf4j-nop" % Slf4jVersion
+)
 
 // Various compiler tweaks for our ClioIntegrationTestPlugin.
 // More info available via:
@@ -42,7 +43,6 @@ scalacOptions ++= Seq(
   "-Ywarn-value-discard",
   "-Xfatal-warnings"
 )
-libraryDependencies += "com.typesafe" % "config" % TypesafeConfigVersion
 
 scalafmtVersion in ThisBuild := ScalafmtVersion
 scalafmtOnCompile in ThisBuild := true

@@ -6,6 +6,7 @@ import shapeless.labelled.FieldType
 
 import scala.reflect.runtime.universe.{Type, TypeTag, typeOf, typeTag}
 import java.time.OffsetDateTime
+import java.util.UUID
 
 import enumeratum.EnumEntry
 
@@ -111,6 +112,7 @@ object JsonSchema {
       case t if t =:= typeOf[Option[String]]         => (false, aString)
       case t if t <:< typeOf[Option[EnumEntry]]      => (false, aString)
       case t if t =:= typeOf[Option[OffsetDateTime]] => (false, aTime)
+      case t if t =:= typeOf[Option[UUID]]           => (false, aString)
       case _ =>
         throw new IllegalArgumentException(
           s"No JsonSchema support for $fieldName: $fieldType yet"

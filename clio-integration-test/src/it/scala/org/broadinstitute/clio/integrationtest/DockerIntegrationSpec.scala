@@ -15,49 +15,45 @@ import java.io.File
 import java.nio.file.FileSystems
 
 /**
-  * An integration spec that spins up a Clio server instance
-  * in Docker locally using docker-compose, and tests against it.
+  * An integration spec that spins up a Clio server instance and
+  * Elasticsearch cluster in Docker locally using docker-compose,
+  * and tests against them.
   *
   * Assumes SBT sets all environment variables required by the
   * docker-compose file when forking to run integration tests.
-  *
-  * @param composeFile the compose file describing how to spin up Clio
-  * @param esDescription description of Elasticsearch to use in the spec name
   * @see `ClioIntegrationTestSettings` in the build
   */
-abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
-    extends BaseIntegrationSpec(
-      s"Containerized Clio - connecting to $esDescription Elasticsearch"
-    )
+class DockerIntegrationSpec
+    extends BaseIntegrationSpec("Clio in Docker")
     with ForAllTestContainer
     with IntegrationSuite {
 
-  /**
-    * Name of the clio-server instance that will be started by the docker-compose
-    * call, plus its instance number.
-    *
-    * NOTE: If you change the name of the Clio service in the compose files used
-    * for integration testing, you also need to change this value to match.
-    */
-  private val clioName = "clio-server_1"
-  protected def exposedServices: Map[String, Int] = Map(clioName -> 8080)
+  // Docker-compose appends "_<instance #>" to service names.
+  private val clioFullName = s"${DockerIntegrationSpec.clioServiceName}_1"
+  private val esFullName =
+    s"${DockerIntegrationSpec.elasticsearchServiceName}_1"
 
-  override val container =
-    new ClioDockerComposeContainer(
-      new File(getClass.getResource(composeFile).toURI),
-      exposedServices
+  override val container = new ClioDockerComposeContainer(
+    new File(getClass.getResource(DockerIntegrationSpec.composeFilename).toURI),
+    DockerIntegrationSpec.elasticsearchServiceName,
+    Map(
+      clioFullName -> DockerIntegrationSpec.clioServicePort,
+      esFullName -> DockerIntegrationSpec.elasticsearchServicePort
     )
+  )
 
   /*
-   * Needs to be lazy because `container.getServiceXYZ` will raise an IllegalStateException
-   * if it's called before the container is actually started.
+   * These need to be lazy because the `container.getServiceXYZ` methods will
+   * raise an IllegalStateException if they're called before the container is
+   * actually started.
    */
   override lazy val clioWebClient: ClioWebClient =
     new ClioWebClient(
-      container.getServiceHost(clioName),
-      container.getServicePort(clioName),
+      container.getServiceHost(clioFullName),
+      container.getServicePort(clioFullName),
       useHttps = false
     )
+  override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)
 
   // No bearer token needed for talking to local Clio.
   override val bearerToken = "dummy-token"
@@ -82,46 +78,54 @@ abstract class DockerIntegrationSpec(composeFile: String, esDescription: String)
     )
     val logStream = clioLogLines
       .map { line =>
-        if (line.contains("INFO")) println(line)
+        if (!line.contains("DEBUG")) println(line)
         line
       }
-      .takeWhile(line => !line.contains("Server started"))
+      .takeWhile(line => !line.contains(DockerIntegrationSpec.clioReadyMessage))
       .runWith(Sink.ignore)
     val _ = Await.result(logStream, waitTime)
     logger.info("Clio ready!")
   }
 }
 
-/**
-  * The integration spec that tests Dockerized Clio using a local Elasticsearch
-  * cluster also running in Docker.
-  */
-class FullDockerIntegrationSpec
-    extends DockerIntegrationSpec("docker-compose.yml", "local") {
+/*
+ * Constants for setting up / connecting into the docker-compose environment.
+ *
+ * NOTE: These values depend on:
+ *
+ *   1. The name / contents of our compose file,
+ *   2. The default ports of our Dockerized services,
+ *   3. The expected startup messages of clio-server.
+ *
+ * If you change any of those things, you need to update these constants to match.
+ */
+object DockerIntegrationSpec {
 
   /**
-    * Name of one of the elasticsearch instances that will be started by
-    * the docker-compose call, plus its instance number.
-    *
-    * NOTE: If you change the name of the elasticserach service in docker-compose.yml,
-    * you also need to change this value to match.
+    * Filename of the compose file describing the test environment.
+    * The file is assumed to be located in the resources directory of the
+    * integration-test code, under the same package as this class.
     */
-  private lazy val esName = "elasticsearch1_1"
+  val composeFilename = "docker-compose.yml"
 
-  override def exposedServices: Map[String, Int] =
-    super.exposedServices + (esName -> 9200)
+  /**
+    * Service name of the clio-server instance that will be started by
+    * the docker-compose call.
+    */
+  val clioServiceName = "clio-server"
 
-  override lazy val elasticsearchUri: Uri =
-    container.getServiceUri(esName)
-}
+  /** Port we expect the clio-server instance to bind. */
+  val clioServicePort = 8080
 
-/**
-  * The integration spec that tests Dockerized Clio using the Elasticsearch
-  * cluster deployed in dev.
-  */
-class DockerDevIntegrationSpec
-    extends DockerIntegrationSpec("docker-compose-dev-elasticsearch.yml", "dev") {
+  /** Message we expect Clio to log when it's ready to accept connections. */
+  val clioReadyMessage = "Server started"
 
-  override val elasticsearchUri: Uri =
-    Uri("http://elasticsearch1.gotc-dev.broadinstitute.org:9200")
+  /**
+    * Service name of the elasticsearch instance, started by the docker-
+    * compose call, to which the clio-server service should connect.
+    */
+  val elasticsearchServiceName = "elasticsearch1"
+
+  /** Port we expect the elasticsearch instance to bind. */
+  val elasticsearchServicePort = 9200
 }

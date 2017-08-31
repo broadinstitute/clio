@@ -1,8 +1,10 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import java.time.OffsetDateTime
+import java.util.UUID
 
-case class DocumentMock(mockFieldDate: Option[OffsetDateTime],
+case class DocumentMock(mockClioId: Option[UUID],
+                        mockFieldDate: Option[OffsetDateTime],
                         mockFieldDouble: Option[Double],
                         mockFieldInt: Option[Int],
                         mockFileMd5: Option[String],

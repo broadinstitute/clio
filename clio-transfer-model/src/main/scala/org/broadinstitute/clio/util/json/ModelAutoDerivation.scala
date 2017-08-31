@@ -1,14 +1,18 @@
 package org.broadinstitute.clio.util.json
 
 import java.time.OffsetDateTime
-
 import cats.syntax.either._
 import enumeratum._
 import io.circe.generic.extras.{AutoDerivation, Configuration}
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
 import org.broadinstitute.clio.util.generic.CompanionCache
 
+import io.circe.Decoder.Result
+
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
+
+import java.net.URI
 
 /**
   * Extends circe's _extra_ auto derivation with additional derivations needed for clio.
@@ -32,7 +36,8 @@ trait ModelAutoDerivation extends AutoDerivation {
     * NOTE: We're extending from generic.extras.AutoDerivation instead of generic.AutoDerivation
     * Otherwise this config isn't used.
     */
-  implicit val config: Configuration = Configuration.default.withSnakeCaseKeys
+  implicit val jsonConfig: Configuration =
+    Configuration.default.withSnakeCaseKeys
 
   /**
     * When decoding, don't allow extra fields.
@@ -88,5 +93,21 @@ trait ModelAutoDerivation extends AutoDerivation {
     */
   implicit def decodeEnum[T <: EnumEntry: ClassTag]: Decoder[T] = {
     enumDecoderCache.cached[T, Enum[T], Decoder[T]](Circe.decoder)
+  }
+
+  /**
+    * Provides a decoder for Java URIs.
+    */
+  implicit val decodeUri: Decoder[URI] = new Decoder[URI] {
+    override def apply(c: HCursor): Result[URI] = {
+      val stringDecoder = implicitly[Decoder[String]]
+      stringDecoder(c).flatMap { s =>
+        Try(new URI(s)) match {
+          case Success(uri) => Right(uri)
+          case Failure(err) =>
+            Left(DecodingFailure.fromThrowable(err, List.empty))
+        }
+      }
+    }
   }
 }

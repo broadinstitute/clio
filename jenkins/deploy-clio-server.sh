@@ -76,6 +76,8 @@ POS_LOG_DIR=pos
 CLIO_APP_CONF=clio.conf
 # name of the logback config used by the clio instance
 CLIO_LOGBACK_CONF=clio-logback.xml
+# name of the service account JSON file used by the clio instance
+CLIO_SERVICE_ACCOUNT_JSON=clio-service-account.json
 # port to expose for clio in the clio container
 CONTAINER_CLIO_PORT=8080
 
@@ -91,7 +93,7 @@ TMPDIR=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
 CTMPL_ENV_FILE="${TMPDIR}/env-vars.txt"
 
 # populate temp env.txt file with necessary environment for rendering configs
-for var in ENV CLIO_HOST DOCKER_TAG APP_DIR CLIO_CONF_DIR HOST_LOG_DIR CLIO_LOG_DIR POS_LOG_DIR CLIO_APP_CONF CLIO_LOGBACK_CONF CONTAINER_CLIO_PORT; do
+for var in ENV CLIO_HOST DOCKER_TAG APP_DIR CLIO_CONF_DIR HOST_LOG_DIR CLIO_LOG_DIR POS_LOG_DIR CLIO_APP_CONF CLIO_LOGBACK_CONF CLIO_SERVICE_ACCOUNT_JSON CONTAINER_CLIO_PORT; do
   echo "${var}=${!var}" >> ${CTMPL_ENV_FILE}
 done
 

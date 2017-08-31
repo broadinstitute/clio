@@ -11,6 +11,7 @@ import java.io.File
   * testcontainers-scala doesn't make the settings configurable.
   */
 class ClioDockerComposeContainer(composeFile: File,
+                                 elasticsearchHostname: String,
                                  exposedServices: Map[String, Int])
     extends DockerComposeContainer(composeFile, exposedServices) {
   /*
@@ -25,6 +26,14 @@ class ClioDockerComposeContainer(composeFile: File,
    * Using the local install gets the vars to pass through.
    */
   container.withLocalCompose(true)
+
+  /*
+   * Most of the environment variables needed to fill in our compose files are
+   * constants across test suites and passed in by SBT (because they deal with
+   * versions / file paths), but the elasticsearch host to test against varies
+   * from suite to suite so we set it here instead.
+   */
+  container.withEnv("ELASTICSEARCH_HOST", elasticsearchHostname)
 
   /**
     * Get the exposed hostname for one of the exposed services running in the underlying container.
