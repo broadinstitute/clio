@@ -22,12 +22,13 @@ trait BasicTests { self: BaseIntegrationSpec =>
       )
   }
 
-  it should "report a git-hash version at /version" in {
-    clioWebClient.getClioServerVersion
-      .flatMap(Unmarshal(_).to[VersionInfo])
-      .map(
-        _.version should fullyMatch regex """\d+\.\d+\.\d+-g[0-9a-f]{7}-SNAP"""
-      )
+  it should "report the server version of this test at /version" in {
+    for {
+      response <- clioWebClient.getClioServerVersion
+      versionInfo <- Unmarshal(response).to[VersionInfo]
+    } yield {
+      versionInfo.version should be(System.getenv("CLIO_DOCKER_TAG"))
+    }
   }
 
   it should "reject requests to invalid routes" in {
