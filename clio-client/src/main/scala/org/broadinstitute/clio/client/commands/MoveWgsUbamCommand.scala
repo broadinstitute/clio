@@ -18,9 +18,9 @@ import scala.concurrent.{ExecutionContext, Future}
 object MoveWgsUbamCommand extends Command {
 
   override def execute(
-      webClient: ClioWebClient,
-      config: BaseArgs,
-      ioUtil: IoUtil
+    webClient: ClioWebClient,
+    config: BaseArgs,
+    ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     for {
       _ <- verifyCloudPaths(config) logErrorMsg
@@ -53,7 +53,7 @@ object MoveWgsUbamCommand extends Command {
     implicit val ec: ExecutionContext = webClient.executionContext
 
     def ensureOnlyOne(
-        wgsUbams: Seq[TransferWgsUbamV1QueryOutput]
+      wgsUbams: Seq[TransferWgsUbamV1QueryOutput]
     ): TransferWgsUbamV1QueryOutput = {
       wgsUbams.size match {
         case 1 =>

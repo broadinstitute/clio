@@ -17,8 +17,8 @@ import akka.actor.ActorSystem
 import scala.concurrent.Future
 
 class MockClioWebClient(
-    status: StatusCode,
-    metadataLocationOption: Option[String]
+  status: StatusCode,
+  metadataLocationOption: Option[String]
 )(implicit system: ActorSystem)
     extends ClioWebClient("localhost", 8080, false)
     with TestData {
@@ -44,16 +44,16 @@ class MockClioWebClient(
   }
 
   override def addWgsUbam(
-      bearerToken: String,
-      input: TransferWgsUbamV1Key,
-      transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
+    bearerToken: String,
+    input: TransferWgsUbamV1Key,
+    transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
   ): Future[HttpResponse] = {
     Future.successful(HttpResponse(status = status))
   }
 
   override def queryWgsUbam(
-      bearerToken: String,
-      input: TransferWgsUbamV1QueryInput
+    bearerToken: String,
+    input: TransferWgsUbamV1QueryInput
   ): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
@@ -91,8 +91,8 @@ object MockClioWebClient extends TestData {
     class MockClioWebClientNoReturn
         extends MockClioWebClient(status = StatusCodes.OK, None) {
       override def queryWgsUbam(
-          bearerToken: String,
-          input: TransferWgsUbamV1QueryInput
+        bearerToken: String,
+        input: TransferWgsUbamV1QueryInput
       ): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(
@@ -112,9 +112,9 @@ object MockClioWebClient extends TestData {
     class MockClioWebClientCantAdd
         extends MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation) {
       override def addWgsUbam(
-          bearerToken: String,
-          input: TransferWgsUbamV1Key,
-          transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
+        bearerToken: String,
+        input: TransferWgsUbamV1Key,
+        transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
       ): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(status = StatusCodes.InternalServerError)

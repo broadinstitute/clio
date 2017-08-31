@@ -37,6 +37,6 @@ trait Command
     with ModelAutoDerivation
     with FutureWithErrorMessage {
   def execute(webClient: ClioWebClient, config: BaseArgs, ioUtil: IoUtil)(
-      implicit ec: ExecutionContext,
+    implicit ec: ExecutionContext,
   ): Future[HttpResponse]
 }

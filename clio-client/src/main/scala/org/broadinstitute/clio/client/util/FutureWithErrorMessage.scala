@@ -9,7 +9,7 @@ trait FutureWithErrorMessage extends LazyLogging {
   implicit val implicitLogger: Logger = logger
   implicit class FutureWithErrorMessage[A](future: Future[A]) {
     def logErrorMsg(
-        additionalMessage: String = ""
+      additionalMessage: String = ""
     )(implicit ec: ExecutionContext, logger: Logger): Future[A] = {
       future andThen {
         case Success(_) => ()

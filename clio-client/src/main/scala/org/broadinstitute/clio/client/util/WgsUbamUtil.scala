@@ -15,7 +15,7 @@ object WgsUbamUtil {
   }
 
   implicit class TransferWgsUbamV1QueryOutputUtil(
-      output: TransferWgsUbamV1QueryOutput
+    output: TransferWgsUbamV1QueryOutput
   ) {
     def prettyKey(): String = {
       TransferWgsUbamV1Key(

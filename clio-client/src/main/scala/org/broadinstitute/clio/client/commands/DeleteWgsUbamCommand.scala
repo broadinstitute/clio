@@ -20,9 +20,9 @@ import scala.util.{Failure, Success}
 object DeleteWgsUbamCommand extends Command {
 
   override def execute(
-      webClient: ClioWebClient,
-      config: BaseArgs,
-      ioUtil: IoUtil
+    webClient: ClioWebClient,
+    config: BaseArgs,
+    ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     if (config.location.isDefined && !config.location.get.equals("GCP")) {
       Future
@@ -51,7 +51,9 @@ object DeleteWgsUbamCommand extends Command {
       } yield {
         deleteResponses.size match {
           case 0 =>
-            throw new Exception("Deleted 0 WgsUbams. None of the WgsUbams queried were able to be deleted.")
+            throw new Exception(
+              "Deleted 0 WgsUbams. None of the WgsUbams queried were able to be deleted."
+            )
           case s if s == wgsUbams.size =>
             logger.info(
               s"Successfully deleted ${deleteResponses.size} WgsUbams."
