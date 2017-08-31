@@ -16,7 +16,7 @@ import io.circe.parser._
 object AddWgsUbamCommand extends Command {
 
   def execute(webClient: ClioWebClient, config: BaseArgs, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext
+      implicit ec: ExecutionContext
   ): Future[HttpResponse] = {
     val decodedOrError = parse(ioUtil.readMetadata(config.metadataLocation.get))
       .flatMap(_.as[TransferWgsUbamV1Metadata])

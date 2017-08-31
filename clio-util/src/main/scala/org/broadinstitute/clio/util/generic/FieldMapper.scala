@@ -77,9 +77,9 @@ object FieldMapper {
     * @return A mapper of the fields in the head-plus-tail.
     */
   implicit def hlistMapper[K <: Symbol, H: TypeTag, T <: HList](
-    implicit
-    witness: Witness.Aux[K],
-    tailMapper: FieldMapper[T]
+      implicit
+      witness: Witness.Aux[K],
+      tailMapper: FieldMapper[T]
   ): FieldMapper[FieldType[K, H] :: T] = {
     createMapper(Map(witness.value.name -> typeTag[H].tpe) ++ tailMapper.fields)
   }
@@ -98,9 +98,9 @@ object FieldMapper {
     * @return A mapper for the fields in A.
     */
   implicit def genericMapper[A, ARepr <: HList](
-    implicit
-    gen: LabelledGeneric.Aux[A, ARepr],
-    mapper: Lazy[FieldMapper[ARepr]]
+      implicit
+      gen: LabelledGeneric.Aux[A, ARepr],
+      mapper: Lazy[FieldMapper[ARepr]]
   ): FieldMapper[A] = {
     require(
       gen != null,

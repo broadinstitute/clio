@@ -46,7 +46,7 @@ object SameFieldsTypeConverter {
     * @return The summoned converter.
     */
   def apply[From, To](
-    implicit sameFieldsConverter: SameFieldsTypeConverter[From, To]
+      implicit sameFieldsConverter: SameFieldsTypeConverter[From, To]
   ): TypeConverter[From, To] = {
     sameFieldsConverter
   }
@@ -62,9 +62,9 @@ object SameFieldsTypeConverter {
     * @return A converter between From and To.
     */
   implicit def genericConverter[From, To, SameRepr <: HList](
-    implicit
-    fromGen: LabelledGeneric.Aux[From, SameRepr],
-    toGen: LabelledGeneric.Aux[To, SameRepr]
+      implicit
+      fromGen: LabelledGeneric.Aux[From, SameRepr],
+      toGen: LabelledGeneric.Aux[To, SameRepr]
   ): SameFieldsTypeConverter[From, To] = { (from: From) =>
     val hlist = fromGen.to(from)
     val to = toGen.from(hlist)

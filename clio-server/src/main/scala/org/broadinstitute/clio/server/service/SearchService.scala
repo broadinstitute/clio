@@ -21,11 +21,11 @@ object SearchService {
     * @return A future result of the upsert.
     */
   def upsertMetadata[TK, TM, MK, MM](
-    transferKey: TK,
-    transferMetadata: TM,
-    keyConverter: TypeConverter[TK, MK],
-    metadataConverter: TypeConverter[TM, MM],
-    updateMetadata: (MK, MM) => Future[Unit]
+      transferKey: TK,
+      transferMetadata: TM,
+      keyConverter: TypeConverter[TK, MK],
+      metadataConverter: TypeConverter[TM, MM],
+      updateMetadata: (MK, MM) => Future[Unit]
   ): Future[Unit] = {
     val modelKey = keyConverter.convert(transferKey)
     val modelMetadata = metadataConverter.convert(transferMetadata)
@@ -50,8 +50,8 @@ object SearchService {
                                     queryInputConverter: TypeConverter[TI, MI],
                                     queryOutputConverter: TypeConverter[MO, TO],
                                     query: MI => Future[Seq[MO]])(
-    implicit
-    executionContext: ExecutionContext
+      implicit
+      executionContext: ExecutionContext
   ): Future[Seq[TO]] = {
     val modelInput = queryInputConverter.convert(transferInput)
     val modelOutputs = query(modelInput)

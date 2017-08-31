@@ -21,7 +21,7 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import scala.concurrent.{ExecutionContext, Future}
 
 class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
-  implicit system: ActorSystem
+    implicit system: ActorSystem
 ) extends FailFastCirceSupport
     with ModelAutoDerivation {
   implicit val executionContext: ExecutionContext = system.dispatcher
@@ -60,9 +60,9 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   }
 
   def addWgsUbam(
-    bearerToken: String,
-    input: TransferWgsUbamV1Key,
-    transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
+      bearerToken: String,
+      input: TransferWgsUbamV1Key,
+      transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
   ): Future[HttpResponse] = {
     val entity = HttpEntity(
       ContentTypes.`application/json`,
@@ -95,7 +95,7 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   }
 
   def unmarshal[A: FromEntityUnmarshaller](
-    httpResponse: HttpResponse
+      httpResponse: HttpResponse
   ): Future[A] = {
     Unmarshal(httpResponse).to[A]
   }

@@ -56,7 +56,7 @@ trait AuditDirectives {
   }
 
   private def auditExceptionHandler(
-    requestContext: RequestContext
+      requestContext: RequestContext
   ): ExceptionHandler = {
     ExceptionHandler {
       case exception: Exception =>

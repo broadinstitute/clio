@@ -33,7 +33,7 @@ object ClioClient extends App {
 class ClioClient(commandDispatch: CommandDispatch) {
 
   def execute(
-    args: Array[String]
+      args: Array[String]
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     val parser: BaseParser = new BaseParser
     parser.parse(args, BaseArgs()) match {

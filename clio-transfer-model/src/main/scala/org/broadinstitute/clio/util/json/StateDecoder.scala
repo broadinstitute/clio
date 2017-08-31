@@ -75,7 +75,7 @@ object StateDecoder extends LowPriorityStateDecoder {
     * @return A StateT for decoding an Option[A].
     */
   private def decodeFieldOption[A](k: String)(
-    implicit d: Decoder[A]
+      implicit d: Decoder[A]
   ): StateT[Result, ACursor, Option[A]] = StateT[Result, ACursor, Option[A]] {
     c =>
       val field = c.downField(k)
@@ -113,10 +113,10 @@ object StateDecoder extends LowPriorityStateDecoder {
     * @return A decoder than can decode the head-plus-tail.
     */
   implicit def hlistOptionDecoder[K <: Symbol, H: Decoder, T <: HList](
-    implicit
-    witness: Witness.Aux[K],
-    tailDecoder: StateDecoder[T],
-    configuration: Configuration = Configuration.default
+      implicit
+      witness: Witness.Aux[K],
+      tailDecoder: StateDecoder[T],
+      configuration: Configuration = Configuration.default
   ): StateDecoder[FieldType[K, Option[H]] :: T] = {
     val symbol = witness.value
     val name = configuration.transformKeys(symbol.name)
@@ -142,9 +142,9 @@ object StateDecoder extends LowPriorityStateDecoder {
     * @return A decoder for A.
     */
   implicit def genericDecoder[A, ARepr <: HList](
-    implicit
-    gen: LabelledGeneric.Aux[A, ARepr],
-    decoder: Lazy[StateDecoder[ARepr]]
+      implicit
+      gen: LabelledGeneric.Aux[A, ARepr],
+      decoder: Lazy[StateDecoder[ARepr]]
   ): StateDecoder[A] = {
     createDecoder {
       decoder.value.state.map(gen.from)
@@ -166,7 +166,7 @@ trait LowPriorityStateDecoder {
     * @return The wrapped instance of a StateDecoder[A].
     */
   protected def createDecoder[A](
-    decoderState: StateT[Result, ACursor, A]
+      decoderState: StateT[Result, ACursor, A]
   ): StateDecoder[A] = {
     new StateDecoder[A] {
       override def state: StateT[Result, ACursor, A] = decoderState
@@ -192,10 +192,10 @@ trait LowPriorityStateDecoder {
     * @return A decoder than can decode the head-plus-tail.
     */
   implicit def hlistDecoder[K <: Symbol, H: Decoder, T <: HList](
-    implicit
-    witness: Witness.Aux[K],
-    tailDecoder: StateDecoder[T],
-    configuration: Configuration = Configuration.default
+      implicit
+      witness: Witness.Aux[K],
+      tailDecoder: StateDecoder[T],
+      configuration: Configuration = Configuration.default
   ): StateDecoder[FieldType[K, H] :: T] = {
     val symbol = witness.value
     val name = configuration.transformKeys(symbol.name)

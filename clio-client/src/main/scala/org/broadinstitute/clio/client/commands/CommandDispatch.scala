@@ -19,7 +19,7 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
     extends LazyLogging {
 
   private def execute(command: CommandType, config: BaseArgs)(
-    implicit ec: ExecutionContext
+      implicit ec: ExecutionContext
   ): Future[HttpResponse] = {
     command match {
       case AddWgsUbam => AddWgsUbamCommand.execute(webClient, config, ioUtil)
@@ -32,7 +32,7 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
   }
 
   def dispatch(
-    config: BaseArgs
+      config: BaseArgs
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     config.command
       .map(command => execute(command, config))
@@ -43,7 +43,7 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
   }
 
   def checkResponse(
-    responseFuture: Future[HttpResponse]
+      responseFuture: Future[HttpResponse]
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     responseFuture.transformWith {
       case Success(response) =>

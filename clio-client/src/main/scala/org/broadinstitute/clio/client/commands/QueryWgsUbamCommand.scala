@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 
 object QueryWgsUbamCommand extends Command {
   def execute(webClient: ClioWebClient, config: BaseArgs, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext
+      implicit ec: ExecutionContext
   ): Future[HttpResponse] = {
     webClient
       .queryWgsUbam(
