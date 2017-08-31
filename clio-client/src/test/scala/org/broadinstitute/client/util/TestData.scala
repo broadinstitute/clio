@@ -24,6 +24,11 @@ trait TestData {
   val testWgsUbamLocation = Some(
     "clio-client/src/test/resources/testdata/testWgsUbam"
   )
+
+  val testTwoWgsUbamsLocation = Some(
+    "clio-client/src/test/resources/testdata/testWgsUbams"
+  )
+
   val badMetadataFileLocation =
     "clio-client/src/test/resources/testdata/badmetadata"
   val metadataPlusExtraFieldsFileLocation =

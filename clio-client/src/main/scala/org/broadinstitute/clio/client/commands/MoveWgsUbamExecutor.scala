@@ -22,31 +22,25 @@ class MoveWgsUbamExecutor(moveWgsUbamCommand: MoveWgsUbam)
     with ModelAutoDerivation
     with FutureWithErrorMessage {
 
-  implicit val implicitLogger: Logger = logger
-
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     for {
-      _ <- verifyPath(webClient) withErrorMsg
+      _ <- verifyCloudPaths(config) logErrorMsg
         "Clio client can only handle cloud operations right now."
-      wgsUbamPath <- queryForWgsUbamPath(webClient) withErrorMsg
+      wgsUbamPath <- queryForWgsUbamPath(webClient, config) logErrorMsg
         "Could not query the WgsUbam. No files have been moved."
-      _ <- copyGoogleObject(
-        wgsUbamPath,
-        moveWgsUbamCommand.metadata.ubamPath,
-        ioUtil
-      ) withErrorMsg
+      _ <- copyGoogleObject(wgsUbamPath, config.ubamPath, ioUtil) logErrorMsg
         "An error occurred while copying the files in the cloud. No files have been moved."
-      upsertUbam <- upsertUpdatedWgsUbam(webClient) withErrorMsg
+      upsertUbam <- upsertUpdatedWgsUbam(webClient, config) logErrorMsg
         s"""An error occurred while upserting the WgsUbam.
            |The ubam exists in both at both the old and the new locations.
            |At this time, Clio only knows about the bam at the old location.
            |Try removing the ubam at the new location and re-running this command.
            |If this cannot be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.
         """.stripMargin
-      _ <- deleteGoogleObject(wgsUbamPath, ioUtil) withErrorMsg
+      _ <- deleteGoogleObject(wgsUbamPath, ioUtil) logErrorMsg
         s"""The old bam was not able to be deleted. Clio has been updated to point to the new bam.
            | Please delete the old bam. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
            | """.stripMargin
@@ -81,6 +75,8 @@ class MoveWgsUbamExecutor(moveWgsUbamCommand: MoveWgsUbam)
   private def queryForWgsUbamPath(
     webClient: ClioWebClient
   )(implicit bearerToken: OAuth2BearerToken): Future[Option[String]] = {
+  private def queryForWgsUbamPath(webClient: ClioWebClient,
+                                  config: BaseArgs): Future[Option[String]] = {
     implicit val ec: ExecutionContext = webClient.executionContext
 
     def ensureOnlyOne(
@@ -119,7 +115,7 @@ class MoveWgsUbamExecutor(moveWgsUbamCommand: MoveWgsUbam)
             new Exception("There was an error contacting the Clio server", ex)
           )
       }
-      .map(ensureOkResponse)
+      .map(webClient.ensureOkResponse)
       .flatMap(webClient.unmarshal[Seq[TransferWgsUbamV1QueryOutput]])
       .map(ensureOnlyOne)
       .map(_.ubamPath)
@@ -160,7 +156,7 @@ class MoveWgsUbamExecutor(moveWgsUbamCommand: MoveWgsUbam)
         input = moveWgsUbamCommand.transferWgsUbamV1Key,
         transferWgsUbamV1Metadata = moveWgsUbamCommand.metadata
       )
-      .map(ensureOkResponse)
+      .map(webClient.ensureOkResponse)
   }
 
   private def prettyKey: String = {
@@ -169,13 +165,28 @@ class MoveWgsUbamExecutor(moveWgsUbamCommand: MoveWgsUbam)
       s"Lane: ${moveWgsUbamCommand.transferWgsUbamV1Key.lane}, Location: ${moveWgsUbamCommand.transferWgsUbamV1Key.location}"
   }
 
-  def ensureOkResponse(httpResponse: HttpResponse): HttpResponse = {
-    if (httpResponse.status.isSuccess()) {
-      httpResponse
-    } else {
-      throw new Exception(
-        s"Got an error from the Clio server. Status code: ${httpResponse.status}"
-      )
+  private def verifyCloudPaths(config: BaseArgs): Future[Unit] = {
+    val errorOption = for {
+      locationError <- config.location.map {
+        case "GCP" => ""
+        case _ =>
+          "Only GCP unmapped bams are supported at this time."
+      }
+      pathError <- config.ubamPath.map {
+        case loc if loc.startsWith("gs://") => ""
+        case _ =>
+          s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path."
+      }
+    } yield {
+      if (locationError.isEmpty && pathError.isEmpty) {
+        Future.successful(())
+      } else {
+        Future.failed(new Exception(String.join(" ", locationError, pathError)))
+      }
     }
+    errorOption.getOrElse(
+      Future
+        .failed(new Exception("Either location or ubamPath were not supplied"))
+    )
   }
 }

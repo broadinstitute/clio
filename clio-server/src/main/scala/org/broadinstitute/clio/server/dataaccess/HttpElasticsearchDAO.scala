@@ -21,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
 class HttpElasticsearchDAO private[dataaccess] (
-  private[dataaccess] val httpHosts: Seq[HttpHost]
+    private[dataaccess] val httpHosts: Seq[HttpHost]
 )(implicit
   val executionContext: ExecutionContext,
   val system: ActorSystem)
@@ -45,14 +45,14 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def existsIndexType(
-    index: ElasticsearchIndex[_]
+      index: ElasticsearchIndex[_]
   ): Future[Boolean] = {
     val indexExistsDefinition = indexExists(index.indexName)
     httpClient.execute(indexExistsDefinition).map(_.exists)
   }
 
   private[dataaccess] def createIndexType(
-    index: ElasticsearchIndex[_]
+      index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     val createIndexDefinition = createIndex(index.indexName) mappings mapping(
       index.indexType
@@ -71,7 +71,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def updateFieldDefinitions(
-    index: ElasticsearchIndex[_]
+      index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     val putMappingDefinition =
       putMapping(index.indexName / index.indexType) dynamic DynamicMapping.False as (index.fields: _*)
@@ -85,7 +85,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def bulkUpdate(
-    definitions: BulkCompatibleDefinition*
+      definitions: BulkCompatibleDefinition*
   ): Future[Unit] = {
     val bulkDefinition = bulk(definitions) refresh RefreshPolicy.WAIT_UNTIL
     httpClient.execute(bulkDefinition) map { response =>
@@ -98,18 +98,18 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def updatePartialDocument[A: Indexable](
-    index: ElasticsearchIndex[A],
-    id: Any,
-    document: A
+      index: ElasticsearchIndex[A],
+      id: Any,
+      document: A
   ): BulkCompatibleDefinition = {
     update(id) in index.indexName / index.indexType docAsUpsert document
   }
 
   private[dataaccess] def updateMetadata[MK, MM, D: Indexable](
-    indexDocument: ElasticsearchIndex[D],
-    mapper: ElasticsearchDocumentMapper[MK, MM, D],
-    key: MK,
-    metadata: MM
+      indexDocument: ElasticsearchIndex[D],
+      mapper: ElasticsearchDocumentMapper[MK, MM, D],
+      key: MK,
+      metadata: MM
   ): Future[Unit] = {
     val id = mapper.id(key)
     val empty = mapper.empty(key)
@@ -118,9 +118,9 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def searchDocuments[I, O, D: HitReader](
-    index: ElasticsearchIndex[D],
-    queryBuilder: ElasticsearchQueryMapper[I, O, D],
-    queryInput: I
+      index: ElasticsearchIndex[D],
+      queryBuilder: ElasticsearchQueryMapper[I, O, D],
+      queryInput: I
   ): Future[Seq[O]] = {
     if (queryBuilder.isEmpty(queryInput)) {
       Future.successful(Seq.empty)
@@ -140,9 +140,9 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private def foldScroll[I, O, D: HitReader](
-    acc: Seq[O],
-    queryBuilder: ElasticsearchQueryMapper[I, O, D],
-    keepAlive: Option[String]
+      acc: Seq[O],
+      queryBuilder: ElasticsearchQueryMapper[I, O, D],
+      keepAlive: Option[String]
   )(searchResponse: SearchResponse): Future[Seq[O]] = {
     searchResponse.scrollId match {
       case Some(scrollId) =>

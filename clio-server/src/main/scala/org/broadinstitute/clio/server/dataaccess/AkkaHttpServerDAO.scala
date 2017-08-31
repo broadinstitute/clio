@@ -13,9 +13,9 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 class AkkaHttpServerDAO private (routes: Route)(
-  implicit system: ActorSystem,
-  executionContext: ExecutionContext,
-  materializer: Materializer
+    implicit system: ActorSystem,
+    executionContext: ExecutionContext,
+    materializer: Materializer
 ) extends HttpServerDAO
     with StrictLogging {
 

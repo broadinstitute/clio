@@ -23,6 +23,7 @@ object Dependencies {
   private val ScalaTestVersion = "3.0.3"
   private val ShapelessVersion = "2.3.2"
   private val Slf4jVersion = "1.7.25"
+  private val SwaggerUi = "3.1.5"
   private val TestContainersScalaVersion = "0.7.0"
   private val TypesafeConfigVersion = "1.3.1"
   private val UUIDVersion = "3.1.3"
@@ -53,7 +54,8 @@ object Dependencies {
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-generic-extras" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
-    "org.slf4j" % "slf4j-api" % Slf4jVersion
+    "org.slf4j" % "slf4j-api" % Slf4jVersion,
+    "org.webjars" % "swagger-ui" % SwaggerUi
   )
 
   /** Dependencies only used by test code. */

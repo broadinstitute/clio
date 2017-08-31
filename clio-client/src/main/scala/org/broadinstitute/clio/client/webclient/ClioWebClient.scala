@@ -101,4 +101,14 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   ): Future[A] = {
     Unmarshal(httpResponse).to[A]
   }
+
+  def ensureOkResponse(httpResponse: HttpResponse): HttpResponse = {
+    if (httpResponse.status.isSuccess()) {
+      httpResponse
+    } else {
+      throw new Exception(
+        s"Got an error from the Clio server. Status code: ${httpResponse.status}"
+      )
+    }
+  }
 }

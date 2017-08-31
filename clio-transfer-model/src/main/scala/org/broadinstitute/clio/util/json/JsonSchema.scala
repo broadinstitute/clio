@@ -131,8 +131,8 @@ object JsonSchema {
     * @return a JSON schema for the HList representation of A
     */
   implicit def hlistSchema[Key <: Symbol, Head: TypeTag, Tail <: HList](
-    implicit witness: Witness.Aux[Key],
-    tail: JsonSchema[Tail]
+      implicit witness: Witness.Aux[Key],
+      tail: JsonSchema[Tail]
   ): JsonSchema[FieldType[Key, Head] :: Tail] = {
     import s_mach.string._
     val fieldName = witness.value.name.toSnakeCase(Lexer.CamelCase)
@@ -157,8 +157,8 @@ object JsonSchema {
     * @return a JsonSchema for A
     */
   implicit def genericSchema[A, ARepr <: HList](
-    implicit gen: LabelledGeneric.Aux[A, ARepr],
-    schema: Lazy[JsonSchema[ARepr]]
+      implicit gen: LabelledGeneric.Aux[A, ARepr],
+      schema: Lazy[JsonSchema[ARepr]]
   ): JsonSchema[A] = {
     require(
       gen != null,

@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.commands
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.clio.client.commands.Commands.{AddWgsUbam, CommandType, DeleteWgsUbam, MoveWgsUbam, QueryWgsUbam}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
@@ -23,6 +24,8 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
         new QueryWgsUbamExecutor(query).execute(webClient, ioUtil)
       case move: MoveWgsUbam =>
         new MoveWgsUbamExecutor(move).execute(webClient, ioUtil)
+      case delete: DeleteWgsUbam =>
+        new DeleteWgsUbamExecutor(delete).execute(webClient,ioUtil)
     }
   }
 

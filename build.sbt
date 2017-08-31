@@ -124,7 +124,4 @@ lazy val `clio-integration-test` = project
   .settings(commonSettings)
   .settings(libraryDependencies ++= Dependencies.IntegrationTestDependencies)
 
-addCommandAlias(
-  "testCoverage",
-  "; clean; coverage; test; coverageOff; coverageReport; coverageAggregate"
-)
+addCommandAlias("testCoverage", "; clean; coverage; test; coverageOff; coverageReport; coverageAggregate")

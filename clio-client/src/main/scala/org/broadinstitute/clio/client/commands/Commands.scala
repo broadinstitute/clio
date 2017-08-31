@@ -78,3 +78,9 @@ final case class MoveWgsUbam(@Recurse
                              @Recurse
                              transferWgsUbamV1Key: TransferWgsUbamV1Key)
     extends CommandType
+
+final case class DeleteWgsUbam(@Recurse
+                               metadata: TransferWgsUbamV1Metadata,
+                               @Recurse
+                               transferWgsUbamV1Key: TransferWgsUbamV1Key)
+  extends CommandType

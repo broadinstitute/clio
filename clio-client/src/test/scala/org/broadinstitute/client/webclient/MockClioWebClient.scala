@@ -59,7 +59,9 @@ class MockClioWebClient(
         status = status,
         entity = HttpEntity(
           ContentTypes.`application/json`,
-          json.map(_.pretty(implicitly)).getOrElse("")
+          json
+            .map(_.pretty(implicitly))
+            .getOrElse(Json.arr().pretty(implicitly))
         )
       )
     )
@@ -79,6 +81,11 @@ object MockClioWebClient extends TestData {
   def returningWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation)
   }
+
+  def returningTwoWgsUbams(implicit system: ActorSystem): MockClioWebClient = {
+    new MockClioWebClient(status = StatusCodes.OK, testTwoWgsUbamsLocation)
+  }
+
   def returningNoWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
     class MockClioWebClientNoReturn
         extends MockClioWebClient(status = StatusCodes.OK, None) {
@@ -101,10 +108,7 @@ object MockClioWebClient extends TestData {
 
   def failingToAddWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
     class MockClioWebClientCantAdd
-        extends MockClioWebClient(
-          status = StatusCodes.InternalServerError,
-          None
-        ) {
+        extends MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation) {
       override def addWgsUbam(
         input: TransferWgsUbamV1Key,
         transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
