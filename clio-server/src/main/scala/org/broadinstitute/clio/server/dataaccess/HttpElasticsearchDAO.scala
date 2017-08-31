@@ -20,8 +20,6 @@ import org.elasticsearch.client.RestClient
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
-import java.util.UUID
-
 class HttpElasticsearchDAO private[dataaccess] (
   private[dataaccess] val httpHosts: Seq[HttpHost]
 )(implicit
@@ -29,12 +27,41 @@ class HttpElasticsearchDAO private[dataaccess] (
   val system: ActorSystem)
     extends SearchDAO
     with SystemElasticsearchDAO
-    with WgsUbamElasticsearchDAO
     with StrictLogging {
 
   private[dataaccess] val httpClient = {
     val restClient = RestClient.builder(httpHosts: _*).build()
     HttpClient.fromRestClient(restClient)
+  }
+
+  override def updateMetadata[D: Indexable](
+    id: String,
+    document: D,
+    index: ElasticsearchIndex[D]
+  ): Future[Unit] = {
+    bulkUpdate(updatePartialDocument(index, id, document))
+  }
+
+  override def queryMetadata[I, O, D: HitReader](
+    queryInput: I,
+    index: ElasticsearchIndex[D],
+    queryBuilder: ElasticsearchQueryMapper[I, O, D]
+  ): Future[Seq[O]] = {
+    if (queryBuilder.isEmpty(queryInput)) {
+      Future.successful(Seq.empty)
+    } else {
+      val searchDefinition = search(index.indexName / index.indexType)
+        .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
+        .size(HttpElasticsearchDAO.DocumentScrollSize)
+        .sortByFieldAsc(HttpElasticsearchDAO.DocumentScrollSort)
+        .query(queryBuilder.buildQuery(queryInput))
+      val searchResponse = httpClient execute searchDefinition
+      searchResponse flatMap foldScroll(
+        Seq.empty[O],
+        queryBuilder,
+        searchDefinition.keepAlive
+      )
+    }
   }
 
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {
@@ -105,42 +132,6 @@ class HttpElasticsearchDAO private[dataaccess] (
     document: A
   ): BulkCompatibleDefinition = {
     update(id) in index.indexName / index.indexType docAsUpsert document
-  }
-
-  private[dataaccess] def updateMetadata[MK, MM, D <: ClioDocument: Indexable](
-    indexDocument: ElasticsearchIndex[D],
-    mapper: ElasticsearchDocumentMapper[MK, MM, D],
-    key: MK,
-    metadata: MM
-  ): Future[UUID] = {
-    val id = mapper.id(key)
-    val empty = mapper.empty(key)
-    val document = mapper.withMetadata(empty, metadata)
-    bulkUpdate(updatePartialDocument(indexDocument, id, document)).map { _ =>
-      document.clioId
-    }
-  }
-
-  private[dataaccess] def searchDocuments[I, O, D: HitReader](
-    index: ElasticsearchIndex[D],
-    queryBuilder: ElasticsearchQueryMapper[I, O, D],
-    queryInput: I
-  ): Future[Seq[O]] = {
-    if (queryBuilder.isEmpty(queryInput)) {
-      Future.successful(Seq.empty)
-    } else {
-      val searchDefinition = search(index.indexName / index.indexType)
-        .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
-        .size(HttpElasticsearchDAO.DocumentScrollSize)
-        .sortByFieldAsc(HttpElasticsearchDAO.DocumentScrollSort)
-        .query(queryBuilder.buildQuery(queryInput))
-      val searchResponse = httpClient execute searchDefinition
-      searchResponse flatMap foldScroll(
-        Seq.empty[O],
-        queryBuilder,
-        searchDefinition.keepAlive
-      )
-    }
   }
 
   private def foldScroll[I, O, D: HitReader](

@@ -1,10 +1,5 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.model.{
-  ModelWgsUbamKey,
-  ModelWgsUbamMetadata
-}
-
 /**
   * Maps metadata to an Elasticsearch document.
   *
@@ -39,16 +34,4 @@ abstract class ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] {
     * @return The updated document.
     */
   def withMetadata(document: Document, metadata: ModelMetadata): Document
-}
-
-object ElasticsearchDocumentMapper {
-  private[dataaccess] val WgsUbam
-    : ElasticsearchDocumentMapper[ModelWgsUbamKey,
-                                  ModelWgsUbamMetadata,
-                                  DocumentWgsUbam] =
-    AutoElasticsearchDocumentMapper[
-      ModelWgsUbamKey,
-      ModelWgsUbamMetadata,
-      DocumentWgsUbam
-    ]
 }
