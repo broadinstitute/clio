@@ -37,7 +37,7 @@ object ClioClient
   import system.dispatcher
   sys.addShutdownHook({ val _ = system.terminate() })
 
-  var webClient: ClioWebClient = new ClioWebClient(
+  val webClient: ClioWebClient = new ClioWebClient(
     ClioClientConfig.ClioServer.clioServerHostName,
     ClioClientConfig.ClioServer.clioServerPort,
     ClioClientConfig.ClioServer.clioServerUseHttps
