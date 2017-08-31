@@ -11,7 +11,6 @@ import ClientAutoDerivation._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.Printer
-import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
@@ -108,25 +107,6 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
       throw new Exception(
         s"Got an error from the Clio server. Status code: ${httpResponse.status}"
       )
-    }
-  }
-
-  def verifyCloudPaths(config: BaseArgs): Future[Unit] = {
-    Future {
-      config.location.foreach {
-        case "GCP" => ()
-        case _ =>
-          throw new Exception(
-            "Only GCP unmapped bams are supported at this time."
-          )
-      }
-      config.ubamPath.foreach {
-        case loc if loc.startsWith("gs://") => ()
-        case _ =>
-          throw new Exception(
-            s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path."
-          )
-      }
     }
   }
 }

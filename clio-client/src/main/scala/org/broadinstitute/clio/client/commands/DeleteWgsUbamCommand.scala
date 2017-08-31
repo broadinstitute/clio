@@ -24,8 +24,12 @@ object DeleteWgsUbamCommand extends Command {
     config: BaseArgs,
     ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
+    if (!config.location.get.equals("GCP")) {
+      return Future.failed(
+        new Exception("Only GCP WgsUbams are supported at this time")
+      )
+    }
     for {
-      _ <- webClient.verifyCloudPaths(config) logErrorMsg ()
       queryResponses <- webClient
         .queryWgsUbam(
           config.bearerToken.get,
@@ -60,10 +64,10 @@ object DeleteWgsUbamCommand extends Command {
     }
   }
 
-  def deleteWgsUbams(wgsUbams: Seq[TransferWgsUbamV1QueryOutput],
-                     webClient: ClioWebClient,
-                     config: BaseArgs,
-                     ioUtil: IoUtil): Future[Seq[HttpResponse]] = {
+  private def deleteWgsUbams(wgsUbams: Seq[TransferWgsUbamV1QueryOutput],
+                             webClient: ClioWebClient,
+                             config: BaseArgs,
+                             ioUtil: IoUtil): Future[Seq[HttpResponse]] = {
     implicit val ec: ExecutionContext = webClient.executionContext
     if (wgsUbams.isEmpty) {
       return Future.failed(
@@ -90,10 +94,10 @@ object DeleteWgsUbamCommand extends Command {
     })
   }
 
-  def deleteWgsUbam(wgsUbam: TransferWgsUbamV1QueryOutput,
-                    webClient: ClioWebClient,
-                    config: BaseArgs,
-                    ioUtil: IoUtil): Future[HttpResponse] = {
+  private def deleteWgsUbam(wgsUbam: TransferWgsUbamV1QueryOutput,
+                            webClient: ClioWebClient,
+                            config: BaseArgs,
+                            ioUtil: IoUtil): Future[HttpResponse] = {
     implicit val ec: ExecutionContext = webClient.executionContext
 
     logger.info(s"Deleting ${wgsUbam.ubamPath.get} in the cloud.")

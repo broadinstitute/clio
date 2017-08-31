@@ -23,7 +23,7 @@ object MoveWgsUbamCommand extends Command {
     ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     for {
-      _ <- webClient.verifyCloudPaths(config) logErrorMsg
+      _ <- verifyCloudPaths(config) logErrorMsg
         "Clio client can only handle cloud operations right now."
       wgsUbamPath <- queryForWgsUbamPath(webClient, config) logErrorMsg
         "Could not query the WgsUbam. No files have been moved."
@@ -141,5 +141,30 @@ object MoveWgsUbamCommand extends Command {
     s"FlowcellBarcode: ${config.flowcell.getOrElse("")}, LibraryName: ${config.libraryName
       .getOrElse("")}, " +
       s"Lane: ${config.lane.getOrElse("")}, Location: ${config.location.getOrElse("")}"
+  }
+
+  private def verifyCloudPaths(config: BaseArgs): Future[Unit] = {
+    val errorOption = for {
+      locationError <- config.location.map {
+        case "GCP" => ""
+        case _ =>
+          "Only GCP unmapped bams are supported at this time."
+      }
+      pathError <- config.ubamPath.map {
+        case loc if loc.startsWith("gs://") => ""
+        case _ =>
+          s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path."
+      }
+    } yield {
+      if (locationError.isEmpty && pathError.isEmpty) {
+        Future.successful(())
+      } else {
+        Future.failed(new Exception(String.join(" ", locationError, pathError)))
+      }
+    }
+    errorOption.getOrElse(
+      Future
+        .failed(new Exception("Either location or ubamPath were not supplied"))
+    )
   }
 }
