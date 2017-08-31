@@ -1,16 +1,14 @@
 package org.broadinstitute.clio.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.clio.client.commands.{CommandDispatch, CommandType}
 import org.broadinstitute.clio.client.commands.Commands._
+import org.broadinstitute.clio.client.commands.{CommandDispatch, CommandType}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 object ClioClient
@@ -33,7 +31,7 @@ object ClioClient
     }
   }
 
-  implicit val system: ActorSystem = ActorSystem("clio-client")
+  implicit val system: ActorSystem = ActorSystem(progName)
   import system.dispatcher
   sys.addShutdownHook({ val _ = system.terminate() })
 
@@ -48,22 +46,9 @@ object ClioClient
 
     val commandDispatch = new CommandDispatch(webClient, IoUtil)
 
-    val client = new ClioClient(commandDispatch)
-
-    client.execute(command) onComplete {
+    commandDispatch.dispatch(command) onComplete {
       case Success(_) => sys.exit(0)
       case Failure(_) => sys.exit(1)
     }
   }
-}
-
-class ClioClient(commandDispatch: CommandDispatch) {
-
-  def execute(command: CommandType)(
-    implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
-  ): Future[HttpResponse] = {
-    commandDispatch.dispatch(command)
-  }
-
 }
