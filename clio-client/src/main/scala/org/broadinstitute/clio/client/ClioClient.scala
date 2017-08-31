@@ -25,6 +25,10 @@ object ClioClient
   override def beforeCommand(options: CommonOptions,
                              remainingArgs: Seq[String]): Unit = {
     commonOptions = options
+    checkRemainingArgs(remainingArgs)
+  }
+
+  private def checkRemainingArgs(remainingArgs: Seq[String]): Unit = {
     if (remainingArgs.nonEmpty) {
       logger.error(s"Found extra arguments: ${remainingArgs.mkString(" ")}")
       sys.exit(1)
@@ -42,6 +46,9 @@ object ClioClient
   )
 
   override def run(command: CommandType, remainingArgs: RemainingArgs): Unit = {
+
+    checkRemainingArgs(remainingArgs.args)
+
     implicit val bearerToken: OAuth2BearerToken = commonOptions.bearerToken
 
     val commandDispatch = new CommandDispatch(webClient, IoUtil)
