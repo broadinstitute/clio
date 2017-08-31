@@ -80,6 +80,11 @@ object MockClioWebClient extends TestData {
   def returningWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation)
   }
+
+  def returningTwoWgsUbams(implicit system: ActorSystem): MockClioWebClient = {
+    new MockClioWebClient(status = StatusCodes.OK, testTwoWgsUbamsLocation)
+  }
+
   def returningNoWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
     class MockClioWebClientNoReturn
         extends MockClioWebClient(status = StatusCodes.OK, None) {

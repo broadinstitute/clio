@@ -17,6 +17,7 @@ case class BaseArgs(command: Option[CommandType] = None,
                     lcSet: Option[String] = None,
                     project: Option[String] = None,
                     sampleAlias: Option[String] = None,
+                    notes: Option[String] = None,
                     ubamPath: Option[String] = None,
                     documentStatus: Option[DocumentStatus] = None,
                     runDateEnd: Option[OffsetDateTime] = None,
@@ -133,6 +134,38 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
         .required()
         .action((ubamPath, config) => config.copy(ubamPath = Some(ubamPath)))
         .text("The destination path for the unmapped bam.")
+    )
+
+  cmd(Commands.DeleteWgsUbam.toString)
+    .action((_, c) => c.copy(command = Some(Commands.DeleteWgsUbam)))
+    .text(
+      "This command is used to delete an unmapped bam. Only implemented for cloud unmapped bams"
+    )
+    .children(
+      opt[String]('f', "flowcell")
+        .required()
+        .action((flowcell, config) => config.copy(flowcell = Some(flowcell)))
+        .text("The flowcell for this whole genome unmapped bam."),
+      opt[Int]('l', "lane")
+        .required()
+        .action((lane, config) => config.copy(lane = Some(lane)))
+        .text("The lane for this whole genome unmapped bam."),
+      opt[String]('n', "libraryName")
+        .required()
+        .action(
+          (libraryName, config) => config.copy(libraryName = Some(libraryName))
+        )
+        .text("The library name for this whole genome unmapped bam."),
+      opt[String]("location")
+        .required()
+        .action((location, config) => config.copy(location = Some(location)))
+        .text("The location for this whole genome unmapped bam."),
+      opt[String]("deleteNote")
+        .required()
+        .action((deleteNote, config) => config.copy(notes = Some(deleteNote)))
+        .text(
+          "A note to explain why this is being deleted. It will be appended to the current notes."
+        )
     )
 
   checkConfig { config =>

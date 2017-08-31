@@ -34,7 +34,7 @@ object MoveWgsUbamCommand
     ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     for {
-      _ <- verifyPath(webClient, config) withErrorMsg
+      _ <- webClient.verifyCloudPaths(config) withErrorMsg
         "Clio client can only handle cloud operations right now."
       wgsUbamPath <- queryForWgsUbamPath(webClient, config) withErrorMsg
         "Could not query the WgsUbam. No files have been moved."
@@ -56,27 +56,6 @@ object MoveWgsUbamCommand
         s"Successfully moved '${wgsUbamPath.get}' to '${config.ubamPath.get}'"
       )
       upsertUbam
-    }
-  }
-
-  private def verifyPath(webClient: ClioWebClient,
-                         config: BaseArgs): Future[Unit] = {
-    implicit val executionContext: ExecutionContext = webClient.executionContext
-    Future {
-      config.location.foreach {
-        case "GCP" => ()
-        case _ =>
-          throw new Exception(
-            "Only GCP unmapped bams are supported at this time."
-          )
-      }
-      config.ubamPath.foreach {
-        case loc if loc.startsWith("gs://") => ()
-        case _ =>
-          throw new Exception(
-            s"The destination of the ubam must be a cloud path. ${config.ubamPath.get} is not a cloud path."
-          )
-      }
     }
   }
 
@@ -119,7 +98,7 @@ object MoveWgsUbamCommand
             new Exception("There was an error contacting the Clio server", ex)
           )
       }
-      .map(ensureOkResponse)
+      .map(webClient.ensureOkResponse)
       .flatMap(webClient.unmarshal[Seq[TransferWgsUbamV1QueryOutput]])
       .map(ensureOnlyOne)
       .map(_.ubamPath)
@@ -166,22 +145,12 @@ object MoveWgsUbamCommand
         transferWgsUbamV1Metadata =
           TransferWgsUbamV1Metadata(ubamPath = config.ubamPath)
       )
-      .map(ensureOkResponse)
+      .map(webClient.ensureOkResponse)
   }
 
   private def prettyKey(config: BaseArgs): String = {
     s"FlowcellBarcode: ${config.flowcell.getOrElse("")}, LibraryName: ${config.libraryName
       .getOrElse("")}, " +
       s"Lane: ${config.lane.getOrElse("")}, Location: ${config.location.getOrElse("")}"
-  }
-
-  def ensureOkResponse(httpResponse: HttpResponse): HttpResponse = {
-    if (httpResponse.status.isSuccess()) {
-      httpResponse
-    } else {
-      throw new Exception(
-        s"Got an error from the Clio server. Status code: ${httpResponse.status}"
-      )
-    }
   }
 }

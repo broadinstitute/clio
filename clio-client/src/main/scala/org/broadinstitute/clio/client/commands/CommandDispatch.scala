@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.HttpResponse
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.commands.Commands.{
   AddWgsUbam,
+  DeleteWgsUbam,
   MoveWgsUbam,
   QueryWgsUbam
 }
@@ -25,6 +26,8 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
       case QueryWgsUbam =>
         QueryWgsUbamCommand.execute(webClient, config, ioUtil)
       case MoveWgsUbam => MoveWgsUbamCommand.execute(webClient, config, ioUtil)
+      case DeleteWgsUbam =>
+        DeleteWgsUbamCommand.execute(webClient, config, ioUtil)
     }
   }
 

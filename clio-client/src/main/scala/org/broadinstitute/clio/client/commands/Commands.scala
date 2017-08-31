@@ -17,11 +17,13 @@ object Commands extends Enum[CommandType] {
   case object AddWgsUbam extends CommandType
   case object QueryWgsUbam extends CommandType
   case object MoveWgsUbam extends CommandType
+  case object DeleteWgsUbam extends CommandType
 
   val pathMatcher = Map(
     AddWgsUbam.toString -> AddWgsUbam,
     QueryWgsUbam.toString -> QueryWgsUbam,
-    MoveWgsUbam.toString -> MoveWgsUbam
+    MoveWgsUbam.toString -> MoveWgsUbam,
+    DeleteWgsUbam.toString -> DeleteWgsUbam
   )
 
 }

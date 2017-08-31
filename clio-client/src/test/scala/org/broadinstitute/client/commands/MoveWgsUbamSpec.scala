@@ -27,7 +27,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw an exception if the unmapped bam file does not exist" in {
+  it should "throw an exception if the file does not exist" in {
     recoverToSucceededIf[Exception] {
       val config = BaseArgs(
         command = Some(MoveWgsUbam),
@@ -38,7 +38,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         bearerToken = testBearer,
         ubamPath = testUbamCloudSourcePath
       )
-      succeedingDispatcher.dispatch(config)
+      succeedingReturningDispatcher(new MockIoUtil).dispatch(config)
     }
   }
 
