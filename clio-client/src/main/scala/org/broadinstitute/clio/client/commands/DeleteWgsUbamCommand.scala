@@ -25,7 +25,7 @@ object DeleteWgsUbamCommand extends Command {
     ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     for {
-      _ <- webClient.verifyCloudPaths(config) withErrorMsg ()
+      _ <- webClient.verifyCloudPaths(config) logErrorMsg ()
       queryResponses <- webClient
         .queryWgsUbam(
           config.bearerToken.get,
@@ -37,11 +37,11 @@ object DeleteWgsUbamCommand extends Command {
             documentStatus = Some(DocumentStatus.Normal)
           )
         )
-        .map(webClient.ensureOkResponse) withErrorMsg "There was a problem querying the Clio server for WgsUbams."
+        .map(webClient.ensureOkResponse) logErrorMsg "There was a problem querying the Clio server for WgsUbams."
       wgsUbams <- webClient.unmarshal[Seq[TransferWgsUbamV1QueryOutput]](
         queryResponses
       )
-      deleteResponses <- deleteWgsUbams(wgsUbams, webClient, config, ioUtil)
+      deleteResponses <- deleteWgsUbams(wgsUbams, webClient, config, ioUtil) logErrorMsg "There was an error while deleting some of all of the WgsUbams."
     } yield {
       deleteResponses.size match {
         case s if s == wgsUbams.size =>
@@ -72,12 +72,17 @@ object DeleteWgsUbamCommand extends Command {
         )
       )
     }
-    Future.foldLeft(
-      wgsUbams.map(deleteWgsUbam(_, webClient, config, ioUtil).transformWith({
-        case Success(httpResponse) => Future.successful(Right(httpResponse))
-        case Failure(ex)           => Future.successful(Left(ex))
-      }))
-    )(Seq.empty[HttpResponse])((acc, cur) => {
+    // Futures are transformed into Future[Either] so that any errors don't cause the entire resulting
+    // Future to be failed. Errors need to be preserved until all Futures have completed.
+    val deleteFutures = wgsUbams.map(
+      deleteWgsUbam(_, webClient, config, ioUtil)
+        .logErrorMsg()
+        .transformWith({
+          case Success(httpResponse) => Future.successful(Right(httpResponse))
+          case Failure(ex)           => Future.successful(Left(ex))
+        })
+    )
+    Future.foldLeft(deleteFutures)(Seq.empty[HttpResponse])((acc, cur) => {
       cur match {
         case Left(_)             => acc
         case Right(httpResponse) => acc :+ httpResponse
@@ -102,7 +107,6 @@ object DeleteWgsUbamCommand extends Command {
                 s"Failed to delete ${wgsUbam.ubamPath.get} in the cloud. The WgsUbam still exists in Clio and on cloud storage"
               )
             )
-            .withErrorMsg()
       }
     } else {
       logger.warn(
@@ -127,7 +131,7 @@ object DeleteWgsUbamCommand extends Command {
             .orElse(config.notes)
         )
       )
-      .map(webClient.ensureOkResponse) withErrorMsg (s"Failed to delete the WgsUbam ${wgsUbam
+      .map(webClient.ensureOkResponse) logErrorMsg (s"Failed to delete the WgsUbam ${wgsUbam
       .prettyKey()} in Clio. The file has been deleted in the cloud. " +
       s"Clio now has a 'dangling pointer' to ${wgsUbam.ubamPath.get}. " +
       s"Please try updating Clio by manually adding the WgsUbam and setting the documentStatus to Deleted and making the ubamPath an empty String.")

@@ -23,20 +23,20 @@ object MoveWgsUbamCommand extends Command {
     ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
     for {
-      _ <- webClient.verifyCloudPaths(config) withErrorMsg
+      _ <- webClient.verifyCloudPaths(config) logErrorMsg
         "Clio client can only handle cloud operations right now."
-      wgsUbamPath <- queryForWgsUbamPath(webClient, config) withErrorMsg
+      wgsUbamPath <- queryForWgsUbamPath(webClient, config) logErrorMsg
         "Could not query the WgsUbam. No files have been moved."
-      _ <- copyGoogleObject(wgsUbamPath, config.ubamPath, ioUtil) withErrorMsg
+      _ <- copyGoogleObject(wgsUbamPath, config.ubamPath, ioUtil) logErrorMsg
         "An error occurred while copying the files in the cloud. No files have been moved."
-      upsertUbam <- upsertUpdatedWgsUbam(webClient, config) withErrorMsg
+      upsertUbam <- upsertUpdatedWgsUbam(webClient, config) logErrorMsg
         s"""An error occurred while upserting the WgsUbam.
            |The ubam exists in both at both the old and the new locations.
            |At this time, Clio only knows about the bam at the old location.
            |Try removing the ubam at the new location and re-running this command.
            |If this cannot be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.
         """.stripMargin
-      _ <- deleteGoogleObject(wgsUbamPath, ioUtil) withErrorMsg
+      _ <- deleteGoogleObject(wgsUbamPath, ioUtil) logErrorMsg
         s"""The old bam was not able to be deleted. Clio has been updated to point to the new bam.
            | Please delete the old bam. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
            | """.stripMargin
