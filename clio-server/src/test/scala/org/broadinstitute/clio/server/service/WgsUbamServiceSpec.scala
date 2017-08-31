@@ -91,7 +91,6 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
           (
             ModelWgsUbamKey("barcode1", 2, "library3", Location.GCP),
             ModelWgsUbamMetadata(
-              clioId = Some(returnedClioId),
               analysisType = None,
               baitIntervals = None,
               dataType = None,

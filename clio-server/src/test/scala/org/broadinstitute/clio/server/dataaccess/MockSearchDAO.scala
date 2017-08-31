@@ -1,8 +1,11 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 import org.broadinstitute.clio.server.model._
 
 import scala.concurrent.Future
+
+import java.util.UUID
 
 class MockSearchDAO extends SearchDAO {
   override def checkOk: Future[Unit] = {
@@ -20,8 +23,8 @@ class MockSearchDAO extends SearchDAO {
   override def updateWgsUbamMetadata(
     key: ModelWgsUbamKey,
     metadata: ModelWgsUbamMetadata
-  ): Future[Unit] = {
-    Future.successful(())
+  ): Future[UUID] = {
+    Future.successful(ClioUUIDGenerator.getUUID())
   }
 
   override def queryWgsUbam(

@@ -1,8 +1,11 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
+import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 
 import scala.reflect.ClassTag
+
+import java.util.UUID
 
 /**
   * Builds an ElasticsearchDocumentMapper using shapeless and reflection.
@@ -17,9 +20,10 @@ import scala.reflect.ClassTag
   *                       `implicit ctagDocument: ClassTag[Document]` exists.
   *                       https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
   */
-class AutoElasticsearchDocumentMapper[ModelKey <: Product: ClassTag,
-                                      ModelMetadata: ClassTag,
-                                      Document: ClassTag] private
+class AutoElasticsearchDocumentMapper[
+  ModelKey <: Product: ClassTag, ModelMetadata: ClassTag,
+  Document <: ClioDocument: ClassTag
+] private[elasticsearch] (genId: () => UUID)
     extends ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] {
 
   private val modelKeyMapper = new CaseClassMapper[ModelKey]
@@ -30,7 +34,9 @@ class AutoElasticsearchDocumentMapper[ModelKey <: Product: ClassTag,
 
   override def empty(key: ModelKey): Document = {
     val keyVals = modelKeyMapper.vals(key)
-    val document = documentMapper.newInstance(keyVals)
+    val document = documentMapper.newInstance(
+      keyVals + (ClioDocument.IdFieldName -> genId())
+    )
     document
   }
 
@@ -48,8 +54,11 @@ class AutoElasticsearchDocumentMapper[ModelKey <: Product: ClassTag,
 object AutoElasticsearchDocumentMapper {
   def apply[ModelKey <: Product: ClassTag,
             ModelMetadata: ClassTag,
-            Document: ClassTag]
+            Document <: ClioDocument: ClassTag]
     : ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] = {
-    new AutoElasticsearchDocumentMapper
+    // Don't listen to IntelliJ's warning on the line below; removing
+    // the _ results in a compiler deprecation warning, which our settings
+    // escalate into an error.
+    new AutoElasticsearchDocumentMapper(ClioUUIDGenerator.getUUID _)
   }
 }

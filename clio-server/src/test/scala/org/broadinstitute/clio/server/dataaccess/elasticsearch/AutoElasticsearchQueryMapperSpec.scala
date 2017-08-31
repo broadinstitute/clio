@@ -1,13 +1,15 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import java.time.OffsetDateTime
-
-import com.sksamuel.elastic4s.http.ElasticDsl._
+import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 import org.broadinstitute.clio.server.model.{
   ModelMockQueryInput,
   ModelMockQueryOutput
 }
+
+import com.sksamuel.elastic4s.http.ElasticDsl._
 import org.scalatest.{FlatSpec, Matchers}
+
+import java.time.OffsetDateTime
 
 class AutoElasticsearchQueryMapperSpec extends FlatSpec with Matchers {
   behavior of "AutoElasticsearchQueryMapper"
@@ -78,6 +80,7 @@ class AutoElasticsearchQueryMapperSpec extends FlatSpec with Matchers {
       DocumentMock
     ]
     val output = DocumentMock(
+      clioId = ClioUUIDGenerator.getUUID(),
       mockFieldDate = None,
       mockFieldDouble = None,
       mockFieldInt = None,

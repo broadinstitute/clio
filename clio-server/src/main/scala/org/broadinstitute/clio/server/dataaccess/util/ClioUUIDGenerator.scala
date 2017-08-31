@@ -1,9 +1,9 @@
-package org.broadinstitute.clio.server.service.util
+package org.broadinstitute.clio.server.dataaccess.util
+
+import com.fasterxml.uuid.impl.TimeBasedGenerator
+import com.fasterxml.uuid.{EthernetAddress, Generators}
 
 import java.util.UUID
-
-import com.fasterxml.uuid.{EthernetAddress, Generators}
-import com.fasterxml.uuid.impl.TimeBasedGenerator
 
 /**
   * We are using a UUID generator to generate time-based UUIDs for every Clio upsert.
@@ -11,7 +11,7 @@ import com.fasterxml.uuid.impl.TimeBasedGenerator
   */
 object ClioUUIDGenerator {
 
-  val generator: TimeBasedGenerator =
+  private val generator: TimeBasedGenerator =
     Generators.timeBasedGenerator(EthernetAddress.fromInterface())
 
   def getUUID(): UUID = generator.generate()

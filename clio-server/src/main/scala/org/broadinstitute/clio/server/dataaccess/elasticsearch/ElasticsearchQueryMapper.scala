@@ -1,14 +1,16 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import java.time.OffsetDateTime
-import com.sksamuel.elastic4s.HitReader
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.search.SearchResponse
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import org.broadinstitute.clio.server.model.{
   ModelWgsUbamQueryInput,
   ModelWgsUbamQueryOutput
 }
+
+import com.sksamuel.elastic4s.HitReader
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.http.search.SearchResponse
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
+
+import java.time.OffsetDateTime
 
 /**
   * Maps query input and outputs.
@@ -53,7 +55,10 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput,
 }
 
 object ElasticsearchQueryMapper {
-  private[dataaccess] val WgsUbam =
+  private[dataaccess] val WgsUbam
+    : ElasticsearchQueryMapper[ModelWgsUbamQueryInput,
+                               ModelWgsUbamQueryOutput,
+                               DocumentWgsUbam] =
     AutoElasticsearchQueryMapper[
       ModelWgsUbamQueryInput,
       ModelWgsUbamQueryOutput,
