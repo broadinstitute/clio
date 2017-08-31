@@ -20,6 +20,7 @@ object ClioServer
     with AuditDirectives
     with ExceptionDirectives
     with RejectionDirectives
+    with SwaggerDirectives
     with StrictLogging {
 
   private implicit val system = ActorSystem("clio")
@@ -41,7 +42,7 @@ object ClioServer
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
   private val innerRoutes: Route =
-    concat(statusRoutes, pathPrefix("api") { wgsUbamRoutes })
+    concat(swaggerRoutes, statusRoutes, pathPrefix("api") { wgsUbamRoutes })
   private val routes = wrapperDirectives(innerRoutes)
 
   private val serverStatusDAO = CachedServerStatusDAO()
