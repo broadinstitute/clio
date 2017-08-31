@@ -1,10 +1,8 @@
 package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.HttpResponse
-import com.typesafe.scalalogging.{LazyLogging, Logger}
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import org.broadinstitute.clio.client.parser.BaseArgs
-import org.broadinstitute.clio.client.util.{FutureWithErrorMessage, IoUtil}
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
@@ -12,7 +10,6 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1QueryInput,
   TransferWgsUbamV1QueryOutput
 }
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 import org.broadinstitute.clio.client.util.WgsUbamUtil.TransferWgsUbamV1QueryOutputUtil
 
@@ -20,14 +17,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-object DeleteWgsUbamCommand
-    extends Command
-    with LazyLogging
-    with FailFastCirceSupport
-    with ModelAutoDerivation
-    with FutureWithErrorMessage {
-
-  implicit val implicitLogger: Logger = logger
+object DeleteWgsUbamCommand extends Command {
 
   override def execute(
     webClient: ClioWebClient,
@@ -54,18 +44,18 @@ object DeleteWgsUbamCommand
       deleteResponses <- deleteWgsUbams(wgsUbams, webClient, config, ioUtil)
     } yield {
       deleteResponses.size match {
-        case s if s != deleteResponses.size =>
-          throw new Exception(
-            s"Deleted ${deleteResponses.size} WgsUbams. " +
-              s"Not all of the WgsUbams queried for were able to be deleted! Check the log for details"
-          )
+        case s if s == wgsUbams.size =>
+          logger.info(s"Successfully deleted ${deleteResponses.size} WgsUbams.")
+          deleteResponses.head
         case 0 =>
           throw new Exception(
             "Deleted 0 WgsUbams. None of the WgsUbams queried were able to be deleted."
           )
         case _ =>
-          logger.info(s"Successfully deleted ${deleteResponses.size} WgsUbams.")
-          deleteResponses.head
+          throw new Exception(
+            s"Deleted ${deleteResponses.size} WgsUbams. " +
+              s"Not all of the WgsUbams queried for were able to be deleted! Check the log for details"
+          )
       }
     }
   }

@@ -1,8 +1,6 @@
 package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.HttpResponse
-import com.typesafe.scalalogging.{LazyLogging, Logger}
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
@@ -16,17 +14,8 @@ import org.broadinstitute.clio.transfer.model.{
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.{ExecutionContext, Future}
-import org.broadinstitute.clio.client.util.FutureWithErrorMessage
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
-object MoveWgsUbamCommand
-    extends Command
-    with LazyLogging
-    with FailFastCirceSupport
-    with ModelAutoDerivation
-    with FutureWithErrorMessage {
-
-  implicit val implicitLogger: Logger = logger
+object MoveWgsUbamCommand extends Command {
 
   override def execute(
     webClient: ClioWebClient,

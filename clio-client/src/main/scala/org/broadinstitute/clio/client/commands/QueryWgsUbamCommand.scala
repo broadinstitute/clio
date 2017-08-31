@@ -1,24 +1,17 @@
 package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.HttpResponse
-import com.typesafe.scalalogging.LazyLogging
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.Json
 import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1QueryInput
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-object QueryWgsUbamCommand
-    extends Command
-    with LazyLogging
-    with FailFastCirceSupport
-    with ModelAutoDerivation {
+object QueryWgsUbamCommand extends Command {
   def execute(webClient: ClioWebClient, config: BaseArgs, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[HttpResponse] = {
