@@ -1,7 +1,10 @@
 package org.broadinstitute.clio.integrationtest
 
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import akka.actor.ActorSystem
@@ -13,12 +16,16 @@ import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
-import io.circe.Printer
+import io.circe.{Decoder, Printer}
+import io.circe.parser._
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
-import java.nio.file.Path
+import scala.collection.JavaConverters._
+
+import java.nio.file.{Files, Path, Paths}
+import java.time.OffsetDateTime
 import java.util.UUID
 
 /**
@@ -93,6 +100,28 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
   /** Get a random identifier to use as a dummy value in testing. */
   def randomId: String = UUID.randomUUID().toString.replaceAll("-", "")
+
+  /** Get the expected storage path for an index / UUID pair. */
+  def expectedStoragePath(index: ElasticsearchIndex[_], id: UUID): Path = {
+    val now = OffsetDateTime.now()
+    rootPersistenceDir.resolve(
+      Paths.get(
+        index.rootDir,
+        now.getYear.toString,
+        now.getMonthValue.toString,
+        now.getDayOfMonth.toString,
+        s"$id.json"
+      )
+    )
+  }
+
+  /** Read an parse JSON out of a path. */
+  def getJsonFrom[Document <: ClioDocument: Decoder](path: Path): Document = {
+    parse(Files.readAllLines(path).asScala.mkString)
+      .flatMap(_.as[Document])
+      .toTry
+      .get
+  }
 
   /** Shut down the actor system at the end of the suite. */
   override protected def afterAll(): Unit = {
