@@ -24,8 +24,8 @@ object DeleteWgsUbamCommand extends Command {
     config: BaseArgs,
     ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Future[HttpResponse] = {
-    if (!config.location.get.equals("GCP")) {
-      return Future.failed(
+    if (config.location.isDefined && !config.location.get.equals("GCP")) {
+      Future.failed(
         new Exception("Only GCP WgsUbams are supported at this time")
       )
     }
@@ -100,28 +100,28 @@ object DeleteWgsUbamCommand extends Command {
                             ioUtil: IoUtil): Future[HttpResponse] = {
     implicit val ec: ExecutionContext = webClient.executionContext
 
-    logger.info(s"Deleting ${wgsUbam.ubamPath.get} in the cloud.")
-    if (ioUtil.googleObjectExists(wgsUbam.ubamPath.get)) {
-      ioUtil.deleteGoogleObject(wgsUbam.ubamPath.get) match {
+    logger.info(s"Deleting ${wgsUbam.ubamPath.getOrElse("")} in the cloud.")
+    if (ioUtil.googleObjectExists(wgsUbam.ubamPath.getOrElse(""))) {
+      ioUtil.deleteGoogleObject(wgsUbam.ubamPath.getOrElse("")) match {
         case 0 => ()
         case 1 =>
           return Future
             .failed(
               new Exception(
-                s"Failed to delete ${wgsUbam.ubamPath.get} in the cloud. The WgsUbam still exists in Clio and on cloud storage"
+                s"Failed to delete ${wgsUbam.ubamPath.getOrElse("")} in the cloud. The WgsUbam still exists in Clio and on cloud storage"
               )
             )
       }
     } else {
       logger.warn(
-        s"${wgsUbam.ubamPath.get} does not exist in the cloud. Deleting the WgsUbam in Clio to reflect this."
+        s"${wgsUbam.ubamPath.getOrElse("")} does not exist in the cloud. Deleting the WgsUbam in Clio to reflect this."
       )
     }
 
     logger.info(s"Deleting ${wgsUbam.prettyKey()} in Clio.")
     webClient
       .addWgsUbam(
-        config.bearerToken.get,
+        config.bearerToken.getOrElse(""),
         TransferWgsUbamV1Key(
           flowcellBarcode = wgsUbam.flowcellBarcode,
           lane = wgsUbam.lane,
@@ -131,13 +131,13 @@ object DeleteWgsUbamCommand extends Command {
         TransferWgsUbamV1Metadata(
           documentStatus = Option(DocumentStatus.Deleted),
           notes = wgsUbam.notes
-            .map(notes => s"$notes\n${config.notes.get}")
+            .map(notes => s"$notes\n${config.notes.getOrElse("")}")
             .orElse(config.notes)
         )
       )
       .map(webClient.ensureOkResponse) logErrorMsg (s"Failed to delete the WgsUbam ${wgsUbam
       .prettyKey()} in Clio. The file has been deleted in the cloud. " +
-      s"Clio now has a 'dangling pointer' to ${wgsUbam.ubamPath.get}. " +
+      s"Clio now has a 'dangling pointer' to ${wgsUbam.ubamPath.getOrElse("")}. " +
       s"Please try updating Clio by manually adding the WgsUbam and setting the documentStatus to Deleted and making the ubamPath an empty String.")
   }
 }
