@@ -6,8 +6,10 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
-import org.broadinstitute.clio.server.dataaccess.MemoryWgsUbamSearchDAO
+import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsUbam
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
+import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1QueryInput
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.DocumentStatus
 
@@ -40,7 +42,7 @@ class WgsUbamWebServiceSpec
   }
 
   it should "query with a project and sample and return multiple records" in {
-    val memorySearchDAO = new MemoryWgsUbamSearchDAO()
+    val memorySearchDAO = new MemorySearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val webService = new MockWgsUbamWebService(app)
     Post(
@@ -66,8 +68,9 @@ class WgsUbamWebServiceSpec
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
     Post("/query", Map("project" -> "testProject1")) ~> webService.query ~> check {
-      memorySearchDAO.queryWgsUbamCalls should have length 1
-      val firstQuery = memorySearchDAO.queryWgsUbamCalls.head
+      memorySearchDAO.queryCalls should have length 1
+      val firstQuery = memorySearchDAO.queryCalls.head
+        .asInstanceOf[TransferWgsUbamV1QueryInput]
       firstQuery.project should be(Some("testProject1"))
       firstQuery.sampleAlias should be(empty)
     }
@@ -76,15 +79,16 @@ class WgsUbamWebServiceSpec
       "/query",
       Map("project" -> "testProject1", "sample_alias" -> "sample1")
     ) ~> webService.query ~> check {
-      memorySearchDAO.queryWgsUbamCalls should have length 2
-      val secondQuery = memorySearchDAO.queryWgsUbamCalls(1)
+      memorySearchDAO.queryCalls should have length 2
+      val secondQuery =
+        memorySearchDAO.queryCalls(1).asInstanceOf[TransferWgsUbamV1QueryInput]
       secondQuery.project should be(Some("testProject1"))
       secondQuery.sampleAlias should be(Some("sample1"))
     }
   }
 
   it should "upsert a record, delete it and then fail to find it with query, but find it with queryall" in {
-    val memorySearchDAO = new MemoryWgsUbamSearchDAO()
+    val memorySearchDAO = new MemorySearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val webService = new MockWgsUbamWebService(app)
     Post(
@@ -96,8 +100,9 @@ class WgsUbamWebServiceSpec
       )
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
-      memorySearchDAO.updateWgsUbamMetadataCalls should have length 1
-      val firstUpdate = memorySearchDAO.updateWgsUbamMetadataCalls.head
+      memorySearchDAO.updateCalls should have length 1
+      val firstUpdate = memorySearchDAO.updateCalls.head
+        .asInstanceOf[(_, DocumentWgsUbam, _)]
       firstUpdate._2.project should be(Some("G123"))
       firstUpdate._2.sampleAlias should be(Some("sample1"))
       firstUpdate._2.ubamPath should be(Some("gs://path/ubam.bam"))
@@ -107,8 +112,9 @@ class WgsUbamWebServiceSpec
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
     Post("/query", Map("flowcell_barcode" -> "FC123")) ~> webService.query ~> check {
-      memorySearchDAO.queryWgsUbamCalls should have length 1
-      val firstQuery = memorySearchDAO.queryWgsUbamCalls.head
+      memorySearchDAO.queryCalls should have length 1
+      val firstQuery = memorySearchDAO.queryCalls.head
+        .asInstanceOf[TransferWgsUbamV1QueryInput]
       firstQuery.flowcellBarcode should be(Some("FC123"))
     }
 
@@ -122,8 +128,10 @@ class WgsUbamWebServiceSpec
       )
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
-      memorySearchDAO.updateWgsUbamMetadataCalls should have length 2
-      val secondUpdate = memorySearchDAO.updateWgsUbamMetadataCalls(1)
+      memorySearchDAO.updateCalls should have length 2
+      val secondUpdate = memorySearchDAO
+        .updateCalls(1)
+        .asInstanceOf[(_, DocumentWgsUbam, _)]
       secondUpdate._2.project should be(Some("G123"))
       secondUpdate._2.sampleAlias should be(Some("sample1"))
       secondUpdate._2.documentStatus should be(Some(DocumentStatus.Deleted))
@@ -134,8 +142,9 @@ class WgsUbamWebServiceSpec
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
     Post("/query", Map("flowcell_barcode" -> "FC123")) ~> webService.queryall ~> check {
-      memorySearchDAO.queryWgsUbamCalls should have length 1
-      val secondQuery = memorySearchDAO.queryWgsUbamCalls.head
+      memorySearchDAO.queryCalls should have length 1
+      val secondQuery = memorySearchDAO.queryCalls.head
+        .asInstanceOf[TransferWgsUbamV1QueryInput]
       secondQuery.flowcellBarcode should be(Some("FC123"))
     }
 

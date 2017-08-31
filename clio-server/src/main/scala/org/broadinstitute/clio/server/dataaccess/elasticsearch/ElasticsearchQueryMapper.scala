@@ -1,10 +1,5 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.model.{
-  ModelWgsUbamQueryInput,
-  ModelWgsUbamQueryOutput
-}
-
 import com.sksamuel.elastic4s.HitReader
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.search.SearchResponse
@@ -55,13 +50,6 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput,
 }
 
 object ElasticsearchQueryMapper {
-  private[dataaccess] val WgsUbam =
-    AutoElasticsearchQueryMapper[
-      ModelWgsUbamQueryInput,
-      ModelWgsUbamQueryOutput,
-      DocumentWgsUbam
-    ]
-
   /**
     * Build an elastic4s query definition for a start date.
     *
