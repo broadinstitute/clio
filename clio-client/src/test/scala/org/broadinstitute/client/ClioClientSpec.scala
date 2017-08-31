@@ -1,21 +1,33 @@
 package org.broadinstitute.client
 
+import akka.http.scaladsl.model.StatusCodes
+import org.broadinstitute.client.util.MockIoUtil
 import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.ClioClient
+import org.broadinstitute.clio.client.commands.CommandDispatch
+
+import scala.concurrent.ExecutionContext
 
 class ClioClientSpec extends BaseClientSpec {
   behavior of "ClioClient"
 
+  override implicit val executionContext: ExecutionContext = system.dispatcher
+
   val client: ClioClient = {
     val mockWebClient = MockClioWebClient.returningOk
-    new ClioClient(mockWebClient)
+    val commandDispatch = new CommandDispatch(mockWebClient, new MockIoUtil)
+    new ClioClient(commandDispatch)
   }
 
   it should "exit 1 if given a bad command" in {
-    client.execute(badCommand) should be(1)
+    recoverToSucceededIf[Exception] {
+      client.execute(badCommand)
+    }
   }
 
   it should "exit 0 if the command is run successfully" in {
-    client.execute(goodAddCommand) should be(0)
+    client
+      .execute(goodAddCommand)
+      .map(r => r.status should be(StatusCodes.OK))
   }
 }

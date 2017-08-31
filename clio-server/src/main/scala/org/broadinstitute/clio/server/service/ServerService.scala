@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.server.service
 
 import com.typesafe.scalalogging.StrictLogging
-import org.broadinstitute.clio.server.ClioApp
+import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
 import org.broadinstitute.clio.server.dataaccess.{
   HttpServerDAO,
   SearchDAO,
@@ -22,6 +22,19 @@ class ServerService private (
     * Kick off a startup, and return immediately.
     */
   def beginStartup(): Unit = {
+    // Simple no-op for now, illustrating how credentials can be loaded.
+    val serviceAccount = ClioServerConfig.Persistence.serviceAccount
+    serviceAccount.fold {
+      logger.warn(
+        "No GCS service account given, using local filesystem for persistence"
+      )
+    } { account =>
+      val credential = account.credentialForScopes(Seq.empty)
+      logger.info(
+        s"Using service account with email ${credential.getClientEmail}"
+      )
+    }
+
     val startupAttempt = startup()
     startupAttempt.failed foreach { exception =>
       logger.error(

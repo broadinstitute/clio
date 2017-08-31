@@ -1,64 +1,74 @@
 package org.broadinstitute.client.commands
 
-import org.broadinstitute.client.BaseClientSpec
-import org.broadinstitute.client.webclient.MockClioWebClient
-
+import akka.http.scaladsl.model.StatusCodes
 import io.circe.{DecodingFailure, ParsingFailure}
-import org.broadinstitute.clio.client.commands.AddWgsUbam
+import org.broadinstitute.client.BaseClientSpec
+import org.broadinstitute.clio.client.commands.Commands.AddWgsUbam
+import org.broadinstitute.clio.client.parser.BaseArgs
 
 class AddWgsUbamSpec extends BaseClientSpec {
-  behavior of "AddWgsUbam"
+  behavior of "AddWgsUBam"
 
   it should "throw a parsing failure if the metadata is not valid json" in {
-    a[ParsingFailure] should be thrownBy {
-      new AddWgsUbam(
-        clioWebClient = MockClioWebClient.returningOk,
+    recoverToSucceededIf[ParsingFailure] {
+      val config = BaseArgs(
+        command = Some(AddWgsUbam),
         flowcell = testFlowcell,
         lane = testLane,
         libraryName = testLibName,
         location = testLocation,
         metadataLocation = badMetadataFileLocation,
         bearerToken = testBearer
-      ).execute
+      )
+      succeedingDispatcher.dispatch(config)
     }
   }
 
   it should "throw a decoding failure if the json is valid but we can't unmarshal it" in {
-    a[DecodingFailure] should be thrownBy {
-      new AddWgsUbam(
-        clioWebClient = MockClioWebClient.returningOk,
+    recoverToSucceededIf[DecodingFailure] {
+      val config = BaseArgs(
+        command = Some(AddWgsUbam),
         flowcell = testFlowcell,
         lane = testLane,
         libraryName = testLibName,
         location = testLocation,
         metadataLocation = metadataPlusExtraFieldsFileLocation,
         bearerToken = testBearer
-      ).execute
+      )
+      succeedingDispatcher.dispatch(config)
     }
   }
 
-  it should "return false if there was a server error" in {
-    new AddWgsUbam(
-      clioWebClient = MockClioWebClient.returningInternalError,
-      flowcell = testFlowcell,
-      lane = testLane,
-      libraryName = testLibName,
-      location = testLocation,
-      metadataLocation = metadataFileLocation,
-      bearerToken = testBearer
-    ).execute should be(false)
+  it should "return a failing HttpResponse if there was a server error" in {
+    recoverToSucceededIf[Exception] {
+      val config = BaseArgs(
+        command = Some(AddWgsUbam),
+        flowcell = testFlowcell,
+        lane = testLane,
+        libraryName = testLibName,
+        location = testLocation,
+        metadataLocation = metadataFileLocation,
+        bearerToken = testBearer
+      )
+      failingDispatcher
+        .dispatch(config)
+    }
   }
 
-  it should "return true if the server response is OK" in {
-    new AddWgsUbam(
-      clioWebClient = MockClioWebClient.returningOk,
+  it should "return successful HttpResponse if the server response is OK" in {
+    val config = BaseArgs(
+      command = Some(AddWgsUbam),
       flowcell = testFlowcell,
       lane = testLane,
       libraryName = testLibName,
       location = testLocation,
       metadataLocation = metadataFileLocation,
       bearerToken = testBearer
-    ).execute should be(true)
+    )
+    succeedingDispatcher
+      .dispatch(config)
+      .map(_.status should be(StatusCodes.OK))
+
   }
 
 }

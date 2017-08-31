@@ -17,8 +17,6 @@ import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
-import scala.sys.process._
-
 import java.util.UUID
 
 /**
@@ -68,12 +66,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     HttpClient.fromRestClient(restClient)
   }
 
-  /**
-    * Get a bearer token for hitting the /api route of Clio.
-    *
-    * For now, just calls out to `gcloud` in an external process.
-    */
-  def bearerToken: String = "gcloud auth print-access-token".!!.stripLineEnd
+  /** The bearer token to use when hitting the /api route of Clio. */
+  def bearerToken: String
 
   /**
     * Convert one of our [[org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex]]

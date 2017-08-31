@@ -10,9 +10,8 @@ import org.broadinstitute.clio.server.dataaccess.MemoryWgsUbamSearchDAO
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.DocumentStatus
-import org.scalatest.{FlatSpec, Matchers}
 
-import scala.concurrent.duration._
+import org.scalatest.{FlatSpec, Matchers}
 
 class WgsUbamWebServiceSpec
     extends FlatSpec
@@ -26,7 +25,7 @@ class WgsUbamWebServiceSpec
       "/metadata/barcodeOnPrem/3/libraryOnPrem/OnPrem",
       Map("project" -> "testOnPremLocation")
     ) ~> webService.postMetadata ~> check {
-      responseAs[Map[String, String]] should be(empty)
+      responseAs[String] should not be (empty)
     }
   }
 
@@ -36,7 +35,7 @@ class WgsUbamWebServiceSpec
       "/metadata/barcodeGCP/4/libraryGCP/GCP",
       Map("project" -> "testGCPlocation")
     ) ~> webService.postMetadata ~> check {
-      responseAs[Map[String, String]] should be(empty)
+      responseAs[String] should not be (empty)
     }
   }
 
@@ -179,7 +178,6 @@ class WgsUbamWebServiceSpec
   it should "return a JSON schema" in {
     val webService = new MockWgsUbamWebService()
     Get("/schema") ~> webService.getSchema ~> check {
-      implicit val timeout: Duration = 3.seconds
       responseAs[Json] should be(JsonSchemas.WgsUbam)
     }
   }

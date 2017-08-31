@@ -8,18 +8,22 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.syntax._
 import ClientAutoDerivation._
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.Printer
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput
 }
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   implicit system: ActorSystem
-) {
+) extends FailFastCirceSupport
+    with ModelAutoDerivation {
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -39,6 +43,7 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
       .via(connectionFlow)
       .runWith(Sink.head)
   }
+
   def getClioServerVersion: Future[HttpResponse] = {
     dispatchRequest(HttpRequest(uri = "/version"))
   }
@@ -87,5 +92,11 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
         entity = entity
       ).addHeader(Authorization(credentials = OAuth2BearerToken(bearerToken)))
     )
+  }
+
+  def unmarshal[A: FromEntityUnmarshaller](
+    httpResponse: HttpResponse
+  ): Future[A] = {
+    Unmarshal(httpResponse).to[A]
   }
 }

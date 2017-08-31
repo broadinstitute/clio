@@ -1,7 +1,11 @@
 include "application.conf"
 
 clio.server {
+    environment: {{env "ENV"}}
+
     http-server.port: {{env "CONTAINER_CLIO_PORT"}}
+
+    persistence.service-account-json: {{env "CLIO_CONF_DIR"}}/{{env "CLIO_SERVICE_ACCOUNT_JSON"}}
 
     elasticsearch.http-hosts: [
         {{range $i := loop 3}}

@@ -7,8 +7,7 @@ import java.util.Comparator
 import scala.io.Source
 import scala.sys.process.Process
 
-object IoUtil {
-
+trait IoUtil {
   val googleCloudStorageScheme = "gs://"
 
   def isGoogleObject(location: String): Boolean =
@@ -38,18 +37,56 @@ object IoUtil {
       .map[File](path => path.toFile)
       .forEach(file => file.deleteOnExit())
   }
+
+  def copyGoogleObject(from: String, to: String): Int = {
+    val gs = new GsUtil(None)
+    gs.cp(from, to)
+  }
+
+  def deleteGoogleObject(path: String): Int = {
+    val gs = new GsUtil(None)
+    gs.rm(path)
+  }
+
+  def googleObjectExists(path: String): Boolean = {
+    val gs = new GsUtil(None)
+    gs.exists(path) == 0
+  }
+
 }
+object IoUtil extends IoUtil {}
 
 //we should consider moving this to api usage instead of gsutil
 class GsUtil(stateDir: Option[Path]) {
+
+  def cp(from: String, to: String): Int = {
+    runGsUtilAndGetExitCode(Seq("cp", from, to))
+  }
+
+  def mv(from: String, to: String): Int = {
+    runGsUtilAndGetExitCode(Seq("mv", from, to))
+  }
+
+  def rm(path: String): Int = {
+    runGsUtilAndGetExitCode(Seq("rm", path))
+  }
 
   def cat(objectLocation: String): String = {
     runGsUtilAndGetStdout(Seq("cat", objectLocation))
   }
 
+  def exists(path: String): Int = {
+    runGsUtilAndGetExitCode(Seq("-q", "stat", path))
+  }
+
   def runGsUtilAndGetStdout(gsUtilArgs: Seq[String]): String = {
     val str = getGsUtilCmdWithStateDir(gsUtilArgs).mkString(" ")
     Process(str).!!
+  }
+
+  def runGsUtilAndGetExitCode(gsUtilArgs: Seq[String]): Int = {
+    val str = getGsUtilCmdWithStateDir(gsUtilArgs).mkString(" ")
+    Process(str).!
   }
 
   def getGsUtilCmdWithStateDir(gsUtilArgs: Seq[String]): Seq[String] = {

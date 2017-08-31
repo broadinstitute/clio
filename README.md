@@ -34,11 +34,11 @@ Metadata Manager
 
 ### Run integration tests against a local Docker image for the current commit
 
-`sbt "it:testOnly *FullDockerIntegrationSpec"`
+`sbt "it:testOnly *DockerIntegrationSpec"`
 
 ### Build and then use docker-compose to run the docker images
 
-`sbt docker "it:testOnly *FullDockerIntegrationSpec"`
+`sbt docker "it:testOnly *DockerIntegrationSpec"`
 
 ### Run the server docker image
 

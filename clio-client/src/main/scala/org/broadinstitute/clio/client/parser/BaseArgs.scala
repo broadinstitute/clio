@@ -3,12 +3,13 @@ package org.broadinstitute.clio.client.parser
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.client.ClioClientConfig
+import org.broadinstitute.clio.client.commands.{CommandType}
 import org.broadinstitute.clio.client.commands.Commands
 import org.broadinstitute.clio.util.model.DocumentStatus
 
-case class BaseArgs(command: Option[String] = None,
-                    bearerToken: String = "",
-                    metadataLocation: String = "",
+case class BaseArgs(command: Option[CommandType] = None,
+                    bearerToken: Option[String] = None,
+                    metadataLocation: Option[String] = None,
                     flowcell: Option[String] = None,
                     lane: Option[Int] = None,
                     libraryName: Option[String] = None,
@@ -16,6 +17,7 @@ case class BaseArgs(command: Option[String] = None,
                     lcSet: Option[String] = None,
                     project: Option[String] = None,
                     sampleAlias: Option[String] = None,
+                    ubamPath: Option[String] = None,
                     documentStatus: Option[DocumentStatus] = None,
                     runDateEnd: Option[OffsetDateTime] = None,
                     runDateStart: Option[OffsetDateTime] = None)
@@ -27,18 +29,18 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
 
   opt[String]('t', "bearer-token")
     .optional()
-    .action((token, conf) => conf.copy(bearerToken = token))
+    .action((token, conf) => conf.copy(bearerToken = Some(token)))
     .text("A valid bearer token for authentication.")
 
-  cmd(Commands.addWgsUbam)
-    .action((_, c) => c.copy(command = Some(Commands.addWgsUbam)))
-    .text("This command is used to add a wgs ubam (WGS unmapped bam).")
+  cmd(Commands.AddWgsUbam.toString)
+    .action((_, c) => c.copy(command = Some(Commands.AddWgsUbam)))
+    .text("This command is used to add a whole genome unmapped bam.")
     .children(
       opt[String]('m', "meta-data-file")
         .required()
         .action(
           (metadataLocation, config) =>
-            config.copy(metadataLocation = metadataLocation)
+            config.copy(metadataLocation = Some(metadataLocation))
         )
         .text(
           "The location of the file or object containing bam metadata. (Required)"
@@ -46,61 +48,91 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
       opt[String]('f', "flowcell")
         .required()
         .action((flowcell, config) => config.copy(flowcell = Some(flowcell)))
-        .text("The flowcell for this wgs ubam (WGS unmapped bam). (Required)"),
+        .text("The flowcell for this whole genome unmapped bam. (Required)"),
       opt[Int]('l', "lane")
         .required()
         .action((lane, config) => config.copy(lane = Some(lane)))
-        .text("The lane for this wgs ubam (WGS unmapped bam). (Required)"),
+        .text("The lane for this whole genome unmapped bam. (Required)"),
       opt[String]('n', "libraryName")
         .required()
         .action(
           (libraryName, config) => config.copy(libraryName = Some(libraryName))
         )
         .text(
-          "The library name for this wgs ubam (WGS unmapped bam). (Required)"
+          "The library name for this whole genome unmapped bam. (Required)"
         ),
       opt[String]("location")
         .required()
         .action((location, config) => config.copy(location = Some(location)))
-        .text("The location for this wgs ubam (WGS unmapped bam). (Required)")
+        .text("The location for this whole genome unmapped bam. (Required)")
     )
 
-  cmd(Commands.queryWgsUbam)
-    .action((_, c) => c.copy(command = Some(Commands.queryWgsUbam)))
-    .text("This command is used to query a wgs ubam (WGS unmapped bam).")
+  cmd(Commands.QueryWgsUbam.toString)
+    .action((_, c) => c.copy(command = Some(Commands.QueryWgsUbam)))
+    .text("This command is used to query a whole genome unmapped bam.")
     .children(
       opt[String]('f', "flowcell")
         .optional()
         .action((flowcell, config) => config.copy(flowcell = Some(flowcell)))
-        .text("The flowcell for this wgs ubam (WGS unmapped bam)."),
+        .text("The flowcell for this whole genome unmapped bam."),
       opt[Int]('l', "lane")
         .optional()
         .action((lane, config) => config.copy(lane = Some(lane)))
-        .text("The lane for this wgs ubam (WGS unmapped bam)."),
+        .text("The lane for this whole genome unmapped bam."),
       opt[String]('n', "libraryName")
         .optional()
         .action(
           (libraryName, config) => config.copy(libraryName = Some(libraryName))
         )
-        .text("The library name for this wgs ubam (WGS unmapped bam)."),
+        .text("The library name for this whole genome unmapped bam."),
       opt[String]("location")
         .optional()
         .action((location, config) => config.copy(location = Some(location)))
-        .text("The location for this wgs ubam (WGS unmapped bam)."),
+        .text("The location for this whole genome unmapped bam."),
       opt[String]("lc-set")
         .optional()
         .action((lcSet, config) => config.copy(lcSet = Some(lcSet)))
-        .text("The lcSet for this wgs ubam (WGS unmapped bam)."),
+        .text("The lcSet for this whole genome unmapped bam."),
       opt[String]("sample-alias")
         .optional()
         .action(
           (sampleAlias, config) => config.copy(sampleAlias = Some(sampleAlias))
         )
-        .text("The sample alias for this wgs ubam (WGS unmapped bam)."),
+        .text("The sample alias for this whole genome unmapped bam."),
       opt[String]("project")
         .optional()
         .action((project, config) => config.copy(project = Some(project)))
-        .text("The project for this wgs ubam (WGS unmapped bam).")
+        .text("The project for this whole genome unmapped bam.")
+    )
+
+  cmd(Commands.MoveWgsUbam.toString)
+    .action((_, c) => c.copy(command = Some(Commands.MoveWgsUbam)))
+    .text(
+      "This command is used to copy a unmapped bam from one location to another. Only implemented for cloud unmapped bams"
+    )
+    .children(
+      opt[String]('f', "flowcell")
+        .required()
+        .action((flowcell, config) => config.copy(flowcell = Some(flowcell)))
+        .text("The flowcell for this whole genome unmapped bam."),
+      opt[Int]('l', "lane")
+        .required()
+        .action((lane, config) => config.copy(lane = Some(lane)))
+        .text("The lane for this whole genome unmapped bam."),
+      opt[String]('n', "libraryName")
+        .required()
+        .action(
+          (libraryName, config) => config.copy(libraryName = Some(libraryName))
+        )
+        .text("The library name for this whole genome unmapped bam."),
+      opt[String]("location")
+        .required()
+        .action((location, config) => config.copy(location = Some(location)))
+        .text("The location for this whole genome unmapped bam."),
+      opt[String]("destination")
+        .required()
+        .action((ubamPath, config) => config.copy(ubamPath = Some(ubamPath)))
+        .text("The destination path for the unmapped bam.")
     )
 
   checkConfig { config =>

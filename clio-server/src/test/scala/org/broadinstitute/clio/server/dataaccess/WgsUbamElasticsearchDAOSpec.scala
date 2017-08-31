@@ -1,9 +1,10 @@
 package org.broadinstitute.clio.server.dataaccess
 
 import java.util.UUID
-import org.broadinstitute.clio.server.model._
-import org.broadinstitute.clio.util.model.Location
 
+import org.broadinstitute.clio.server.model._
+import org.broadinstitute.clio.server.service.util.ClioUUIDGenerator
+import org.broadinstitute.clio.util.model.Location
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
 class WgsUbamElasticsearchDAOSpec
@@ -23,6 +24,7 @@ class WgsUbamElasticsearchDAOSpec
   it should "updateWgsUbamMetadata" in {
     val key = ModelWgsUbamKey("barcodeURGM1", 2, "library3", Location.GCP)
     val metadata = ModelWgsUbamMetadata(
+      clioId = Some(ClioUUIDGenerator.getUUID()),
       analysisType = None,
       baitIntervals = None,
       dataType = None,
@@ -68,7 +70,9 @@ class WgsUbamElasticsearchDAOSpec
     val id = UUID.randomUUID.toString.replaceAll("-", "")
     val library = "library" + id
     val key = ModelWgsUbamKey("barcodeQRG1", 2, library, Location.OnPrem)
+    val clioId = ClioUUIDGenerator.getUUID()
     val metadata = ModelWgsUbamMetadata(
+      clioId = Some(clioId),
       analysisType = None,
       baitIntervals = None,
       dataType = None,
@@ -126,6 +130,7 @@ class WgsUbamElasticsearchDAOSpec
             lane = 2,
             libraryName = library,
             location = Location.OnPrem,
+            clioId = Some(clioId),
             analysisType = None,
             baitIntervals = None,
             dataType = None,
