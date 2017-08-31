@@ -10,7 +10,7 @@ import com.dimafeng.testcontainers.ForAllTestContainer
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import java.io.File
-import java.nio.file.FileSystems
+import java.nio.file.{FileSystems, Path, Paths}
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
@@ -59,6 +59,10 @@ class DockerIntegrationSpec
   override implicit val bearerToken: OAuth2BearerToken = OAuth2BearerToken(
     "dummy-token"
   )
+
+  // SBT sets a local path for persisting metadata updates.
+  override val rootPersistenceDir: Path =
+    Paths.get(sys.env("LOCAL_PERSISTENCE_DIR"))
 
   override def beforeAll(): Unit = {
     super.beforeAll()

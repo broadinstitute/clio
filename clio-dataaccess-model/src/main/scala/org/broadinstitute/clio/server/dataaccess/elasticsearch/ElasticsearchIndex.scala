@@ -16,6 +16,9 @@ abstract class ElasticsearchIndex[Document] {
   /** The name of the index. */
   def indexName: String
 
+  /** The root directory to use when persisting updates of this index to storage. */
+  lazy val rootDir: String = indexName.replaceAll("_", "-")
+
   /**
     * The name of the index type. Always default until ES 7 when there will be no index types.
     * https://www.elastic.co/blog/elasticsearch-6-0-0-alpha1-released#type-removal

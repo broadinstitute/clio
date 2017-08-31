@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.dataaccess.{
+  FailingPersistenceDAO,
   FailingSearchDAO,
   MemoryServerStatusDAO
 }
@@ -53,6 +54,21 @@ class ServerServiceSpec
       statusDAO.setCalls should be(
         Seq(ServerStatusInfo.Starting, ServerStatusInfo.Started)
       )
+    }
+  }
+
+  it should "fail to start if persistence initialization fails" in {
+    val statusDAO = new MemoryServerStatusDAO()
+    val app = MockClioApp(
+      persistenceDAO = new FailingPersistenceDAO(),
+      serverStatusDAO = statusDAO
+    )
+    val serverService = ServerService(app)
+
+    recoverToSucceededIf[Exception] {
+      serverService.startup()
+    }.map { _ =>
+      statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
     }
   }
 

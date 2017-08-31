@@ -5,12 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
 import com.typesafe.scalalogging.StrictLogging
-import org.broadinstitute.clio.server.dataaccess.{
-  AkkaHttpServerDAO,
-  CachedServerStatusDAO,
-  HttpElasticsearchDAO,
-  LoggingAuditDAO
-}
+import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.service._
 import org.broadinstitute.clio.server.webservice._
 
@@ -49,16 +44,27 @@ object ClioServer
   private val auditDAO = LoggingAuditDAO()
   private val httpServerDAO = AkkaHttpServerDAO(routes)
   private val searchDAO = HttpElasticsearchDAO()
+  private val persistenceDAO = PersistenceDAO(
+    ClioServerConfig.Persistence.config
+  )
 
   private val app =
-    new ClioApp(serverStatusDAO, auditDAO, httpServerDAO, searchDAO)
+    new ClioApp(
+      serverStatusDAO,
+      auditDAO,
+      httpServerDAO,
+      persistenceDAO,
+      searchDAO
+    )
 
   private val serverService = ServerService(app)
+  private val persistenceService = PersistenceService(app)
+  private val searchService = SearchService(app)
   override val auditService = AuditService(app)
   override val statusService = StatusService(app)
-  val searchService = SearchService(app)
 
-  override val wgsUbamService = new WgsUbamService(searchService)
+  override val wgsUbamService =
+    new WgsUbamService(persistenceService, searchService)
 
   def beginStartup(): Unit = serverService.beginStartup()
 

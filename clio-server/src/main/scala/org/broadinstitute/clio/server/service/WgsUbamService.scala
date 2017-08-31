@@ -1,15 +1,10 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  AutoElasticsearchDocumentMapper,
-  AutoElasticsearchQueryMapper,
-  DocumentWgsUbam,
-  ElasticsearchIndex
-}
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import Elastic4sAutoDerivation._
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.model.DocumentStatus
 import org.broadinstitute.clio.util.json.JsonSchemas
+import org.broadinstitute.clio.util.model.DocumentStatus
 
 import com.sksamuel.elastic4s.circe._
 import io.circe.Json
@@ -19,6 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import java.util.UUID
 
 class WgsUbamService(
+  persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext) {
 
@@ -28,10 +24,10 @@ class WgsUbamService(
   ): Future[UUID] = {
     val updatedTransferMetadata = transferMetadata.copy(
       documentStatus =
-        Option(transferMetadata.documentStatus.getOrElse(DocumentStatus.Normal))
+        transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
     )
 
-    searchService
+    persistenceService
       .upsertMetadata(
         transferKey,
         updatedTransferMetadata,
@@ -62,14 +58,20 @@ class WgsUbamService(
 }
 
 object WgsUbamService {
-  private[service] val v1DocumentConverter =
+  private[service] val v1DocumentConverter
+    : ElasticsearchDocumentMapper[TransferWgsUbamV1Key,
+                                  TransferWgsUbamV1Metadata,
+                                  DocumentWgsUbam] =
     AutoElasticsearchDocumentMapper[
       TransferWgsUbamV1Key,
       TransferWgsUbamV1Metadata,
       DocumentWgsUbam
     ]
 
-  private[service] val v1QueryConverter =
+  private[service] val v1QueryConverter
+    : ElasticsearchQueryMapper[TransferWgsUbamV1QueryInput,
+                               TransferWgsUbamV1QueryOutput,
+                               DocumentWgsUbam] =
     AutoElasticsearchQueryMapper[
       TransferWgsUbamV1QueryInput,
       TransferWgsUbamV1QueryOutput,
