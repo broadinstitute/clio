@@ -11,15 +11,15 @@ class MemoryWgsUbamSearchDAO extends MockSearchDAO {
   var queryWgsUbamCalls: Seq[ModelWgsUbamQueryInput] = Seq.empty
 
   override def updateWgsUbamMetadata(
-      key: ModelWgsUbamKey,
-      metadata: ModelWgsUbamMetadata
+    key: ModelWgsUbamKey,
+    metadata: ModelWgsUbamMetadata
   ): Future[Unit] = {
     updateWgsUbamMetadataCalls :+= ((key, metadata))
     super.updateWgsUbamMetadata(key, metadata)
   }
 
   override def queryWgsUbam(
-      queryInput: ModelWgsUbamQueryInput
+    queryInput: ModelWgsUbamQueryInput
   ): Future[Seq[ModelWgsUbamQueryOutput]] = {
     queryWgsUbamCalls :+= queryInput
     super.queryWgsUbam(queryInput)

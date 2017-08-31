@@ -6,6 +6,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.commands.Commands.CommonOptions
 import org.broadinstitute.clio.client.commands.{
   AddWgsUbam,
+  DeleteWgsUbam,
   MoveWgsUbam,
   QueryWgsUbam
 }
@@ -73,5 +74,9 @@ trait TestData {
       TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
     transferWgsUbamV1Key = testTransferV1Key
   )
-
+  val goodDeleteCommand = DeleteWgsUbam(
+    metadata =
+      TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
+    transferWgsUbamV1Key = testTransferV1Key
+  )
 }

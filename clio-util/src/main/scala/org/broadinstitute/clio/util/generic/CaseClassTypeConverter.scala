@@ -16,7 +16,7 @@ import scala.reflect.ClassTag
   * @see [[SameFieldsTypeConverter]]
   */
 class CaseClassTypeConverter[From: ClassTag, To: ClassTag] private (
-    convertVals: Map[String, _] => Map[String, _]
+  convertVals: Map[String, _] => Map[String, _]
 ) extends TypeConverter[From, To] {
   private val fromMapper = new CaseClassMapper[From]
   private val toMapper = new CaseClassMapper[To]
@@ -45,6 +45,6 @@ object CaseClassTypeConverter {
     * @return An instance of a CaseClassTypeConverter.
     */
   def apply[From: ClassTag, To: ClassTag](
-      convertVals: Map[String, _] => Map[String, _]
+    convertVals: Map[String, _] => Map[String, _]
   ): TypeConverter[From, To] = new CaseClassTypeConverter(convertVals)
 }

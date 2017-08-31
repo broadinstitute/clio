@@ -33,16 +33,9 @@ class CommandDispatchSpec extends BaseClientSpec {
   it should "return true when we dispatch a valid deleteWgsUbam command" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
-    val config = BaseArgs(
-      command = Some(Commands.DeleteWgsUbam),
-      flowcell = testFlowcell,
-      lane = testLane,
-      libraryName = testLibName,
-      location = testLocation,
-      bearerToken = testBearer,
-    )
+
     succeedingReturningDispatcher(mockIoUtil)
-      .dispatch(config)
+      .dispatch(goodDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }
 }

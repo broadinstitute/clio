@@ -4,7 +4,6 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.parser.parse
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1Metadata
 

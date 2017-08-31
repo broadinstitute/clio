@@ -45,7 +45,9 @@ class ArgParserSpec extends BaseClientSpec {
       case Left(_) => fail("Could not parse outer command.")
     }
     errorMessage should be(
-      Some("Unknown enum value BadValue for type org.broadinstitute.clio.util.model.Location ")
+      Some(
+        "Unknown enum value BadValue for type org.broadinstitute.clio.util.model.Location "
+      )
     )
   }
 
