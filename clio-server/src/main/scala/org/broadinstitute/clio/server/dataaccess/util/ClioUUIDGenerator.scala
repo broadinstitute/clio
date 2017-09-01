@@ -14,6 +14,11 @@ object ClioUUIDGenerator {
   private val generator: TimeBasedGenerator =
     Generators.timeBasedGenerator(EthernetAddress.fromInterface())
 
-  def getUUID(): UUID = generator.generate()
+  /*
+   * This is a thunk function value, instead of a nullary method,
+   * so we can pass it around without dealing with the warning / error
+   * nonsense surrounding eta expansion of zero-arg methods.
+   */
+  val getUUID: () => UUID = () => generator.generate()
 
 }

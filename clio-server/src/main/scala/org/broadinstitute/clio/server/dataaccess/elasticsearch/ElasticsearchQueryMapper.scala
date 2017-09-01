@@ -55,10 +55,7 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput,
 }
 
 object ElasticsearchQueryMapper {
-  private[dataaccess] val WgsUbam
-    : ElasticsearchQueryMapper[ModelWgsUbamQueryInput,
-                               ModelWgsUbamQueryOutput,
-                               DocumentWgsUbam] =
+  private[dataaccess] val WgsUbam =
     AutoElasticsearchQueryMapper[
       ModelWgsUbamQueryInput,
       ModelWgsUbamQueryOutput,

@@ -56,9 +56,6 @@ object AutoElasticsearchDocumentMapper {
             ModelMetadata: ClassTag,
             Document <: ClioDocument: ClassTag]
     : ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] = {
-    // Don't listen to IntelliJ's warning on the line below; removing
-    // the _ results in a compiler deprecation warning, which our settings
-    // escalate into an error.
-    new AutoElasticsearchDocumentMapper(ClioUUIDGenerator.getUUID _)
+    new AutoElasticsearchDocumentMapper(ClioUUIDGenerator.getUUID)
   }
 }
