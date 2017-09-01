@@ -1,8 +1,8 @@
 package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.MockClioApp
-import org.broadinstitute.clio.server.dataaccess.MemoryWgsUbamSearchDAO
-import org.broadinstitute.clio.server.model._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
@@ -31,9 +31,11 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
   }
 
   it should "queryData" in {
-    val memorySearchDAO = new MemoryWgsUbamSearchDAO()
+    val memorySearchDAO = new MemorySearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
-    val wgsUbamService = WgsUbamService(app)
+    val searchService = SearchService(app)
+    val wgsUbamService = new WgsUbamService(searchService)
+
     val transferInputMapper =
       new CaseClassMapper[TransferWgsUbamV1QueryInput]
     val transferInput =
@@ -41,22 +43,9 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
     for {
       _ <- wgsUbamService.queryMetadata(transferInput)
     } yield {
-      memorySearchDAO.updateWgsUbamMetadataCalls should be(empty)
-      memorySearchDAO.queryWgsUbamCalls should be(
-        Seq(
-          ModelWgsUbamQueryInput(
-            flowcellBarcode = None,
-            lane = None,
-            libraryName = None,
-            location = None,
-            lcSet = None,
-            project = Option("testProject"),
-            runDateEnd = None,
-            runDateStart = None,
-            sampleAlias = None,
-            documentStatus = Option(DocumentStatus.Normal)
-          )
-        )
+      memorySearchDAO.updateCalls should be(empty)
+      memorySearchDAO.queryCalls should be(
+        Seq(transferInput.copy(documentStatus = Some(DocumentStatus.Normal)))
       )
     }
   }
@@ -65,9 +54,11 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
     documentStatus: Option[DocumentStatus],
     expectedDocumentStatus: Option[DocumentStatus]
   ) = {
-    val memorySearchDAO = new MemoryWgsUbamSearchDAO()
+    val memorySearchDAO = new MemorySearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
-    val wgsUbamService = WgsUbamService(app)
+    val searchService = SearchService(app)
+    val wgsUbamService = new WgsUbamService(searchService)
+
     val transferKey =
       TransferWgsUbamV1Key("barcode1", 2, "library3", Location.GCP)
     val transferMetadataMapper =
@@ -86,49 +77,23 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
         transferMetadata
       )
     } yield {
-      memorySearchDAO.updateWgsUbamMetadataCalls should be(
+      val expectedDocument = WgsUbamService.v1DocumentConverter
+        .withMetadata(
+          WgsUbamService.v1DocumentConverter.empty(transferKey),
+          transferMetadata.copy(documentStatus = expectedDocumentStatus)
+        )
+        .copy(clioId = returnedClioId)
+
+      memorySearchDAO.updateCalls should be(
         Seq(
           (
-            ModelWgsUbamKey("barcode1", 2, "library3", Location.GCP),
-            ModelWgsUbamMetadata(
-              analysisType = None,
-              baitIntervals = None,
-              dataType = None,
-              individualAlias = None,
-              initiative = None,
-              lcSet = None,
-              libraryType = None,
-              machineName = None,
-              molecularBarcodeName = None,
-              molecularBarcodeSequence = None,
-              pairedRun = None,
-              productFamily = None,
-              productName = None,
-              productOrderId = None,
-              productPartNumber = None,
-              project = Option("testProject"),
-              readStructure = None,
-              researchProjectId = None,
-              researchProjectName = None,
-              rootSampleId = None,
-              runDate = None,
-              runName = None,
-              sampleAlias = None,
-              sampleGender = None,
-              sampleId = None,
-              sampleLsid = None,
-              sampleType = None,
-              targetIntervals = None,
-              notes = Option("notable update"),
-              ubamMd5 = None,
-              ubamPath = None,
-              ubamSize = None,
-              documentStatus = expectedDocumentStatus
-            )
+            WgsUbamService.v1DocumentConverter.id(transferKey),
+            expectedDocument,
+            ElasticsearchIndex.WgsUbam
           )
         )
       )
-      memorySearchDAO.queryWgsUbamCalls should be(empty)
+      memorySearchDAO.queryCalls should be(empty)
     }
 
   }

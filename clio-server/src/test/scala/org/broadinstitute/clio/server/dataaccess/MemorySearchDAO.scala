@@ -7,34 +7,31 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 
 import com.sksamuel.elastic4s.{HitReader, Indexable}
 
+import scala.collection.mutable
 import scala.concurrent.Future
 
-class MockSearchDAO extends SearchDAO {
-  override def checkOk: Future[Unit] = {
-    Future.successful(())
-  }
+class MemorySearchDAO extends MockSearchDAO {
 
-  override def initialize(): Future[Unit] = {
-    Future.successful(())
-  }
-
-  override def close(): Future[Unit] = {
-    Future.successful(())
-  }
+  // TODO: We could probably be more specific than `Any` here
+  val updateCalls: mutable.ArrayBuffer[(Any, Any, Any)] =
+    mutable.ArrayBuffer.empty
+  val queryCalls: mutable.ArrayBuffer[Any] = mutable.ArrayBuffer.empty
 
   override def updateMetadata[D: Indexable](
     id: String,
     document: D,
     index: ElasticsearchIndex[D]
   ): Future[Unit] = {
-    Future.successful(())
+    updateCalls += ((id, document, index))
+    super.updateMetadata(id, document, index)
   }
 
   override def queryMetadata[I, O, D: HitReader](
-    queryInput: I,
+    input: I,
     index: ElasticsearchIndex[D],
     queryBuilder: ElasticsearchQueryMapper[I, O, D]
   ): Future[Seq[O]] = {
-    Future.successful(Seq.empty[O])
+    queryCalls += input
+    super.queryMetadata(input, index, queryBuilder)
   }
 }

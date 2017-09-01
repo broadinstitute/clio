@@ -1,20 +1,25 @@
 package org.broadinstitute.clio.server.service
 
-import java.util.UUID
-
-import io.circe.Json
-import org.broadinstitute.clio.server.ClioApp
-import org.broadinstitute.clio.server.dataaccess.SearchDAO
-import org.broadinstitute.clio.server.model._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  AutoElasticsearchDocumentMapper,
+  AutoElasticsearchQueryMapper,
+  DocumentWgsUbam,
+  ElasticsearchIndex
+}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.generic.SameFieldsTypeConverter
 import org.broadinstitute.clio.util.model.DocumentStatus
 import org.broadinstitute.clio.util.json.JsonSchemas
 
+import com.sksamuel.elastic4s.circe._
+import io.circe.Json
+
 import scala.concurrent.{ExecutionContext, Future}
 
-class WgsUbamService private (
-  searchDAO: SearchDAO
+import java.util.UUID
+
+class WgsUbamService(
+  searchService: SearchService
 )(implicit executionContext: ExecutionContext) {
 
   def upsertMetadata(
@@ -26,13 +31,12 @@ class WgsUbamService private (
         Option(transferMetadata.documentStatus.getOrElse(DocumentStatus.Normal))
     )
 
-    SearchService
+    searchService
       .upsertMetadata(
         transferKey,
         updatedTransferMetadata,
-        WgsUbamService.ConverterV1Key,
-        WgsUbamService.ConverterV1Metadata,
-        searchDAO.updateWgsUbamMetadata
+        ElasticsearchIndex.WgsUbam,
+        WgsUbamService.v1DocumentConverter
       )
   }
 
@@ -47,11 +51,10 @@ class WgsUbamService private (
   def queryAllMetadata(
     transferInput: TransferWgsUbamV1QueryInput
   ): Future[Seq[TransferWgsUbamV1QueryOutput]] = {
-    SearchService.queryMetadata(
+    searchService.queryMetadata(
       transferInput,
-      WgsUbamService.ConverterV1QueryInput,
-      WgsUbamService.ConverterV1QueryOutput,
-      searchDAO.queryWgsUbam
+      ElasticsearchIndex.WgsUbam,
+      WgsUbamService.v1QueryConverter
     )
   }
 
@@ -59,24 +62,17 @@ class WgsUbamService private (
 }
 
 object WgsUbamService {
-  def apply(
-    app: ClioApp
-  )(implicit executionContext: ExecutionContext): WgsUbamService = {
-    new WgsUbamService(app.searchDAO)
-  }
+  private[service] val v1DocumentConverter =
+    AutoElasticsearchDocumentMapper[
+      TransferWgsUbamV1Key,
+      TransferWgsUbamV1Metadata,
+      DocumentWgsUbam
+    ]
 
-  private[service] val ConverterV1Key =
-    SameFieldsTypeConverter[TransferWgsUbamV1Key, ModelWgsUbamKey]
-
-  private[service] val ConverterV1Metadata =
-    SameFieldsTypeConverter[TransferWgsUbamV1Metadata, ModelWgsUbamMetadata]
-
-  private[service] val ConverterV1QueryInput =
-    SameFieldsTypeConverter[TransferWgsUbamV1QueryInput, ModelWgsUbamQueryInput]
-
-  private[service] val ConverterV1QueryOutput =
-    SameFieldsTypeConverter[
-      ModelWgsUbamQueryOutput,
-      TransferWgsUbamV1QueryOutput
+  private[service] val v1QueryConverter =
+    AutoElasticsearchQueryMapper[
+      TransferWgsUbamV1QueryInput,
+      TransferWgsUbamV1QueryOutput,
+      DocumentWgsUbam
     ]
 }

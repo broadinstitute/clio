@@ -56,7 +56,9 @@ object ClioServer
   private val serverService = ServerService(app)
   override val auditService = AuditService(app)
   override val statusService = StatusService(app)
-  override val wgsUbamService = WgsUbamService(app)
+  val searchService = SearchService(app)
+
+  override val wgsUbamService = new WgsUbamService(searchService)
 
   def beginStartup(): Unit = serverService.beginStartup()
 

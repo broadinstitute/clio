@@ -1,6 +1,12 @@
 package org.broadinstitute.clio.server.service
 
+import org.broadinstitute.clio.server.dataaccess.{
+  FailingSearchDAO,
+  MemoryServerStatusDAO
+}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
+import org.broadinstitute.clio.status.model.ServerStatusInfo
+
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
 class ServerServiceSpec
@@ -38,11 +44,31 @@ class ServerServiceSpec
   }
 
   it should "startup" in {
-    val app = MockClioApp()
+    val statusDAO = new MemoryServerStatusDAO()
+    val app = MockClioApp(serverStatusDAO = statusDAO)
     val serverService = ServerService(app)
     for {
       _ <- serverService.startup()
-    } yield succeed
+    } yield {
+      statusDAO.setCalls should be(
+        Seq(ServerStatusInfo.Starting, ServerStatusInfo.Started)
+      )
+    }
+  }
+
+  it should "fail to start if search initialization fails" in {
+    val statusDAO = new MemoryServerStatusDAO()
+    val app = MockClioApp(
+      searchDAO = new FailingSearchDAO(),
+      serverStatusDAO = statusDAO
+    )
+    val serverService = ServerService(app)
+
+    recoverToSucceededIf[Exception] {
+      serverService.startup()
+    }.map { _ =>
+      statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
+    }
   }
 
   it should "shutdown" in {
