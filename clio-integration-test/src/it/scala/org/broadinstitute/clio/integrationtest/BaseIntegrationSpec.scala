@@ -3,7 +3,6 @@ package org.broadinstitute.clio.integrationtest
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
@@ -16,8 +15,9 @@ import io.circe.Printer
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
-
 import java.util.UUID
+
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 /**
   * Base class for Clio integration tests, agnostic to the location
@@ -67,7 +67,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   }
 
   /** The bearer token to use when hitting the /api route of Clio. */
-  def bearerToken: String
+  implicit val bearerToken: OAuth2BearerToken
 
   /**
     * Convert one of our [[org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex]]

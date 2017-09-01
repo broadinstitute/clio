@@ -1,47 +1,61 @@
 package org.broadinstitute.clio.client
 
-import org.broadinstitute.clio.client.commands.CommandDispatch
-import org.broadinstitute.clio.client.parser.{BaseArgs, BaseParser}
-import org.broadinstitute.clio.client.webclient.ClioWebClient
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import caseapp._
+import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.clio.client.commands.Commands._
+import org.broadinstitute.clio.client.commands.{CommandDispatch, CommandType}
 import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.webclient.ClioWebClient
 
-import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-object ClioClient extends App {
-  implicit val system: ActorSystem = ActorSystem("clio-client")
+object ClioClient
+    extends CommandAppWithPreCommand[CommonOptions, CommandType]
+    with LazyLogging {
+  override val progName = "clio-client"
+  override val appName = "Clio Client"
+
+  override val appVersion: String = ClioClientConfig.Version.value
+
+  //not sure this is the best way to pass common opts but case-app docs are spotty at best
+  var commonOptions: CommonOptions = _
+
+  override def beforeCommand(options: CommonOptions,
+                             remainingArgs: Seq[String]): Unit = {
+    commonOptions = options
+    checkRemainingArgs(remainingArgs)
+  }
+
+  private def checkRemainingArgs(remainingArgs: Seq[String]): Unit = {
+    if (remainingArgs.nonEmpty) {
+      logger.error(s"Found extra arguments: ${remainingArgs.mkString(" ")}")
+      sys.exit(1)
+    }
+  }
+
+  implicit val system: ActorSystem = ActorSystem(progName)
   import system.dispatcher
   sys.addShutdownHook({ val _ = system.terminate() })
 
-  val webClient = new ClioWebClient(
+  val webClient: ClioWebClient = new ClioWebClient(
     ClioClientConfig.ClioServer.clioServerHostName,
     ClioClientConfig.ClioServer.clioServerPort,
     ClioClientConfig.ClioServer.clioServerUseHttps
   )
-  val commandDispatch = new CommandDispatch(webClient, IoUtil)
 
-  val client = new ClioClient(commandDispatch)
+  override def run(command: CommandType, remainingArgs: RemainingArgs): Unit = {
 
-  client.execute(args) onComplete {
-    case Success(_) => System.exit(0)
-    case Failure(_) => System.exit(1)
-  }
-}
+    checkRemainingArgs(remainingArgs.args)
 
-class ClioClient(commandDispatch: CommandDispatch) {
+    implicit val bearerToken: OAuth2BearerToken = commonOptions.bearerToken
 
-  def execute(
-    args: Array[String]
-  )(implicit ec: ExecutionContext): Future[HttpResponse] = {
-    val parser: BaseParser = new BaseParser
-    parser.parse(args, BaseArgs()) match {
-      case Some(config) =>
-        commandDispatch.dispatch(config)
-      case None =>
-        Future.failed(new Exception("Could not parse arguments"))
+    val commandDispatch = new CommandDispatch(webClient, IoUtil)
+
+    commandDispatch.dispatch(command) onComplete {
+      case Success(_) => sys.exit(0)
+      case Failure(_) => sys.exit(1)
     }
   }
-
 }

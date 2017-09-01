@@ -15,12 +15,12 @@ import org.broadinstitute.clio.util.json.JsonSchemas
 import scala.concurrent.{ExecutionContext, Future}
 
 class WgsUbamService private (
-    searchDAO: SearchDAO
+  searchDAO: SearchDAO
 )(implicit executionContext: ExecutionContext) {
 
   def upsertMetadata(
-      transferKey: TransferWgsUbamV1Key,
-      transferMetadata: TransferWgsUbamV1Metadata
+    transferKey: TransferWgsUbamV1Key,
+    transferMetadata: TransferWgsUbamV1Metadata
   ): Future[UUID] = {
     val clioId = ClioUUIDGenerator.getUUID()
     val updatedTransferMetadata = transferMetadata.copy(
@@ -42,7 +42,7 @@ class WgsUbamService private (
   }
 
   def queryMetadata(
-      transferInput: TransferWgsUbamV1QueryInput
+    transferInput: TransferWgsUbamV1QueryInput
   ): Future[Seq[TransferWgsUbamV1QueryOutput]] = {
     val transferInputNew =
       transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
@@ -50,7 +50,7 @@ class WgsUbamService private (
   }
 
   def queryAllMetadata(
-      transferInput: TransferWgsUbamV1QueryInput
+    transferInput: TransferWgsUbamV1QueryInput
   ): Future[Seq[TransferWgsUbamV1QueryOutput]] = {
     SearchService.queryMetadata(
       transferInput,
@@ -65,7 +65,7 @@ class WgsUbamService private (
 
 object WgsUbamService {
   def apply(
-      app: ClioApp
+    app: ClioApp
   )(implicit executionContext: ExecutionContext): WgsUbamService = {
     new WgsUbamService(app.searchDAO)
   }

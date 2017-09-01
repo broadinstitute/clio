@@ -42,8 +42,8 @@ object TestContainers {
     * @return The image name recognized by Testcontainers.
     */
   private def findRealImageName(
-      image: String,
-      timeout: FiniteDuration = 60.seconds
+    image: String,
+    timeout: FiniteDuration = 60.seconds
   ): String = {
     try {
       new RemoteDockerImage(image).get(timeout.toSeconds, TimeUnit.SECONDS)

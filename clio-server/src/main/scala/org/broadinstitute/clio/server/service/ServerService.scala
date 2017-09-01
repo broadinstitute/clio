@@ -12,9 +12,9 @@ import org.broadinstitute.clio.status.model.ServerStatusInfo
 import scala.concurrent.{ExecutionContext, Future}
 
 class ServerService private (
-    serverStatusDAO: ServerStatusDAO,
-    httpServerDAO: HttpServerDAO,
-    searchDAO: SearchDAO
+  serverStatusDAO: ServerStatusDAO,
+  httpServerDAO: HttpServerDAO,
+  searchDAO: SearchDAO
 )(implicit executionContext: ExecutionContext)
     extends StrictLogging {
 
@@ -92,7 +92,7 @@ class ServerService private (
 
 object ServerService {
   def apply(
-      app: ClioApp
+    app: ClioApp
   )(implicit executionContext: ExecutionContext): ServerService = {
     new ServerService(app.serverStatusDAO, app.httpServerDAO, app.searchDAO)
   }

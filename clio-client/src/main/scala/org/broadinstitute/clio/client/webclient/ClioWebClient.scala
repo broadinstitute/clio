@@ -52,35 +52,36 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
     dispatchRequest(HttpRequest(uri = "/health"))
   }
 
-  def getWgsUbamSchema(bearerToken: String): Future[HttpResponse] = {
+  def getWgsUbamSchema(
+    implicit bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
     dispatchRequest(
       HttpRequest(uri = "/api/v1/wgsubam/schema")
-        .addHeader(Authorization(credentials = OAuth2BearerToken(bearerToken)))
+        .addHeader(Authorization(credentials = bearerToken))
     )
   }
 
   def addWgsUbam(
-    bearerToken: String,
     input: TransferWgsUbamV1Key,
     transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
-  ): Future[HttpResponse] = {
-    val entity =
-      HttpEntity(
-        ContentTypes.`application/json`,
-        transferWgsUbamV1Metadata.asJson.pretty(implicitly[Printer])
-      )
+  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+    val entity = HttpEntity(
+      ContentTypes.`application/json`,
+      transferWgsUbamV1Metadata.asJson.pretty(implicitly[Printer])
+    )
     dispatchRequest(
       HttpRequest(
         uri = "/api/v1/wgsubam/metadata/"
           + input.flowcellBarcode + "/" + input.lane + "/" + input.libraryName + "/" + input.location,
         method = HttpMethods.POST,
         entity = entity
-      ).addHeader(Authorization(credentials = OAuth2BearerToken(bearerToken)))
+      ).addHeader(Authorization(credentials = bearerToken))
     )
   }
 
-  def queryWgsUbam(bearerToken: String,
-                   input: TransferWgsUbamV1QueryInput): Future[HttpResponse] = {
+  def queryWgsUbam(
+    input: TransferWgsUbamV1QueryInput
+  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     val entity =
       HttpEntity(
         ContentTypes.`application/json`,
@@ -91,7 +92,7 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
         uri = "/api/v1/wgsubam/query",
         method = HttpMethods.POST,
         entity = entity
-      ).addHeader(Authorization(credentials = OAuth2BearerToken(bearerToken)))
+      ).addHeader(Authorization(credentials = bearerToken))
     )
   }
 

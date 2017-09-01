@@ -1,7 +1,6 @@
 package org.broadinstitute.clio.integrationtest
 
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
 import akka.stream.alpakka.file.scaladsl.FileTailSource
@@ -10,9 +9,10 @@ import com.dimafeng.testcontainers.ForAllTestContainer
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import java.io.File
 import java.nio.file.FileSystems
+
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 /**
   * An integration spec that spins up a Clio server instance and
@@ -56,7 +56,9 @@ class DockerIntegrationSpec
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)
 
   // No bearer token needed for talking to local Clio.
-  override val bearerToken = "dummy-token"
+  override implicit val bearerToken: OAuth2BearerToken = OAuth2BearerToken(
+    "dummy-token"
+  )
 
   override def beforeAll(): Unit = {
     super.beforeAll()

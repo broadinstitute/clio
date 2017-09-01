@@ -2,15 +2,26 @@ package org.broadinstitute.client.util
 
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.client.commands.Commands
-import org.broadinstitute.clio.util.model.DocumentStatus
-import org.broadinstitute.clio.util.model.DocumentStatus
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.clio.client.commands.Commands.CommonOptions
+import org.broadinstitute.clio.client.commands.{
+  AddWgsUbam,
+  DeleteWgsUbam,
+  MoveWgsUbam,
+  QueryWgsUbam
+}
+import org.broadinstitute.clio.transfer.model.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryInput
+}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 trait TestData {
 
-  val metadataFileLocation = Some(
+  val metadataFileLocation =
     "clio-client/src/test/resources/testdata/metadata"
-  )
+
   val testWgsUbamLocation = Some(
     "clio-client/src/test/resources/testdata/testWgsUbam"
   )
@@ -20,83 +31,52 @@ trait TestData {
   )
 
   val badMetadataFileLocation =
-    Some("clio-client/src/test/resources/testdata/badmetadata")
+    "clio-client/src/test/resources/testdata/badmetadata"
   val metadataPlusExtraFieldsFileLocation =
-    Some("clio-client/src/test/resources/testdata/metadataplusextrafields")
-  val noCommand = Array("")
-  val badCommand = Array("badCommand")
+    "clio-client/src/test/resources/testdata/metadataplusextrafields"
 
-  val testBearer = Some("testBearerToken")
-  val testFlowcell = Some("testFlowcell")
-  val testLibName = Some("testLibName")
-  val testLocation = Some("GCP")
-  val testLane = Some(1)
-  val testLcSet = Some("testLcSet")
-  val testProject = Some("testProject")
-  val testSampleAlias = Some("testSampleAlias")
-  val testDocumentStatus = Some(DocumentStatus.Normal)
-  val testRunDateStart: Option[OffsetDateTime] = Some(OffsetDateTime.now())
-  val testRunDateEnd: Option[OffsetDateTime] = Some(
-    OffsetDateTime.now().plusHours(1)
-  )
+  val testBearer = OAuth2BearerToken("testBearerToken")
+  val testFlowcell = "testFlowcell"
+  val testLibName = "testLibName"
+  val testLocation = "GCP"
+  val testLane = 1
+  val testLcSet = "testLcSet"
+  val testProject = "testProject"
+  val testSampleAlias = "testSampleAlias"
+  val testDocumentStatus: DocumentStatus.Normal.type = DocumentStatus.Normal
+  val testRunDateStart: OffsetDateTime = OffsetDateTime.now()
+  val testRunDateEnd: OffsetDateTime = OffsetDateTime.now().plusHours(1)
 
   val testUbamCloudSourcePath: Option[String] =
     Some("gs://testProject/testSample/ubamPath1.unmapped.bam")
   val testUbamCloudDestinationPath: Option[String] =
     Some("gs://testProject/testSample/ubamPath2.unmapped.bam")
 
-  //missing lane
-  val missingRequired = Array(
-    Commands.AddWgsUbam.toString,
-    "-m",
-    metadataFileLocation.get,
-    "-f",
-    testFlowcell.get,
-    "-n",
-    testLibName.get,
-    "--location",
-    testLocation.get
+  val testCommon = CommonOptions(bearerToken = testBearer)
+  val testTransferV1Key = TransferWgsUbamV1Key(
+    flowcellBarcode = testFlowcell,
+    lane = testLane,
+    libraryName = testLibName,
+    location = Location.pathMatcher(testLocation)
   )
 
-  //missing lane
-  val missingOptional = Array(
-    Commands.QueryWgsUbam.toString,
-    "-f",
-    testFlowcell.get,
-    "-n",
-    testLibName.get,
-    "--location",
-    testLocation.get
+  val goodQueryCommand = QueryWgsUbam(
+    transferWgsUbamV1QueryInput = TransferWgsUbamV1QueryInput()
   )
 
-  val goodAddCommand = Array(
-    Commands.AddWgsUbam.toString,
-    "-m",
-    metadataFileLocation.get,
-    "-f",
-    testFlowcell.get,
-    "-l",
-    "1",
-    "-n",
-    testLibName.get,
-    "--location",
-    testLocation.get
+  val goodAddCommand = AddWgsUbam(
+    metadataLocation = metadataFileLocation,
+    transferWgsUbamV1Key = testTransferV1Key
   )
 
-  val goodMoveCommand = Array(
-    Commands.AddWgsUbam.toString,
-    "-m",
-    metadataFileLocation.get,
-    "-f",
-    testFlowcell.get,
-    "-l",
-    "1",
-    "-n",
-    testLibName.get,
-    "--location",
-    testLocation.get,
-    "--ubamPath",
-    testUbamCloudDestinationPath.get
+  val goodMoveCommand = MoveWgsUbam(
+    metadata =
+      TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
+    transferWgsUbamV1Key = testTransferV1Key
   )
-
+  val goodDeleteCommand = DeleteWgsUbam(
+    metadata =
+      TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
+    transferWgsUbamV1Key = testTransferV1Key
+  )
 }

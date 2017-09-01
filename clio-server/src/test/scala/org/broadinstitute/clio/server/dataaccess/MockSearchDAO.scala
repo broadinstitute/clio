@@ -18,14 +18,14 @@ class MockSearchDAO extends SearchDAO {
   }
 
   override def updateWgsUbamMetadata(
-      key: ModelWgsUbamKey,
-      metadata: ModelWgsUbamMetadata
+    key: ModelWgsUbamKey,
+    metadata: ModelWgsUbamMetadata
   ): Future[Unit] = {
     Future.successful(())
   }
 
   override def queryWgsUbam(
-      queryInput: ModelWgsUbamQueryInput
+    queryInput: ModelWgsUbamQueryInput
   ): Future[Seq[ModelWgsUbamQueryOutput]] = {
     Future.successful(Seq())
   }

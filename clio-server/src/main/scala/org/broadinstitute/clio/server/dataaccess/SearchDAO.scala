@@ -41,6 +41,6 @@ trait SearchDAO {
     * @return The query outputs.
     */
   def queryWgsUbam(
-      queryInput: ModelWgsUbamQueryInput
+    queryInput: ModelWgsUbamQueryInput
   ): Future[Seq[ModelWgsUbamQueryOutput]]
 }

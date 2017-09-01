@@ -62,8 +62,8 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
   }
 
   private def upsertMetadataTest(
-      documentStatus: Option[DocumentStatus],
-      expectedDocumentStatus: Option[DocumentStatus]
+    documentStatus: Option[DocumentStatus],
+    expectedDocumentStatus: Option[DocumentStatus]
   ) = {
     val memorySearchDAO = new MemoryWgsUbamSearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)

@@ -10,6 +10,7 @@ object Dependencies {
   private val AkkaHttpCirceVersion = "1.17.0"
   private val AkkaHttpVersion = "10.0.9"
   private val AlpakkaVersion = "0.11"
+  private val CaseAppVersion = "1.2.0"
   private val CirceVersion = "0.8.0"
   private val Elastic4sVersion = "5.4.10"
   private val EnumeratumVersion = "1.5.12"
@@ -20,7 +21,6 @@ object Dependencies {
   private val S_machStringVersion = "2.1.0"
   private val ScalaLoggingVersion = "3.7.1"
   private val ScalaTestVersion = "3.0.3"
-  private val ScoptVersion = "3.6.0"
   private val ShapelessVersion = "2.3.2"
   private val Slf4jVersion = "1.7.25"
   private val SwaggerUi = "3.1.5"
@@ -79,7 +79,8 @@ object Dependencies {
 
   val ClientMainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
-    "com.github.scopt" %% "scopt" % ScoptVersion,
+    "com.github.alexarchambault" %% "case-app" % CaseAppVersion,
+    "com.iheart" %% "ficus" % FicusVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,

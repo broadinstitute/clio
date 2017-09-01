@@ -1,8 +1,9 @@
 package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.HttpResponse
-import org.broadinstitute.clio.client.parser.BaseArgs
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.util.WgsUbamUtil.TransferWgsUbamV1QueryOutputUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
@@ -11,20 +12,18 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
-import org.broadinstitute.clio.client.util.WgsUbamUtil.TransferWgsUbamV1QueryOutputUtil
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-object DeleteWgsUbamCommand extends Command {
+class DeleteWgsUbamExecutor(deleteWgsUbam: DeleteWgsUbam) extends Executor {
 
-  override def execute(
-    webClient: ClioWebClient,
-    config: BaseArgs,
-    ioUtil: IoUtil
-  )(implicit ec: ExecutionContext): Future[HttpResponse] = {
-    if (config.location.isDefined && !config.location.get.equals("GCP")) {
+  override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
+    implicit ec: ExecutionContext,
+    bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
+    if (!deleteWgsUbam.transferWgsUbamV1Key.location.equals(Location.GCP)) {
       Future
         .failed(new Exception("Only GCP WgsUbams are supported at this time"))
         .logErrorMsg()
@@ -32,12 +31,12 @@ object DeleteWgsUbamCommand extends Command {
       for {
         queryResponses <- webClient
           .queryWgsUbam(
-            config.bearerToken.get,
             TransferWgsUbamV1QueryInput(
-              flowcellBarcode = config.flowcell,
-              lane = config.lane,
-              libraryName = config.libraryName,
-              location = Location.pathMatcher.get(config.location.get),
+              flowcellBarcode =
+                Some(deleteWgsUbam.transferWgsUbamV1Key.flowcellBarcode),
+              lane = Some(deleteWgsUbam.transferWgsUbamV1Key.lane),
+              libraryName = Some(deleteWgsUbam.transferWgsUbamV1Key.libraryName),
+              location = Some(deleteWgsUbam.transferWgsUbamV1Key.location),
               documentStatus = Some(DocumentStatus.Normal)
             )
           )
@@ -47,7 +46,7 @@ object DeleteWgsUbamCommand extends Command {
           .logErrorMsg(
             "There was a problem unmarshalling the JSON response from Clio."
           )
-        deleteResponses <- deleteWgsUbams(wgsUbams, webClient, config, ioUtil) logErrorMsg "There was an error while deleting some of all of the WgsUbams."
+        deleteResponses <- deleteWgsUbams(wgsUbams, webClient, ioUtil) logErrorMsg "There was an error while deleting some of all of the WgsUbams."
       } yield {
         deleteResponses.size match {
           case 0 =>
@@ -71,20 +70,21 @@ object DeleteWgsUbamCommand extends Command {
 
   private def deleteWgsUbams(wgsUbams: Seq[TransferWgsUbamV1QueryOutput],
                              webClient: ClioWebClient,
-                             config: BaseArgs,
-                             ioUtil: IoUtil): Future[Seq[HttpResponse]] = {
-    implicit val ec: ExecutionContext = webClient.executionContext
+                             ioUtil: IoUtil)(
+    implicit ec: ExecutionContext,
+    bearerToken: OAuth2BearerToken
+  ): Future[Seq[HttpResponse]] = {
     if (wgsUbams.isEmpty) {
       Future.failed(
         new Exception(
-          s"No WgsUbams were found for $config. Nothing has been deleted."
+          s"No WgsUbams were found for ${deleteWgsUbam.transferWgsUbamV1Key}. Nothing has been deleted."
         )
       )
     } else {
       // Futures are transformed into Future[Either] so that any errors don't cause the entire resulting
       // Future to be failed. Errors need to be preserved until all Futures have completed.
       val deleteFutures = wgsUbams.map(
-        deleteWgsUbam(_, webClient, config, ioUtil)
+        deleteWgsUbam(_, webClient, ioUtil)
           .transformWith {
             case Success(httpResponse) =>
               Future(webClient.ensureOkResponse(httpResponse))
@@ -107,15 +107,15 @@ object DeleteWgsUbamCommand extends Command {
 
   private def deleteWgsUbam(wgsUbam: TransferWgsUbamV1QueryOutput,
                             webClient: ClioWebClient,
-                            config: BaseArgs,
-                            ioUtil: IoUtil): Future[HttpResponse] = {
-    implicit val ec: ExecutionContext = webClient.executionContext
+                            ioUtil: IoUtil)(
+    implicit ec: ExecutionContext,
+    bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
 
     def deleteInClio(): Future[HttpResponse] = {
       logger.info(s"Deleting ${wgsUbam.prettyKey()} in Clio.")
       webClient
         .addWgsUbam(
-          config.bearerToken.getOrElse(""),
           TransferWgsUbamV1Key(
             flowcellBarcode = wgsUbam.flowcellBarcode,
             lane = wgsUbam.lane,
@@ -125,8 +125,11 @@ object DeleteWgsUbamCommand extends Command {
           TransferWgsUbamV1Metadata(
             documentStatus = Option(DocumentStatus.Deleted),
             notes = wgsUbam.notes
-              .map(notes => s"$notes\n${config.notes.getOrElse("")}")
-              .orElse(config.notes)
+              .map(
+                notes =>
+                  s"$notes\n${deleteWgsUbam.metadata.notes.getOrElse("")}"
+              )
+              .orElse(deleteWgsUbam.metadata.notes)
           )
         )
         .map(webClient.ensureOkResponse)

@@ -1,14 +1,8 @@
 package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.clio.client.commands.Commands.{
-  AddWgsUbam,
-  DeleteWgsUbam,
-  MoveWgsUbam,
-  QueryWgsUbam
-}
-import org.broadinstitute.clio.client.parser.BaseArgs
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
@@ -18,28 +12,27 @@ import scala.util.{Failure, Success}
 class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
     extends LazyLogging {
 
-  private def execute(command: CommandType, config: BaseArgs)(
-    implicit ec: ExecutionContext
+  def execute(command: CommandType, webClient: ClioWebClient)(
+    implicit ec: ExecutionContext,
+    bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     command match {
-      case AddWgsUbam => AddWgsUbamCommand.execute(webClient, config, ioUtil)
-      case QueryWgsUbam =>
-        QueryWgsUbamCommand.execute(webClient, config, ioUtil)
-      case MoveWgsUbam => MoveWgsUbamCommand.execute(webClient, config, ioUtil)
-      case DeleteWgsUbam =>
-        DeleteWgsUbamCommand.execute(webClient, config, ioUtil)
+      case add: AddWgsUbam =>
+        new AddWgsUbamExecutor(add).execute(webClient, ioUtil)
+      case query: QueryWgsUbam =>
+        new QueryWgsUbamExecutor(query).execute(webClient, ioUtil)
+      case move: MoveWgsUbam =>
+        new MoveWgsUbamExecutor(move).execute(webClient, ioUtil)
+      case delete: DeleteWgsUbam =>
+        new DeleteWgsUbamExecutor(delete).execute(webClient, ioUtil)
     }
   }
 
-  def dispatch(
-    config: BaseArgs
-  )(implicit ec: ExecutionContext): Future[HttpResponse] = {
-    config.command
-      .map(command => execute(command, config))
-      .fold(
-        Future
-          .failed[HttpResponse](new Exception("The config command was empty"))
-      )(checkResponse)
+  def dispatch(command: CommandType)(
+    implicit ec: ExecutionContext,
+    bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
+    checkResponse(execute(command, webClient))
   }
 
   def checkResponse(

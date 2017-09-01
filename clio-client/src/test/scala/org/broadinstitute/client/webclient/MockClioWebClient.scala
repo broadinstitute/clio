@@ -13,6 +13,7 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1QueryInput
 }
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 import scala.concurrent.Future
 
@@ -44,17 +45,15 @@ class MockClioWebClient(
   }
 
   override def addWgsUbam(
-    bearerToken: String,
     input: TransferWgsUbamV1Key,
     transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
-  ): Future[HttpResponse] = {
+  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     Future.successful(HttpResponse(status = status))
   }
 
   override def queryWgsUbam(
-    bearerToken: String,
     input: TransferWgsUbamV1QueryInput
-  ): Future[HttpResponse] = {
+  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
         status = status,
@@ -91,9 +90,8 @@ object MockClioWebClient extends TestData {
     class MockClioWebClientNoReturn
         extends MockClioWebClient(status = StatusCodes.OK, None) {
       override def queryWgsUbam(
-        bearerToken: String,
         input: TransferWgsUbamV1QueryInput
-      ): Future[HttpResponse] = {
+      )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(
             status = StatusCodes.OK,
@@ -112,10 +110,9 @@ object MockClioWebClient extends TestData {
     class MockClioWebClientCantAdd
         extends MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation) {
       override def addWgsUbam(
-        bearerToken: String,
         input: TransferWgsUbamV1Key,
         transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
-      ): Future[HttpResponse] = {
+      )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(status = StatusCodes.InternalServerError)
         )

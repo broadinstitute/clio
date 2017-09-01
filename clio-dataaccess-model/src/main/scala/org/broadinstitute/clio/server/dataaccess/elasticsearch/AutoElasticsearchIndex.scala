@@ -16,7 +16,7 @@ import java.util.UUID
   * @tparam Document The document being indexed.
   */
 class AutoElasticsearchIndex[Document: FieldMapper] private[dataaccess] (
-    override val indexName: String
+  override val indexName: String
 ) extends ElasticsearchIndex[Document] {
   override def fields: Seq[FieldDefinition] =
     AutoElasticsearchIndex.getFieldDefinitions[Document]

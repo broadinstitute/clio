@@ -53,7 +53,7 @@ paths:
           description: "Whole genome unmapped bam metadata to store"
           required: true
           schema:
-            $ref: '#/definitions/TransferReadGroupV1Metadata'
+            $ref: '#/definitions/TransferWgsUbamV1Metadata'
       responses:
         '200':
           description: "Successful Request"

@@ -1,42 +1,90 @@
 package org.broadinstitute.clio.client.commands
 
-import akka.http.scaladsl.model.HttpResponse
-import com.typesafe.scalalogging.LazyLogging
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import enumeratum._
-import org.broadinstitute.clio.client.parser.BaseArgs
-import org.broadinstitute.clio.client.util.{FutureWithErrorMessage, IoUtil}
-import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import java.time.OffsetDateTime
+import java.util.UUID
 
-import scala.collection.immutable.IndexedSeq
-import scala.concurrent.{ExecutionContext, Future}
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import caseapp.Recurse
+import enumeratum.{Enum, EnumEntry}
+import org.broadinstitute.clio.transfer.model.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryInput
+}
+import caseapp._
 
-sealed trait CommandType extends EnumEntry
+import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
-object Commands extends Enum[CommandType] {
-  override val values: IndexedSeq[CommandType] = findValues
+object Commands {
 
-  case object AddWgsUbam extends CommandType
-  case object QueryWgsUbam extends CommandType
-  case object MoveWgsUbam extends CommandType
-  case object DeleteWgsUbam extends CommandType
-
-  val pathMatcher = Map(
-    AddWgsUbam.toString -> AddWgsUbam,
-    QueryWgsUbam.toString -> QueryWgsUbam,
-    MoveWgsUbam.toString -> MoveWgsUbam,
-    DeleteWgsUbam.toString -> DeleteWgsUbam
+  final case class CommonOptions(
+    bearerToken: OAuth2BearerToken = OAuth2BearerToken("")
   )
 
+  implicit def parser[Options](
+    implicit result: CommandParser[Options]
+  ): CommandParser[Options] = result
+
+  implicit def enumEntryParser[T <: EnumEntry: Enum](
+    implicit c: ClassTag[T]
+  ): core.ArgParser[T] = {
+    core.ArgParser.instance[T]("entry") { entry =>
+      val value = implicitly[Enum[T]].withNameOption(entry)
+      Either.cond(
+        value.isDefined,
+        value.get,
+        s"Unknown enum value $entry for type ${c.runtimeClass.getName} "
+      )
+    }
+  }
+
+  implicit def oauthBearerTokenParser: core.ArgParser[OAuth2BearerToken] = {
+    core.ArgParser.instance[OAuth2BearerToken]("token") { token =>
+      //no need for left since this should never fail
+      Right(OAuth2BearerToken(token))
+    }
+  }
+
+  implicit def UUIDParser: core.ArgParser[UUID] = {
+    core.ArgParser.instance[UUID]("uuid") { uuid =>
+      Try(UUID.fromString(uuid)) match {
+        case Success(value)     => Right(value)
+        case Failure(exception) => Left(exception.getMessage)
+      }
+    }
+  }
+
+  implicit def offsetDateTimeParser: core.ArgParser[OffsetDateTime] = {
+    core.ArgParser.instance[OffsetDateTime]("date") { offsetDateAndTime =>
+      Try(OffsetDateTime.parse(offsetDateAndTime)) match {
+        case Success(value)     => Right(value)
+        case Failure(exception) => Left(exception.getMessage)
+      }
+    }
+  }
 }
 
-trait Command
-    extends LazyLogging
-    with FailFastCirceSupport
-    with ModelAutoDerivation
-    with FutureWithErrorMessage {
-  def execute(webClient: ClioWebClient, config: BaseArgs, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext,
-  ): Future[HttpResponse]
-}
+sealed trait CommandType
+
+final case class AddWgsUbam(metadataLocation: String,
+                            @Recurse
+                            transferWgsUbamV1Key: TransferWgsUbamV1Key)
+    extends CommandType
+
+final case class QueryWgsUbam(
+  @Recurse
+  transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput,
+) extends CommandType
+
+final case class MoveWgsUbam(@Recurse
+                             metadata: TransferWgsUbamV1Metadata,
+                             @Recurse
+                             transferWgsUbamV1Key: TransferWgsUbamV1Key)
+    extends CommandType
+
+final case class DeleteWgsUbam(@Recurse
+                               metadata: TransferWgsUbamV1Metadata,
+                               @Recurse
+                               transferWgsUbamV1Key: TransferWgsUbamV1Key)
+    extends CommandType

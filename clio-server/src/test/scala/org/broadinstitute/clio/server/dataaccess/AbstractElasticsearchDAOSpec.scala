@@ -40,8 +40,7 @@ abstract class AbstractElasticsearchDAOSpec(actorSystemName: String)
          |    "number_of_replicas" : 0
          |  }
          |}
-         |""".stripMargin,
-                                   ContentType.APPLICATION_JSON)
+         |""".stripMargin, ContentType.APPLICATION_JSON)
 
     val params = java.util.Collections.emptyMap[String, String]()
 
