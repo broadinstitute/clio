@@ -1,10 +1,12 @@
-package org.broadinstitute.clio.client.commands
+package org.broadinstitute.clio.client.dispatch
+
+import org.broadinstitute.clio.client.commands._
+import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.webclient.ClioWebClient
 
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.ClioWebClient
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -12,7 +14,7 @@ import scala.util.{Failure, Success}
 class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
     extends LazyLogging {
 
-  def execute(command: CommandType, webClient: ClioWebClient)(
+  def execute(command: ClioCommand, webClient: ClioWebClient)(
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
@@ -30,7 +32,7 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
     }
   }
 
-  def dispatch(command: CommandType)(
+  def dispatch(command: ClioCommand)(
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {

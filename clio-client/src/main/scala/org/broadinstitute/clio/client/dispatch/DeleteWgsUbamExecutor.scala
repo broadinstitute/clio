@@ -1,7 +1,6 @@
-package org.broadinstitute.clio.client.commands
+package org.broadinstitute.clio.client.dispatch
 
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.clio.client.commands.DeleteWgsUbam
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.util.WgsUbamUtil.TransferWgsUbamV1QueryOutputUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -12,6 +11,9 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}

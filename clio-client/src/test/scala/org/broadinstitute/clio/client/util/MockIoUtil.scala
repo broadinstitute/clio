@@ -1,6 +1,4 @@
-package org.broadinstitute.client.util
-
-import org.broadinstitute.clio.client.util.IoUtil
+package org.broadinstitute.clio.client.util
 
 class MockIoUtil extends IoUtil {
 

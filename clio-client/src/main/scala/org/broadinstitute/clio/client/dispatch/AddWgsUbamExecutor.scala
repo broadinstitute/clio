@@ -1,11 +1,13 @@
-package org.broadinstitute.clio.client.commands
+package org.broadinstitute.clio.client.dispatch
+
+import org.broadinstitute.clio.client.commands.AddWgsUbam
+import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1Metadata
 
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.parser.parse
-import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1Metadata
 
 import scala.concurrent.{ExecutionContext, Future}
 class AddWgsUbamExecutor(addWgsUbam: AddWgsUbam) extends Executor {
