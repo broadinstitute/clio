@@ -2,13 +2,15 @@ package org.broadinstitute.clio.server.dataaccess
 
 import org.broadinstitute.clio.status.model.ServerStatusInfo
 
+import scala.collection.mutable
 import scala.concurrent.Future
 
 class MemoryServerStatusDAO extends MockServerStatusDAO {
-  var setCalls: Seq[ServerStatusInfo] = Seq.empty
+  val setCalls: mutable.ArrayBuffer[ServerStatusInfo] =
+    mutable.ArrayBuffer.empty
 
   override def setStatus(status: ServerStatusInfo): Future[Unit] = {
-    setCalls :+= status
+    setCalls += status
     super.setStatus(status)
   }
 }

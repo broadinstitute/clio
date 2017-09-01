@@ -7,19 +7,22 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 
 import com.sksamuel.elastic4s.{HitReader, Indexable}
 
+import scala.collection.mutable
 import scala.concurrent.Future
 
 class MemorySearchDAO extends MockSearchDAO {
 
-  var updateCalls: Seq[(_, _, _)] = Seq.empty
-  var queryCalls: Seq[_] = Seq.empty
+  // TODO: We could probably be more specific than `Any` here
+  val updateCalls: mutable.ArrayBuffer[(Any, Any, Any)] =
+    mutable.ArrayBuffer.empty
+  val queryCalls: mutable.ArrayBuffer[Any] = mutable.ArrayBuffer.empty
 
   override def updateMetadata[D: Indexable](
     id: String,
     document: D,
     index: ElasticsearchIndex[D]
   ): Future[Unit] = {
-    updateCalls :+= ((id, document, index))
+    updateCalls += ((id, document, index))
     super.updateMetadata(id, document, index)
   }
 
@@ -28,7 +31,7 @@ class MemorySearchDAO extends MockSearchDAO {
     index: ElasticsearchIndex[D],
     queryBuilder: ElasticsearchQueryMapper[I, O, D]
   ): Future[Seq[O]] = {
-    queryCalls :+= input
+    queryCalls += input
     super.queryMetadata(input, index, queryBuilder)
   }
 }
