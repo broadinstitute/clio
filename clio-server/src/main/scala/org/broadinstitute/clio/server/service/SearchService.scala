@@ -4,6 +4,8 @@ import org.broadinstitute.clio.util.generic.TypeConverter
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import java.util.UUID
+
 object SearchService {
 
   /**
@@ -25,8 +27,8 @@ object SearchService {
     transferMetadata: TM,
     keyConverter: TypeConverter[TK, MK],
     metadataConverter: TypeConverter[TM, MM],
-    updateMetadata: (MK, MM) => Future[Unit]
-  ): Future[Unit] = {
+    updateMetadata: (MK, MM) => Future[UUID]
+  ): Future[UUID] = {
     val modelKey = keyConverter.convert(transferKey)
     val modelMetadata = metadataConverter.convert(transferMetadata)
     updateMetadata(modelKey, modelMetadata)

@@ -1,12 +1,5 @@
 package org.broadinstitute.clio.integrationtest.tests
 
-import akka.http.scaladsl.marshalling.Marshal
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.fasterxml.uuid.impl.{TimeBasedGenerator, UUIDUtil}
-import com.fasterxml.uuid.{EthernetAddress, Generators}
-import com.sksamuel.elastic4s.IndexAndType
-import io.circe.Json
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.{
@@ -17,6 +10,18 @@ import org.broadinstitute.clio.transfer.model.{
 }
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+
+import akka.http.scaladsl.marshalling.Marshal
+import akka.http.scaladsl.model.{
+  HttpMethods,
+  HttpRequest,
+  RequestEntity,
+  StatusCodes
+}
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import com.fasterxml.uuid.impl.UUIDUtil
+import com.sksamuel.elastic4s.IndexAndType
+import io.circe.Json
 
 import scala.concurrent.Future
 
@@ -94,9 +99,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         } yield {
           upsertResponse.status should be(StatusCodes.OK)
           outputs should have length 1
-          outputs.head should be(
-            expected.copy(clioId = Some(UUIDUtil.uuid(returnedClioId)))
-          )
+          outputs.head should be(expected)
         }
       }
     }
@@ -141,31 +144,6 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         .flatMap(Unmarshal(_).to[String])
     } yield {
       UUIDUtil.uuid(clioId2).compareTo(UUIDUtil.uuid(clioId1)) should be(1)
-    }
-  }
-
-  it should "decode clioIds and supply a new one on upserts" in {
-    val generator: TimeBasedGenerator =
-      Generators.timeBasedGenerator(EthernetAddress.fromInterface())
-    val oldClioId = generator.generate()
-
-    val upsertKey = TransferWgsUbamV1Key(
-      flowcellBarcode = "testClioIdBarcode",
-      lane = 2,
-      libraryName = s"library$randomId",
-      location = Location.GCP,
-    )
-    val upsertData = TransferWgsUbamV1Metadata(clioId = Some(oldClioId))
-
-    for {
-      response <- clioWebClient
-        .addWgsUbam(upsertKey, upsertData)
-      newClioId <- Unmarshal(response).to[String]
-    } yield {
-      response.status should be(StatusCodes.OK)
-      val newUuid = UUIDUtil.uuid(newClioId)
-      newUuid should not equal oldClioId
-      newUuid.compareTo(oldClioId) should be(1)
     }
   }
 

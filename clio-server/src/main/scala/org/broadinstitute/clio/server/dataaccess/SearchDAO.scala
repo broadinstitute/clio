@@ -4,6 +4,8 @@ import org.broadinstitute.clio.server.model._
 
 import scala.concurrent.Future
 
+import java.util.UUID
+
 /**
   * Communicates with a search server.
   */
@@ -32,7 +34,7 @@ trait SearchDAO {
     * @return The result of the update.
     */
   def updateWgsUbamMetadata(key: ModelWgsUbamKey,
-                            metadata: ModelWgsUbamMetadata): Future[Unit]
+                            metadata: ModelWgsUbamMetadata): Future[UUID]
 
   /**
     * Query the wgs ubams.

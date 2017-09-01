@@ -1,28 +1,30 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
+import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 import org.broadinstitute.clio.server.model.{ModelMockKey, ModelMockMetadata}
+
 import org.scalatest.{FlatSpec, Matchers}
+
+import java.util.UUID
 
 class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
   behavior of "AutoElasticsearchDocumentMapper"
 
+  val expectedId: UUID = ClioUUIDGenerator.getUUID()
+  val mapper = new AutoElasticsearchDocumentMapper[
+    ModelMockKey,
+    ModelMockMetadata,
+    DocumentMock
+  ](() => expectedId)
+
   it should "id" in {
-    val mapper = AutoElasticsearchDocumentMapper[
-      ModelMockKey,
-      ModelMockMetadata,
-      DocumentMock
-    ]
     mapper.id(ModelMockKey(12345L, "key")) should be("12345.key")
   }
 
   it should "empty" in {
-    val mapper = AutoElasticsearchDocumentMapper[
-      ModelMockKey,
-      ModelMockMetadata,
-      DocumentMock
-    ]
     mapper.empty(ModelMockKey(12345L, "key")) should be(
       DocumentMock(
+        clioId = expectedId,
         mockFieldDate = None,
         mockFieldDouble = None,
         mockFieldInt = None,
@@ -36,12 +38,8 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
   }
 
   it should "withMetadata" in {
-    val mapper = AutoElasticsearchDocumentMapper[
-      ModelMockKey,
-      ModelMockMetadata,
-      DocumentMock
-    ]
     val document = DocumentMock(
+      clioId = expectedId,
       mockFieldDate = None,
       mockFieldDouble = Option(1.23),
       mockFieldInt = None,
@@ -59,6 +57,7 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
       )
     mapper.withMetadata(document, metadata) should be(
       DocumentMock(
+        clioId = expectedId,
         mockFieldDate = None,
         mockFieldDouble = Option(1.23),
         mockFieldInt = Option(456),

@@ -94,7 +94,10 @@ lazy val `clio-dataaccess-model` = project
   * The main Clio web service, responsible for managing updates to metadata.
   */
 lazy val `clio-server` = project
-  .dependsOn(`clio-transfer-model`, `clio-dataaccess-model`)
+  .dependsOn(
+    `clio-transfer-model`,
+    `clio-dataaccess-model` % "compile->compile;test->test"
+  )
   .settings(
     libraryDependencies ++= Dependencies.ServerDependencies,
     dependencyOverrides ++= Dependencies.ServerOverrideDependencies

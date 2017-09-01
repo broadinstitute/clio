@@ -12,6 +12,8 @@ import com.sksamuel.elastic4s.circe._
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import java.util.UUID
+
 trait WgsUbamElasticsearchDAO extends SearchDAO {
   this: HttpElasticsearchDAO =>
 
@@ -20,7 +22,7 @@ trait WgsUbamElasticsearchDAO extends SearchDAO {
   override def updateWgsUbamMetadata(
     key: ModelWgsUbamKey,
     metadata: ModelWgsUbamMetadata
-  ): Future[Unit] = {
+  ): Future[UUID] = {
     updateMetadata(
       ElasticsearchIndex.WgsUbam,
       ElasticsearchDocumentMapper.WgsUbam,

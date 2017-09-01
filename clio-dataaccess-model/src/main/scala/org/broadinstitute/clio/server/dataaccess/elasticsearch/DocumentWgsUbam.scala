@@ -1,14 +1,15 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+
 import java.time.OffsetDateTime
 import java.util.UUID
 
-case class DocumentWgsUbam(flowcellBarcode: String,
+case class DocumentWgsUbam(clioId: UUID,
+                           flowcellBarcode: String,
                            lane: Int,
                            libraryName: String,
                            location: Location,
-                           clioId: Option[UUID],
                            analysisType: Option[String],
                            baitIntervals: Option[String],
                            dataType: Option[String],
@@ -42,3 +43,4 @@ case class DocumentWgsUbam(flowcellBarcode: String,
                            ubamPath: Option[String],
                            ubamSize: Option[Long],
                            documentStatus: Option[DocumentStatus])
+    extends ClioDocument

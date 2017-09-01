@@ -1,15 +1,14 @@
 package org.broadinstitute.clio.transfer.model
 
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+
 import java.time.OffsetDateTime
-import java.util.UUID
 
 case class TransferWgsUbamV1QueryOutput(
   flowcellBarcode: String,
   lane: Int,
   libraryName: String,
   location: Location,
-  clioId: Option[UUID] = None,
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
   dataType: Option[String] = None,

@@ -1,16 +1,17 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import java.time.OffsetDateTime
-
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import org.broadinstitute.clio.util.generic.{
   CaseClassMapper,
   CaseClassMapperWithTypes,
   FieldMapper
 }
 
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
+
 import scala.reflect.ClassTag
+
+import java.time.OffsetDateTime
 
 /**
   * Builds an ElasticsearchQueryMapper using shapeless and reflection.
@@ -27,7 +28,7 @@ import scala.reflect.ClassTag
   */
 class AutoElasticsearchQueryMapper[ModelQueryInput: ClassTag: FieldMapper,
                                    ModelQueryOutput: ClassTag,
-                                   Document: ClassTag] private
+                                   Document <: ClioDocument: ClassTag] private
     extends ElasticsearchQueryMapper[
       ModelQueryInput,
       ModelQueryOutput,
@@ -50,7 +51,7 @@ class AutoElasticsearchQueryMapper[ModelQueryInput: ClassTag: FieldMapper,
 
   override def toQueryOutput(document: Document): ModelQueryOutput = {
     val vals = documentMapper.vals(document)
-    outputMapper.newInstance(vals)
+    outputMapper.newInstance(vals - ClioDocument.IdFieldName)
   }
 
   /**
@@ -62,6 +63,7 @@ class AutoElasticsearchQueryMapper[ModelQueryInput: ClassTag: FieldMapper,
     */
   private def build(name: String, value: Any): QueryDefinition = {
     import ElasticsearchQueryMapper._
+
     import s_mach.string._
 
     import scala.reflect.runtime.universe.typeOf
@@ -117,7 +119,7 @@ class AutoElasticsearchQueryMapper[ModelQueryInput: ClassTag: FieldMapper,
 object AutoElasticsearchQueryMapper {
   def apply[QueryInput: ClassTag: FieldMapper,
             QueryOutput: ClassTag,
-            Document: ClassTag]
+            Document <: ClioDocument: ClassTag]
     : ElasticsearchQueryMapper[QueryInput, QueryOutput, Document] = {
     new AutoElasticsearchQueryMapper
   }
