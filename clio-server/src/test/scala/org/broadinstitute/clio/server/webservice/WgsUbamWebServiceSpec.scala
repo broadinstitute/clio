@@ -159,11 +159,17 @@ class WgsUbamWebServiceSpec
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
     Post("/queryall", Map("flowcell_barcode" -> "FC123")) ~> webService.queryall ~> check {
-      memorySearchDAO.queryCalls should have length 2
-      val secondQuery = memorySearchDAO
-        .queryCalls(1)
-        .asInstanceOf[TransferWgsUbamV1QueryInput]
-      secondQuery.flowcellBarcode should be(Some("FC123"))
+      memorySearchDAO.queryCalls should be(
+        Seq(
+          // From /query call earlier in the test.
+          TransferWgsUbamV1QueryInput(
+            flowcellBarcode = Some("FC123"),
+            documentStatus = Some(DocumentStatus.Normal)
+          ),
+          // No documentStatus restriction from /queryall
+          TransferWgsUbamV1QueryInput(flowcellBarcode = Some("FC123"))
+        )
+      )
     }
 
   }
