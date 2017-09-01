@@ -22,6 +22,10 @@ object Commands {
     bearerToken: OAuth2BearerToken = OAuth2BearerToken("")
   )
 
+  implicit def parser[Options](
+    implicit result: CommandParser[Options]
+  ): CommandParser[Options] = result
+
   implicit def enumEntryParser[T <: EnumEntry: Enum](
     implicit c: ClassTag[T]
   ): core.ArgParser[T] = {
