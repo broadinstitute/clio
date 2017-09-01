@@ -22,6 +22,17 @@ object ClioClient
   //not sure this is the best way to pass common opts but case-app docs are spotty at best
   var commonOptions: CommonOptions = _
 
+  override def main(args: Array[String]): Unit = {
+    //check to make sure we have a subcommand
+    commandParser.detailedParse(args)(beforeCommandParser) match {
+      case Left(err) =>
+        error(err)
+
+      case Right((_, _, optCmd)) =>
+        if (optCmd.isEmpty) usageAsked()
+    }
+    super.main(args)
+  }
   override def beforeCommand(options: CommonOptions,
                              remainingArgs: Seq[String]): Unit = {
     commonOptions = options
