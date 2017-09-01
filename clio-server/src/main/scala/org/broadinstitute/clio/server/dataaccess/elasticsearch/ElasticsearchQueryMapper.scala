@@ -50,6 +50,7 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput,
 }
 
 object ElasticsearchQueryMapper {
+
   /**
     * Build an elastic4s query definition for a start date.
     *

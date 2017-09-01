@@ -15,6 +15,8 @@ import org.broadinstitute.clio.util.model.DocumentStatus
 
 import org.scalatest.{FlatSpec, Matchers}
 
+import java.util.UUID
+
 class WgsUbamWebServiceSpec
     extends FlatSpec
     with Matchers
@@ -68,11 +70,14 @@ class WgsUbamWebServiceSpec
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
     Post("/query", Map("project" -> "testProject1")) ~> webService.query ~> check {
-      memorySearchDAO.queryCalls should have length 1
-      val firstQuery = memorySearchDAO.queryCalls.head
-        .asInstanceOf[TransferWgsUbamV1QueryInput]
-      firstQuery.project should be(Some("testProject1"))
-      firstQuery.sampleAlias should be(empty)
+      memorySearchDAO.queryCalls should be(
+        Seq(
+          TransferWgsUbamV1QueryInput(
+            project = Some("testProject1"),
+            documentStatus = Some(DocumentStatus.Normal)
+          )
+        )
+      )
     }
 
     Post(
@@ -101,21 +106,33 @@ class WgsUbamWebServiceSpec
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
       memorySearchDAO.updateCalls should have length 1
-      val firstUpdate = memorySearchDAO.updateCalls.head
-        .asInstanceOf[(_, DocumentWgsUbam, _)]
-      firstUpdate._2.project should be(Some("G123"))
-      firstUpdate._2.sampleAlias should be(Some("sample1"))
-      firstUpdate._2.ubamPath should be(Some("gs://path/ubam.bam"))
+      val firstUpdate = memorySearchDAO.updateCalls.headOption
+        .map(_._2)
+        .getOrElse {
+          // Doing this .headOption.getOrElse dance because Codacy
+          // scolds us for using .head
+          fail("Impossible because of the above check")
+        }
+        .asInstanceOf[DocumentWgsUbam]
+
+      firstUpdate.clioId should be(responseAs[UUID])
+      firstUpdate.project should be(Some("G123"))
+      firstUpdate.sampleAlias should be(Some("sample1"))
+      firstUpdate.ubamPath should be(Some("gs://path/ubam.bam"))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
     Post("/query", Map("flowcell_barcode" -> "FC123")) ~> webService.query ~> check {
-      memorySearchDAO.queryCalls should have length 1
-      val firstQuery = memorySearchDAO.queryCalls.head
-        .asInstanceOf[TransferWgsUbamV1QueryInput]
-      firstQuery.flowcellBarcode should be(Some("FC123"))
+      memorySearchDAO.queryCalls should be(
+        Seq(
+          TransferWgsUbamV1QueryInput(
+            flowcellBarcode = Some("FC123"),
+            documentStatus = Some(DocumentStatus.Normal)
+          )
+        )
+      )
     }
 
     Post(
@@ -141,9 +158,10 @@ class WgsUbamWebServiceSpec
     // We have to test the MemorySearchDAO because we're not going to implement
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
-    Post("/query", Map("flowcell_barcode" -> "FC123")) ~> webService.queryall ~> check {
-      memorySearchDAO.queryCalls should have length 1
-      val secondQuery = memorySearchDAO.queryCalls.head
+    Post("/queryall", Map("flowcell_barcode" -> "FC123")) ~> webService.queryall ~> check {
+      memorySearchDAO.queryCalls should have length 2
+      val secondQuery = memorySearchDAO
+        .queryCalls(1)
         .asInstanceOf[TransferWgsUbamV1QueryInput]
       secondQuery.flowcellBarcode should be(Some("FC123"))
     }
