@@ -28,7 +28,7 @@ class AddWgsUbamExecutor(addWgsUbam: AddWgsUbam) extends Executor {
       .left
       .map { err =>
         new RuntimeException(
-          s"Invalid metadata given at $metadataLoc. Run the `get-wgs-ubam-schema` command to see the expected JSON format for WgsUbams.",
+          s"Invalid metadata given at $metadataLoc. Run the 'get-wgs-ubam-schema' command to see the expected JSON format for WgsUbams.",
           err
         )
       }
