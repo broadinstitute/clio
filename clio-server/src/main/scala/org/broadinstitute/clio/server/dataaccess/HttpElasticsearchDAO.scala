@@ -20,6 +20,8 @@ import org.elasticsearch.client.RestClient
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success
 
+import java.util.UUID
+
 class HttpElasticsearchDAO private[dataaccess] (
   private[dataaccess] val httpHosts: Seq[HttpHost]
 )(implicit
@@ -105,16 +107,18 @@ class HttpElasticsearchDAO private[dataaccess] (
     update(id) in index.indexName / index.indexType docAsUpsert document
   }
 
-  private[dataaccess] def updateMetadata[MK, MM, D: Indexable](
+  private[dataaccess] def updateMetadata[MK, MM, D <: ClioDocument: Indexable](
     indexDocument: ElasticsearchIndex[D],
     mapper: ElasticsearchDocumentMapper[MK, MM, D],
     key: MK,
     metadata: MM
-  ): Future[Unit] = {
+  ): Future[UUID] = {
     val id = mapper.id(key)
     val empty = mapper.empty(key)
     val document = mapper.withMetadata(empty, metadata)
-    bulkUpdate(updatePartialDocument(indexDocument, id, document))
+    bulkUpdate(updatePartialDocument(indexDocument, id, document)).map { _ =>
+      document.clioId
+    }
   }
 
   private[dataaccess] def searchDocuments[I, O, D: HitReader](

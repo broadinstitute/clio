@@ -46,6 +46,7 @@ object AutoElasticsearchIndex {
       case tpe if tpe =:= typeOf[String]            => keywordField(nameSnake)
       case tpe if tpe <:< typeOf[EnumEntry]         => keywordField(nameSnake)
       case tpe if tpe =:= typeOf[OffsetDateTime]    => dateField(nameSnake)
+      case tpe if tpe =:= typeOf[UUID]              => keywordField(nameSnake)
       case tpe if tpe =:= typeOf[Option[Boolean]]   => booleanField(nameSnake)
       case tpe if tpe =:= typeOf[Option[Int]]       => intField(nameSnake)
       case tpe if tpe =:= typeOf[Option[Long]]      => longField(nameSnake)
@@ -53,7 +54,6 @@ object AutoElasticsearchIndex {
       case tpe if tpe =:= typeOf[Option[Double]]    => doubleField(nameSnake)
       case tpe if tpe =:= typeOf[Option[String]]    => keywordField(nameSnake)
       case tpe if tpe <:< typeOf[Option[EnumEntry]] => keywordField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[UUID]]      => keywordField(nameSnake)
       case tpe if tpe =:= typeOf[Option[OffsetDateTime]] =>
         dateField(nameSnake)
       case _ =>

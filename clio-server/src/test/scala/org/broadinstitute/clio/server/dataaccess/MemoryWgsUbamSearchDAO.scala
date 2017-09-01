@@ -4,6 +4,8 @@ import org.broadinstitute.clio.server.model._
 
 import scala.concurrent.Future
 
+import java.util.UUID
+
 class MemoryWgsUbamSearchDAO extends MockSearchDAO {
 
   var updateWgsUbamMetadataCalls: Seq[(ModelWgsUbamKey, ModelWgsUbamMetadata)] =
@@ -13,7 +15,7 @@ class MemoryWgsUbamSearchDAO extends MockSearchDAO {
   override def updateWgsUbamMetadata(
     key: ModelWgsUbamKey,
     metadata: ModelWgsUbamMetadata
-  ): Future[Unit] = {
+  ): Future[UUID] = {
     updateWgsUbamMetadataCalls :+= ((key, metadata))
     super.updateWgsUbamMetadata(key, metadata)
   }
