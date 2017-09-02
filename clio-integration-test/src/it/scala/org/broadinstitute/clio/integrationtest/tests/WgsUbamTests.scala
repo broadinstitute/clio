@@ -122,7 +122,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "assign different clioIds to different WgsUbam upserts" in {
+  it should "assign different clioIds to different wgs-ubam upserts" in {
     val upsertKey = TransferWgsUbamV1Key(
       flowcellBarcode = "testClioIdBarcode",
       lane = 2,
@@ -143,25 +143,27 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
       val expectedPath1 =
         expectedStoragePath(ElasticsearchIndex.WgsUbam, clioId1)
+      Files.exists(expectedPath1) should be(true)
+
       val expectedPath2 =
         expectedStoragePath(ElasticsearchIndex.WgsUbam, clioId2)
-      Files.exists(expectedPath1) should be(true)
       Files.exists(expectedPath2) should be(true)
 
       val storedDocument1 = getJsonFrom[DocumentWgsUbam](expectedPath1)
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](expectedPath2)
-
       storedDocument1.clioId should be(clioId1)
-      storedDocument2.clioId should be(clioId2)
       storedDocument1.project should be(Some("testProject1"))
+
+      val storedDocument2 = getJsonFrom[DocumentWgsUbam](expectedPath2)
+      storedDocument2.clioId should be(clioId2)
       storedDocument2.project should be(Some("testProject2"))
-      storedDocument2.copy(clioId = clioId1, project = Some("testProject1")) should be(
-        storedDocument1
+
+      storedDocument1.copy(clioId = clioId2, project = Some("testProject2")) should be(
+        storedDocument2
       )
     }
   }
 
-  it should "assign different clioIds to equal WgsUbam upserts" in {
+  it should "assign different clioIds to equal wgs-ubam upserts" in {
     val upsertKey = TransferWgsUbamV1Key(
       flowcellBarcode = "testClioIdBarcode",
       lane = 2,
@@ -182,17 +184,19 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
       val expectedPath1 =
         expectedStoragePath(ElasticsearchIndex.WgsUbam, clioId1)
+      Files.exists(expectedPath1) should be(true)
+
       val expectedPath2 =
         expectedStoragePath(ElasticsearchIndex.WgsUbam, clioId2)
-      Files.exists(expectedPath1) should be(true)
       Files.exists(expectedPath2) should be(true)
 
       val storedDocument1 = getJsonFrom[DocumentWgsUbam](expectedPath1)
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](expectedPath2)
-
       storedDocument1.clioId should be(clioId1)
+
+      val storedDocument2 = getJsonFrom[DocumentWgsUbam](expectedPath2)
       storedDocument2.clioId should be(clioId2)
-      storedDocument2.copy(clioId = clioId1) should be(storedDocument1)
+
+      storedDocument1.copy(clioId = clioId2) should be(storedDocument2)
     }
   }
 
@@ -306,7 +310,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "show deleted records on queryAll, but not query" in {
+  it should "show deleted records on queryall, but not query" in {
     val barcode = "fc5440"
     val project = "testProject" + randomId
     val sample = "sample688." + randomId

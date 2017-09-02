@@ -6,7 +6,7 @@ clio.server {
   http-server.port: {{env "CONTAINER_CLIO_PORT"}}
 
   persistence {
-    type: gcs
+    type: GCP
     project-id: broad-gotc-{{env "ENV"}}-storage
     bucket: broad-gotc-{{env "ENV"}}-clio
     service-account-json: {{env "CLIO_CONF_DIR"}}/{{env "CLIO_SERVICE_ACCOUNT_JSON"}}

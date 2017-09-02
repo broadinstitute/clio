@@ -17,6 +17,9 @@ import java.util.UUID
 /**
   * Service responsible for persisting metadata updates first by
   * writing them to storage, then by using them to update a search index.
+  *
+  * Updates are written to storage to serve as the system of record for Clio,
+  * allowing for update playback during disaster recovery.
   */
 class PersistenceService private (persistenceDAO: PersistenceDAO,
                                   searchDAO: SearchDAO) {

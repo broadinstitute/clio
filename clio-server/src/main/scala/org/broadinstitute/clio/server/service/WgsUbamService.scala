@@ -13,6 +13,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import java.util.UUID
 
+/**
+  * Service responsible for performing all wgs-ubam-specific logic
+  * before handing off to the generic search / persistence services.
+  */
 class WgsUbamService(
   persistenceService: PersistenceService,
   searchService: SearchService
@@ -58,20 +62,14 @@ class WgsUbamService(
 }
 
 object WgsUbamService {
-  private[service] val v1DocumentConverter
-    : ElasticsearchDocumentMapper[TransferWgsUbamV1Key,
-                                  TransferWgsUbamV1Metadata,
-                                  DocumentWgsUbam] =
+  private[service] val v1DocumentConverter =
     AutoElasticsearchDocumentMapper[
       TransferWgsUbamV1Key,
       TransferWgsUbamV1Metadata,
       DocumentWgsUbam
     ]
 
-  private[service] val v1QueryConverter
-    : ElasticsearchQueryMapper[TransferWgsUbamV1QueryInput,
-                               TransferWgsUbamV1QueryOutput,
-                               DocumentWgsUbam] =
+  private[service] val v1QueryConverter =
     AutoElasticsearchQueryMapper[
       TransferWgsUbamV1QueryInput,
       TransferWgsUbamV1QueryOutput,

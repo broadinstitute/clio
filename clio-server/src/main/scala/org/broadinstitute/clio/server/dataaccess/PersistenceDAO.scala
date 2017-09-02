@@ -15,12 +15,16 @@ import java.nio.file.{Files, Path}
 import java.time.OffsetDateTime
 
 /**
-  * Persists metadata updates to a source of truth.
+  * Persists metadata updates to a source of truth, allowing
+  * for playback during disaster recovery.
   */
 trait PersistenceDAO extends LazyLogging {
 
   /**
     * Root path for all metadata writes.
+    *
+    * Using java.nio, this could be a local path or a
+    * path to a cloud object in GCS.
     */
   def rootPath: Path
 

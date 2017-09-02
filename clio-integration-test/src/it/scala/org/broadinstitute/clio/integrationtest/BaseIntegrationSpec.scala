@@ -115,7 +115,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     )
   }
 
-  /** Read an parse JSON out of a path. */
+  /** Read and parse JSON out of a path. */
   def getJsonFrom[Document <: ClioDocument: Decoder](path: Path): Document = {
     parse(Files.readAllLines(path).asScala.mkString)
       .flatMap(_.as[Document])
