@@ -1,21 +1,24 @@
 package org.broadinstitute.client.util
 
-import java.time.OffsetDateTime
-
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import org.broadinstitute.clio.client.commands.Commands.CommonOptions
 import org.broadinstitute.clio.client.commands.{
   AddWgsUbam,
   DeleteWgsUbam,
   MoveWgsUbam,
   QueryWgsUbam
 }
+import org.broadinstitute.clio.client.commands.Commands.CommonOptions
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+
+import scala.concurrent.duration._
+
+import java.time.OffsetDateTime
 
 trait TestData {
 
@@ -79,4 +82,7 @@ trait TestData {
       TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
     transferWgsUbamV1Key = testTransferV1Key
   )
+
+  val testServerPort: Int = 8080
+  val testRequestTimeout: FiniteDuration = 3.seconds
 }

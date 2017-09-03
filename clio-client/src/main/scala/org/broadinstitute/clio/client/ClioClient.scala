@@ -1,13 +1,14 @@
 package org.broadinstitute.clio.client
 
+import org.broadinstitute.clio.client.commands.{CommandDispatch, CommandType}
+import org.broadinstitute.clio.client.commands.Commands._
+import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.client.util.IoUtil
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.clio.client.commands.Commands._
-import org.broadinstitute.clio.client.commands.{CommandDispatch, CommandType}
-import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.ClioWebClient
 
 import scala.util.{Failure, Success}
 
@@ -42,7 +43,8 @@ object ClioClient
   val webClient: ClioWebClient = new ClioWebClient(
     ClioClientConfig.ClioServer.clioServerHostName,
     ClioClientConfig.ClioServer.clioServerPort,
-    ClioClientConfig.ClioServer.clioServerUseHttps
+    ClioClientConfig.ClioServer.clioServerUseHttps,
+    ClioClientConfig.responseTimeout
   )
 
   override def run(command: CommandType, remainingArgs: RemainingArgs): Unit = {

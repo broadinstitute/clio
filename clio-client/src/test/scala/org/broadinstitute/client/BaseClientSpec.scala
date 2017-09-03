@@ -1,15 +1,18 @@
 package org.broadinstitute.client
 
 import org.broadinstitute.client.util.{MockIoUtil, TestData}
+
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import org.broadinstitute.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.client.commands.CommandDispatch
-import org.scalatest.{AsyncFlatSpecLike, Matchers}
+
+import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 abstract class BaseClientSpec
     extends TestKit(ActorSystem("ClioClientSpec"))
     with AsyncFlatSpecLike
+    with BeforeAndAfterAll
     with TestData
     with Matchers {
 
@@ -24,4 +27,9 @@ abstract class BaseClientSpec
       MockClioWebClient.returningInternalError,
       new MockIoUtil
     )
+
+  override def afterAll(): Unit = {
+    shutdown()
+    super.afterAll()
+  }
 }

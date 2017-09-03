@@ -2,7 +2,9 @@ package org.broadinstitute.clio.integrationtest
 
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.model.ServiceAccount
+
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.syntax._
 import com.bettercloud.vault.{Vault, VaultConfig}
 import com.google.cloud.storage.StorageOptions
@@ -12,10 +14,9 @@ import com.google.cloud.storage.contrib.nio.{
 }
 
 import scala.collection.JavaConverters._
+
 import java.io.File
 import java.nio.file.{FileSystem, Files, Path}
-
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 /**
   * An integration spec that runs entirely against a Clio instance
@@ -53,7 +54,8 @@ abstract class EnvIntegrationSpec(env: String)
   override val clioWebClient: ClioWebClient = new ClioWebClient(
     s"clio101.gotc-$env.broadinstitute.org",
     443,
-    useHttps = true
+    useHttps = true,
+    clientTimeout
   )
 
   override val elasticsearchUri: Uri = Uri(
