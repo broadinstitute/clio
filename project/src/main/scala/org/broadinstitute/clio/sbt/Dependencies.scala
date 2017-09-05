@@ -105,10 +105,18 @@ object Dependencies {
 
   val UtilMainDependencies: Seq[ModuleID] = Seq(
     "com.beachape" %% "enumeratum" % EnumeratumVersion,
+    "com.beachape" %% "enumeratum-circe" % EnumeratumCirceVersion,
     "com.chuusai" %% "shapeless" % ShapelessVersion,
+    "com.fasterxml.uuid" % "java-uuid-generator" % UUIDVersion,
     "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.typesafe" % "config" % TypesafeConfigVersion,
+    "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+    "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
+    "io.circe" %% "circe-core" % CirceVersion,
+    "io.circe" %% "circe-parser" % CirceVersion,
+    "io.circe" %% "circe-generic" % CirceVersion,
+    "io.circe" %% "circe-generic-extras" % CirceVersion,
     "net.s_mach" %% "string" % S_machStringVersion,
     "org.scala-lang" % "scala-reflect" % ScalaVersion
   )
@@ -121,7 +129,6 @@ object Dependencies {
 
   val TransferModelMainDependencies: Seq[ModuleID] = Seq(
     "com.beachape" %% "enumeratum-circe" % EnumeratumCirceVersion,
-    "com.fasterxml.uuid" % "java-uuid-generator" % UUIDVersion,
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-generic-extras" % CirceVersion,

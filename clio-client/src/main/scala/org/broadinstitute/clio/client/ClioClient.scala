@@ -8,8 +8,7 @@ import org.broadinstitute.clio.client.commands.Commands._
 import org.broadinstitute.clio.client.commands.{CommandDispatch, CommandType}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-
-import scala.sys.process.Process
+import org.broadinstitute.clio.util.AuthUtil
 import scala.util.{Failure, Success}
 
 object ClioClient
@@ -37,8 +36,12 @@ object ClioClient
   }
 
   implicit val system: ActorSystem = ActorSystem(progName)
+
   import system.dispatcher
-  sys.addShutdownHook({ val _ = system.terminate() })
+
+  sys.addShutdownHook({
+    val _ = system.terminate()
+  })
 
   val webClient: ClioWebClient = new ClioWebClient(
     ClioClientConfig.ClioServer.clioServerHostName,
@@ -51,9 +54,7 @@ object ClioClient
     checkRemainingArgs(remainingArgs.args)
 
     implicit val bearerToken: OAuth2BearerToken = commonOptions.bearerToken
-      .getOrElse(
-        OAuth2BearerToken(Process("gcloud auth print-access-token").!!)
-      )
+      .getOrElse(AuthUtil.getBearerToken(ClioClientConfig.serviceAccountJson))
 
     val commandDispatch = new CommandDispatch(webClient, IoUtil)
 

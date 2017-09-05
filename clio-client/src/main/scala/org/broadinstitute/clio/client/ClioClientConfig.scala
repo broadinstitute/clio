@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.client
-import org.broadinstitute.clio.util.config.ClioConfig
 
+import org.broadinstitute.clio.util.config.ClioConfig
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 
@@ -27,4 +27,7 @@ object ClioClientConfig {
   }
 
   val greenTeamEmail: String = config.as[String]("greenteam.email")
+
+  val serviceAccountJson: Option[String] =
+    config.as[Option[String]]("service-account-json")
 }

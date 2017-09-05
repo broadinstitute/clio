@@ -1,18 +1,17 @@
 package org.broadinstitute.clio.util.json
 
+import java.net.URI
 import java.time.OffsetDateTime
+
 import cats.syntax.either._
 import enumeratum._
+import io.circe.Decoder.Result
 import io.circe.generic.extras.{AutoDerivation, Configuration}
 import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
 import org.broadinstitute.clio.util.generic.CompanionCache
 
-import io.circe.Decoder.Result
-
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
-
-import java.net.URI
 
 /**
   * Extends circe's _extra_ auto derivation with additional derivations needed for clio.
