@@ -23,7 +23,12 @@ class MockClioWebClient(
   status: StatusCode,
   metadataLocationOption: Option[String]
 )(implicit system: ActorSystem)
-    extends ClioWebClient("localhost", 8080, false)
+    extends ClioWebClient(
+      "localhost",
+      MockClioWebClient.testServerPort,
+      false,
+      MockClioWebClient.testRequestTimeout
+    )
     with TestData {
 
   val version: String =

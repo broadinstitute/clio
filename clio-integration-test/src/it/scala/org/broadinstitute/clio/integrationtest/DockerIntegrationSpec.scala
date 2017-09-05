@@ -1,18 +1,19 @@
 package org.broadinstitute.clio.integrationtest
 
 import org.broadinstitute.clio.client.webclient.ClioWebClient
+
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.file.scaladsl.FileTailSource
 import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import java.io.File
 import java.nio.file.{FileSystems, Path, Paths}
-
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 /**
   * An integration spec that spins up a Clio server instance and
@@ -51,7 +52,8 @@ class DockerIntegrationSpec
     new ClioWebClient(
       container.getServiceHost(clioFullName),
       container.getServicePort(clioFullName),
-      useHttps = false
+      useHttps = false,
+      clientTimeout
     )
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)
 

@@ -10,11 +10,9 @@ import com.google.cloud.storage.contrib.nio.{
   CloudStorageConfiguration,
   CloudStorageFileSystem
 }
-
 import scala.collection.JavaConverters._
 import java.io.File
 import java.nio.file.{FileSystem, Files, Path}
-
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.util.AuthUtil
 
@@ -48,7 +46,8 @@ abstract class EnvIntegrationSpec(env: String)
   override val clioWebClient: ClioWebClient = new ClioWebClient(
     s"clio101.gotc-$env.broadinstitute.org",
     443,
-    useHttps = true
+    useHttps = true,
+    clientTimeout
   )
 
   override val elasticsearchUri: Uri = Uri(

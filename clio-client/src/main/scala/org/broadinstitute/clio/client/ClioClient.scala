@@ -46,7 +46,8 @@ object ClioClient
   val webClient: ClioWebClient = new ClioWebClient(
     ClioClientConfig.ClioServer.clioServerHostName,
     ClioClientConfig.ClioServer.clioServerPort,
-    ClioClientConfig.ClioServer.clioServerUseHttps
+    ClioClientConfig.ClioServer.clioServerUseHttps,
+    ClioClientConfig.responseTimeout
   )
 
   override def run(command: CommandType, remainingArgs: RemainingArgs): Unit = {

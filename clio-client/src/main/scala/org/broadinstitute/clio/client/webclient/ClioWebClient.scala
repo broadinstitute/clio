@@ -1,33 +1,38 @@
 package org.broadinstitute.clio.client.webclient
 
-import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
-import io.circe.syntax._
-import ClientAutoDerivation._
 import org.broadinstitute.clio.client.util.FutureWithErrorMessage
-
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import io.circe.Printer
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput
 }
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import io.circe.Printer
+import io.circe.syntax._
+
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.runtime.universe.{typeOf, TypeTag}
+import scala.reflect.runtime.universe.{TypeTag, typeOf}
 
-class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
-  implicit system: ActorSystem
-) extends FailFastCirceSupport
-    with ModelAutoDerivation
+class ClioWebClient(
+  clioHost: String,
+  clioPort: Int,
+  useHttps: Boolean,
+  requestTimeout: FiniteDuration
+)(implicit system: ActorSystem)
+    extends FailFastCirceSupport
     with FutureWithErrorMessage {
+
+  import ClientAutoDerivation._
+
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -45,6 +50,7 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
     Source
       .single(request)
       .via(connectionFlow)
+      .completionTimeout(requestTimeout)
       .runWith(Sink.head)
       .logErrorMsg("Failed to send HTTP request to Clio server")
   }
