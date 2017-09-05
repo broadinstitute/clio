@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 import org.broadinstitute.clio.server.model.{
   ModelMockQueryInput,
   ModelMockQueryOutput
@@ -79,27 +78,17 @@ class AutoElasticsearchQueryMapperSpec extends FlatSpec with Matchers {
       ModelMockQueryOutput,
       DocumentMock
     ]
-    val output = DocumentMock(
-      clioId = ClioUUIDGenerator.getUUID(),
-      mockFieldDate = None,
-      mockFieldDouble = None,
-      mockFieldInt = None,
-      mockFileMd5 = None,
-      mockFilePath = None,
-      mockFileSize = None,
-      mockKeyLong = 12345L,
-      mockKeyString = "hello"
-    )
+    val output = DocumentMock.default
     mapper.toQueryOutput(output) should be(
       ModelMockQueryOutput(
-        mockFieldDate = None,
-        mockFieldDouble = None,
-        mockFieldInt = None,
-        mockFileMd5 = None,
-        mockFilePath = None,
-        mockFileSize = None,
-        mockKeyLong = 12345L,
-        mockKeyString = "hello"
+        mockFieldDate = output.mockFieldDate,
+        mockFieldDouble = output.mockFieldDouble,
+        mockFieldInt = output.mockFieldInt,
+        mockFileMd5 = output.mockFileMd5,
+        mockFilePath = output.mockFilePath,
+        mockFileSize = output.mockFileSize,
+        mockKeyLong = output.mockKeyLong,
+        mockKeyString = output.mockKeyString
       )
     )
   }

@@ -5,12 +5,19 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex
 }
 
+import com.google.common.jimfs.{Configuration, Jimfs}
 import com.sksamuel.elastic4s.Indexable
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class MemoryPersistenceDAO extends MockPersistenceDAO {
+import java.nio.file.{FileSystem, Path}
+
+class MemoryPersistenceDAO extends PersistenceDAO {
   var writeCalls: Seq[(_, _)] = Seq.empty
+
+  private val memFS: FileSystem =
+    Jimfs.newFileSystem(Configuration.unix())
+  override val rootPath: Path = memFS.getPath("/")
 
   override def writeUpdate[D <: ClioDocument](
     document: D,

@@ -5,7 +5,6 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
-import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 
 import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
@@ -21,7 +20,7 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
   val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
 
   it should "initialize top-level storage for indexed documents" in {
-    val dao = new JimfsPersistenceDAO()
+    val dao = new MemoryPersistenceDAO()
     val wgsPath = dao.rootPath.resolve(index.rootDir)
 
     Files.exists(wgsPath) should be(false)
@@ -36,18 +35,10 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
   }
 
   it should "write metadata updates to storage using the UUID" in {
-    val dao = new JimfsPersistenceDAO()
-    val document = DocumentMock(
-      clioId = ClioUUIDGenerator.getUUID(),
-      mockKeyLong = 1234L,
-      mockKeyString = "the key",
-      mockFilePath = Some("gs://the-file")
-    )
-    val document2 = document.copy(
-      clioId = ClioUUIDGenerator.getUUID(),
-      mockFilePath = None,
-      mockFieldDouble = Some(0.9876)
-    )
+    val dao = new MemoryPersistenceDAO()
+    val document =
+      DocumentMock.default.copy(mockFilePath = Some("gs://the-file"))
+    val document2 = DocumentMock.default.copy(mockFieldDouble = Some(0.9876))
 
     for {
       _ <- dao.initialize(index)
@@ -57,7 +48,9 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
       Seq(document, document2).foldLeft(succeed) {
         case (_, doc) => {
           val expectedPath =
-            dao.currentPathForIndex(index).resolve(s"${doc.clioId}.json")
+            dao.rootPath.resolve(
+              s"${index.currentPersistenceDir}/${doc.clioId}.json"
+            )
 
           Files.exists(expectedPath) should be(true)
           Files.isRegularFile(expectedPath) should be(true)

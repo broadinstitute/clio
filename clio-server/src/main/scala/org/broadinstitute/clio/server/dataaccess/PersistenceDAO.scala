@@ -12,7 +12,6 @@ import com.typesafe.scalalogging.LazyLogging
 import scala.concurrent.{ExecutionContext, Future}
 
 import java.nio.file.{Files, Path}
-import java.time.OffsetDateTime
 
 /**
   * Persists metadata updates to a source of truth, allowing
@@ -55,22 +54,14 @@ trait PersistenceDAO extends LazyLogging {
     index: ElasticsearchIndex[D]
   )(implicit ec: ExecutionContext, indexable: Indexable[D]): Future[Unit] =
     Future {
-      val writePath = Files.createDirectories(currentPathForIndex(index))
+      val writePath =
+        Files.createDirectories(rootPath.resolve(index.currentPersistenceDir))
       val written = Files.write(
         writePath.resolve(s"${document.clioId}.json"),
         indexable.json(document).getBytes
       )
       logger.debug(s"Wrote document $document to ${written.toUri}")
     }
-
-  private[dataaccess] def currentPathForIndex(
-    index: ElasticsearchIndex[_]
-  ): Path = {
-    val updateTime = OffsetDateTime.now()
-    rootPath.resolve(
-      s"${index.rootDir}/${updateTime.getYear}/${updateTime.getMonthValue}/${updateTime.getDayOfMonth}"
-    )
-  }
 }
 
 object PersistenceDAO {

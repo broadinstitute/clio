@@ -22,8 +22,6 @@ import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
-import scala.collection.JavaConverters._
-
 import java.nio.file.{Files, Path, Paths}
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -101,26 +99,27 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   /** Get a random identifier to use as a dummy value in testing. */
   def randomId: String = UUID.randomUUID().toString.replaceAll("-", "")
 
-  /** Get the expected storage path for an index / UUID pair. */
-  def expectedStoragePath(index: ElasticsearchIndex[_], id: UUID): Path = {
-    val now = OffsetDateTime.now()
-    rootPersistenceDir.resolve(
-      Paths.get(
-        index.rootDir,
-        now.getYear.toString,
-        now.getMonthValue.toString,
-        now.getDayOfMonth.toString,
-        s"$id.json"
-      )
+  /**
+    * Check that the storage path for a given Clio ID exists,
+    * load its contents as JSON, and check that the loaded ID
+    * matches the given ID.
+    */
+  def getJsonFrom[Document <: ClioDocument: Decoder](
+    index: ElasticsearchIndex[Document],
+    clioId: UUID
+  ): Document = {
+    val expectedPath = rootPersistenceDir.resolve(
+      Paths.get(index.currentPersistenceDir, s"$clioId.json")
     )
-  }
 
-  /** Read and parse JSON out of a path. */
-  def getJsonFrom[Document <: ClioDocument: Decoder](path: Path): Document = {
-    parse(Files.readAllLines(path).asScala.mkString)
+    Files.exists(expectedPath) should be(true)
+    val document = parse(new String(Files.readAllBytes(expectedPath)))
       .flatMap(_.as[Document])
       .toTry
       .get
+
+    document.clioId should be(clioId)
+    document
   }
 
   /** Shut down the actor system at the end of the suite. */

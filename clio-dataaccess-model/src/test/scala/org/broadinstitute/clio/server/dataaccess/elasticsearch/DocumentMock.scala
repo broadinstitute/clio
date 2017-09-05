@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
+import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
+
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -15,6 +17,12 @@ case class DocumentMock(clioId: UUID,
     extends ClioDocument
 
 object DocumentMock {
+  def default: DocumentMock = DocumentMock(
+    clioId = ClioUUIDGenerator.getUUID(),
+    mockKeyLong = 1234L,
+    mockKeyString = "the-string"
+  )
+
   val index: ElasticsearchIndex[DocumentMock] =
     ElasticsearchIndex.indexDocument[DocumentMock]
 }

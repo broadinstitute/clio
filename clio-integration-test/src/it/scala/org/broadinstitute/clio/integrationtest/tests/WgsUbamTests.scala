@@ -106,12 +106,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
           outputs should have length 1
           outputs.head should be(expected)
 
-          val expectedPath =
-            expectedStoragePath(ElasticsearchIndex.WgsUbam, returnedClioId)
-          Files.exists(expectedPath) should be(true)
-
-          val storedDocument = getJsonFrom[DocumentWgsUbam](expectedPath)
-          storedDocument.clioId should be(returnedClioId)
+          val storedDocument = getJsonFrom[DocumentWgsUbam](
+            ElasticsearchIndex.WgsUbam,
+            returnedClioId
+          )
           storedDocument.flowcellBarcode should be(upsertKey.flowcellBarcode)
           storedDocument.lane should be(upsertKey.lane)
           storedDocument.libraryName should be(upsertKey.libraryName)
@@ -141,20 +139,12 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     } yield {
       clioId2.compareTo(clioId1) should be(1)
 
-      val expectedPath1 =
-        expectedStoragePath(ElasticsearchIndex.WgsUbam, clioId1)
-      Files.exists(expectedPath1) should be(true)
-
-      val expectedPath2 =
-        expectedStoragePath(ElasticsearchIndex.WgsUbam, clioId2)
-      Files.exists(expectedPath2) should be(true)
-
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](expectedPath1)
-      storedDocument1.clioId should be(clioId1)
+      val storedDocument1 =
+        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId1)
       storedDocument1.project should be(Some("testProject1"))
 
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](expectedPath2)
-      storedDocument2.clioId should be(clioId2)
+      val storedDocument2 =
+        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId2)
       storedDocument2.project should be(Some("testProject2"))
 
       storedDocument1.copy(clioId = clioId2, project = Some("testProject2")) should be(
@@ -182,20 +172,8 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     } yield {
       clioId2.compareTo(clioId1) should be(1)
 
-      val expectedPath1 =
-        expectedStoragePath(ElasticsearchIndex.WgsUbam, clioId1)
-      Files.exists(expectedPath1) should be(true)
-
-      val expectedPath2 =
-        expectedStoragePath(ElasticsearchIndex.WgsUbam, clioId2)
-      Files.exists(expectedPath2) should be(true)
-
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](expectedPath1)
-      storedDocument1.clioId should be(clioId1)
-
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](expectedPath2)
-      storedDocument2.clioId should be(clioId2)
-
+      val storedDocument1 = getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId1)
+      val storedDocument2 = getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId2)
       storedDocument1.copy(clioId = clioId2) should be(storedDocument2)
     }
   }

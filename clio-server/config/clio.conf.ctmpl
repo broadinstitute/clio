@@ -18,6 +18,6 @@ clio.server {
       hostname: "elasticsearch10{{add 1 $i}}-priv.gotc-{{env "ENV"}}.broadinstitute.org",
       port: 9200,
       scheme: http
-     ,{{end}}
+    },{{end}}
   ]
 }
