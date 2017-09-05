@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.integrationtest
 
+import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
@@ -21,6 +22,8 @@ import io.circe.parser._
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
+
+import scala.concurrent.duration.FiniteDuration
 
 import java.nio.file.{Files, Path}
 import java.util.UUID
@@ -47,6 +50,13 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * for None from 'None -> null' to omitting Nones entirely.
     */
   implicit val p: Printer = Printer.noSpaces.copy(dropNullKeys = true)
+
+  /**
+    * Timeout to use for all client requests.
+    *
+    * Use the client's default to make sure it's sane.
+    */
+  val clientTimeout: FiniteDuration = ClioClientConfig.responseTimeout
 
   /**
     * The web client to test against.
