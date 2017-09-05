@@ -1,7 +1,7 @@
 package org.broadinstitute.client.webclient
 
 import akka.http.scaladsl.model._
-import io.circe.Json
+import io.circe.{Json, Printer}
 import io.circe.parser.parse
 import org.broadinstitute.client.util.TestData
 import org.broadinstitute.clio.client.util.IoUtil
@@ -12,6 +12,8 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput
 }
+import org.broadinstitute.clio.util.json.JsonSchemas
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
@@ -41,6 +43,20 @@ class MockClioWebClient(
   override def getClioServerVersion: Future[HttpResponse] = {
     Future.successful(
       HttpResponse(status = status, entity = HttpEntity(version))
+    )
+  }
+
+  override def getWgsUbamSchema(
+    implicit bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
+    Future.successful(
+      HttpResponse(
+        status = status,
+        entity = HttpEntity(
+          ContentTypes.`application/json`,
+          JsonSchemas.WgsUbam.pretty(implicitly[Printer])
+        )
+      )
     )
   }
 

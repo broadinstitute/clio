@@ -13,14 +13,35 @@ class AddWgsUbamExecutor(addWgsUbam: AddWgsUbam) extends Executor {
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
-    val decodedOrError = parse(IoUtil.readMetadata(addWgsUbam.metadataLocation))
-      .flatMap(_.as[TransferWgsUbamV1Metadata])
+    val metadataLoc = addWgsUbam.metadataLocation
 
-    decodedOrError.fold(Future.failed, { decoded =>
-      webClient.addWgsUbam(
-        transferWgsUbamV1Metadata = decoded,
-        input = addWgsUbam.transferWgsUbamV1Key
-      )
-    })
+    val parsedOrError = parse(IoUtil.readMetadata(metadataLoc)).left.map {
+      err =>
+        new RuntimeException(
+          s"Could not parse contents of $metadataLoc as JSON.",
+          err
+        )
+    }
+
+    val decodedOrError = parsedOrError
+      .flatMap(_.as[TransferWgsUbamV1Metadata])
+      .left
+      .map { err =>
+        new RuntimeException(
+          s"Invalid metadata given at $metadataLoc. Run the 'get-wgs-ubam-schema' command to see the expected JSON format for WgsUbams.",
+          err
+        )
+      }
+
+    decodedOrError.fold(
+      Future
+        .failed(_) logErrorMsg s"Metadata at $metadataLoc cannot be added to Clio", {
+        decoded =>
+          webClient.addWgsUbam(
+            transferWgsUbamV1Metadata = decoded,
+            input = addWgsUbam.transferWgsUbamV1Key
+          )
+      }
+    )
   }
 }

@@ -67,24 +67,22 @@ object Commands {
 
 sealed trait CommandType
 
+case object GetWgsUbamSchema extends CommandType
+
 final case class AddWgsUbam(metadataLocation: String,
-                            @Recurse
-                            transferWgsUbamV1Key: TransferWgsUbamV1Key)
+                            @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key)
     extends CommandType
 
 final case class QueryWgsUbam(
-  @Recurse
-  transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput,
+  @Recurse transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput,
 ) extends CommandType
 
-final case class MoveWgsUbam(@Recurse
-                             metadata: TransferWgsUbamV1Metadata,
-                             @Recurse
-                             transferWgsUbamV1Key: TransferWgsUbamV1Key)
-    extends CommandType
+final case class MoveWgsUbam(
+  @Recurse metadata: TransferWgsUbamV1Metadata,
+  @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key
+) extends CommandType
 
-final case class DeleteWgsUbam(@Recurse
-                               metadata: TransferWgsUbamV1Metadata,
-                               @Recurse
-                               transferWgsUbamV1Key: TransferWgsUbamV1Key)
-    extends CommandType
+final case class DeleteWgsUbam(
+  @Recurse metadata: TransferWgsUbamV1Metadata,
+  @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key
+) extends CommandType
