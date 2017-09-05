@@ -9,6 +9,7 @@ import org.broadinstitute.clio.client.commands.{CommandDispatch, CommandType}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
+import scala.sys.process.Process
 import scala.util.{Failure, Success}
 
 object ClioClient
@@ -50,6 +51,9 @@ object ClioClient
     checkRemainingArgs(remainingArgs.args)
 
     implicit val bearerToken: OAuth2BearerToken = commonOptions.bearerToken
+      .getOrElse(
+        OAuth2BearerToken(Process("gcloud auth print-access-token").!!)
+      )
 
     val commandDispatch = new CommandDispatch(webClient, IoUtil)
 

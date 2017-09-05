@@ -18,9 +18,7 @@ import scala.util.{Failure, Success, Try}
 
 object Commands {
 
-  final case class CommonOptions(
-    bearerToken: OAuth2BearerToken = OAuth2BearerToken("")
-  )
+  final case class CommonOptions(bearerToken: Option[OAuth2BearerToken] = None)
 
   implicit def parser[Options](
     implicit result: CommandParser[Options]
