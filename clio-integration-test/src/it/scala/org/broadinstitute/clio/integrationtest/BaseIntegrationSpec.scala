@@ -22,8 +22,7 @@ import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
-import java.nio.file.{Files, Path, Paths}
-import java.time.OffsetDateTime
+import java.nio.file.{Files, Path}
 import java.util.UUID
 
 /**
@@ -108,9 +107,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     index: ElasticsearchIndex[Document],
     clioId: UUID
   ): Document = {
-    val expectedPath = rootPersistenceDir.resolve(
-      Paths.get(index.currentPersistenceDir, s"$clioId.json")
-    )
+    val expectedPath =
+      rootPersistenceDir.resolve(s"${index.currentPersistenceDir}/$clioId.json")
 
     Files.exists(expectedPath) should be(true)
     val document = parse(new String(Files.readAllBytes(expectedPath)))

@@ -27,7 +27,6 @@ import io.circe.Json
 
 import scala.concurrent.Future
 
-import java.nio.file.Files
 import java.util.UUID
 
 /** Tests of Clio's wgs-ubam functionality. */
@@ -172,8 +171,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     } yield {
       clioId2.compareTo(clioId1) should be(1)
 
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId1)
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId2)
+      val storedDocument1 =
+        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId1)
+      val storedDocument2 =
+        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId2)
       storedDocument1.copy(clioId = clioId2) should be(storedDocument2)
     }
   }

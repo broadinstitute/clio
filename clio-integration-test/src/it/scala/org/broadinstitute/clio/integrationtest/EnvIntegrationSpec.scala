@@ -47,7 +47,7 @@ abstract class EnvIntegrationSpec(env: String)
 
   /** Scopes needed from Google to read Clio's persistence buckets. */
   private val storageScopes = Seq(
-    "https://www.googleapis.com/auth/devstorage.read"
+    "https://www.googleapis.com/auth/devstorage.read_only"
   )
 
   override val clioWebClient: ClioWebClient = new ClioWebClient(

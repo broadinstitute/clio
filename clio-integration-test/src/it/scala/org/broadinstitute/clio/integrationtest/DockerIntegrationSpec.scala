@@ -62,7 +62,7 @@ class DockerIntegrationSpec
 
   // SBT sets a local path for persisting metadata updates.
   override val rootPersistenceDir: Path =
-    Paths.get(sys.env("LOCAL_PERSISTENCE_DIR"))
+    Paths.get(ClioBuildInfo.persistenceDir)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -73,7 +73,7 @@ class DockerIntegrationSpec
      */
     val fs = FileSystems.getDefault
     val clioLogLines: Source[String, NotUsed] = FileTailSource.lines(
-      path = fs.getPath(sys.env("CLIO_LOG_FILE")),
+      path = fs.getPath(ClioBuildInfo.clioLog),
       maxLineSize = 8192,
       pollingInterval = 250.millis
     )

@@ -10,8 +10,6 @@ import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
-import scala.collection.JavaConverters._
-
 import java.nio.file.Files
 
 class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
@@ -45,23 +43,22 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
       _ <- dao.writeUpdate(document, index)
       _ <- dao.writeUpdate(document2, index)
     } yield {
-      Seq(document, document2).foldLeft(succeed) {
-        case (_, doc) => {
-          val expectedPath =
-            dao.rootPath.resolve(
-              s"${index.currentPersistenceDir}/${doc.clioId}.json"
-            )
+      Seq(document, document2).foreach { doc =>
+        val expectedPath =
+          dao.rootPath.resolve(
+            s"${index.currentPersistenceDir}/${doc.clioId}.json"
+          )
 
-          Files.exists(expectedPath) should be(true)
-          Files.isRegularFile(expectedPath) should be(true)
+        Files.exists(expectedPath) should be(true)
+        Files.isRegularFile(expectedPath) should be(true)
 
-          parse(Files.readAllLines(expectedPath).asScala.mkString)
-            .flatMap(_.as[DocumentMock])
-            .map(_ should be(doc))
-            .toTry
-            .get
-        }
+        parse(new String(Files.readAllBytes(expectedPath)))
+          .flatMap(_.as[DocumentMock])
+          .map(_ should be(doc))
+          .toTry
+          .get
       }
+      succeed
     }
   }
 }

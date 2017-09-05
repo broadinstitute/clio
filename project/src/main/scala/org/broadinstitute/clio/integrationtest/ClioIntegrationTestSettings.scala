@@ -6,11 +6,12 @@ import com.lucidchart.sbt.scalafmt.ScalafmtCorePlugin
 import sbt._
 import sbt.Def.{Initialize, Setting}
 import sbt.Keys._
+import sbtbuildinfo.{BuildInfoKey, BuildInfoKeys, BuildInfoPlugin}
 
 /**
   * Settings for running our integration tests.
   */
-object ClioIntegrationTestSettings {
+object ClioIntegrationTestSettings extends BuildInfoKeys {
 
   /** Directory to which all container logs will be sent during Dockerized integration tests. */
   lazy val logTarget: Initialize[File] = Def.setting {
@@ -47,35 +48,54 @@ object ClioIntegrationTestSettings {
     clioLog
   }
 
-  /** Environment variables to inject when running integration tests. */
-  lazy val itEnvVars: Initialize[Task[Map[String, String]]] = Def.task {
-    val logDir = logTarget.value
-    val clioLog = clioLogFile.value
-    val persistenceDir = persistenceTarget.value
+  /** Variables to inject into integration-test code using sbt-buildinfo. */
+  lazy val itBuildInfoKeys: Initialize[Seq[BuildInfoKey]] = Def.setting {
     val confDir = (classDirectory in IntegrationTest).value / "org" / "broadinstitute" / "clio" / "integrationtest"
 
-    Map(
-      "CLIO_DOCKER_TAG" -> version.value,
-      "ELASTICSEARCH_DOCKER_TAG" -> Dependencies.ElasticsearchVersion,
-      "LOG_DIR" -> logDir.getAbsolutePath,
-      "CLIO_LOG_FILE" -> clioLog.getAbsolutePath,
-      "CONF_DIR" -> confDir.getAbsolutePath,
-      "LOCAL_PERSISTENCE_DIR" -> persistenceDir.getAbsolutePath
+    Seq[BuildInfoKey](
+      version,
+      BuildInfoKey.constant(
+        ("elasticsearchVersion", Dependencies.ElasticsearchVersion)
+      ),
+      BuildInfoKey.constant(("logDir", logTarget.value.getAbsolutePath)),
+      BuildInfoKey.constant(("clioLog", clioLogFile.value.getAbsolutePath)),
+      BuildInfoKey.constant(("confDir", confDir.getAbsolutePath)),
+      BuildInfoKey.constant(
+        ("persistenceDir", persistenceTarget.value.getAbsolutePath)
+      )
     )
   }
 
   /** Settings to add to the project */
   lazy val settings: Seq[Setting[_]] = {
 
+    val itSettings = Seq.concat(
+      ScalafmtCorePlugin.autoImport.scalafmtSettings,
+      BuildInfoPlugin.buildInfoScopedSettings(IntegrationTest),
+      Seq(
+        scalacOptions in doc ++= Compilation.DocSettings,
+        scalacOptions in console := Compilation.ConsoleSettings,
+        resourceGenerators += Versioning.writeVersionConfig.taskValue,
+        /*
+         * Testcontainers registers a JVM shutdown hook to remove the containers
+         * it creates using docker-compose. Forking when running integration tests
+         * makes all containers be removed as soon as tests finish running.
+         */
+        fork := true,
+        resourceGenerators +=
+          resetLogs.map(Seq(_)).taskValue,
+        /*
+         * We use sbt-buildinfo to inject parameters into test code.
+         */
+        buildInfoKeys := itBuildInfoKeys.value,
+        buildInfoPackage := s"${organization.value}.clio.integrationtest",
+        buildInfoObject := "ClioBuildInfo"
+      )
+    )
+
     Seq.concat(
       Defaults.itSettings,
-      inConfig(IntegrationTest) {
-        ScalafmtCorePlugin.autoImport.scalafmtSettings ++ Seq(
-          scalacOptions in doc ++= Compilation.DocSettings,
-          scalacOptions in console := Compilation.ConsoleSettings,
-          resourceGenerators += Versioning.writeVersionConfig.taskValue
-        )
-      },
+      inConfig(IntegrationTest)(itSettings),
       Seq(
         /*
          * Override the top-level `test` definition to be a no-op so running "sbt test"
@@ -84,19 +104,7 @@ object ClioIntegrationTestSettings {
          * Integration tests should be explicitly run with the keys defined below,
          * or "it:test" / "it:testOnly XYZ".
          */
-        test := {},
-        /*
-         * Testcontainers registers a JVM shutdown hook to remove the containers
-         * it creates using docker-compose. Forking when running integration tests
-         * makes all containers be removed as soon as tests finish running.
-         *
-         * Forking also allows us to set environment variables for substitution
-         * in our docker-compose files.
-         */
-        fork in IntegrationTest := true,
-        envVars in IntegrationTest ++= itEnvVars.value,
-        resourceGenerators in IntegrationTest +=
-          resetLogs.map(Seq(_)).taskValue
+        test := {}
       )
     )
   }
