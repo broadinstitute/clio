@@ -8,12 +8,13 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 import com.google.common.jimfs.{Configuration, Jimfs}
 import com.sksamuel.elastic4s.Indexable
 
+import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 import java.nio.file.{FileSystem, Path}
 
 class MemoryPersistenceDAO extends PersistenceDAO {
-  var writeCalls: Seq[(_, _)] = Seq.empty
+  val writeCalls: mutable.ArrayBuffer[(_, _)] = mutable.ArrayBuffer.empty
 
   private val memFS: FileSystem =
     Jimfs.newFileSystem(Configuration.unix())
@@ -23,7 +24,7 @@ class MemoryPersistenceDAO extends PersistenceDAO {
     document: D,
     index: ElasticsearchIndex[D]
   )(implicit ec: ExecutionContext, indexable: Indexable[D]): Future[Unit] = {
-    writeCalls :+= ((document, index))
+    writeCalls += ((document, index))
     super.writeUpdate(document, index)
   }
 }

@@ -5,6 +5,7 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{Location, ServiceAccount}
 
 import com.typesafe.config.{Config, ConfigException}
+import io.circe.parser._
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 
@@ -49,7 +50,6 @@ object ClioServerConfig extends ConfigReaders {
             val bucket = persistence.as[String]("bucket")
             val jsonPath = persistence.as[Path]("service-account-json")
             val serviceAccount = {
-              import io.circe.parser._
               val jsonBlob =
                 Source.fromFile(jsonPath.toFile).mkString.stripMargin
               decode[ServiceAccount](jsonBlob).fold({ error =>
