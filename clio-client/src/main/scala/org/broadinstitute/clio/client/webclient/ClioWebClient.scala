@@ -8,6 +8,8 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.syntax._
 import ClientAutoDerivation._
+import org.broadinstitute.clio.client.util.FutureWithErrorMessage
+
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.Printer
@@ -19,11 +21,13 @@ import org.broadinstitute.clio.transfer.model.{
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.runtime.universe.{typeOf, TypeTag}
 
 class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
   implicit system: ActorSystem
 ) extends FailFastCirceSupport
-    with ModelAutoDerivation {
+    with ModelAutoDerivation
+    with FutureWithErrorMessage {
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
@@ -42,6 +46,7 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
       .single(request)
       .via(connectionFlow)
       .runWith(Sink.head)
+      .logErrorMsg("Failed to send HTTP request to Clio server")
   }
 
   def getClioServerVersion: Future[HttpResponse] = {
@@ -96,10 +101,14 @@ class ClioWebClient(clioHost: String, clioPort: Int, useHttps: Boolean)(
     )
   }
 
-  def unmarshal[A: FromEntityUnmarshaller](
+  def unmarshal[A: FromEntityUnmarshaller: TypeTag](
     httpResponse: HttpResponse
   ): Future[A] = {
-    Unmarshal(httpResponse).to[A]
+    Unmarshal(httpResponse)
+      .to[A]
+      .logErrorMsg(
+        s"Could not convert entity from $httpResponse to ${typeOf[A]}"
+      )
   }
 
   def ensureOkResponse(httpResponse: HttpResponse): HttpResponse = {

@@ -6,6 +6,8 @@ import com.sksamuel.elastic4s.mappings.FieldDefinition
 
 import scala.reflect.{ClassTag, classTag}
 
+import java.time.OffsetDateTime
+
 /**
   * An index for an Elasticsearch document.
   *
@@ -15,6 +17,18 @@ abstract class ElasticsearchIndex[Document] {
 
   /** The name of the index. */
   def indexName: String
+
+  /** The root directory to use when persisting updates of this index to storage. */
+  lazy val rootDir: String = indexName.replaceAll("_", "-")
+
+  /**
+    * The source-of-truth directory in which updates to this index should be persisted
+    * at this moment.
+    */
+  def currentPersistenceDir: String = {
+    val now = OffsetDateTime.now()
+    s"$rootDir/${now.getYear}/${now.getMonthValue}/${now.getDayOfMonth}"
+  }
 
   /**
     * The name of the index type. Always default until ES 7 when there will be no index types.

@@ -1,6 +1,9 @@
 package org.broadinstitute.clio.integrationtest.tests
 
-import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
+import org.broadinstitute.clio.integrationtest.{
+  BaseIntegrationSpec,
+  ClioBuildInfo
+}
 import org.broadinstitute.clio.status.model.{
   ServerStatusInfo,
   StatusInfo,
@@ -27,7 +30,7 @@ trait BasicTests { self: BaseIntegrationSpec =>
       response <- clioWebClient.getClioServerVersion
       versionInfo <- Unmarshal(response).to[VersionInfo]
     } yield {
-      versionInfo.version should be(System.getenv("CLIO_DOCKER_TAG"))
+      versionInfo.version should be(ClioBuildInfo.version)
     }
   }
 

@@ -61,11 +61,11 @@ class MoveWgsUbamExecutor(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
           wgsUbams.head
         case 0 =>
           throw new Exception(
-            s"No WgsUbams were found for Key($prettyKey). You can add this WgsUbam using the AddWgsUbam command in the Clio client."
+            s"No WgsUbams were found for Key($prettyKey). You can add this WgsUbam using the 'add-wgs-ubam' command in the Clio client."
           )
         case s =>
           throw new Exception(
-            s"$s WgsUbams were returned for Key($prettyKey), expected 1. You can see what was returned by running the QueryWgsUbam command in the Clio client."
+            s"$s WgsUbams were returned for Key($prettyKey), expected 1. You can see what was returned by running the 'query-wgs-ubam' command in the Clio client."
           )
 
       }

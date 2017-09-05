@@ -1,6 +1,7 @@
 // For more info on these plugins, see https://broadinstitute.atlassian.net/wiki/pages/viewpage.action?pageId=114531509
 
 val SbtAssemblyVersion = "0.14.4"
+val SbtBuildInfoVersion = "0.7.0"
 val SbtGitVersion = "0.9.3"
 val SbtDockerVersion = "1.4.1"
 val SbtScalafmtVersion = "1.9"
@@ -10,6 +11,7 @@ val Slf4jVersion = "1.7.25"
 val TypesafeConfigVersion = "1.3.1"
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % SbtAssemblyVersion)
+addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % SbtBuildInfoVersion)
 addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % SbtScalafmtVersion)
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % SbtGitVersion)
 addSbtPlugin("se.marcuslonnberg" % "sbt-docker" % SbtDockerVersion)

@@ -1,9 +1,11 @@
 package org.broadinstitute.clio.server.service
 
 import com.typesafe.scalalogging.StrictLogging
-import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
+import org.broadinstitute.clio.server.ClioApp
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
   HttpServerDAO,
+  PersistenceDAO,
   SearchDAO,
   ServerStatusDAO
 }
@@ -14,6 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class ServerService private (
   serverStatusDAO: ServerStatusDAO,
   httpServerDAO: HttpServerDAO,
+  persistenceDAO: PersistenceDAO,
   searchDAO: SearchDAO
 )(implicit executionContext: ExecutionContext)
     extends StrictLogging {
@@ -22,19 +25,6 @@ class ServerService private (
     * Kick off a startup, and return immediately.
     */
   def beginStartup(): Unit = {
-    // Simple no-op for now, illustrating how credentials can be loaded.
-    val serviceAccount = ClioServerConfig.Persistence.serviceAccount
-    serviceAccount.fold {
-      logger.warn(
-        "No GCS service account given, using local filesystem for persistence"
-      )
-    } { account =>
-      val credential = account.credentialForScopes(Seq.empty)
-      logger.info(
-        s"Using service account with email ${credential.getClientEmail}"
-      )
-    }
-
     val startupAttempt = startup()
     startupAttempt.failed foreach { exception =>
       logger.error(
@@ -71,6 +61,7 @@ class ServerService private (
   private[service] def startup(): Future[Unit] = {
     for {
       _ <- serverStatusDAO.setStatus(ServerStatusInfo.Starting)
+      _ <- persistenceDAO.initialize(ElasticsearchIndex.WgsUbam)
       _ <- searchDAO.initialize()
       _ <- httpServerDAO.startup()
       _ <- serverStatusDAO.setStatus(ServerStatusInfo.Started)
@@ -94,6 +85,11 @@ object ServerService {
   def apply(
     app: ClioApp
   )(implicit executionContext: ExecutionContext): ServerService = {
-    new ServerService(app.serverStatusDAO, app.httpServerDAO, app.searchDAO)
+    new ServerService(
+      app.serverStatusDAO,
+      app.httpServerDAO,
+      app.persistenceDAO,
+      app.searchDAO
+    )
   }
 }

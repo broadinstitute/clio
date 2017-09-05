@@ -1,18 +1,23 @@
 include "application.conf"
 
 clio.server {
-    environment: {{env "ENV"}}
+  environment: {{env "ENV"}}
 
-    http-server.port: {{env "CONTAINER_CLIO_PORT"}}
+  http-server.port: {{env "CONTAINER_CLIO_PORT"}}
 
-    persistence.service-account-json: {{env "CLIO_CONF_DIR"}}/{{env "CLIO_SERVICE_ACCOUNT_JSON"}}
+  persistence {
+    type: GCP
+    project-id: broad-gotc-{{env "ENV"}}-storage
+    bucket: broad-gotc-{{env "ENV"}}-clio
+    service-account-json: {{env "CLIO_CONF_DIR"}}/{{env "CLIO_SERVICE_ACCOUNT_JSON"}}
+  }
 
-    elasticsearch.http-hosts: [
-        {{range $i := loop 3}}
-        {
-          hostname: "elasticsearch10{{add 1 $i}}-priv.gotc-{{env "ENV"}}.broadinstitute.org",
-          port: 9200,
-          scheme: http
-        },{{end}}
-    ]
+  elasticsearch.http-hosts: [
+    {{range $i := loop 3}}
+    {
+      hostname: "elasticsearch10{{add 1 $i}}-priv.gotc-{{env "ENV"}}.broadinstitute.org",
+      port: 9200,
+      scheme: http
+    },{{end}}
+  ]
 }

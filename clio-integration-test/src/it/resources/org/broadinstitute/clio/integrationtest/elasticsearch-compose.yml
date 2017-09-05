@@ -11,7 +11,6 @@ services:
       path.logs: /usr/share/elasticsearch/logs
     volumes:
       - ${CONF_DIR}/elasticsearch-log4j2.properties:/usr/share/elasticsearch/config/log4j2.properties
-      - ${CONF_DIR}/elasticsearch-healthcheck.sh:/usr/share/elasticsearch/bin/healthcheck.sh
     ulimits:
       memlock:
         soft: -1
