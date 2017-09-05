@@ -2,9 +2,10 @@ package org.broadinstitute.clio.server
 
 import org.broadinstitute.clio.util.config.{ClioConfig, ConfigReaders}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.ServiceAccount
+import org.broadinstitute.clio.util.model.{Location, ServiceAccount}
 
-import com.typesafe.config.Config
+import com.typesafe.config.{Config, ConfigException}
+import io.circe.parser._
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
 
@@ -20,20 +21,61 @@ object ClioServerConfig extends ConfigReaders {
   private val serverConfig = ClioConfig.load.as[Config]("server")
 
   object Persistence extends ModelAutoDerivation {
-    private val persistence = serverConfig.as[Config]("persistence")
-    private val jsonPath = persistence.getAs[Path]("service-account-json")
-    lazy val serviceAccount: Option[ServiceAccount] =
-      jsonPath.map { path =>
-        import io.circe.parser._
-        val jsonBlob =
-          Source.fromFile(path.toFile).mkString.stripMargin
-        decode[ServiceAccount](jsonBlob).fold({ error =>
-          throw new RuntimeException(
-            s"Could not decode service account JSON at $path",
-            error
+
+    /**
+      * Configuration containers for each of the
+      * persistence types supported by Clio.
+      */
+    sealed trait PersistenceConfig
+    case class LocalConfig(rootDir: Option[Path]) extends PersistenceConfig
+    case class GcsConfig(projectId: String,
+                         bucket: String,
+                         account: ServiceAccount)
+        extends PersistenceConfig
+
+    private val persistence: Config =
+      serverConfig.as[Config]("persistence")
+    private val persistenceType: String = persistence.as[String]("type")
+
+    lazy val config: PersistenceConfig = {
+      Location
+        .withNameInsensitiveOption(persistenceType)
+        .flatMap {
+          case Location.OnPrem => {
+            val maybeRoot = persistence.getAs[Path]("root-dir")
+            Some(LocalConfig(maybeRoot))
+          }
+          case Location.GCP => {
+            val projectId = persistence.as[String]("project-id")
+            val bucket = persistence.as[String]("bucket")
+            val jsonPath = persistence.as[Path]("service-account-json")
+            val serviceAccount = {
+              val jsonBlob =
+                Source.fromFile(jsonPath.toFile).mkString.stripMargin
+              decode[ServiceAccount](jsonBlob).fold({ error =>
+                throw new RuntimeException(
+                  s"Could not decode service account JSON at $jsonPath",
+                  error
+                )
+              }, identity)
+            }
+            Some(GcsConfig(projectId, bucket, serviceAccount))
+          }
+          case Location.Unknown => None
+        }
+        .getOrElse {
+          val validValues =
+            Location.namesToValuesMap
+              .filterNot(_._2 == Location.Unknown)
+              .keys
+              .mkString("'", "', '", "'")
+
+          throw new ConfigException.BadValue(
+            "clio.server.persistence.type",
+            s"Given persistence type '$persistenceType', valid values are $validValues (case insensitive)"
           )
-        }, identity)
-      }
+        }
+    }
   }
 
   object HttpServer {

@@ -2,6 +2,7 @@ package org.broadinstitute.clio.integrationtest
 
 import com.lucidchart.sbt.scalafmt.ScalafmtPlugin
 import sbt._
+import sbtbuildinfo.BuildInfoPlugin
 
 /**
   * A plugin for creating an integration test task, that runs via docker.
@@ -12,7 +13,7 @@ object ClioIntegrationTestPlugin extends AutoPlugin {
    * Ensure the scalafmt plugin loads before this, so we can
    * enable it for the IntegrationTest configuration.
    */
-  override def requires: Plugins = ScalafmtPlugin
+  override def requires: Plugins = ScalafmtPlugin && BuildInfoPlugin
 
   /** Add our task to the project(s). */
   override val projectSettings: Seq[Setting[_]] =

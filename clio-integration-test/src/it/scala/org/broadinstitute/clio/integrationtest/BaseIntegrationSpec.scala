@@ -1,23 +1,29 @@
 package org.broadinstitute.clio.integrationtest
 
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
-import io.circe.Printer
+import io.circe.{Decoder, Printer}
+import io.circe.parser._
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
-import java.util.UUID
 
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import java.nio.file.{Files, Path}
+import java.util.UUID
 
 /**
   * Base class for Clio integration tests, agnostic to the location
@@ -54,6 +60,12 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   def elasticsearchUri: Uri
 
   /**
+    * Path to the root directory in which metadata updates will
+    * be persisted.
+    */
+  def rootPersistenceDir: Path
+
+  /**
     * HTTP client pointing to the elasticsearch node to test against.
     *
     * Needs to be lazy because otherwise it'll raise an
@@ -85,6 +97,28 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
   /** Get a random identifier to use as a dummy value in testing. */
   def randomId: String = UUID.randomUUID().toString.replaceAll("-", "")
+
+  /**
+    * Check that the storage path for a given Clio ID exists,
+    * load its contents as JSON, and check that the loaded ID
+    * matches the given ID.
+    */
+  def getJsonFrom[Document <: ClioDocument: Decoder](
+    index: ElasticsearchIndex[Document],
+    clioId: UUID
+  ): Document = {
+    val expectedPath =
+      rootPersistenceDir.resolve(s"${index.currentPersistenceDir}/$clioId.json")
+
+    Files.exists(expectedPath) should be(true)
+    val document = parse(new String(Files.readAllBytes(expectedPath)))
+      .flatMap(_.as[Document])
+      .toTry
+      .get
+
+    document.clioId should be(clioId)
+    document
+  }
 
   /** Shut down the actor system at the end of the suite. */
   override protected def afterAll(): Unit = {

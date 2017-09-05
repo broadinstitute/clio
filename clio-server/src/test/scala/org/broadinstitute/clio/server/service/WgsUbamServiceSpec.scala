@@ -2,7 +2,10 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
+import org.broadinstitute.clio.server.dataaccess.{
+  MemoryPersistenceDAO,
+  MemorySearchDAO
+}
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
@@ -34,7 +37,8 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
     val memorySearchDAO = new MemorySearchDAO()
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val searchService = SearchService(app)
-    val wgsUbamService = new WgsUbamService(searchService)
+    val persistenceService = PersistenceService(app)
+    val wgsUbamService = new WgsUbamService(persistenceService, searchService)
 
     val transferInputMapper =
       new CaseClassMapper[TransferWgsUbamV1QueryInput]
@@ -54,10 +58,15 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
     documentStatus: Option[DocumentStatus],
     expectedDocumentStatus: Option[DocumentStatus]
   ) = {
+    val memoryPersistenceDAO = new MemoryPersistenceDAO()
     val memorySearchDAO = new MemorySearchDAO()
-    val app = MockClioApp(searchDAO = memorySearchDAO)
+    val app = MockClioApp(
+      searchDAO = memorySearchDAO,
+      persistenceDAO = memoryPersistenceDAO
+    )
     val searchService = SearchService(app)
-    val wgsUbamService = new WgsUbamService(searchService)
+    val persistenceService = PersistenceService(app)
+    val wgsUbamService = new WgsUbamService(persistenceService, searchService)
 
     val transferKey =
       TransferWgsUbamV1Key("barcode1", 2, "library3", Location.GCP)
@@ -84,6 +93,9 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
         )
         .copy(clioId = returnedClioId)
 
+      memoryPersistenceDAO.writeCalls should be(
+        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
+      )
       memorySearchDAO.updateCalls should be(
         Seq(
           (

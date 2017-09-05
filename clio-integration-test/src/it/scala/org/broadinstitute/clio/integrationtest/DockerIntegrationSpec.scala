@@ -10,7 +10,7 @@ import com.dimafeng.testcontainers.ForAllTestContainer
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import java.io.File
-import java.nio.file.FileSystems
+import java.nio.file.{FileSystems, Path, Paths}
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
@@ -60,6 +60,10 @@ class DockerIntegrationSpec
     "dummy-token"
   )
 
+  // SBT sets a local path for persisting metadata updates.
+  override val rootPersistenceDir: Path =
+    Paths.get(ClioBuildInfo.persistenceDir)
+
   override def beforeAll(): Unit = {
     super.beforeAll()
 
@@ -69,7 +73,7 @@ class DockerIntegrationSpec
      */
     val fs = FileSystems.getDefault
     val clioLogLines: Source[String, NotUsed] = FileTailSource.lines(
-      path = fs.getPath(sys.env("CLIO_LOG_FILE")),
+      path = fs.getPath(ClioBuildInfo.clioLog),
       maxLineSize = 8192,
       pollingInterval = 250.millis
     )
