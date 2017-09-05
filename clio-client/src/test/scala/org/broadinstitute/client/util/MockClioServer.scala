@@ -1,5 +1,6 @@
 package org.broadinstitute.client.util
 
+import org.broadinstitute.clio.client.util.TestData
 import org.broadinstitute.clio.status.model.{
   ServerStatusInfo,
   StatusInfo,

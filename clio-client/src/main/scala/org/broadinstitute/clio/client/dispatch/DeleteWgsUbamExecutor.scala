@@ -28,7 +28,6 @@ class DeleteWgsUbamExecutor(deleteWgsUbam: DeleteWgsUbam) extends Executor {
     if (!deleteWgsUbam.transferWgsUbamV1Key.location.equals(Location.GCP)) {
       Future
         .failed(new Exception("Only GCP WgsUbams are supported at this time"))
-        .logErrorMsg()
     } else {
       for {
         queryResponses <- webClient
@@ -96,7 +95,6 @@ class DeleteWgsUbamExecutor(deleteWgsUbam: DeleteWgsUbam) extends Executor {
             case Success(httpResponse) => Future.successful(Right(httpResponse))
             case Failure(ex)           => Future.successful(Left(ex))
           }
-          .logErrorMsg()
       )
       Future.foldLeft(deleteFutures)(Seq.empty[HttpResponse])((acc, cur) => {
         cur match {

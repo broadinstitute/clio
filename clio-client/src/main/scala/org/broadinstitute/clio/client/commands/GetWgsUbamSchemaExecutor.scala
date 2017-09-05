@@ -1,4 +1,6 @@
 package org.broadinstitute.clio.client.commands
+
+import org.broadinstitute.clio.client.dispatch.Executor
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 

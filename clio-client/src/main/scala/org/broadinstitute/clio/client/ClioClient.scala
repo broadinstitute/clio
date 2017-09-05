@@ -27,7 +27,7 @@ import scala.util.{Failure, Success}
   *   2. Exiting the program with appropriate return
   *      codes.
   */
-object ClioClient {
+object ClioClient extends LazyLogging {
 
   /**
     * Model representing termination of the client before
@@ -75,7 +75,10 @@ object ClioClient {
       )
       .onComplete {
         case Success(_) => sys.exit(0)
-        case Failure(_) => sys.exit(1)
+        case Failure(ex) => {
+          logger.error("Failed to execute command", ex)
+          sys.exit(1)
+        }
       }
   }
 }
@@ -107,10 +110,6 @@ class ClioClient(webClient: ClioWebClient,
     extends LazyLogging {
   import ClioClient.{EarlyReturn, ParsingError, UsageOrHelpAsked}
 
-  val progName: String = ClioClient.progName
-  val appName: String = "Clio Client"
-  val appVersion: String = ClioClientConfig.Version.value
-
   /**
     * Common option messages, updated to include our program
     * name and version info.
@@ -120,15 +119,15 @@ class ClioClient(webClient: ClioWebClient,
     */
   private val beforeCommandMessages: Messages[CommonOptions] =
     CommonOptions.messages.copy(
-      appName = appName,
-      appVersion = appVersion,
-      progName = progName,
-      optionsDesc = s"[options] [command] [command-options]"
+      appName = "Clio Client",
+      appVersion = ClioClientConfig.Version.value,
+      progName = ClioClient.progName,
+      optionsDesc = "[options] [command] [command-options]"
     )
 
   /** Names of all valid sub-commands. */
   private val commands: Seq[String] =
-    ClioCommand.messages.messages.map(_._1)
+    ClioCommand.messages.messagesMap.keys.toSeq
 
   /** Top-level help message to display on --help. */
   private val helpMessage: String =
@@ -169,12 +168,11 @@ class ClioClient(webClient: ClioWebClient,
   /**
     * The client's entry point.
     *
-    * Note: this can't be named `main` because if it is, the
-    * compiler will try to be helpful and generate a forwarder
-    * method also named `main` in the companion object that will
-    * do nothing but call this method (allowing this class to serve
-    * as a main entry-point), conflicting with the main method
-    * already present in the companion object.
+    * Note: this can't be named `main` because if it is, the compiler will
+    * try to be helpful and generate a forwarder method also named `main`
+    * in the companion object that will do nothing but call this method
+    * (allowing this class to serve as a top-level entry-point), conflicting
+    * with the main method already present in the companion object.
     */
   def instanceMain(
     args: Array[String]

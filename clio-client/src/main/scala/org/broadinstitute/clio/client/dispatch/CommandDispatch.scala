@@ -51,11 +51,11 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
           )
           responseFuture
         } else {
-          logger.error(
-            s"Error executing command." +
-              s" Response code: ${response.status}"
+          Future.failed(
+            new Exception(
+              s"The call to Clio was unsuccessful. Response code: ${response.status}"
+            )
           )
-          Future.failed(new Exception("The call to Clio was unsuccessful"))
         }
       case Failure(ex) => Future.failed(ex)
     }
