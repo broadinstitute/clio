@@ -10,9 +10,18 @@ import java.nio.file.{Files, Path}
   */
 class LocalFilePersistenceDAO(config: Persistence.LocalConfig)
     extends PersistenceDAO {
+
   override lazy val rootPath: Path = config.rootDir.getOrElse {
     val dir = Files.createTempDirectory("clio-persistence").toFile
     dir.deleteOnExit()
     dir.toPath
+  }
+
+  override def checkRoot(): Unit = {
+    if (!Files.isDirectory(rootPath)) {
+      sys.error(s"Local path $rootPath is not a directory, aborting!")
+    } else if (!Files.isWritable(rootPath)) {
+      sys.error(s"Local path $rootPath is not writeable, aborting!")
+    }
   }
 }

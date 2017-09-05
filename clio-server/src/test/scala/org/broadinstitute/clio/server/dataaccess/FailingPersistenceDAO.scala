@@ -14,6 +14,7 @@ class FailingPersistenceDAO extends PersistenceDAO {
   val ex = new Exception("Tried to use failing persistence DAO")
 
   override def rootPath: Path = throw ex
+  override def checkRoot(): Unit = throw ex
 
   override def writeUpdate[D <: ClioDocument](
     document: D,

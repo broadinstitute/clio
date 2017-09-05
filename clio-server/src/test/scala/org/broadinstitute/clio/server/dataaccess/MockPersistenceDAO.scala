@@ -12,6 +12,7 @@ import java.nio.file.{Path, Paths}
 
 class MockPersistenceDAO extends PersistenceDAO {
   override def rootPath: Path = Paths.get("/")
+  override def checkRoot(): Unit = ()
 
   override def initialize(
     indexes: ElasticsearchIndex[_]*

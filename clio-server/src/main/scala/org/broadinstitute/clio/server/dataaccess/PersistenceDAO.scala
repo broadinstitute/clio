@@ -28,11 +28,23 @@ trait PersistenceDAO extends LazyLogging {
   def rootPath: Path
 
   /**
+    * Filesystem-specific check to run at startup to
+    * ensure the root persistence path is writeable.
+    *
+    * Should throw an exception if the persistence path
+    * cannot be used by the server.
+    */
+  def checkRoot(): Unit
+
+  /**
     * Initialize the root storage directories for Clio documents.
     */
   def initialize(
     indexes: ElasticsearchIndex[_]*
   )(implicit ec: ExecutionContext): Future[Unit] = Future {
+    // Make sure the rootPath can actually be used.
+    checkRoot()
+
     // Since we log out the URI, the message will indicate if we're writing
     // to local disk vs. to cloud storage.
     logger.info(s"Initializing persistence storage at ${rootPath.toUri}")
