@@ -10,6 +10,7 @@ import java.nio.file.{Files, Path}
   */
 class LocalFilePersistenceDAO(config: Persistence.LocalConfig)
     extends PersistenceDAO {
+
   override lazy val rootPath: Path = config.rootDir.getOrElse {
     val dir = Files.createTempDirectory("clio-persistence").toFile
     dir.deleteOnExit()
