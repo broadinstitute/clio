@@ -1,16 +1,17 @@
-package org.broadinstitute.client.commands
+package org.broadinstitute.clio.client.dispatch
 
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import org.broadinstitute.client.BaseClientSpec
-import org.broadinstitute.client.util.MockIoUtil
-import org.broadinstitute.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.client.commands.{CommandDispatch, DeleteWgsUbam}
+import org.broadinstitute.clio.client.BaseClientSpec
+import org.broadinstitute.clio.client.commands.DeleteWgsUbam
+import org.broadinstitute.clio.client.util.MockIoUtil
+import org.broadinstitute.clio.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata
 }
 import org.broadinstitute.clio.util.model.Location
+
+import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 class DeleteWgsUbamSpec extends BaseClientSpec {
   behavior of "DeleteWgsUbam"

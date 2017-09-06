@@ -1,6 +1,6 @@
 package org.broadinstitute.client.commands
 
-import org.broadinstitute.client.BaseClientSpec
+import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.GetWgsUbamSchema
 
 import akka.http.scaladsl.model.StatusCodes

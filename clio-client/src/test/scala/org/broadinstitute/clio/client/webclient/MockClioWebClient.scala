@@ -1,12 +1,7 @@
-package org.broadinstitute.client.webclient
+package org.broadinstitute.clio.client.webclient
 
-import akka.http.scaladsl.model._
-import io.circe.{Json, Printer}
-import io.circe.parser.parse
-import org.broadinstitute.client.util.TestData
-import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.util.{IoUtil, TestData}
 import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
-import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
@@ -15,7 +10,10 @@ import org.broadinstitute.clio.transfer.model.{
 import org.broadinstitute.clio.util.json.JsonSchemas
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import io.circe.{Json, Printer}
+import io.circe.parser.parse
 
 import scala.concurrent.Future
 

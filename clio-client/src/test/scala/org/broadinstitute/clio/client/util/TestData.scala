@@ -1,12 +1,6 @@
-package org.broadinstitute.client.util
+package org.broadinstitute.clio.client.util
 
-import org.broadinstitute.clio.client.commands.{
-  AddWgsUbam,
-  DeleteWgsUbam,
-  MoveWgsUbam,
-  QueryWgsUbam
-}
-import org.broadinstitute.clio.client.commands.Commands.CommonOptions
+import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,

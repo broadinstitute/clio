@@ -1,9 +1,10 @@
-package org.broadinstitute.client.commands
+package org.broadinstitute.clio.client.dispatch
+
+import org.broadinstitute.clio.client.BaseClientSpec
+import org.broadinstitute.clio.client.commands.AddWgsUbam
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import org.broadinstitute.client.BaseClientSpec
-import org.broadinstitute.clio.client.commands.AddWgsUbam
 
 class AddWgsUbamSpec extends BaseClientSpec {
   behavior of "AddWgsUbam"
