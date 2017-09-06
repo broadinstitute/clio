@@ -12,9 +12,7 @@ import caseapp.core.{Messages, Parser}
   * names will be treated as long options. It's possible
   * to change this behavior through annotations.
   */
-final case class CommonOptions(
-  bearerToken: Option[OAuth2BearerToken] = None
-)
+final case class CommonOptions(bearerToken: Option[OAuth2BearerToken] = None)
 
 object CommonOptions extends ClioParsers {
 

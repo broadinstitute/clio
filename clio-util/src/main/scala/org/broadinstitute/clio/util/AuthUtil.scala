@@ -3,13 +3,12 @@ package org.broadinstitute.clio.util
 import java.nio.file.Path
 
 import com.google.auth.oauth2.GoogleCredentials
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.parser.decode
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.ServiceAccount
 import scala.io.Source
 
-object AuthUtil extends ModelAutoDerivation with ErrorAccumulatingCirceSupport {
+object AuthUtil extends ModelAutoDerivation {
 
   /** Scopes needed from Google to get past Clio's auth proxy. */
   private val authScopes = Seq(
