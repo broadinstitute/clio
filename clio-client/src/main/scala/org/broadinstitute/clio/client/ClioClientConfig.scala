@@ -22,10 +22,7 @@ object ClioClientConfig extends ConfigReaders {
 
   // This has to be checked for null since Config can't handle nulls
   val serviceAccountJson: Option[Path] =
-    if (clientConfig.getIsNull("service-account-json"))
-      None
-    else
-      Some(clientConfig.as[Path]("service-account-json"))
+    clientConfig.getAs[Path]("service-account-json")
 
   object Version {
     val value: String = config.as[String]("client.version")
