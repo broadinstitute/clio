@@ -22,7 +22,6 @@ object AuthUtil extends ModelAutoDerivation {
     * Get google credentials either from the service account json or
     * from the user's default setup.
     * @param serviceAccountPath Option of path to the service account json
-    * @return
     */
   def getAccessToken(serviceAccountPath: Option[Path]): AccessToken = {
     serviceAccountPath
@@ -30,15 +29,12 @@ object AuthUtil extends ModelAutoDerivation {
         loadServiceAccountJson(jsonPath)
       }
       .map(getCredsFromServiceAccount)
-      .orElse {
-        Option(
+      .getOrElse {
           new AccessToken(
             Process("gcloud auth print-access-token").!!.trim,
             null
           )
-        )
       }
-      .getOrElse(throw new RuntimeException("Could not get bearer token"))
   }
 
   def loadServiceAccountJson(serviceAccountPath: Path): ServiceAccount = {
