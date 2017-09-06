@@ -2,11 +2,13 @@ package org.broadinstitute.clio.util
 
 import java.nio.file.Path
 
-import com.google.auth.oauth2.GoogleCredentials
+import com.google.auth.oauth2.AccessToken
 import io.circe.parser.decode
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.ServiceAccount
+
 import scala.io.Source
+import scala.sys.process.Process
 
 object AuthUtil extends ModelAutoDerivation {
 
@@ -22,16 +24,19 @@ object AuthUtil extends ModelAutoDerivation {
     * @param serviceAccountPath Option of path to the service account json
     * @return
     */
-  def getGoogleCredentials(
-    serviceAccountPath: Option[Path]
-  ): GoogleCredentials = {
+  def getAccessToken(serviceAccountPath: Option[Path]): AccessToken = {
     serviceAccountPath
       .map { jsonPath =>
         loadServiceAccountJson(jsonPath)
       }
       .map(getCredsFromServiceAccount)
       .orElse {
-        Option(GoogleCredentials.getApplicationDefault)
+        Option(
+          new AccessToken(
+            Process("gcloud auth print-access-token").!!.trim,
+            null
+          )
+        )
       }
       .getOrElse(throw new RuntimeException("Could not get bearer token"))
   }
@@ -47,10 +52,8 @@ object AuthUtil extends ModelAutoDerivation {
     }, identity)
   }
 
-  def getCredsFromServiceAccount(
-    serviceAccount: ServiceAccount
-  ): GoogleCredentials = {
+  def getCredsFromServiceAccount(serviceAccount: ServiceAccount): AccessToken = {
     val creds = serviceAccount.credentialForScopes(authScopes)
-    new GoogleCredentials(creds.refreshAccessToken())
+    creds.refreshAccessToken()
   }
 }

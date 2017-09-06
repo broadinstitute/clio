@@ -250,8 +250,7 @@ class ClioClient(webClient: ClioWebClient,
         .getOrElse {
           OAuth2BearerToken(
             AuthUtil
-              .getGoogleCredentials(ClioClientConfig.serviceAccountJson)
-              .getAccessToken
+              .getAccessToken(ClioClientConfig.serviceAccountJson)
               .getTokenValue
           )
         }

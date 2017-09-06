@@ -98,7 +98,6 @@ abstract class EnvIntegrationSpec(env: String)
     OAuth2BearerToken(
       AuthUtil
         .getCredsFromServiceAccount(serviceAccount)
-        .getAccessToken
         .getTokenValue
     )
 
