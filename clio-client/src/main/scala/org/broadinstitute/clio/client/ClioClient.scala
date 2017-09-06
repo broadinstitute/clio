@@ -176,20 +176,17 @@ class ClioClient(webClient: ClioWebClient,
     val maybeParse =
       ClioCommand.parser.withHelp
         .detailedParse(args)(CommonOptions.parser.withHelp)
-        .left
-        .map(ParsingError.apply)
 
-    maybeParse.flatMap {
+    wrapError(maybeParse).flatMap {
       case (commonParse, commonArgs, maybeCommandParse) => {
         for {
           _ <- messageIfAsked(helpMessage, commonParse.help)
           _ <- messageIfAsked(usageMessage, commonParse.usage)
-          commonOpts <- commonParse.baseOrError.left.map(ParsingError.apply)
+          commonOpts <- wrapError(commonParse.baseOrError)
           _ <- checkRemainingArgs(commonArgs)
           response <- maybeCommandParse
             .map { commandParse =>
-              commandParse.left
-                .map(ParsingError.apply)
+              wrapError(commandParse)
                 .flatMap(commandMain(commonOpts, _))
             }
             .getOrElse(Left(ParsingError(usageMessage)))
@@ -201,16 +198,20 @@ class ClioClient(webClient: ClioWebClient,
   }
 
   /**
+    * Utility for wrapping a parsing error in our type infrastructure,
+    * for cleaner use in for-comprehensions.
+    */
+  private def wrapError[X](either: Either[String, X]): Either[EarlyReturn, X] = {
+    either.left.map(ParsingError.apply)
+  }
+
+  /**
     * Utility for wrapping a help / usage message in our type
     * infrastructure, for cleaner use in for-comprehensions.
     */
   private def messageIfAsked(message: String,
                              asked: Boolean): Either[EarlyReturn, Unit] = {
-    if (asked) {
-      Left(UsageOrHelpAsked(message))
-    } else {
-      Right(())
-    }
+    Either.cond(!asked, (), UsageOrHelpAsked(message))
   }
 
   /**
@@ -242,7 +243,7 @@ class ClioClient(webClient: ClioWebClient,
     for {
       _ <- messageIfAsked(commandHelp(commandName), commandParse.help)
       _ <- messageIfAsked(commandUsage(commandName), commandParse.usage)
-      command <- commandParse.baseOrError.left.map(ParsingError.apply)
+      command <- wrapError(commandParse.baseOrError)
       _ <- checkRemainingArgs(args ++ args0)
     } yield {
       implicit val bearerToken: OAuth2BearerToken = commonOpts.bearerToken

@@ -39,7 +39,7 @@ trait ClioParsers {
     }
   }
 
-  implicit val UUIDParser: ArgParser[UUID] = {
+  implicit val uuidParser: ArgParser[UUID] = {
     ArgParser.instance[UUID]("uuid") { uuid =>
       Try(UUID.fromString(uuid)) match {
         case Success(value)     => Right(value)
