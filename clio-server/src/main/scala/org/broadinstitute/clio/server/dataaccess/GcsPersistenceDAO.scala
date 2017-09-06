@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
 
 import com.google.cloud.storage.contrib.nio.{
@@ -9,7 +8,7 @@ import com.google.cloud.storage.contrib.nio.{
 }
 import com.google.cloud.storage.StorageOptions
 
-import java.nio.file.{FileSystem, Files, NoSuchFileException, Path}
+import java.nio.file.{FileSystem, Path}
 
 /**
   * Persistence DAO which writes to GCS.
@@ -35,23 +34,6 @@ class GcsPersistenceDAO(gcsConfig: Persistence.GcsConfig)
     )
 
   override lazy val rootPath: Path = gcs.getPath("/")
-
-  override def checkRoot(): Unit = {
-    val versionPath = rootPath.resolve(GcsPersistenceDAO.versionFileName)
-    try {
-      val versionFile =
-        Files.write(versionPath, ClioServerConfig.Version.value.getBytes)
-      logger.debug(s"Wrote current Clio version to ${versionFile.toUri}")
-    } catch {
-      case e: NoSuchFileException => {
-        throw new RuntimeException(
-          s"Couldn't write Clio version to GCS at $versionPath, aborting!",
-          e
-        )
-      }
-    }
-
-  }
 }
 
 object GcsPersistenceDAO {
@@ -62,14 +44,4 @@ object GcsPersistenceDAO {
   val storageScopes: Seq[String] = Seq(
     "https://www.googleapis.com/auth/devstorage.read_write"
   )
-
-  /**
-    * Name of the dummy file that Clio will write to the root of its configured
-    * GCS bucket at startup, to ensure the given config is good.
-    *
-    * We have to write a dummy file because the google-cloud-nio adapter assumes
-    * that all directories exist and are writeable by design, since directories
-    * aren't really a thing in GCS.
-    */
-  val versionFileName = "current-clio-version.txt"
 }

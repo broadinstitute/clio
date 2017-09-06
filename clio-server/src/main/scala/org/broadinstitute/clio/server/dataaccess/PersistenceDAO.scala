@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
@@ -28,22 +29,25 @@ trait PersistenceDAO extends LazyLogging {
   def rootPath: Path
 
   /**
-    * Filesystem-specific check to run at startup to
-    * ensure the root persistence path is writeable.
-    *
-    * Should throw an exception if the persistence path
-    * cannot be used by the server.
-    */
-  def checkRoot(): Unit
-
-  /**
     * Initialize the root storage directories for Clio documents.
     */
   def initialize(
     indexes: ElasticsearchIndex[_]*
   )(implicit ec: ExecutionContext): Future[Unit] = Future {
     // Make sure the rootPath can actually be used.
-    checkRoot()
+    val versionPath = rootPath.resolve(PersistenceDAO.versionFileName)
+    try {
+      val versionFile =
+        Files.write(versionPath, ClioServerConfig.Version.value.getBytes)
+      logger.debug(s"Wrote current Clio version to ${versionFile.toUri}")
+    } catch {
+      case e: Exception => {
+        throw new RuntimeException(
+          s"Couldn't write Clio version to ${versionPath.toUri}, aborting!",
+          e
+        )
+      }
+    }
 
     // Since we log out the URI, the message will indicate if we're writing
     // to local disk vs. to cloud storage.
@@ -77,6 +81,18 @@ trait PersistenceDAO extends LazyLogging {
 }
 
 object PersistenceDAO {
+
+  /**
+    * Name of the dummy file that Clio will write to the root of its configured
+    * storage directory at startup, to ensure the given config is good.
+    *
+    * We have to write a dummy file for GCS because the google-cloud-nio adapter
+    * assumes all directories exist and are writeable by design, since directories
+    * aren't really a thing in GCS. We could special-case the local-file DAO but
+    * the extra complexity isn't worth it.
+    */
+  val versionFileName = "current-clio-version.txt"
+
   def apply(config: Persistence.PersistenceConfig): PersistenceDAO =
     config match {
       case l: Persistence.LocalConfig => {

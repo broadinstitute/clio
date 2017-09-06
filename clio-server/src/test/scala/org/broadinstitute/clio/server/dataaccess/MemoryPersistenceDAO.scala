@@ -19,7 +19,6 @@ class MemoryPersistenceDAO extends PersistenceDAO {
   private val memFS: FileSystem =
     Jimfs.newFileSystem(Configuration.unix())
   override val rootPath: Path = memFS.getPath("/")
-  override def checkRoot(): Unit = ()
 
   override def writeUpdate[D <: ClioDocument](
     document: D,

@@ -16,12 +16,4 @@ class LocalFilePersistenceDAO(config: Persistence.LocalConfig)
     dir.deleteOnExit()
     dir.toPath
   }
-
-  override def checkRoot(): Unit = {
-    if (!Files.isDirectory(rootPath)) {
-      sys.error(s"Local path $rootPath is not a directory, aborting!")
-    } else if (!Files.isWritable(rootPath)) {
-      sys.error(s"Local path $rootPath is not writeable, aborting!")
-    }
-  }
 }
