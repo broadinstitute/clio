@@ -21,20 +21,17 @@ object AuthUtil extends ModelAutoDerivation {
   /**
     * Get google credentials either from the service account json or
     * from the user's default setup.
+    *
     * @param serviceAccountPath Option of path to the service account json
     */
   def getAccessToken(serviceAccountPath: Option[Path]): AccessToken = {
     serviceAccountPath
       .map { jsonPath =>
         loadServiceAccountJson(jsonPath)
-      }
-      .map(getCredsFromServiceAccount)
-      .getOrElse {
-          new AccessToken(
-            Process("gcloud auth print-access-token").!!.trim,
-            null
-          )
-      }
+      }.fold(new AccessToken(
+      Process("gcloud auth print-access-token").!!.trim,
+      null
+    ))(getCredsFromServiceAccount)
   }
 
   def loadServiceAccountJson(serviceAccountPath: Path): ServiceAccount = {
