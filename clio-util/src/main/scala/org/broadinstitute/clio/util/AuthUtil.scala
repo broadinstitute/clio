@@ -1,13 +1,13 @@
 package org.broadinstitute.clio.util
 
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import java.nio.file.Path
+
+import com.google.auth.oauth2.GoogleCredentials
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import io.circe.parser.decode
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.ServiceAccount
-
 import scala.io.Source
-import scala.sys.process.Process
 
 object AuthUtil extends ModelAutoDerivation with ErrorAccumulatingCirceSupport {
 
@@ -17,28 +17,41 @@ object AuthUtil extends ModelAutoDerivation with ErrorAccumulatingCirceSupport {
     "https://www.googleapis.com/auth/userinfo.email"
   )
 
-  def getBearerToken(serviceAccountPath: Option[String]): OAuth2BearerToken = {
+  /**
+    * Get google credentials either from the service account json or
+    * from the user's default setup.
+    * @param serviceAccountPath Option of path to the service account json
+    * @return
+    */
+  def getGoogleCredentials(
+    serviceAccountPath: Option[Path]
+  ): GoogleCredentials = {
     serviceAccountPath
       .map { jsonPath =>
-        Source.fromFile(jsonPath).getLines.mkString.stripMargin
+        loadServiceAccountJson(jsonPath)
       }
-      .map { jsonBlob =>
-        decode[ServiceAccount](jsonBlob).fold({ error =>
-          throw new RuntimeException(error)
-        }, identity)
-      }
-      .map(getBearerTokenFromServiceAccount)
+      .map(getCredsFromServiceAccount)
       .orElse {
-        Option(OAuth2BearerToken(Process("gcloud auth print-access-token").!!.trim))
+        Option(GoogleCredentials.getApplicationDefault)
       }
       .getOrElse(throw new RuntimeException("Could not get bearer token"))
   }
 
-  def getBearerTokenFromServiceAccount(
-    serviceAccount: ServiceAccount
-  ): OAuth2BearerToken = {
-    val creds = serviceAccount.credentialForScopes(authScopes)
-    OAuth2BearerToken(creds.refreshAccessToken().getTokenValue)
+  def loadServiceAccountJson(serviceAccountPath: Path): ServiceAccount = {
+    val jsonBlob =
+      Source.fromFile(serviceAccountPath.toFile).mkString.stripMargin
+    decode[ServiceAccount](jsonBlob).fold({ error =>
+      throw new RuntimeException(
+        s"Could not decode service account JSON at $serviceAccountPath",
+        error
+      )
+    }, identity)
+  }
 
+  def getCredsFromServiceAccount(
+    serviceAccount: ServiceAccount
+  ): GoogleCredentials = {
+    val creds = serviceAccount.credentialForScopes(authScopes)
+    new GoogleCredentials(creds.refreshAccessToken())
   }
 }

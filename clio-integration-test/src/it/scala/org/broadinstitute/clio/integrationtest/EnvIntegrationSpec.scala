@@ -95,7 +95,12 @@ abstract class EnvIntegrationSpec(env: String)
   }
 
   override lazy implicit val bearerToken: OAuth2BearerToken =
-    AuthUtil.getBearerTokenFromServiceAccount(serviceAccount)
+    OAuth2BearerToken(
+      AuthUtil
+        .getCredsFromServiceAccount(serviceAccount)
+        .getAccessToken
+        .getTokenValue
+    )
 
   override lazy val rootPersistenceDir: Path = {
     val storageOptions = StorageOptions

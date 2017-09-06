@@ -111,7 +111,6 @@ object Dependencies {
     "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.typesafe" % "config" % TypesafeConfigVersion,
-    "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,

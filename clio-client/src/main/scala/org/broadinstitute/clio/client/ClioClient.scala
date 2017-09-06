@@ -9,6 +9,7 @@ import org.broadinstitute.clio.client.commands.{CommandDispatch, CommandType}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.AuthUtil
+
 import scala.util.{Failure, Success}
 
 object ClioClient
@@ -55,7 +56,14 @@ object ClioClient
     checkRemainingArgs(remainingArgs.args)
 
     implicit val bearerToken: OAuth2BearerToken = commonOptions.bearerToken
-      .getOrElse(AuthUtil.getBearerToken(ClioClientConfig.serviceAccountJson))
+      .getOrElse {
+        OAuth2BearerToken(
+          AuthUtil
+            .getGoogleCredentials(ClioClientConfig.serviceAccountJson)
+            .getAccessToken
+            .getTokenValue
+        )
+      }
 
     val commandDispatch = new CommandDispatch(webClient, IoUtil)
 
