@@ -1,10 +1,8 @@
 package org.broadinstitute.client.webclient
 
-import org.broadinstitute.client.BaseClientSpec
 import org.broadinstitute.client.util.MockClioServer
+import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-
-import scala.concurrent.TimeoutException
 
 class ClioWebClientSpec extends BaseClientSpec {
   behavior of "ClioWebClient"
@@ -25,7 +23,7 @@ class ClioWebClientSpec extends BaseClientSpec {
     val client =
       new ClioWebClient("localhost", testServerPort, false, testRequestTimeout)
 
-    recoverToSucceededIf[TimeoutException] {
+    recoverToSucceededIf[Exception] {
       client.getClioServerHealth
     }
   }

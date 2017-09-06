@@ -1,17 +1,17 @@
-package org.broadinstitute.client
+package org.broadinstitute.clio.client.commands
+
+import org.broadinstitute.clio.client.BaseClientSpec
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.client.ClioClient
-import org.broadinstitute.clio.client.commands.QueryWgsUbam
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+class ParsersSpec extends BaseClientSpec {
 
-class ArgParserSpec extends BaseClientSpec {
+  private def parse(args: Array[String]) =
+    ClioCommand.parser.detailedParse(args)(CommonOptions.parser)
 
   it should "properly parse a Location type " in {
-    val parsed = ClioClient.commandParser.detailedParse(
-      Array("query-wgs-ubam", "--location", testLocation)
-    )(ClioClient.beforeCommandParser)
+    val parsed = parse(Array("query-wgs-ubam", "--location", testLocation))
     val location: Option[Location] = (parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
@@ -29,9 +29,7 @@ class ArgParserSpec extends BaseClientSpec {
   }
 
   it should "throw an exception when given an invalid Location type" in {
-    val parsed = ClioClient.commandParser.detailedParse(
-      Array("query-wgs-ubam", "--location", "BadValue")
-    )(ClioClient.beforeCommandParser)
+    val parsed = parse(Array("query-wgs-ubam", "--location", "BadValue"))
     val errorMessage = parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
@@ -52,9 +50,9 @@ class ArgParserSpec extends BaseClientSpec {
   }
 
   it should "properly parse a DocumentStatus type" in {
-    val parsed = ClioClient.commandParser.detailedParse(
+    val parsed = parse(
       Array("query-wgs-ubam", "--document-status", testDocumentStatus.toString)
-    )(ClioClient.beforeCommandParser)
+    )
     val docStatus: Option[DocumentStatus] = (parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
@@ -71,9 +69,9 @@ class ArgParserSpec extends BaseClientSpec {
   }
 
   it should "properly parse an OffsetDateTime string" in {
-    val parsed = ClioClient.commandParser.detailedParse(
+    val parsed = parse(
       Array("query-wgs-ubam", "--run-date-start", testRunDateStart.toString)
-    )(ClioClient.beforeCommandParser)
+    )
     val runDateStart: Option[OffsetDateTime] = (parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
@@ -90,9 +88,8 @@ class ArgParserSpec extends BaseClientSpec {
   }
 
   it should "properly parse a string into a bearerToken" in {
-    val parsed = ClioClient.commandParser.detailedParse(
-      Array("--bearer-token", testBearer.token, "query-wgs-ubam")
-    )(ClioClient.beforeCommandParser)
+    val parsed =
+      parse(Array("--bearer-token", testBearer.token, "query-wgs-ubam"))
     val bearerToken = parsed match {
       case Right((common, _, _)) => common.bearerToken
       case Left(_)               => fail("Could not parse outer command")

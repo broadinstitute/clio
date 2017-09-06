@@ -1,6 +1,5 @@
-package org.broadinstitute.client.util
+package org.broadinstitute.clio.client.util
 
-import org.broadinstitute.clio.client.util.IoUtil
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
 //test the non-gs portions of io util

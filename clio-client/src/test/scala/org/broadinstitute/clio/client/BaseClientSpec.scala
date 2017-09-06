@@ -1,12 +1,11 @@
-package org.broadinstitute.client
+package org.broadinstitute.clio.client
 
-import org.broadinstitute.client.util.{MockIoUtil, TestData}
+import org.broadinstitute.clio.client.dispatch.CommandDispatch
+import org.broadinstitute.clio.client.util.{MockIoUtil, TestData}
+import org.broadinstitute.clio.client.webclient.MockClioWebClient
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import org.broadinstitute.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.client.commands.CommandDispatch
-
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 abstract class BaseClientSpec
