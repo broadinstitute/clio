@@ -25,6 +25,9 @@ import shapeless.CNil
   */
 sealed trait ClioCommand
 
+case object GetServerHealth extends ClioCommand
+case object GetServerVersion extends ClioCommand
+
 case object GetWgsUbamSchema extends ClioCommand
 
 final case class AddWgsUbam(metadataLocation: String,
@@ -33,6 +36,7 @@ final case class AddWgsUbam(metadataLocation: String,
 
 final case class QueryWgsUbam(
   @Recurse transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput,
+  includeDeleted: Boolean = false
 ) extends ClioCommand
 
 final case class MoveWgsUbam(

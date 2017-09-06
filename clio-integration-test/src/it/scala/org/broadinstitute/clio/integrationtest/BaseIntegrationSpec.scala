@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.integrationtest
 
-import org.broadinstitute.clio.client.ClioClientConfig
+import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.{ClioClient, ClioClientConfig}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
@@ -17,12 +18,18 @@ import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
-import io.circe.{Decoder, Printer}
+import io.circe.{Decoder, Encoder, Printer}
 import io.circe.parser._
+import io.circe.syntax._
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
-import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
+import org.scalatest.{
+  AsyncFlatSpecLike,
+  BeforeAndAfterAll,
+  Matchers
+}
 
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 import java.nio.file.{Files, Path}
@@ -58,10 +65,18 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   val clientTimeout: FiniteDuration = ClioClientConfig.responseTimeout
 
+  /** The bearer token to use when hitting the /api route of Clio. */
+  implicit def bearerToken: OAuth2BearerToken
+
   /**
-    * The web client to test against.
+    * The web client to use within the tested clio-client.
     */
   def clioWebClient: ClioWebClient
+
+  /**
+    * The clio-client to test against.
+    */
+  lazy val clioClient: ClioClient = new ClioClient(clioWebClient, IoUtil)
 
   /**
     * The URI of the Elasticsearch instance to test in a suite.
@@ -88,8 +103,18 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     HttpClient.fromRestClient(restClient)
   }
 
-  /** The bearer token to use when hitting the /api route of Clio. */
-  implicit val bearerToken: OAuth2BearerToken
+  /**
+    * Run a command with arbitrary args through the main clio-client.
+    *
+    * Fails the test immediately if the client exits early.
+    */
+  def runClient(command: String, args: String*): Future[HttpResponse] = {
+    clioClient
+      .instanceMain(
+        (Seq("--bearer-token", bearerToken.token, command) ++ args).toArray
+      )
+      .fold(err => fail(s"Command exited early with $err"), identity)
+  }
 
   /**
     * Convert one of our [[org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex]]
@@ -128,6 +153,20 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
     document.clioId should be(clioId)
     document
+  }
+
+  /**
+    * Write an object as JSON to a temp file.
+    *
+    * Registers the temp file for deletion.
+    */
+  def writeTmpJson[A: Encoder](obj: A): Path = {
+    val tmpFile = Files.createTempFile("clio-integration", ".json")
+    val json = obj.asJson.pretty(implicitly[Printer])
+    Files.write(tmpFile, json.getBytes)
+
+    tmpFile.toFile.deleteOnExit()
+    tmpFile
   }
 
   /** Shut down the actor system at the end of the suite. */

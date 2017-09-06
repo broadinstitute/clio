@@ -1,4 +1,4 @@
-package org.broadinstitute.client.commands
+package org.broadinstitute.clio.client.dispatch
 
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.GetWgsUbamSchema

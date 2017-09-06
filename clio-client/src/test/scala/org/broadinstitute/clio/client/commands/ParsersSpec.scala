@@ -96,4 +96,19 @@ class ParsersSpec extends BaseClientSpec {
     }
     bearerToken should be(Some(testBearer))
   }
+
+  it should "parse a boolean argument as a flag" in {
+    val parsed = parse(Array("query-wgs-ubam", "--include-deleted"))
+    val ignoreDeleted: Boolean = parsed match {
+      case Right((_, _, optCmd)) => {
+        optCmd map {
+          case Right((_, query, _, _)) =>
+            query.asInstanceOf[QueryWgsUbam].includeDeleted
+          case Left(_) => fail("Could not parse inner command.")
+        }
+      }.get
+      case Left(_) => fail("Could not parse outer command.")
+    }
+    ignoreDeleted should be(true)
+  }
 }

@@ -19,6 +19,9 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     command match {
+      case GetServerHealth => GetServerHealthExecutor.execute(webClient, ioUtil)
+      case GetServerVersion =>
+        GetServerVersionExecutor.execute(webClient, ioUtil)
       case GetWgsUbamSchema =>
         GetWgsUbamSchemaExecutor.execute(webClient, ioUtil)
       case add: AddWgsUbam =>

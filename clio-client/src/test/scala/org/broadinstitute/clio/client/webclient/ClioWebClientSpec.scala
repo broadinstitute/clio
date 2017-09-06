@@ -1,8 +1,7 @@
-package org.broadinstitute.client.webclient
+package org.broadinstitute.clio.client.webclient
 
-import org.broadinstitute.client.util.MockClioServer
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.client.util.MockClioServer
 
 class ClioWebClientSpec extends BaseClientSpec {
   behavior of "ClioWebClient"

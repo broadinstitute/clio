@@ -18,7 +18,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 trait BasicTests { self: BaseIntegrationSpec =>
 
   it should "report health information at /health" in {
-    clioWebClient.getClioServerHealth
+    runClient("get-server-health")
       .flatMap(Unmarshal(_).to[StatusInfo])
       .map(
         _ should be(StatusInfo(ServerStatusInfo.Started, SystemStatusInfo.OK))
@@ -27,7 +27,7 @@ trait BasicTests { self: BaseIntegrationSpec =>
 
   it should "report the server version of this test at /version" in {
     for {
-      response <- clioWebClient.getClioServerVersion
+      response <- runClient("get-server-version")
       versionInfo <- Unmarshal(response).to[VersionInfo]
     } yield {
       versionInfo.version should be(ClioBuildInfo.version)
