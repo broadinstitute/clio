@@ -49,7 +49,8 @@ trait TestData {
   val testUbamCloudDestinationPath: Option[String] =
     Some("gs://testProject/testSample/ubamPath2.unmapped.bam")
 
-  val testCommon = CommonOptions(bearerToken = testBearer)
+  val testCommon = CommonOptions(bearerToken = Some(testBearer))
+  val testCommonNoToken = CommonOptions()
   val testTransferV1Key = TransferWgsUbamV1Key(
     flowcellBarcode = testFlowcell,
     lane = testLane,

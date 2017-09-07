@@ -94,6 +94,6 @@ class ParsersSpec extends BaseClientSpec {
       case Right((common, _, _)) => common.bearerToken
       case Left(_)               => fail("Could not parse outer command")
     }
-    bearerToken should be(testBearer)
+    bearerToken should be(Some(testBearer))
   }
 }

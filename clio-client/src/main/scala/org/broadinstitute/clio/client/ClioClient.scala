@@ -2,14 +2,14 @@ package org.broadinstitute.clio.client
 
 import org.broadinstitute.clio.client.commands.{ClioCommand, CommonOptions}
 import org.broadinstitute.clio.client.dispatch.CommandDispatch
-import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.ClioWebClient
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp.core.{Messages, WithHelp}
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.util.AuthUtil
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -247,6 +247,13 @@ class ClioClient(webClient: ClioWebClient,
       _ <- checkRemainingArgs(args ++ args0)
     } yield {
       implicit val bearerToken: OAuth2BearerToken = commonOpts.bearerToken
+        .getOrElse {
+          OAuth2BearerToken(
+            AuthUtil
+              .getAccessToken(ClioClientConfig.serviceAccountJson)
+              .getTokenValue
+          )
+        }
       val commandDispatch = new CommandDispatch(webClient, ioUtil)
       commandDispatch.dispatch(command)
     }

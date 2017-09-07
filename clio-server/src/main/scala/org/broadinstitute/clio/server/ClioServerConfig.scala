@@ -3,16 +3,13 @@ package org.broadinstitute.clio.server
 import org.broadinstitute.clio.util.config.{ClioConfig, ConfigReaders}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{Location, ServiceAccount}
-
 import com.typesafe.config.{Config, ConfigException}
-import io.circe.parser._
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-
 import scala.concurrent.duration.FiniteDuration
-import scala.io.Source
-
 import java.nio.file.Path
+
+import org.broadinstitute.clio.util.AuthUtil
 
 /**
   * Configuration file accessors.
@@ -49,16 +46,7 @@ object ClioServerConfig extends ConfigReaders {
             val projectId = persistence.as[String]("project-id")
             val bucket = persistence.as[String]("bucket")
             val jsonPath = persistence.as[Path]("service-account-json")
-            val serviceAccount = {
-              val jsonBlob =
-                Source.fromFile(jsonPath.toFile).mkString.stripMargin
-              decode[ServiceAccount](jsonBlob).fold({ error =>
-                throw new RuntimeException(
-                  s"Could not decode service account JSON at $jsonPath",
-                  error
-                )
-              }, identity)
-            }
+            val serviceAccount = AuthUtil.loadServiceAccountJson(jsonPath)
             Some(GcsConfig(projectId, bucket, serviceAccount))
           }
           case Location.Unknown => None

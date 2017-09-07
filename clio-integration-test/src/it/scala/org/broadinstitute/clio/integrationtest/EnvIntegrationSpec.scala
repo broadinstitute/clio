@@ -2,9 +2,7 @@ package org.broadinstitute.clio.integrationtest
 
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.model.ServiceAccount
-
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.syntax._
 import com.bettercloud.vault.{Vault, VaultConfig}
 import com.google.cloud.storage.StorageOptions
@@ -12,11 +10,11 @@ import com.google.cloud.storage.contrib.nio.{
   CloudStorageConfiguration,
   CloudStorageFileSystem
 }
-
 import scala.collection.JavaConverters._
-
 import java.io.File
 import java.nio.file.{FileSystem, Files, Path}
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.clio.util.AuthUtil
 
 /**
   * An integration spec that runs entirely against a Clio instance
@@ -38,12 +36,6 @@ abstract class EnvIntegrationSpec(env: String)
   private val vaultTokenFiles = Seq(
     new File("/etc/vault-token-dsde"),
     new File(s"${System.getProperty("user.home")}/.vault-token")
-  )
-
-  /** Scopes needed from Google to get past Clio's auth proxy. */
-  private val authScopes = Seq(
-    "https://www.googleapis.com/auth/userinfo.profile",
-    "https://www.googleapis.com/auth/userinfo.email"
   )
 
   /** Scopes needed from Google to read Clio's persistence buckets. */
@@ -102,10 +94,12 @@ abstract class EnvIntegrationSpec(env: String)
       }, identity)
   }
 
-  override lazy implicit val bearerToken: OAuth2BearerToken = {
-    val credential = serviceAccount.credentialForScopes(authScopes)
-    OAuth2BearerToken(credential.refreshAccessToken().getTokenValue)
-  }
+  override lazy implicit val bearerToken: OAuth2BearerToken =
+    OAuth2BearerToken(
+      AuthUtil
+        .getCredsFromServiceAccount(serviceAccount)
+        .getTokenValue
+    )
 
   override lazy val rootPersistenceDir: Path = {
     val storageOptions = StorageOptions
