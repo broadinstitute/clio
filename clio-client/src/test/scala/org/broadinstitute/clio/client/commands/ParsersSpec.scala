@@ -11,7 +11,7 @@ class ParsersSpec extends BaseClientSpec {
     ClioCommand.parser.detailedParse(args)(CommonOptions.parser)
 
   it should "properly parse a Location type " in {
-    val parsed = parse(Array("query-wgs-ubam", "--location", testLocation))
+    val parsed = parse(Array(ClioCommand.queryWgsUbamName, "--location", testLocation))
     val location: Option[Location] = (parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
@@ -29,7 +29,7 @@ class ParsersSpec extends BaseClientSpec {
   }
 
   it should "throw an exception when given an invalid Location type" in {
-    val parsed = parse(Array("query-wgs-ubam", "--location", "BadValue"))
+    val parsed = parse(Array(ClioCommand.queryWgsUbamName, "--location", "BadValue"))
     val errorMessage = parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
@@ -51,7 +51,7 @@ class ParsersSpec extends BaseClientSpec {
 
   it should "properly parse a DocumentStatus type" in {
     val parsed = parse(
-      Array("query-wgs-ubam", "--document-status", testDocumentStatus.toString)
+      Array(ClioCommand.queryWgsUbamName, "--document-status", testDocumentStatus.toString)
     )
     val docStatus: Option[DocumentStatus] = (parsed match {
       case Right((_, _, optCmd)) =>
@@ -70,7 +70,7 @@ class ParsersSpec extends BaseClientSpec {
 
   it should "properly parse an OffsetDateTime string" in {
     val parsed = parse(
-      Array("query-wgs-ubam", "--run-date-start", testRunDateStart.toString)
+      Array(ClioCommand.queryWgsUbamName, "--run-date-start", testRunDateStart.toString)
     )
     val runDateStart: Option[OffsetDateTime] = (parsed match {
       case Right((_, _, optCmd)) =>
@@ -89,7 +89,7 @@ class ParsersSpec extends BaseClientSpec {
 
   it should "properly parse a string into a bearerToken" in {
     val parsed =
-      parse(Array("--bearer-token", testBearer.token, "query-wgs-ubam"))
+      parse(Array("--bearer-token", testBearer.token, ClioCommand.queryWgsUbamName))
     val bearerToken = parsed match {
       case Right((common, _, _)) => common.bearerToken
       case Left(_)               => fail("Could not parse outer command")
@@ -98,7 +98,7 @@ class ParsersSpec extends BaseClientSpec {
   }
 
   it should "parse a boolean argument as a flag" in {
-    val parsed = parse(Array("query-wgs-ubam", "--include-deleted"))
+    val parsed = parse(Array(ClioCommand.queryWgsUbamName, "--include-deleted"))
     val ignoreDeleted: Boolean = parsed match {
       case Right((_, _, optCmd)) => {
         optCmd map {
