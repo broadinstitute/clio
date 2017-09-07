@@ -19,19 +19,14 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     command match {
-      case GetServerHealth => GetServerHealthExecutor.execute(webClient, ioUtil)
-      case GetServerVersion =>
-        GetServerVersionExecutor.execute(webClient, ioUtil)
-      case GetWgsUbamSchema =>
-        GetWgsUbamSchemaExecutor.execute(webClient, ioUtil)
       case add: AddWgsUbam =>
         new AddWgsUbamExecutor(add).execute(webClient, ioUtil)
-      case query: QueryWgsUbam =>
-        new QueryWgsUbamExecutor(query).execute(webClient, ioUtil)
       case move: MoveWgsUbam =>
         new MoveWgsUbamExecutor(move).execute(webClient, ioUtil)
       case delete: DeleteWgsUbam =>
         new DeleteWgsUbamExecutor(delete).execute(webClient, ioUtil)
+      case other =>
+        new RetrieveAndPrintExecutor(other).execute(webClient, ioUtil)
     }
   }
 
