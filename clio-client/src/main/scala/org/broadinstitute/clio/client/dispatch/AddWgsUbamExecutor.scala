@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.client.dispatch
 
-import org.broadinstitute.clio.client.commands.AddWgsUbam
+import org.broadinstitute.clio.client.commands.{AddWgsUbam, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1Metadata
@@ -30,7 +30,7 @@ class AddWgsUbamExecutor(addWgsUbam: AddWgsUbam) extends Executor {
       .left
       .map { err =>
         new RuntimeException(
-          s"Invalid metadata given at $metadataLoc. Run the 'get-wgs-ubam-schema' command to see the expected JSON format for WgsUbams.",
+          s"Invalid metadata given at $metadataLoc. Run the '${ClioCommand.getWgsUbamSchemaName}' command to see the expected JSON format for WgsUbams.",
           err
         )
       }

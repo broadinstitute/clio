@@ -23,11 +23,7 @@ import io.circe.parser._
 import io.circe.syntax._
 import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
-import org.scalatest.{
-  AsyncFlatSpecLike,
-  BeforeAndAfterAll,
-  Matchers
-}
+import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration

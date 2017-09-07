@@ -6,7 +6,7 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1QueryInput
 }
 
-import caseapp.{CommandParser, Recurse}
+import caseapp.{CommandName, CommandParser, Recurse}
 import caseapp.core.CommandsMessages
 import shapeless.CNil
 
@@ -25,31 +25,50 @@ import shapeless.CNil
   */
 sealed trait ClioCommand
 
+@CommandName(ClioCommand.getServerHealthName)
 case object GetServerHealth extends ClioCommand
+
+@CommandName(ClioCommand.getServerVersionName)
 case object GetServerVersion extends ClioCommand
 
+@CommandName(ClioCommand.getWgsUbamSchemaName)
 case object GetWgsUbamSchema extends ClioCommand
 
+@CommandName(ClioCommand.addWgsUbamName)
 final case class AddWgsUbam(metadataLocation: String,
                             @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key)
     extends ClioCommand
 
+@CommandName(ClioCommand.queryWgsUbamName)
 final case class QueryWgsUbam(
   @Recurse transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput,
   includeDeleted: Boolean = false
 ) extends ClioCommand
 
+@CommandName(ClioCommand.moveWgsUbamName)
 final case class MoveWgsUbam(
   @Recurse metadata: TransferWgsUbamV1Metadata,
   @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key
 ) extends ClioCommand
 
+@CommandName(ClioCommand.deleteWgsUbamName)
 final case class DeleteWgsUbam(
   @Recurse metadata: TransferWgsUbamV1Metadata,
   @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key
 ) extends ClioCommand
 
 object ClioCommand extends ClioParsers {
+
+  // Names for generic commands.
+  val getServerHealthName = "get-server-health"
+  val getServerVersionName = "get-server-version"
+
+  // Names for WGS uBAM commands.
+  val getWgsUbamSchemaName = "get-wgs-ubam-schema"
+  val addWgsUbamName = "add-wgs-ubam"
+  val queryWgsUbamName = "query-wgs-ubam"
+  val moveWgsUbamName = "move-wgs-ubam"
+  val deleteWgsUbamName = "delete-wgs-ubam"
 
   /*
    * Based on its docs / examples, caseapp *should* be able to inductively

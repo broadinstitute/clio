@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentWgsUbam,
@@ -28,7 +29,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
                 metadata: TransferWgsUbamV1Metadata): Future[UUID] = {
     val tmpMetadata = writeTmpJson(metadata)
     runClient(
-      WgsUbamTests.upsert,
+      ClioCommand.addWgsUbamName,
       "--flowcell-barcode",
       key.flowcellBarcode,
       "--lane",
@@ -57,7 +58,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "report the expected JSON schema for wgs-ubams" in {
-    runClient("get-wgs-ubam-schema")
+    runClient(ClioCommand.getWgsUbamSchemaName)
       .flatMap(Unmarshal(_).to[Json])
       .map(_ should be(JsonSchemas.WgsUbam))
   }
@@ -107,7 +108,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
           upsertResponse <- responseFuture
           returnedClioId <- Unmarshal(upsertResponse).to[UUID]
           queryResponse <- runClient(
-            WgsUbamTests.query,
+            ClioCommand.queryWgsUbamName,
             "--library-name",
             expected.libraryName
           )
@@ -215,11 +216,15 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      projectResponse <- runClient(WgsUbamTests.query, "--project", project)
+      projectResponse <- runClient(
+        ClioCommand.queryWgsUbamName,
+        "--project",
+        project
+      )
       projectResults <- Unmarshal(projectResponse)
         .to[Seq[TransferWgsUbamV1QueryOutput]]
       sampleResponse <- runClient(
-        WgsUbamTests.query,
+        ClioCommand.queryWgsUbamName,
         "--sample-alias",
         samples.head
       )
@@ -249,7 +254,11 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        response <- runClient(WgsUbamTests.query, "--project", project)
+        response <- runClient(
+          ClioCommand.queryWgsUbamName,
+          "--project",
+          project
+        )
         results <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
       } yield {
         results should have length 1
@@ -312,7 +321,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     def checkQuery(expectedLength: Int) = {
       for {
         response <- runClient(
-          WgsUbamTests.query,
+          ClioCommand.queryWgsUbamName,
           "--project",
           project,
           "--flowcell-barcode",
@@ -341,7 +350,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       _ <- checkQuery(expectedLength = 2)
 
       response <- runClient(
-        WgsUbamTests.query,
+        ClioCommand.queryWgsUbamName,
         "--project",
         project,
         "--flowcell-barcode",
@@ -370,14 +379,4 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       }
     }
   }
-}
-
-/** Command-line constants for wgs-ubam CLPs. */
-object WgsUbamTests {
-
-  /** The CLP command for querying wgs-ubams. */
-  val query = "query-wgs-ubam"
-
-  /** The CLP command for upsert-ing wgs-ubams. */
-  val upsert = "add-wgs-ubam"
 }

@@ -27,7 +27,7 @@ class DeleteWgsUbamExecutor(deleteWgsUbam: DeleteWgsUbam) extends Executor {
   ): Future[HttpResponse] = {
     if (!deleteWgsUbam.transferWgsUbamV1Key.location.equals(Location.GCP)) {
       Future
-        .failed(new Exception("Only GCP WgsUbams are supported at this time"))
+        .failed(new Exception("Only GCP wgs-ubams are supported at this time"))
     } else {
       for {
         queryResponses <- webClient
@@ -41,28 +41,28 @@ class DeleteWgsUbamExecutor(deleteWgsUbam: DeleteWgsUbam) extends Executor {
               documentStatus = Some(DocumentStatus.Normal)
             )
           )
-          .map(webClient.ensureOkResponse) logErrorMsg "There was a problem querying the Clio server for WgsUbams."
+          .map(webClient.ensureOkResponse) logErrorMsg "There was a problem querying the Clio server for wgs-ubams."
         wgsUbams <- webClient
           .unmarshal[Seq[TransferWgsUbamV1QueryOutput]](queryResponses)
           .logErrorMsg(
             "There was a problem unmarshalling the JSON response from Clio."
           )
-        deleteResponses <- deleteWgsUbams(wgsUbams, webClient, ioUtil) logErrorMsg "There was an error while deleting some of all of the WgsUbams."
+        deleteResponses <- deleteWgsUbams(wgsUbams, webClient, ioUtil) logErrorMsg "There was an error while deleting some of all of the wgs-ubams."
       } yield {
         deleteResponses.size match {
           case 0 =>
             throw new Exception(
-              "Deleted 0 WgsUbams. None of the WgsUbams queried were able to be deleted."
+              "Deleted 0 wgs-ubams. None of the wgs-ubams queried were able to be deleted."
             )
           case s if s == wgsUbams.size =>
             logger.info(
-              s"Successfully deleted ${deleteResponses.size} WgsUbams."
+              s"Successfully deleted ${deleteResponses.size} wgs-ubams."
             )
             queryResponses
           case _ =>
             throw new Exception(
-              s"Deleted ${deleteResponses.size} WgsUbams. " +
-                s"Not all of the WgsUbams queried for were able to be deleted! Check the log for details"
+              s"Deleted ${deleteResponses.size} wgs-ubams. " +
+                s"Not all of the wgs-ubams queried for were able to be deleted! Check the log for details"
             )
         }
       }
@@ -78,7 +78,7 @@ class DeleteWgsUbamExecutor(deleteWgsUbam: DeleteWgsUbam) extends Executor {
     if (wgsUbams.isEmpty) {
       Future.failed(
         new Exception(
-          s"No WgsUbams were found for ${deleteWgsUbam.transferWgsUbamV1Key}. Nothing has been deleted."
+          s"No wgs-ubams were found for ${deleteWgsUbam.transferWgsUbamV1Key}. Nothing has been deleted."
         )
       )
     } else {
@@ -137,7 +137,7 @@ class DeleteWgsUbamExecutor(deleteWgsUbam: DeleteWgsUbam) extends Executor {
           s"Failed to delete the WgsUbam ${wgsUbam.prettyKey()} in Clio. " +
             s"The file has been deleted in the cloud. " +
             s"Clio now has a 'dangling pointer' to ${wgsUbam.ubamPath.getOrElse("")}. " +
-            s"Please try updating Clio by manually adding the WgsUbam and setting the documentStatus to Deleted and making the ubamPath an empty String."
+            s"Please try updating Clio by manually adding the wgs-ubam and setting the documentStatus to Deleted and making the ubamPath an empty String."
         )
     }
 
@@ -148,13 +148,13 @@ class DeleteWgsUbamExecutor(deleteWgsUbam: DeleteWgsUbam) extends Executor {
       } else {
         Future.failed(
           new Exception(
-            s"Failed to delete ${wgsUbam.ubamPath.getOrElse("")} in the cloud. The WgsUbam still exists in Clio and on cloud storage"
+            s"Failed to delete ${wgsUbam.ubamPath.getOrElse("")} in the cloud. The wgs-ubam still exists in Clio and on cloud storage"
           )
         )
       }
     } else {
       logger.warn(
-        s"${wgsUbam.ubamPath.getOrElse("")} does not exist in the cloud. Deleting the WgsUbam in Clio to reflect this."
+        s"${wgsUbam.ubamPath.getOrElse("")} does not exist in the cloud. Deleting the wgs-ubam in Clio to reflect this."
       )
       deleteInClio()
     }
