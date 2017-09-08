@@ -28,10 +28,10 @@ object AuthUtil extends ModelAutoDerivation {
     serviceAccountPath
       .map { jsonPath =>
         loadServiceAccountJson(jsonPath)
-      }.fold(new AccessToken(
-      Process("gcloud auth print-access-token").!!.trim,
-      null
-    ))(getCredsFromServiceAccount)
+      }
+      .fold(
+        new AccessToken(Process("gcloud auth print-access-token").!!.trim, null)
+      )(getCredsFromServiceAccount)
   }
 
   def loadServiceAccountJson(serviceAccountPath: Path): ServiceAccount = {

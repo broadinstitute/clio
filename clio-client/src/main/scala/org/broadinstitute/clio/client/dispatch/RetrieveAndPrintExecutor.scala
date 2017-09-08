@@ -21,7 +21,7 @@ class RetrieveAndPrintExecutor(command: ClioCommand) extends Executor {
     val responseFut = command match {
       case GetServerHealth  => webClient.getClioServerHealth
       case GetServerVersion => webClient.getClioServerVersion
-      case GetWgsUbamSchema => webClient.getWgsUbamSchema
+      case GetSchemaWgsUbam => webClient.getWgsUbamSchema
       case query: QueryWgsUbam =>
         webClient.queryWgsUbam(
           query.transferWgsUbamV1QueryInput,

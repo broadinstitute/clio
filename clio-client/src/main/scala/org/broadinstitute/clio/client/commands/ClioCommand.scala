@@ -32,7 +32,7 @@ case object GetServerHealth extends ClioCommand
 case object GetServerVersion extends ClioCommand
 
 @CommandName(ClioCommand.getWgsUbamSchemaName)
-case object GetWgsUbamSchema extends ClioCommand
+case object GetSchemaWgsUbam extends ClioCommand
 
 @CommandName(ClioCommand.addWgsUbamName)
 final case class AddWgsUbam(metadataLocation: String,
@@ -64,7 +64,7 @@ object ClioCommand extends ClioParsers {
   val getServerVersionName = "get-server-version"
 
   // Names for WGS uBAM commands.
-  val getWgsUbamSchemaName = "get-wgs-ubam-schema"
+  val getWgsUbamSchemaName = "get-schema-wgs-ubam"
   val addWgsUbamName = "add-wgs-ubam"
   val queryWgsUbamName = "query-wgs-ubam"
   val moveWgsUbamName = "move-wgs-ubam"
