@@ -91,16 +91,19 @@ class ClioWebClient(
   }
 
   def queryWgsUbam(
-    input: TransferWgsUbamV1QueryInput
+    input: TransferWgsUbamV1QueryInput,
+    includeDeleted: Boolean = false
   )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     val entity =
       HttpEntity(
         ContentTypes.`application/json`,
         input.asJson.pretty(implicitly[Printer])
       )
+    val queryPath = if (includeDeleted) "queryall" else "query"
+
     dispatchRequest(
       HttpRequest(
-        uri = "/api/v1/wgsubam/query",
+        uri = s"/api/v1/wgsubam/$queryPath",
         method = HttpMethods.POST,
         entity = entity
       ).addHeader(Authorization(credentials = bearerToken))
