@@ -14,7 +14,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 import scala.concurrent.{ExecutionContext, Future}
-class MoveWgsUbamExecutor(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
+class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,

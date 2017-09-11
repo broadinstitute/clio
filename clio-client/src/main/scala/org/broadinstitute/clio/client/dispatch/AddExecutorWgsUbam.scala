@@ -10,7 +10,8 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.parser.parse
 
 import scala.concurrent.{ExecutionContext, Future}
-class AddWgsUbamExecutor(addWgsUbam: AddWgsUbam) extends Executor {
+
+class AddExecutorWgsUbam(addWgsUbam: AddWgsUbam) extends Executor {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken

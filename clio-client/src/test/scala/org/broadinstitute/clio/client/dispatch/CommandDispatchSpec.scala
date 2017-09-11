@@ -26,7 +26,7 @@ class CommandDispatchSpec extends BaseClientSpec {
   it should "return true when we dispatch a valid moveWgsUbam command" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
-    succeedingReturningDispatcher(mockIoUtil)
+    succeedingReturningDispatcherWgsUbam(mockIoUtil)
       .dispatch(goodMoveCommand)
       .map(_.status should be(StatusCodes.OK))
   }
@@ -35,8 +35,37 @@ class CommandDispatchSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
 
-    succeedingReturningDispatcher(mockIoUtil)
+    succeedingReturningDispatcherWgsUbam(mockIoUtil)
       .dispatch(goodDeleteCommand)
+      .map(_.status should be(StatusCodes.OK))
+  }
+
+  it should "return true when we dispatch a valid queryGvcf command" in {
+    succeedingDispatcherCamel
+      .dispatch(goodGvcfQueryCommand)
+      .map(_.status should be(StatusCodes.OK))
+  }
+
+  it should "return true when we dispatch a valid addGvcf command" in {
+    succeedingDispatcher
+      .dispatch(goodGvcfAddCommand)
+      .map(_.status should be(StatusCodes.OK))
+  }
+
+  it should "return true when we dispatch a valid moveGvcf command" in {
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath.get)
+    succeedingReturningDispatcherGvcf(mockIoUtil)
+      .dispatch(goodGvcfMoveCommand)
+      .map(_.status should be(StatusCodes.OK))
+  }
+
+  it should "return true when we dispatch a valid deleteGvcf command" in {
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath.get)
+
+    succeedingReturningDispatcherGvcf(mockIoUtil)
+      .dispatch(goodGvcfDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }
 }

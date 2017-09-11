@@ -25,8 +25,8 @@ import java.util.UUID
 /** Tests of Clio's wgs-ubam functionality. */
 trait WgsUbamTests { self: BaseIntegrationSpec =>
 
-  def runUpsert(key: TransferWgsUbamV1Key,
-                metadata: TransferWgsUbamV1Metadata): Future[UUID] = {
+  def runUpsertWgsUbam(key: TransferWgsUbamV1Key,
+                       metadata: TransferWgsUbamV1Metadata): Future[UUID] = {
     val tmpMetadata = writeTmpJson(metadata)
     runClient(
       ClioCommand.addWgsUbamName,
@@ -88,7 +88,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
      * it'll result in an `UninitializedFieldError` because the spec `beforeAll` won't
      * have triggered yet.
      */
-    lazy val responseFuture = runUpsert(
+    lazy val responseFuture = runUpsertWgsUbam(
       TransferWgsUbamV1Key(
         expected.flowcellBarcode,
         expected.lane,
@@ -105,8 +105,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     } else {
       it should s"handle upserts and queries for wgs-ubam location $location" in {
         for {
-          upsertResponse <- responseFuture
-          returnedClioId <- Unmarshal(upsertResponse).to[UUID]
+          returnedClioId <- responseFuture
           queryResponse <- runClient(
             ClioCommand.queryWgsUbamName,
             "--library-name",
@@ -133,7 +132,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "assign different clioIds to different wgs-ubam upserts" in {
-    val key = TransferWgsUbamV1Key(
+    val upsertKey = TransferWgsUbamV1Key(
       "testClioIdBarcode",
       2,
       s"library$randomId",
@@ -141,12 +140,12 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     )
 
     for {
-      clioId1 <- runUpsert(
-        key,
+      clioId1 <- runUpsertWgsUbam(
+        upsertKey,
         TransferWgsUbamV1Metadata(project = Some("testProject1"))
       )
-      clioId2 <- runUpsert(
-        key,
+      clioId2 <- runUpsertWgsUbam(
+        upsertKey,
         TransferWgsUbamV1Metadata(project = Some("testProject2"))
       )
     } yield {
@@ -167,7 +166,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "assign different clioIds to equal wgs-ubam upserts" in {
-    val key = TransferWgsUbamV1Key(
+    val upsertKey = TransferWgsUbamV1Key(
       "testClioIdBarcode",
       2,
       s"library$randomId",
@@ -176,8 +175,8 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val metadata = TransferWgsUbamV1Metadata(project = Some("testProject1"))
 
     for {
-      clioId1 <- runUpsert(key, metadata)
-      clioId2 <- runUpsert(key, metadata)
+      clioId1 <- runUpsertWgsUbam(upsertKey, metadata)
+      clioId2 <- runUpsertWgsUbam(upsertKey, metadata)
     } yield {
       clioId2.compareTo(clioId1) should be(1)
 
@@ -210,7 +209,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
             project = Some(project),
             sampleAlias = Some(sample)
           )
-          runUpsert(key, metadata)
+          runUpsertWgsUbam(key, metadata)
       }
     }
 
@@ -272,16 +271,16 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     )
 
     for {
-      _ <- runUpsert(key, upsertData)
+      _ <- runUpsertWgsUbam(key, upsertData)
       original <- query
       _ = original.sampleAlias should be(metadata.sampleAlias)
       _ = original.notes should be(None)
       upsertData2 = upsertData.copy(notes = metadata.notes)
-      _ <- runUpsert(key, upsertData2)
+      _ <- runUpsertWgsUbam(key, upsertData2)
       withNotes <- query
       _ = withNotes.sampleAlias should be(metadata.sampleAlias)
       _ = withNotes.notes should be(metadata.notes)
-      _ <- runUpsert(
+      _ <- runUpsertWgsUbam(
         key,
         upsertData2.copy(sampleAlias = Some("sampleAlias2"), notes = Some(""))
       )
@@ -314,7 +313,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     val upserts = Future.sequence {
       keysWithMetadata.map {
-        case (key, metadata) => runUpsert(key, metadata)
+        case (key, metadata) => runUpsertWgsUbam(key, metadata)
       }
     }
 
@@ -343,7 +342,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       _ <- upserts
       _ <- checkQuery(expectedLength = 3)
       // TODO: This should use the delete CLP once we figure out how to test the I/O portion.
-      deleteResponse <- runUpsert(
+      deleteResponse <- runUpsertWgsUbam(
         deleteKey,
         deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
       )

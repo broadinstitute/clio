@@ -19,7 +19,7 @@ import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class DeleteWgsUbamExecutor(deleteWgsUbam: DeleteWgsUbam) extends Executor {
+class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,

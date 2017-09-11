@@ -1,10 +1,6 @@
 package org.broadinstitute.clio.client.commands
 
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput
-}
+import org.broadinstitute.clio.transfer.model._
 
 import caseapp.{CommandName, CommandParser, Recurse}
 import caseapp.core.CommandsMessages
@@ -25,11 +21,15 @@ import shapeless.CNil
   */
 sealed trait ClioCommand
 
+// Generic commands.
+
 @CommandName(ClioCommand.getServerHealthName)
 case object GetServerHealth extends ClioCommand
 
 @CommandName(ClioCommand.getServerVersionName)
 case object GetServerVersion extends ClioCommand
+
+// WGS-uBAM commands.
 
 @CommandName(ClioCommand.getWgsUbamSchemaName)
 case object GetSchemaWgsUbam extends ClioCommand
@@ -57,6 +57,32 @@ final case class DeleteWgsUbam(
   @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key
 ) extends ClioCommand
 
+// GVCF commands.
+
+@CommandName(ClioCommand.getGvcfSchemaName)
+case object GetSchemaGvcf extends ClioCommand
+
+@CommandName(ClioCommand.addGvcfName)
+final case class AddGvcf(metadataLocation: String,
+                         @Recurse transferGvcfV1Key: TransferGvcfV1Key)
+    extends ClioCommand
+
+@CommandName(ClioCommand.queryGvcfName)
+final case class QueryGvcf(
+  @Recurse transferGvcfV1QueryInput: TransferGvcfV1QueryInput,
+  includeDeleted: Boolean = false
+) extends ClioCommand
+
+@CommandName(ClioCommand.moveGvcfName)
+final case class MoveGvcf(@Recurse metadata: TransferGvcfV1Metadata,
+                          @Recurse transferGvcfV1Key: TransferGvcfV1Key)
+    extends ClioCommand
+
+@CommandName(ClioCommand.deleteGvcfName)
+final case class DeleteGvcf(@Recurse metadata: TransferGvcfV1Metadata,
+                            @Recurse transferGvcfV1Key: TransferGvcfV1Key)
+    extends ClioCommand
+
 object ClioCommand extends ClioParsers {
 
   // Names for generic commands.
@@ -69,6 +95,13 @@ object ClioCommand extends ClioParsers {
   val queryWgsUbamName = "query-wgs-ubam"
   val moveWgsUbamName = "move-wgs-ubam"
   val deleteWgsUbamName = "delete-wgs-ubam"
+
+  // Names for GVCF commands.
+  val getGvcfSchemaName = "get-schema-gvcf"
+  val addGvcfName = "add-gvcf"
+  val queryGvcfName = "query-gvcf"
+  val moveGvcfName = "move-gvcf"
+  val deleteGvcfName = "delete-gvcf"
 
   /*
    * Based on its docs / examples, caseapp *should* be able to inductively
