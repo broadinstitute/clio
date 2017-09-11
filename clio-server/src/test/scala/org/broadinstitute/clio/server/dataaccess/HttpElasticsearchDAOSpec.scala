@@ -1,9 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  AutoElasticsearchIndex,
-  ElasticsearchIndex
-}
+import java.util.UUID
 
 import com.sksamuel.elastic4s.analyzers._
 import com.sksamuel.elastic4s.bulk.BulkDefinition
@@ -14,6 +11,13 @@ import com.sksamuel.elastic4s.indexes.CreateIndexDefinition
 import com.sksamuel.elastic4s.searches.SearchDefinition
 import io.circe.parser
 import org.apache.http.util.EntityUtils
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  AutoElasticsearchIndex,
+  AutoElasticsearchQueryMapper,
+  ClioDocument,
+  ElasticsearchIndex
+}
+import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.ResponseException
 import org.scalatest._
@@ -105,13 +109,26 @@ class HttpElasticsearchDAOSpec
     } yield succeed
   }
 
-  // TODO: The following tests are demo code, and should be replaced with actual DAO methods/specs.
-
   case class City(name: String,
                   country: String,
                   continent: String,
                   status: String,
                   slogan: Option[String])
+      extends ClioDocument {
+    override val clioId: UUID = ClioUUIDGenerator.getUUID()
+  }
+
+  case class CityQueryInput(name: Option[String],
+                            country: Option[String],
+                            continent: Option[String],
+                            status: Option[String],
+                            slogan: Option[String])
+
+  case class CityQueryOutput(name: Option[String],
+                             country: Option[String],
+                             continent: Option[String],
+                             status: Option[String],
+                             slogan: Option[String])
 
   it should "perform various CRUD-like operations" in {
     val clusterHealthDefinition: ClusterHealthDefinition =
@@ -188,10 +205,27 @@ class HttpElasticsearchDAOSpec
         city.continent should be("Europe")
         city.status should be("Awesome")
       }
+
+      cityIndex = new AutoElasticsearchIndex[City]("city")
+      london = search.to[City].head
+      update <- httpElasticsearchDAO.updateMetadata(
+        "uk",
+        london.copy(status = "Brexited"),
+        cityIndex
+      )
+
+      query <- httpElasticsearchDAO.queryMetadata(
+        london,
+        cityIndex,
+        AutoElasticsearchQueryMapper[CityQueryInput, CityQueryOutput, City]
+      )
+      //      _ = query should be(Seq(???))
+
       delete <- httpClient execute deleteDefinition
       _ = delete.found should be(true)
       delete <- httpClient execute deleteDefinition
       _ = delete.found should be(false)
+
     } yield succeed
   }
 }
