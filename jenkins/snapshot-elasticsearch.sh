@@ -66,11 +66,10 @@ function echoRunJq () {
     echo "$result" | jq .
 }
 
-# Configure snapshots to $bucket in $environment for the $es cluster.
+# Configure snapshots to $bucket in for the $es cluster.
 #
 function snapshot_configure () {
-    local -r av0="$1" environment=$2 es=$3 repo=$4
-    local -r bucket=broad-gotc-$environment-clio-elasticsearch
+    local -r av0="$1" es=$2 bucket=$3
     local -r data='
     {
         "type": "gcs",
@@ -81,23 +80,23 @@ function snapshot_configure () {
             "application_name": "clio-elasticsearch"
         }
     }'
-    echoRunJq "$av0" curl -s -X PUT --data "$data" $es/_snapshot/$repo
+    echoRunJq "$av0" curl -s -X PUT --data "$data" $es/_snapshot/$bucket
 }
 
-# List the $repo snapshots in $environment for $es cluster.
+# List the snapshots in $environment for $es cluster.
 #
 function snapshot_list () {
-    local -r av0="$1" environment=$2 es=$3 repo=$4
-    echoRunJq "$av0" curl -s $es/_snapshot/$repo/_all
+    local -r av0="$1" es=$2 bucket=$3
+    echoRunJq "$av0" curl -s $es/_snapshot/$bucket/_all
 }
 
 # Take a snapshot in $environment for $es cluster.
 #
 function snapshot_take () {
-    local -r av0="$1" environment=$2 es=$3 repo=$4
+    local -r av0="$1" es=$2 bucket=$3
     local -r jq='keys|.[]|select(startswith(".")|not)'
     local -r snapshot=clio-$(date -u +%Y-%m-%d-%H-%M-%S)
-    local -r url=$es/_snapshot/$repo/$snapshot?wait_for_completion=true
+    local -r url=$es/_snapshot/$bucket/$snapshot?wait_for_completion=true
     local -a -r curl=(curl -s $es/_aliases)
     local -r indexes=$("${curl[@]}" | jq --raw-output $jq)
     if test -z "$indexes"
@@ -119,19 +118,20 @@ function snapshot_take () {
 # Delete the snapshots named in $5 ... and so on.
 #
 function snapshot_delete () {
-    local -r av0="$1" environment=$2 es=$3 repo=$4 ; shift 4
+    local -r av0="$1" es=$2 bucket=$3 ; shift 3
     for snap in "$@"
     do
-        echoRunJq "$av0" curl -s -X DELETE $es/_snapshot/$repo/$snap
+        echoRunJq "$av0" curl -s -X DELETE $es/_snapshot/$bucket/$snap
     done
 }
 
 function main () {
     local -r av0="${0##*/}" environment="$1" verb="$2"
     help "$av0" "$@" ; shift 2
+    local -r bucket=broad-gotc-$environment-clio-elasticsearch
     local -r domain=gotc-$environment.broadinstitute.org
     local -r es=http://elasticsearch1.$domain:9200
-    snapshot_$verb "$av0" $environment $es clio-gcs-repository "$@"
+    snapshot_$verb "$av0" $es $bucket "$@"
 }
 
 main "$@"
