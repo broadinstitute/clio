@@ -3,7 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.parser.parse
-import org.broadinstitute.clio.client.commands.AddGvcf
+import org.broadinstitute.clio.client.commands.{AddGvcf, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferGvcfV1Metadata
@@ -16,8 +16,6 @@ class AddExecutorGvcf(addGvcf: AddGvcf) extends Executor {
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     val metadataLoc = addGvcf.metadataLocation
-
-    val command = "'get-schema-gvcf'"
 
     val parsedOrError = parse(IoUtil.readMetadata(metadataLoc)).left.map {
       err =>
@@ -32,7 +30,7 @@ class AddExecutorGvcf(addGvcf: AddGvcf) extends Executor {
       .left
       .map { err =>
         new RuntimeException(
-          s"Invalid metadata given at $metadataLoc. Run the $command command to see the expected JSON format for Gvcfs.",
+          s"Invalid metadata given at $metadataLoc. Run the ${ClioCommand.getGvcfSchemaName} command to see the expected JSON format for Gvcfs.",
           err
         )
       }

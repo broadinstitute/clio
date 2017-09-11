@@ -86,21 +86,32 @@ class ClioWebClient(
     )
   }
 
+  private def query(
+    index: String,
+    input: RequestEntity,
+    includeDeleted: Boolean
+  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+    val queryPath = if (includeDeleted) "queryall" else "query"
+
+    dispatchRequest(
+      HttpRequest(
+        uri = s"/api/v1/$index/$queryPath",
+        method = HttpMethods.POST,
+        entity = input
+      ).addHeader(Authorization(credentials = bearerToken))
+    )
+  }
+
   def queryWgsUbam(
-    input: TransferWgsUbamV1QueryInput
+    input: TransferWgsUbamV1QueryInput,
+    includeDeleted: Boolean = false
   )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     val entity =
       HttpEntity(
         ContentTypes.`application/json`,
         input.asJson.pretty(implicitly[Printer])
       )
-    dispatchRequest(
-      HttpRequest(
-        uri = "/api/v1/wgsubam/query",
-        method = HttpMethods.POST,
-        entity = entity
-      ).addHeader(Authorization(credentials = bearerToken))
-    )
+    query("wgsubam", entity, includeDeleted)
   }
 
   def getSchemaGvcf(
@@ -134,20 +145,15 @@ class ClioWebClient(
   }
 
   def queryGvcf(
-    input: TransferGvcfV1QueryInput
+    input: TransferGvcfV1QueryInput,
+    includeDeleted: Boolean = false
   )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     val entity =
       HttpEntity(
         ContentTypes.`application/json`,
         input.asJson.pretty(implicitly[Printer])
       )
-    dispatchRequest(
-      HttpRequest(
-        uri = "/api/v1/gvcf/query",
-        method = HttpMethods.POST,
-        entity = entity
-      ).addHeader(Authorization(credentials = bearerToken))
-    )
+    query("gvcf", entity, includeDeleted)
   }
 
   def unmarshal[A: FromEntityUnmarshaller: TypeTag](

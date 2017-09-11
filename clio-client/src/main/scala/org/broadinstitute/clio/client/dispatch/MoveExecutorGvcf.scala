@@ -3,7 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.ClioClientConfig
-import org.broadinstitute.clio.client.commands.MoveGvcf
+import org.broadinstitute.clio.client.commands.{ClioCommand, MoveGvcf}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
@@ -57,12 +57,12 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
         case 1 =>
           gvcfs.headOption.getOrElse(
             throw new Exception(
-              s"No Gvcfs were found for Key($prettyKey). You can add this Gvcf using the 'add-gvcf' command in the Clio client."
+              s"No Gvcfs were found for Key($prettyKey). You can add this Gvcf using the '${ClioCommand.addGvcfName}' command in the Clio client."
             )
           )
         case s =>
           throw new Exception(
-            s"$s Gvcfs were returned for Key($prettyKey), expected 1. You can see what was returned by running the 'query-gvcf' command in the Clio client."
+            s"$s Gvcfs were returned for Key($prettyKey), expected 1. You can see what was returned by running the '${ClioCommand.queryGvcfName}' command in the Clio client."
           )
 
       }

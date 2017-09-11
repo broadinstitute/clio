@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentGvcf,
@@ -8,29 +9,40 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 import org.broadinstitute.clio.transfer.model.{
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
-  TransferGvcfV1QueryInput,
   TransferGvcfV1QueryOutput
 }
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
-import akka.http.scaladsl.marshalling.Marshal
-import akka.http.scaladsl.model.{
-  HttpMethods,
-  HttpRequest,
-  RequestEntity,
-  StatusCodes
-}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 
 import scala.concurrent.Future
+
 import java.util.UUID
 import com.sksamuel.elastic4s.http.ElasticDsl._
 
 /** Tests of Clio's gvcf functionality. */
 trait GvcfTests { self: BaseIntegrationSpec =>
+
+  def runUpsertGvcf(key: TransferGvcfV1Key,
+                    metadata: TransferGvcfV1Metadata): Future[UUID] = {
+    val tmpMetadata = writeTmpJson(metadata)
+    runClient(
+      ClioCommand.addGvcfName,
+      "--location",
+      key.location.entryName,
+      "--project",
+      key.project,
+      "--sample-alias",
+      key.sampleAlias,
+      "--version",
+      key.version.toString,
+      "--metadata-location",
+      tmpMetadata.toString
+    ).flatMap(Unmarshal(_).to[UUID])
+  }
 
   it should "create the expected gvcf mapping in elasticsearch" in {
 
@@ -46,8 +58,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
   }
 
   it should "report the expected JSON schema for gvcf" in {
-    clioWebClient
-      .getSchemaGvcf(bearerToken)
+    runClient(ClioCommand.getGvcfSchemaName)
       .flatMap(Unmarshal(_).to[Json])
       .map(_ should be(JsonSchemas.Gvcf))
   }
@@ -72,48 +83,47 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       gvcfPath = Some("gs://path/gvcf.gvcf")
     )
 
-    val upsertKey = TransferGvcfV1Key(
-      location,
-      expected.project,
-      expected.sampleAlias,
-      expected.version
-    )
-    val upsertData = TransferGvcfV1Metadata(
-      gvcfPath = Some("gs://path/gvcf.gvcf")
+    /*
+     * NOTE: This is lazy on purpose. If it executes outside of the actual `it` block,
+     * it'll result in an `UninitializedFieldError` because the spec `beforeAll` won't
+     * have triggered yet.
+     */
+    lazy val responseFuture = runUpsertGvcf(
+      TransferGvcfV1Key(
+        location,
+        expected.project,
+        expected.sampleAlias,
+        expected.version
+      ),
+      TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf.gvcf"))
     )
 
     if (location == Location.Unknown) {
       it should "reject gvcf inputs with unknown location" in {
-        clioWebClient
-          .addGvcf(upsertKey, upsertData)
-          .map(_.status should be(StatusCodes.NotFound))
+        recoverToSucceededIf[Exception](responseFuture)
       }
     } else {
-      val queryData = TransferGvcfV1QueryInput(
-        location = Some(expected.location)
-      )
-
       it should s"handle upserts and queries for gvcf location $location" in {
         for {
-          upsertResponse <- clioWebClient
-            .addGvcf(upsertKey, upsertData)
-          returnedClioId <- Unmarshal(upsertResponse).to[UUID]
-          queryResponse <- clioWebClient
-            .queryGvcf(queryData)
+          returnedClioId <- responseFuture
+          queryResponse <- runClient(
+            ClioCommand.queryGvcfName,
+            "--location",
+            location.entryName
+          )
           outputs <- Unmarshal(queryResponse)
             .to[Seq[TransferGvcfV1QueryOutput]]
         } yield {
-          upsertResponse.status should be(StatusCodes.OK)
           outputs should have length 1
           outputs.head should be(expected)
 
           val storedDocument =
             getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, returnedClioId)
-          storedDocument.location should be(upsertKey.location)
-          storedDocument.project should be(upsertKey.project)
-          storedDocument.sampleAlias should be(upsertKey.sampleAlias)
-          storedDocument.version should be(upsertKey.version)
-          storedDocument.gvcfPath should be(upsertData.gvcfPath)
+          storedDocument.location should be(expected.location)
+          storedDocument.project should be(expected.project)
+          storedDocument.sampleAlias should be(expected.sampleAlias)
+          storedDocument.version should be(expected.version)
+          storedDocument.gvcfPath should be(expected.gvcfPath)
         }
       }
     }
@@ -126,17 +136,16 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       sampleAlias = s"sample$randomId",
       version = 1
     )
-    val upsertData =
-      TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf1.gvcf"))
 
     for {
-      clioId1 <- clioWebClient
-        .addGvcf(upsertKey, upsertData)
-        .flatMap(Unmarshal(_).to[UUID])
+      clioId1 <- runUpsertGvcf(
+        upsertKey,
+        TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf1.gvcf"))
+      )
       clioId2 <- clioWebClient
         .addGvcf(
           upsertKey,
-          upsertData.copy(gvcfPath = Some("gs://path/gvcf2.gvcf"))
+          TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf2.gvcf"))
         )
         .flatMap(Unmarshal(_).to[UUID])
     } yield {
@@ -168,12 +177,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf1.gvcf"))
 
     for {
-      clioId1 <- clioWebClient
-        .addGvcf(upsertKey, upsertData)
-        .flatMap(Unmarshal(_).to[UUID])
-      clioId2 <- clioWebClient
-        .addGvcf(upsertKey, upsertData)
-        .flatMap(Unmarshal(_).to[UUID])
+      clioId1 <- runUpsertGvcf(upsertKey, upsertData)
+      clioId2 <- runUpsertGvcf(upsertKey, upsertData)
     } yield {
       clioId2.compareTo(clioId1) should be(1)
 
@@ -202,24 +207,24 @@ trait GvcfTests { self: BaseIntegrationSpec =>
             gvcfPath = Some("gs://path/gvcf.gvcf"),
             contamination = Some(.65f)
           )
-          clioWebClient.addGvcf(key, data)
-      }
-    }
-
-    val upsertsStatus = upserts.flatMap { requests =>
-      requests.foldLeft(succeed) { (_, req) =>
-        req.status should be(StatusCodes.OK)
+          runUpsertGvcf(key, data)
       }
     }
 
     for {
-      _ <- upsertsStatus
-      queryProject = TransferGvcfV1QueryInput(project = Some(project))
-      querySample = TransferGvcfV1QueryInput(sampleAlias = Some(samples.head))
-      projectResponse <- clioWebClient.queryGvcf(queryProject)
+      _ <- upserts
+      projectResponse <- runClient(
+        ClioCommand.queryGvcfName,
+        "--project",
+        project
+      )
       projectResults <- Unmarshal(projectResponse)
         .to[Seq[TransferGvcfV1QueryOutput]]
-      sampleResponse <- clioWebClient.queryGvcf(querySample)
+      sampleResponse <- runClient(
+        ClioCommand.queryGvcfName,
+        "--sample-alias",
+        samples.head
+      )
       sampleResults <- Unmarshal(sampleResponse)
         .to[Seq[TransferGvcfV1QueryOutput]]
     } yield {
@@ -235,33 +240,19 @@ trait GvcfTests { self: BaseIntegrationSpec =>
   }
 
   it should "handle updates to gvcf metadata" in {
-    val location = Location.GCP
+    val project = s"testProject$randomId"
+    val key =
+      TransferGvcfV1Key(Location.GCP, project, s"testSample$randomId", 1)
+    val gvcfPath = "gs://path/gvcf.gvcf"
     val metadata = TransferGvcfV1Metadata(
-      gvcfPath = Some("gs://path/gvcf.gvcf"),
+      gvcfPath = Some(gvcfPath),
       contamination = Some(.75f),
       notes = Some("Breaking news")
     )
-    val project = "testProject" + randomId
-    val version = 1
-    val sampleAlias = "testSample" + randomId
-
-    val upsertKey =
-      TransferGvcfV1Key(location, project, sampleAlias, version)
-    val upsertData = TransferGvcfV1Metadata(
-      contamination = metadata.contamination,
-      gvcfPath = metadata.gvcfPath
-    )
-    val queryData = TransferGvcfV1QueryInput(project = Some(project))
-
-    def add(data: TransferGvcfV1Metadata) = {
-      clioWebClient
-        .addGvcf(upsertKey, data)
-        .map(_.status should be(StatusCodes.OK))
-    }
 
     def query = {
       for {
-        response <- clioWebClient.queryGvcf(queryData)
+        response <- runClient(ClioCommand.queryGvcfName, "--project", project)
         results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
       } yield {
         results should have length 1
@@ -269,23 +260,32 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       }
     }
 
+    val upsertData = TransferGvcfV1Metadata(
+      contamination = metadata.contamination,
+      gvcfPath = metadata.gvcfPath
+    )
+
     for {
-      _ <- add(upsertData)
+      _ <- runUpsertGvcf(key, upsertData)
       original <- query
       _ = original.gvcfPath should be(metadata.gvcfPath)
+      _ = original.contamination should be(metadata.contamination)
       _ = original.notes should be(None)
       upsertData2 = upsertData.copy(notes = metadata.notes)
-      _ <- add(upsertData2)
+      _ <- runUpsertGvcf(key, upsertData2)
       withNotes <- query
-      _ = withNotes.gvcfPath should be(metadata.gvcfPath)
+      _ = original.gvcfPath should be(metadata.gvcfPath)
+      _ = withNotes.contamination should be(metadata.contamination)
       _ = withNotes.notes should be(metadata.notes)
-      _ <- add(
+      _ <- runUpsertGvcf(
+        key,
         upsertData2
-          .copy(gvcfPath = Some("gs://path2/gvcf.gvcf"), notes = Some(""))
+          .copy(contamination = Some(0.123f), notes = Some(""))
       )
       emptyNotes <- query
     } yield {
-      emptyNotes.gvcfPath should be(Some("gs://path2/gvcf.gvcf"))
+      emptyNotes.gvcfPath should be(metadata.gvcfPath)
+      emptyNotes.contamination should be(Some(0.123f))
       emptyNotes.notes should be(Some(""))
     }
   }
@@ -310,25 +310,19 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val upserts = Future.sequence {
       keysWithMetadata.map {
-        case (key, metadata) =>
-          clioWebClient.addGvcf(key, metadata)
+        case (key, metadata) => runUpsertGvcf(key, metadata)
       }
     }
-
-    val upsertsStatus = upserts.flatMap { requests =>
-      requests.foldLeft(succeed) { (_, req) =>
-        req.status should be(StatusCodes.OK)
-      }
-    }
-
-    val queryData = TransferGvcfV1QueryInput(
-      location = Some(Location.GCP),
-      project = Some(project)
-    )
 
     def checkQuery(expectedLength: Int) = {
       for {
-        response <- clioWebClient.queryGvcf(queryData)
+        response <- runClient(
+          ClioCommand.queryGvcfName,
+          "--project",
+          project,
+          "--sample-alias",
+          sampleAlias
+        )
         results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
       } yield {
         results.length should be(expectedLength)
@@ -342,24 +336,23 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
 
     for {
-      _ <- upsertsStatus
+      _ <- upserts
       _ <- checkQuery(expectedLength = 3)
-      // TODO: Weird to use the `addGvcf` method here, even though it works.
-      deleteResponse <- clioWebClient.addGvcf(
+      // TODO: This should use the delete CLP once we figure out how to test the I/O portion.
+      deleteResponse <- runUpsertGvcf(
         deleteKey,
         deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
       )
-      _ = deleteResponse.status should be(StatusCodes.OK)
       _ <- checkQuery(expectedLength = 2)
 
-      // Client doesn't currently have a method for queryAll.
-      entity <- Marshal(queryData).to[RequestEntity]
-      request = HttpRequest(
-        uri = s"/api/v1/gvcf/queryall",
-        method = HttpMethods.POST,
-        entity = entity
-      ).addCredentials(bearerToken)
-      response <- clioWebClient.dispatchRequest(request)
+      response <- runClient(
+        ClioCommand.queryGvcfName,
+        "--project",
+        project,
+        "--sample-alias",
+        sampleAlias,
+        "--include-deleted"
+      )
       results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
     } yield {
       results.length should be(keysWithMetadata.length)

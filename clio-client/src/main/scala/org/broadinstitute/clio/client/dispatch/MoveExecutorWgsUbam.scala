@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
 import org.broadinstitute.clio.client.ClioClientConfig
-import org.broadinstitute.clio.client.commands.MoveWgsUbam
+import org.broadinstitute.clio.client.commands.{ClioCommand, MoveWgsUbam}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
@@ -24,7 +24,7 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
       _ <- verifyCloudPaths logErrorMsg
         "Clio client can only handle cloud operations right now."
       wgsUbamPath <- queryForWgsUbamPath(webClient) logErrorMsg
-        "Could not query the WgsUbam. No files have been moved."
+        "Could not query the wgs-ubam. No files have been moved."
       _ <- copyGoogleObject(
         wgsUbamPath,
         moveWgsUbamCommand.metadata.ubamPath,
@@ -32,7 +32,7 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
       ) logErrorMsg
         "An error occurred while copying the files in the cloud. No files have been moved."
       upsertUbam <- upsertUpdatedWgsUbam(webClient) logErrorMsg
-        s"""An error occurred while upserting the WgsUbam.
+        s"""An error occurred while upserting the wgs-ubam.
            |The ubam exists in both at both the old and the new locations.
            |At this time, Clio only knows about the bam at the old location.
            |Try removing the ubam at the new location and re-running this command.
@@ -63,11 +63,11 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
           wgsUbams.head
         case 0 =>
           throw new Exception(
-            s"No WgsUbams were found for Key($prettyKey). You can add this WgsUbam using the 'add-wgs-ubam' command in the Clio client."
+            s"No wgs-ubams were found for Key($prettyKey). You can add this wgs-ubam using the '${ClioCommand.addWgsUbamName}' command in the Clio client."
           )
         case s =>
           throw new Exception(
-            s"$s WgsUbams were returned for Key($prettyKey), expected 1. You can see what was returned by running the 'query-wgs-ubam' command in the Clio client."
+            s"$s wgs-ubams were returned for Key($prettyKey), expected 1. You can see what was returned by running the '${ClioCommand.queryWgsUbamName}' command in the Clio client."
           )
 
       }

@@ -2,6 +2,12 @@ package org.broadinstitute.clio.client.webclient
 
 import org.broadinstitute.clio.client.util.{IoUtil, TestData}
 import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
+import org.broadinstitute.clio.status.model.{
+  ServerStatusInfo,
+  StatusInfo,
+  SystemStatusInfo,
+  VersionInfo
+}
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.json.JsonSchemas
 
@@ -10,6 +16,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.{Json, Printer}
 import io.circe.parser.parse
+import io.circe.syntax._
 
 import scala.concurrent.Future
 
@@ -25,10 +32,8 @@ class MockClioWebClient(
     )
     with TestData {
 
-  val version: String =
-    """|{
-       |  "version" : "0.0.1"
-       |}""".stripMargin
+  val health = StatusInfo(ServerStatusInfo.Started, SystemStatusInfo.OK)
+  val version = VersionInfo("0.0.1")
 
   val json: Option[Json] = metadataLocationOption.map(
     metadataLocation =>
@@ -39,9 +44,27 @@ class MockClioWebClient(
     }
   )
 
+  override def getClioServerHealth: Future[HttpResponse] = {
+    Future.successful(
+      HttpResponse(
+        status = status,
+        entity = HttpEntity(
+          ContentTypes.`application/json`,
+          health.asJson.pretty(implicitly[Printer])
+        )
+      )
+    )
+  }
+
   override def getClioServerVersion: Future[HttpResponse] = {
     Future.successful(
-      HttpResponse(status = status, entity = HttpEntity(version))
+      HttpResponse(
+        status = status,
+        entity = HttpEntity(
+          ContentTypes.`application/json`,
+          version.asJson.pretty(implicitly[Printer])
+        )
+      )
     )
   }
 
@@ -88,7 +111,8 @@ class MockClioWebClient(
   }
 
   override def queryWgsUbam(
-    input: TransferWgsUbamV1QueryInput
+    input: TransferWgsUbamV1QueryInput,
+    includeDeleted: Boolean = false
   )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
@@ -104,7 +128,8 @@ class MockClioWebClient(
   }
 
   override def queryGvcf(
-    input: TransferGvcfV1QueryInput
+    input: TransferGvcfV1QueryInput,
+    includeDeleted: Boolean = false
   )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
@@ -142,7 +167,8 @@ object MockClioWebClient extends TestData {
     class MockClioWebClientNoReturn
         extends MockClioWebClient(status = StatusCodes.OK, None) {
       override def queryWgsUbam(
-        input: TransferWgsUbamV1QueryInput
+        input: TransferWgsUbamV1QueryInput,
+        includeDeleted: Boolean = false
       )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(
@@ -191,7 +217,8 @@ object MockClioWebClient extends TestData {
     class MockClioWebClientNoReturn
         extends MockClioWebClient(status = StatusCodes.OK, None) {
       override def queryGvcf(
-        input: TransferGvcfV1QueryInput
+        input: TransferGvcfV1QueryInput,
+        includeDeleted: Boolean = false
       )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(

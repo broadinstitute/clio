@@ -19,26 +19,20 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     command match {
-      case GetSchemaWgsUbam =>
-        GetSchemaExecutorWgsUbam.execute(webClient, ioUtil)
       case addWgsUbam: AddWgsUbam =>
         new AddExecutorWgsUbam(addWgsUbam).execute(webClient, ioUtil)
-      case queryWgsUbam: QueryWgsUbam =>
-        new QueryExecutorWgsUbam(queryWgsUbam).execute(webClient, ioUtil)
       case moveWgsUbam: MoveWgsUbam =>
         new MoveExecutorWgsUbam(moveWgsUbam).execute(webClient, ioUtil)
       case deleteWgsUbam: DeleteWgsUbam =>
         new DeleteExecutorWgsUbam(deleteWgsUbam).execute(webClient, ioUtil)
-      case GetSchemaGvcf =>
-        GetSchemaExecutorGvcf.execute(webClient, ioUtil)
       case addGvcf: AddGvcf =>
         new AddExecutorGvcf(addGvcf).execute(webClient, ioUtil)
-      case queryGvcf: QueryGvcf =>
-        new QueryExecutorGvcf(queryGvcf).execute(webClient, ioUtil)
       case moveGvcf: MoveGvcf =>
         new MoveExecutorGvcf(moveGvcf).execute(webClient, ioUtil)
       case deleteGvcf: DeleteGvcf =>
         new DeleteExecutorGvcf(deleteGvcf).execute(webClient, ioUtil)
+      case other =>
+        new RetrieveAndPrintExecutor(other).execute(webClient, ioUtil)
     }
   }
 

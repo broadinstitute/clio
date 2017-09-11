@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.client.dispatch
 
-import org.broadinstitute.clio.client.commands.AddWgsUbam
+import org.broadinstitute.clio.client.commands.{AddWgsUbam, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1Metadata
@@ -10,14 +10,13 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.parser.parse
 
 import scala.concurrent.{ExecutionContext, Future}
+
 class AddExecutorWgsUbam(addWgsUbam: AddWgsUbam) extends Executor {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     val metadataLoc = addWgsUbam.metadataLocation
-
-    val command = "'get-schema-wgs-ubam'"
 
     val parsedOrError = parse(IoUtil.readMetadata(metadataLoc)).left.map {
       err =>
@@ -32,7 +31,7 @@ class AddExecutorWgsUbam(addWgsUbam: AddWgsUbam) extends Executor {
       .left
       .map { err =>
         new RuntimeException(
-          s"Invalid metadata given at $metadataLoc. Run the $command command to see the expected JSON format for WgsUbams.",
+          s"Invalid metadata given at $metadataLoc. Run the '${ClioCommand.getWgsUbamSchemaName}' command to see the expected JSON format for WgsUbams.",
           err
         )
       }
