@@ -8,7 +8,7 @@ function help {
     local -r av0="$1" environment="$2" verb="$3"
     local -r -a environments=(dev prod staging)
     local -r -a tools=(curl date jq)
-    local -r -a verbs=(configure list take delete)
+    local -r -a verbs=(list take configure restore delete)
     local -r -a usage=(
         ''
         "$av0: Snapshot an Elasticsearch cluster into GCS."
@@ -19,10 +19,11 @@ function help {
         "       <verb> is one of: ${verbs[*]}, and"
         "       <snapshot> is a snapshot name from 'list'"
         "       and where:"
-        "       configure configures snapshots in environment,"
-        "       list      lists the snapshots already taken, and"
-        "       take      takes a snapshot now, and"
-        "       delete    deletes the named snapshots."
+        "       list      lists the snapshots already taken,"
+        "       take      takes a snapshot now,"
+        "       configure configures snapshots in <environment>,"
+        "       restore   restores the named <snapshot>, and"
+        "       delete    deletes the named <snapshot>s."
         ''
         "Example: $av0 dev list"
         ''
@@ -115,7 +116,14 @@ function snapshot_take () {
     echoRunJq "$av0" curl -s -X PUT --data "$data" $url
 }
 
-# Delete the snapshots named in $5 ... and so on.
+# Restore the snapshot named in $4.
+#
+function snapshot_restore () {
+    local -r av0="$1" es=$2 bucket=$3 snap=$4
+    echoRunJq "$av0" curl -s -X POST $es/_snapshot/$bucket/$snap/_restore
+}
+
+# Delete the snapshots named in $4 ... and so on.
 #
 function snapshot_delete () {
     local -r av0="$1" es=$2 bucket=$3 ; shift 3
