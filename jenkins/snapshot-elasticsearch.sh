@@ -2,16 +2,26 @@
 
 set -e
 
+APPLICATION=clio-elasticsearch
+
+# Echo the GCS bucket named for $environment.
+#
+function gcsBucketForEnvionment () {
+    local -r environment=$1
+    echo broad-gotc-$environment-$APPLICATION
+}
+
 # Show usage and fail if there is a problem with the command line.
 #
-function help {
+function help () {
     local -r av0="$1" environment="$2" verb="$3"
     local -r -a environments=(dev prod staging)
     local -r -a tools=(curl date jq)
     local -r -a verbs=(list take configure restore delete)
-    local -r -a usage=(
+    local -r bucket=$(gcsBucketForEnvionment '<environment>')
+    local -a usage=(
         ''
-        "$av0: Snapshot an Elasticsearch cluster into GCS."
+        "$av0: Snapshot an Elasticsearch cluster into a GCS bucket."
         ''
         "Usage: $av0 <environment> <verb> [<snapshot> ...]"
         ''
@@ -25,31 +35,34 @@ function help {
         "       restore   restores the named <snapshot>, and"
         "       delete    deletes the named <snapshot>s."
         ''
+        "Note: Name the GCS bucket: $bucket"
+        ''
         "Example: $av0 dev list"
         ''
         "BTW, you ran: $*"
         ''
     )
-    local ok=no x
+    local ok=yes x
+    for x in "${tools[@]}"; do which $x >/dev/null || ok=no; done
+    if test $ok = no
+    then
+        usage+=("${av0}: You need these tools on PATH: ${tools[*]}")
+    fi
+    ok=no
     for x in ${environments[*]}; do test $x = "$environment" && ok=yes; done
     if test $ok = no
     then
-        echo 1>&2 "${av0}: Unrecognized environment: '$environment'"
+        usage+=("${av0}: No environment: '$environment'")
     fi
     ok=no
     for x in ${verbs[*]}; do test $x = "$verb" && ok=yes; done
     if test $ok = no
     then
-        echo 1>&2 "${av0}: Unrecognized verb: '$verb'"
-    fi
-    for x in "${tools[@]}"; do which $x >/dev/null || ok=no; done
-    if test $ok = no
-    then
-        echo 1>&2 "${av0}: You need these tools on PATH: ${tools[*]}"
+        usage+=("${av0}: No verb: '$verb'")
     fi
     if test $ok = no
     then
-        for line in "${usage[@]}"; do echo "$line" 1>&2; done
+        for line in "${usage[@]}"; do echo 1>&2 "$line"; done
         exit 1
     fi
 }
@@ -78,7 +91,7 @@ function snapshot_configure () {
             "bucket": "'$bucket'",
             "service_account": "_default_",
             "compress": true,
-            "application_name": "clio-elasticsearch"
+            "application_name": "'$APPLICATION'"
         }
     }'
     echoRunJq "$av0" curl -s -X PUT --data "$data" $es/_snapshot/$bucket
@@ -96,7 +109,7 @@ function snapshot_list () {
 function snapshot_take () {
     local -r av0="$1" es=$2 bucket=$3
     local -r jq='keys|.[]|select(startswith(".")|not)'
-    local -r snapshot=clio-$(date -u +%Y-%m-%d-%H-%M-%S)
+    local -r snapshot=snap-$(date -u +%Y-%m-%d-%H-%M-%S)
     local -r url=$es/_snapshot/$bucket/$snapshot?wait_for_completion=true
     local -a -r curl=(curl -s $es/_aliases)
     local -r indexes=$("${curl[@]}" | jq --raw-output $jq)
@@ -136,7 +149,7 @@ function snapshot_delete () {
 function main () {
     local -r av0="${0##*/}" environment="$1" verb="$2"
     help "$av0" "$@" ; shift 2
-    local -r bucket=broad-gotc-$environment-clio-elasticsearch
+    local -r bucket=broad-gotc-$environment-$APPLICATION
     local -r domain=gotc-$environment.broadinstitute.org
     local -r es=http://elasticsearch1.$domain:9200
     snapshot_$verb "$av0" $es $bucket "$@"
