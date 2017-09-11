@@ -152,10 +152,10 @@ function snapshot_delete () {
 function main () {
     local -r av0="${0##*/}" environment="$1" verb="$2"
     help "$av0" "$@" ; shift 2
-    local -r bucket=broad-gotc-$environment-$APPLICATION
+    local -r bucket=$(gcsBucketForEnvionment $environment)
     local -r domain=gotc-$environment.broadinstitute.org
     local -r es=http://elasticsearch1.$domain:9200
-    snapshot_$verb "$av0" $es $bucket "$@"
+    echo snapshot_$verb "$av0" $es $bucket "$@"
 }
 
 main "$@"
