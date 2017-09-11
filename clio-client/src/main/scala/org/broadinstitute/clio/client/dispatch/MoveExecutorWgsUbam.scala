@@ -5,10 +5,11 @@ import org.broadinstitute.clio.client.commands.{ClioCommand, MoveWgsUbam}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
+  TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput,
   TransferWgsUbamV1QueryOutput
 }
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.util.model.Location
 
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
@@ -21,15 +22,11 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     for {
-      _ <- verifyCloudPaths logErrorMsg
+      _ <- Future(verifyCloudPaths(ioUtil)) logErrorMsg
         "Clio client can only handle cloud operations right now."
       wgsUbamPath <- queryForWgsUbamPath(webClient) logErrorMsg
         "Could not query the wgs-ubam. No files have been moved."
-      _ <- copyGoogleObject(
-        wgsUbamPath,
-        moveWgsUbamCommand.metadata.ubamPath,
-        ioUtil
-      ) logErrorMsg
+      _ <- copyGoogleObject(wgsUbamPath, moveWgsUbamCommand.destination, ioUtil) logErrorMsg
         "An error occurred while copying the files in the cloud. No files have been moved."
       upsertUbam <- upsertUpdatedWgsUbam(webClient) logErrorMsg
         s"""An error occurred while upserting the wgs-ubam.
@@ -44,7 +41,7 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
            | """.stripMargin
     } yield {
       logger.info(
-        s"Successfully moved '${wgsUbamPath.get}' to '${moveWgsUbamCommand.metadata.ubamPath.get}'"
+        s"Successfully moved '$wgsUbamPath' to '${moveWgsUbamCommand.destination}'"
       )
       upsertUbam
     }
@@ -52,7 +49,7 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
 
   private def queryForWgsUbamPath(
     webClient: ClioWebClient
-  )(implicit bearerToken: OAuth2BearerToken): Future[Option[String]] = {
+  )(implicit bearerToken: OAuth2BearerToken): Future[String] = {
     implicit val ec: ExecutionContext = webClient.executionContext
 
     def ensureOnlyOne(
@@ -69,7 +66,6 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
           throw new Exception(
             s"$s wgs-ubams were returned for Key($prettyKey), expected 1. You can see what was returned by running the '${ClioCommand.queryWgsUbamName}' command in the Clio client."
           )
-
       }
     }
 
@@ -81,9 +77,9 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
           lane = Some(moveWgsUbamCommand.transferWgsUbamV1Key.lane),
           libraryName =
             Some(moveWgsUbamCommand.transferWgsUbamV1Key.libraryName),
-          location = Option(Location.GCP),
-          documentStatus = Option(DocumentStatus.Normal)
-        )
+          location = Option(Location.GCP)
+        ),
+        includeDeleted = false
       )
       .recoverWith {
         case ex: Exception =>
@@ -94,31 +90,35 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
       .map(webClient.ensureOkResponse)
       .flatMap(webClient.unmarshal[Seq[TransferWgsUbamV1QueryOutput]])
       .map(ensureOnlyOne)
-      .map(_.ubamPath)
+      .map {
+        _.ubamPath.getOrElse {
+          throw new Exception(
+            s"The ubam for Key($prettyKey) has no registered path, and can't be moved."
+          )
+        }
+      }
   }
 
-  private def copyGoogleObject(source: Option[String],
-                               destination: Option[String],
+  private def copyGoogleObject(source: String,
+                               destination: String,
                                ioUtil: IoUtil): Future[Unit] = {
-    ioUtil.copyGoogleObject(source.get, destination.get) match {
-      case 0 => Future.successful(())
-      case _ =>
-        Future.failed(
-          new Exception(s"Copy files in the cloud failed from '${source
-            .getOrElse("")}' to '${destination.getOrElse("")}'")
-        )
-    }
-  }
-
-  private def deleteGoogleObject(path: Option[String],
-                                 ioUtil: IoUtil): Future[Unit] = {
-    ioUtil.deleteGoogleObject(path.get) match {
+    ioUtil.copyGoogleObject(source, destination) match {
       case 0 => Future.successful(())
       case _ =>
         Future.failed(
           new Exception(
-            s"Deleting file in the cloud failed for path '${path.getOrElse("")}'"
+            s"Copy files in the cloud failed from '$source' to '$destination'"
           )
+        )
+    }
+  }
+
+  private def deleteGoogleObject(path: String, ioUtil: IoUtil): Future[Unit] = {
+    ioUtil.deleteGoogleObject(path) match {
+      case 0 => Future.successful(())
+      case _ =>
+        Future.failed(
+          new Exception(s"Deleting file in the cloud failed for path '$path'")
         )
     }
   }
@@ -130,7 +130,9 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
     webClient
       .addWgsUbam(
         input = moveWgsUbamCommand.transferWgsUbamV1Key,
-        transferWgsUbamV1Metadata = moveWgsUbamCommand.metadata
+        transferWgsUbamV1Metadata = TransferWgsUbamV1Metadata(
+          ubamPath = Some(moveWgsUbamCommand.destination)
+        )
       )
       .map(webClient.ensureOkResponse)
   }
@@ -141,28 +143,13 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
       s"Lane: ${moveWgsUbamCommand.transferWgsUbamV1Key.lane}, Location: ${moveWgsUbamCommand.transferWgsUbamV1Key.location}"
   }
 
-  private def verifyCloudPaths: Future[Unit] = {
-    val errorOption = for {
-      locationError <- moveWgsUbamCommand.transferWgsUbamV1Key.location match {
-        case Location.GCP => Some("")
-        case _ =>
-          Some("Only GCP unmapped bams are supported at this time.")
-      }
-      pathError <- moveWgsUbamCommand.metadata.ubamPath.map {
-        case loc if loc.startsWith("gs://") => ""
-        case _ =>
-          s"The destination of the ubam must be a cloud path. ${moveWgsUbamCommand.metadata.ubamPath.get} is not a cloud path."
-      }
-    } yield {
-      if (locationError.isEmpty && pathError.isEmpty) {
-        Future.successful(())
-      } else {
-        Future.failed(new Exception(String.join(" ", locationError, pathError)))
-      }
+  private def verifyCloudPaths(ioUtil: IoUtil): Unit = {
+    if (moveWgsUbamCommand.transferWgsUbamV1Key.location != Location.GCP) {
+      throw new Exception("Only GCP unmapped bams are supported at this time.")
+    } else if (!ioUtil.isGoogleObject(moveWgsUbamCommand.destination)) {
+      throw new Exception(
+        s"The destination of the ubam must be a cloud path. ${moveWgsUbamCommand.destination} is not a cloud path."
+      )
     }
-    errorOption.getOrElse(
-      Future
-        .failed(new Exception("Either location or ubamPath were not supplied"))
-    )
   }
 }

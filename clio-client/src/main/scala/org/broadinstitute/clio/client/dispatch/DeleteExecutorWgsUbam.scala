@@ -39,7 +39,8 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
               libraryName = Some(deleteWgsUbam.transferWgsUbamV1Key.libraryName),
               location = Some(deleteWgsUbam.transferWgsUbamV1Key.location),
               documentStatus = Some(DocumentStatus.Normal)
-            )
+            ),
+            includeDeleted = false
           )
           .map(webClient.ensureOkResponse) logErrorMsg "There was a problem querying the Clio server for wgs-ubams."
         wgsUbams <- webClient
@@ -125,11 +126,8 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
           TransferWgsUbamV1Metadata(
             documentStatus = Option(DocumentStatus.Deleted),
             notes = wgsUbam.notes
-              .map(
-                notes =>
-                  s"$notes\n${deleteWgsUbam.metadata.notes.getOrElse("")}"
-              )
-              .orElse(deleteWgsUbam.metadata.notes)
+              .map(notes => s"$notes\n${deleteWgsUbam.note}")
+              .orElse(Some(deleteWgsUbam.note))
           )
         )
         .map(webClient.ensureOkResponse)

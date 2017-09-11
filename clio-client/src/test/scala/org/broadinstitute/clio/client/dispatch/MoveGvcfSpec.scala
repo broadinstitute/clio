@@ -6,10 +6,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.MoveGvcf
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferGvcfV1Key,
-  TransferGvcfV1Metadata
-}
+import org.broadinstitute.clio.transfer.model.TransferGvcfV1Key
 import org.broadinstitute.clio.util.model.Location
 
 class MoveGvcfSpec extends BaseClientSpec {
@@ -20,9 +17,8 @@ class MoveGvcfSpec extends BaseClientSpec {
   it should "throw an exception if the destination path scheme is invalid" in {
     recoverToSucceededIf[Exception] {
       val command = MoveGvcf(
-        metadata =
-          TransferGvcfV1Metadata(gvcfPath = Some("gs://not_a_valid_path")),
-        transferGvcfV1Key = testGvcfTransferV1Key
+        transferGvcfV1Key = testGvcfTransferV1Key,
+        destination = "gs://not_a_valid_path"
       )
       succeedingDispatcher.dispatch(command)
     }
@@ -32,8 +28,8 @@ class MoveGvcfSpec extends BaseClientSpec {
     recoverToSucceededIf[Exception] {
       val command =
         MoveGvcf(
-          metadata = TransferGvcfV1Metadata(gvcfPath = testGvcfCloudSourcePath),
-          transferGvcfV1Key = testGvcfTransferV1Key
+          transferGvcfV1Key = testGvcfTransferV1Key,
+          destination = testGvcfCloudSourcePath
         )
       succeedingDispatcher.dispatch(command)
     }
@@ -41,12 +37,12 @@ class MoveGvcfSpec extends BaseClientSpec {
 
   it should "throw an exception if the source and destination paths are the same" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath.get)
+    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     recoverToSucceededIf[Exception] {
       val command =
         MoveGvcf(
-          metadata = TransferGvcfV1Metadata(gvcfPath = testGvcfCloudSourcePath),
-          transferGvcfV1Key = testGvcfTransferV1Key
+          transferGvcfV1Key = testGvcfTransferV1Key,
+          destination = testGvcfCloudSourcePath
         )
       succeedingReturningDispatcherGvcf(mockIoUtil).dispatch(command)
     }
@@ -56,8 +52,8 @@ class MoveGvcfSpec extends BaseClientSpec {
     recoverToSucceededIf[Exception] {
       val command =
         MoveGvcf(
-          metadata = TransferGvcfV1Metadata(gvcfPath = testGvcfCloudSourcePath),
-          transferGvcfV1Key = testGvcfTransferV1Key
+          transferGvcfV1Key = testGvcfTransferV1Key,
+          destination = testGvcfCloudSourcePath
         )
       failingDispatcherGvcf.dispatch(command)
     }
@@ -67,8 +63,8 @@ class MoveGvcfSpec extends BaseClientSpec {
     recoverToSucceededIf[Exception] {
       val command =
         MoveGvcf(
-          metadata = TransferGvcfV1Metadata(gvcfPath = testGvcfCloudSourcePath),
-          transferGvcfV1Key = testGvcfTransferV1Key
+          transferGvcfV1Key = testGvcfTransferV1Key,
+          destination = testGvcfCloudSourcePath
         )
       succeedingDispatcher.dispatch(command)
     }
@@ -76,35 +72,33 @@ class MoveGvcfSpec extends BaseClientSpec {
 
   it should "throw an exception if Clio can't upsert the new Gvcf" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath.get)
+    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     recoverToSucceededIf[Exception] {
       new CommandDispatch(MockClioWebClient.failingToAddGvcf, mockIoUtil)
         .dispatch(goodGvcfMoveCommand)
     }
   }
 
-  it should "throw and exception if given a non-GCP gvcf" in {
+  it should "throw an exception if given a non-GCP gvcf" in {
     recoverToSucceededIf[Exception] {
       val command = MoveGvcf(
-        metadata =
-          TransferGvcfV1Metadata(gvcfPath = testGvcfCloudDestinationPath),
         transferGvcfV1Key = TransferGvcfV1Key(
           location = Location.OnPrem,
           project = testProject,
           sampleAlias = testSampleAlias,
           version = testVersion
-        )
+        ),
+        destination = testGvcfCloudDestinationPath
       )
       succeedingDispatcher.dispatch(command)
     }
   }
 
-  it should "throw and exception if the destination path is not in GCP" in {
+  it should "throw an exception if the destination path is not in GCP" in {
     recoverToSucceededIf[Exception] {
       val command = MoveGvcf(
-        metadata =
-          TransferGvcfV1Metadata(gvcfPath = Some("/this/is/a/local/path")),
-        transferGvcfV1Key = testGvcfTransferV1Key
+        transferGvcfV1Key = testGvcfTransferV1Key,
+        destination = "/this/is/a/local/path"
       )
       succeedingDispatcher.dispatch(command)
     }
@@ -112,7 +106,7 @@ class MoveGvcfSpec extends BaseClientSpec {
 
   it should "move clio gvcfs if no errors are encountered" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath.get)
+    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     succeedingReturningDispatcherGvcf(mockIoUtil)
       .dispatch(goodGvcfMoveCommand)
       .map(_.status should be(StatusCodes.OK))

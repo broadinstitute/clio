@@ -102,10 +102,9 @@ class ClioWebClient(
     )
   }
 
-  def queryWgsUbam(
-    input: TransferWgsUbamV1QueryInput,
-    includeDeleted: Boolean = false
-  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+  def queryWgsUbam(input: TransferWgsUbamV1QueryInput, includeDeleted: Boolean)(
+    implicit bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
     val entity =
       HttpEntity(
         ContentTypes.`application/json`,
@@ -144,10 +143,9 @@ class ClioWebClient(
     )
   }
 
-  def queryGvcf(
-    input: TransferGvcfV1QueryInput,
-    includeDeleted: Boolean = false
-  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+  def queryGvcf(input: TransferGvcfV1QueryInput, includeDeleted: Boolean)(
+    implicit bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
     val entity =
       HttpEntity(
         ContentTypes.`application/json`,

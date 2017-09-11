@@ -37,7 +37,8 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
               project = Some(deleteGvcf.transferGvcfV1Key.project),
               sampleAlias = Some(deleteGvcf.transferGvcfV1Key.sampleAlias),
               version = Some(deleteGvcf.transferGvcfV1Key.version)
-            )
+            ),
+            includeDeleted = false
           )
           .map(webClient.ensureOkResponse) logErrorMsg "There was a problem querying the Clio server for Gvcfs."
         gvcf <- webClient
@@ -123,35 +124,33 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
           TransferGvcfV1Metadata(
             documentStatus = Option(DocumentStatus.Deleted),
             notes = gvcf.notes
-              .map(
-                notes => s"$notes\n${deleteGvcf.metadata.notes.getOrElse("")}"
-              )
-              .orElse(deleteGvcf.metadata.notes)
+              .map(notes => s"$notes\n${deleteGvcf.note}")
+              .orElse(Some(deleteGvcf.note))
           )
         )
         .map(webClient.ensureOkResponse)
         .logErrorMsg(
           s"Failed to delete the Gvcf ${gvcf.prettyKey()} in Clio. " +
             s"The file has been deleted in the cloud. " +
-            s"Clio now has a 'dangling pointer' to ${gvcfPath}. " +
+            s"Clio now has a 'dangling pointer' to $gvcfPath. " +
             s"Please try updating Clio by manually adding the Gvcf and setting the documentStatus to Deleted and making the gvcfPath an empty String."
         )
     }
 
-    logger.info(s"Deleting ${gvcfPath} in the cloud.")
+    logger.info(s"Deleting $gvcfPath in the cloud.")
     if (ioUtil.googleObjectExists(gvcfPath)) {
       if (ioUtil.deleteGoogleObject(gvcfPath) == 0) {
         deleteInClio()
       } else {
         Future.failed(
           new Exception(
-            s"Failed to delete ${gvcfPath} in the cloud. The Gvcf still exists in Clio and on cloud storage"
+            s"Failed to delete $gvcfPath in the cloud. The Gvcf still exists in Clio and on cloud storage"
           )
         )
       }
     } else {
       logger.warn(
-        s"${gvcfPath} does not exist in the cloud. Deleting the Gvcf in Clio to reflect this."
+        s"$gvcfPath does not exist in the cloud. Deleting the Gvcf in Clio to reflect this."
       )
       deleteInClio()
     }
