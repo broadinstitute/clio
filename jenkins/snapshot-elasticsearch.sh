@@ -2,7 +2,10 @@
 
 set -e
 
-APPLICATION=clio-elasticsearch
+# Name the Elasticsearch application to snapshot.
+# Use this to name the GCS bucket and Elasticsearch repository.
+#
+declare -r APPLICATION=clio-elasticsearch
 
 # Echo the GCS bucket named for $environment.
 #
