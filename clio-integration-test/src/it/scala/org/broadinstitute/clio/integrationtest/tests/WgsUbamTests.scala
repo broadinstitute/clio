@@ -47,7 +47,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "report the expected JSON schema for wgs-ubams" in {
-    clioWebClient.getWgsUbamSchema
+    clioWebClient.getSchemaWgsUbam
       .flatMap(Unmarshal(_).to[Json])
       .map(_ should be(JsonSchemas.WgsUbam))
   }

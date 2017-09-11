@@ -1,22 +1,21 @@
 package org.broadinstitute.clio.client.dispatch
 
-import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.commands.AddWgsUbam
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.clio.client.BaseClientSpec
+import org.broadinstitute.clio.client.commands.AddGvcf
 
-class AddWgsUbamSpec extends BaseClientSpec {
-  behavior of "AddWgsUbam"
+class AddGvcfSpec extends BaseClientSpec {
+  behavior of "AddGvcf"
 
   implicit val bearerToken: OAuth2BearerToken = testBearer
 
   it should "fail if the metadata is not valid json" in {
     recoverToSucceededIf[Exception] {
       succeedingDispatcher.dispatch(
-        AddWgsUbam(
+        AddGvcf(
           metadataLocation = badMetadataFileLocation,
-          transferWgsUbamV1Key = testTransferV1Key
+          transferGvcfV1Key = testGvcfTransferV1Key
         ),
       )
     }
@@ -25,9 +24,9 @@ class AddWgsUbamSpec extends BaseClientSpec {
   it should "fail if the json is valid but we can't unmarshal it" in {
     recoverToSucceededIf[Exception] {
       succeedingDispatcher.dispatch(
-        AddWgsUbam(
+        AddGvcf(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
-          transferWgsUbamV1Key = testTransferV1Key
+          transferGvcfV1Key = testGvcfTransferV1Key
         )
       )
     }
@@ -35,14 +34,14 @@ class AddWgsUbamSpec extends BaseClientSpec {
 
   it should "return a failed future if there was a server error" in {
     recoverToSucceededIf[Exception] {
-      failingDispatcherWgsUbam
-        .dispatch(goodAddCommand)
+      failingDispatcherGvcf
+        .dispatch(goodGvcfAddCommand)
     }
   }
 
   it should "return a successful HttpResponse if the server response is OK" in {
     succeedingDispatcher
-      .dispatch(goodAddCommand)
+      .dispatch(goodGvcfAddCommand)
       .map(_.status should be(StatusCodes.OK))
   }
 

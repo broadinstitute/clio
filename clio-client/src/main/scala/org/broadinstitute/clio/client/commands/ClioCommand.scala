@@ -1,11 +1,6 @@
 package org.broadinstitute.clio.client.commands
 
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput
-}
-
+import org.broadinstitute.clio.transfer.model._
 import caseapp.{CommandParser, Recurse}
 import caseapp.core.CommandsMessages
 import shapeless.CNil
@@ -25,14 +20,14 @@ import shapeless.CNil
   */
 sealed trait ClioCommand
 
-case object GetWgsUbamSchema extends ClioCommand
+case object GetSchemaWgsUbam extends ClioCommand
 
 final case class AddWgsUbam(metadataLocation: String,
                             @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key)
     extends ClioCommand
 
 final case class QueryWgsUbam(
-  @Recurse transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput,
+  @Recurse transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput
 ) extends ClioCommand
 
 final case class MoveWgsUbam(
@@ -44,6 +39,24 @@ final case class DeleteWgsUbam(
   @Recurse metadata: TransferWgsUbamV1Metadata,
   @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key
 ) extends ClioCommand
+
+case object GetSchemaGvcf extends ClioCommand
+
+final case class AddGvcf(metadataLocation: String,
+                         @Recurse transferGvcfV1Key: TransferGvcfV1Key)
+    extends ClioCommand
+
+final case class QueryGvcf(
+  @Recurse transferGvcfV1QueryInput: TransferGvcfV1QueryInput
+) extends ClioCommand
+
+final case class MoveGvcf(@Recurse metadata: TransferGvcfV1Metadata,
+                          @Recurse transferGvcfV1Key: TransferGvcfV1Key)
+    extends ClioCommand
+
+final case class DeleteGvcf(@Recurse metadata: TransferGvcfV1Metadata,
+                            @Recurse transferGvcfV1Key: TransferGvcfV1Key)
+    extends ClioCommand
 
 object ClioCommand extends ClioParsers {
 

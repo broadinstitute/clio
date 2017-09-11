@@ -1,11 +1,7 @@
 package org.broadinstitute.clio.client.webclient
 
 import org.broadinstitute.clio.client.util.FutureWithErrorMessage
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput
-}
+import org.broadinstitute.clio.transfer.model._
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
@@ -63,7 +59,7 @@ class ClioWebClient(
     dispatchRequest(HttpRequest(uri = "/health"))
   }
 
-  def getWgsUbamSchema(
+  def getSchemaWgsUbam(
     implicit bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     dispatchRequest(
@@ -101,6 +97,53 @@ class ClioWebClient(
     dispatchRequest(
       HttpRequest(
         uri = "/api/v1/wgsubam/query",
+        method = HttpMethods.POST,
+        entity = entity
+      ).addHeader(Authorization(credentials = bearerToken))
+    )
+  }
+
+  def getSchemaGvcf(
+    implicit bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
+    dispatchRequest(
+      HttpRequest(uri = "/api/v1/gvcf/schema")
+        .addHeader(Authorization(credentials = bearerToken))
+    )
+  }
+
+  def addGvcf(
+    input: TransferGvcfV1Key,
+    transferGvcfV1Metadata: TransferGvcfV1Metadata
+  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+    val entity = HttpEntity(
+      ContentTypes.`application/json`,
+      transferGvcfV1Metadata.asJson.pretty(implicitly[Printer])
+    )
+    dispatchRequest(
+      HttpRequest(
+        uri = "/api/v1/gvcf/metadata/"
+          + input.location + '/'
+          + input.project + '/'
+          + input.sampleAlias + '/'
+          + input.version,
+        method = HttpMethods.POST,
+        entity = entity
+      ).addHeader(Authorization(credentials = bearerToken))
+    )
+  }
+
+  def queryGvcf(
+    input: TransferGvcfV1QueryInput
+  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+    val entity =
+      HttpEntity(
+        ContentTypes.`application/json`,
+        input.asJson.pretty(implicitly[Printer])
+      )
+    dispatchRequest(
+      HttpRequest(
+        uri = "/api/v1/gvcf/query",
         method = HttpMethods.POST,
         entity = entity
       ).addHeader(Authorization(credentials = bearerToken))

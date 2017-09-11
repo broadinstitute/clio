@@ -12,8 +12,8 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
-class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
-  behavior of "WgsUbamService"
+class GvcfServiceSpec extends AsyncFlatSpec with Matchers {
+  behavior of "GvcfService"
 
   it should "upsertMetadata" in {
     upsertMetadataTest(None, Option(DocumentStatus.Normal))
@@ -38,14 +38,14 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val searchService = SearchService(app)
     val persistenceService = PersistenceService(app)
-    val wgsUbamService = new WgsUbamService(persistenceService, searchService)
+    val gvcfService = new GvcfService(persistenceService, searchService)
 
     val transferInputMapper =
-      new CaseClassMapper[TransferWgsUbamV1QueryInput]
+      new CaseClassMapper[TransferGvcfV1QueryInput]
     val transferInput =
       transferInputMapper.newInstance(Map("project" -> Option("testProject")))
     for {
-      _ <- wgsUbamService.queryMetadata(transferInput)
+      _ <- gvcfService.queryMetadata(transferInput)
     } yield {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(
@@ -66,42 +66,42 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
     )
     val searchService = SearchService(app)
     val persistenceService = PersistenceService(app)
-    val wgsUbamService = new WgsUbamService(persistenceService, searchService)
+    val gvcfService = new GvcfService(persistenceService, searchService)
 
     val transferKey =
-      TransferWgsUbamV1Key("barcode1", 2, "library3", Location.GCP)
+      TransferGvcfV1Key(Location.GCP, "project1", "sample1", 1)
     val transferMetadataMapper =
-      new CaseClassMapper[TransferWgsUbamV1Metadata]
+      new CaseClassMapper[TransferGvcfV1Metadata]
     val transferMetadata =
       transferMetadataMapper.newInstance(
         Map(
-          "project" -> Option("testProject"),
+          "gvcfPath" -> Option("gs://path/gvcfPath.gvcf"),
           "notes" -> Option("notable update"),
           "documentStatus" -> documentStatus
         )
       )
     for {
-      returnedClioId <- wgsUbamService.upsertMetadata(
+      returnedClioId <- gvcfService.upsertMetadata(
         transferKey,
         transferMetadata
       )
     } yield {
-      val expectedDocument = WgsUbamService.v1DocumentConverter
+      val expectedDocument = GvcfService.v1DocumentConverter
         .withMetadata(
-          WgsUbamService.v1DocumentConverter.empty(transferKey),
+          GvcfService.v1DocumentConverter.empty(transferKey),
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
         .copy(clioId = returnedClioId)
 
       memoryPersistenceDAO.writeCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
+        Seq((expectedDocument, ElasticsearchIndex.Gvcf))
       )
       memorySearchDAO.updateCalls should be(
         Seq(
           (
-            WgsUbamService.v1DocumentConverter.id(transferKey),
+            GvcfService.v1DocumentConverter.id(transferKey),
             expectedDocument,
-            ElasticsearchIndex.WgsUbam
+            ElasticsearchIndex.Gvcf
           )
         )
       )

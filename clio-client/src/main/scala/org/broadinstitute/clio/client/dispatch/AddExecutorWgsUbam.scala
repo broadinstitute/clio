@@ -10,12 +10,14 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.parser.parse
 
 import scala.concurrent.{ExecutionContext, Future}
-class AddWgsUbamExecutor(addWgsUbam: AddWgsUbam) extends Executor {
+class AddExecutorWgsUbam(addWgsUbam: AddWgsUbam) extends Executor {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     val metadataLoc = addWgsUbam.metadataLocation
+
+    val command = "'get-schema-wgs-ubam'"
 
     val parsedOrError = parse(IoUtil.readMetadata(metadataLoc)).left.map {
       err =>
@@ -30,7 +32,7 @@ class AddWgsUbamExecutor(addWgsUbam: AddWgsUbam) extends Executor {
       .left
       .map { err =>
         new RuntimeException(
-          s"Invalid metadata given at $metadataLoc. Run the 'get-wgs-ubam-schema' command to see the expected JSON format for WgsUbams.",
+          s"Invalid metadata given at $metadataLoc. Run the $command command to see the expected JSON format for WgsUbams.",
           err
         )
       }

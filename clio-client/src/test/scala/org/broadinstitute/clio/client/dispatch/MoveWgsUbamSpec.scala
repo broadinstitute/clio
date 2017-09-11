@@ -51,7 +51,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
             TransferWgsUbamV1Metadata(ubamPath = testUbamCloudSourcePath),
           transferWgsUbamV1Key = testTransferV1Key
         )
-      succeedingReturningDispatcher(mockIoUtil).dispatch(command)
+      succeedingReturningDispatcherWgsUbam(mockIoUtil).dispatch(command)
     }
   }
 
@@ -63,7 +63,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
             TransferWgsUbamV1Metadata(ubamPath = testUbamCloudSourcePath),
           transferWgsUbamV1Key = testTransferV1Key
         )
-      failingDispatcher.dispatch(command)
+      failingDispatcherWgsUbam.dispatch(command)
     }
   }
 
@@ -118,7 +118,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   it should "move clio unmapped bams if no errors are encountered" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
-    succeedingReturningDispatcher(mockIoUtil)
+    succeedingReturningDispatcherWgsUbam(mockIoUtil)
       .dispatch(goodMoveCommand)
       .map(_.status should be(StatusCodes.OK))
   }

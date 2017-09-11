@@ -36,7 +36,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
 
   it should "throw an exception if Clio returns an error" in {
     recoverToSucceededIf[Exception] {
-      failingDispatcher.dispatch(goodDeleteCommand)
+      failingDispatcherWgsUbam.dispatch(goodDeleteCommand)
     }
   }
 
@@ -52,7 +52,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
       override def googleObjectExists(path: String): Boolean = true
     }
     recoverToSucceededIf[Exception] {
-      succeedingReturningDispatcher(new FailingDeleteMockIoUtil)
+      succeedingReturningDispatcherWgsUbam(new FailingDeleteMockIoUtil)
         .dispatch(goodDeleteCommand)
     }
   }
@@ -67,7 +67,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "delete a WgsUbam in Clio if the cloud ubam does not exist" in {
-    succeedingReturningDispatcher(new MockIoUtil)
+    succeedingReturningDispatcherWgsUbam(new MockIoUtil)
       .dispatch(goodDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }
@@ -75,7 +75,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   it should "delete a WgsUbam in Clio and the cloud" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
-    succeedingReturningDispatcher(mockIoUtil)
+    succeedingReturningDispatcherWgsUbam(mockIoUtil)
       .dispatch(goodDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }

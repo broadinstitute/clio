@@ -29,6 +29,8 @@ trait SystemElasticsearchDAO extends SearchDAO { this: HttpElasticsearchDAO =>
     for {
       _ <- waitForSearchReady()
       _ <- createOrUpdateIndex(ElasticsearchIndex.WgsUbam)
+      _ <- createOrUpdateIndex(ElasticsearchIndex.Gvcf)
+
     } yield ()
   }
 

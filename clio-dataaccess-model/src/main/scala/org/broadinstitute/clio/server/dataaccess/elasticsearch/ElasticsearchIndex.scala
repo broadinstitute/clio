@@ -44,6 +44,9 @@ object ElasticsearchIndex {
   val WgsUbam: ElasticsearchIndex[DocumentWgsUbam] =
     indexDocument[DocumentWgsUbam]
 
+  val Gvcf: ElasticsearchIndex[DocumentGvcf] =
+    indexDocument[DocumentGvcf]
+
   /**
     * Creates an index using shapeless and reflection.
     *
