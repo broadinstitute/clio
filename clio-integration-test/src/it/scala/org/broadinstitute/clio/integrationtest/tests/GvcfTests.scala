@@ -20,15 +20,15 @@ import io.circe.Json
 
 import scala.concurrent.Future
 
+import java.nio.file.Files
 import java.util.UUID
-import com.sksamuel.elastic4s.http.ElasticDsl._
 
 /** Tests of Clio's gvcf functionality. */
 trait GvcfTests { self: BaseIntegrationSpec =>
 
   def runUpsertGvcf(key: TransferGvcfV1Key,
                     metadata: TransferGvcfV1Metadata): Future[UUID] = {
-    val tmpMetadata = writeTmpJson(metadata)
+    val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addGvcfName,
       "--location",
@@ -45,6 +45,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
   }
 
   it should "create the expected gvcf mapping in elasticsearch" in {
+    import com.sksamuel.elastic4s.http.ElasticDsl._
 
     val expected = ElasticsearchIndex.Gvcf
     val getRequest =
@@ -338,7 +339,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     for {
       _ <- upserts
       _ <- checkQuery(expectedLength = 3)
-      // TODO: This should use the delete CLP once we figure out how to test the I/O portion.
       deleteResponse <- runUpsertGvcf(
         deleteKey,
         deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
@@ -372,6 +372,113 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         } else {
           result.documentStatus should be(Some(DocumentStatus.Normal))
         }
+      }
+    }
+  }
+
+  it should "move gvcfs in GCP" in {
+    val project = s"abcdefg$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val fileContents = s"$randomId --- I am a dummy gvcf --- $randomId"
+    val cloudPath = rootTestStorageDir.resolve(
+      s"gvcf/$project/$sample/v$version/$randomId.vcf.gz"
+    )
+    val cloudPath2 = cloudPath.getParent.resolve(s"moved/$randomId.vcf/gz")
+
+    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
+    val metadata =
+      TransferGvcfV1Metadata(gvcfPath = Some(cloudPath.toUri.toString))
+
+    // Clio needs the metadata to be added before it can be moved.
+    val _ = Files.write(cloudPath, fileContents.getBytes)
+    val result = for {
+      _ <- runUpsertGvcf(key, metadata)
+      _ <- runClient(
+        ClioCommand.moveGvcfName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--destination",
+        cloudPath2.toUri.toString
+      )
+    } yield {
+      Files.exists(cloudPath) should be(false)
+      Files.exists(cloudPath2) should be(true)
+      new String(Files.readAllBytes(cloudPath2)) should be(fileContents)
+    }
+
+    result.andThen[Unit] {
+      case _ => {
+        val _ = Seq(cloudPath, cloudPath2).map(Files.deleteIfExists)
+      }
+    }
+  }
+
+  it should "delete gvcfs in GCP" in {
+    val project = s"abcdefg$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val fileContents = s"$randomId --- I am fated to die --- $randomId"
+    val cloudPath = rootTestStorageDir.resolve(
+      s"gvcf/$project/$sample/v$version/$randomId.vcf.gz"
+    )
+    val deleteNote =
+      s"""Deleted by the integration tests, contents were:
+         |$fileContents
+       """.stripMargin
+
+    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
+    val metadata =
+      TransferGvcfV1Metadata(gvcfPath = Some(cloudPath.toUri.toString))
+
+    // Clio needs the metadata to be added before it can be deleted.
+    val _ = Files.write(cloudPath, fileContents.getBytes)
+    val result = for {
+      _ <- runUpsertGvcf(key, metadata)
+      _ <- runClient(
+        ClioCommand.deleteGvcfName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--note",
+        deleteNote
+      )
+      _ = Files.exists(cloudPath) should be(false)
+      response <- runClient(
+        ClioCommand.queryGvcfName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--include-deleted"
+      )
+      outputs <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
+    } yield {
+      outputs should have length 1
+      outputs.head.notes should be(Some(deleteNote))
+      outputs.head.documentStatus should be(Some(DocumentStatus.Deleted))
+    }
+
+    result.andThen[Unit] {
+      case _ => {
+        val _ = Files.deleteIfExists(cloudPath)
       }
     }
   }

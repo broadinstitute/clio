@@ -20,6 +20,7 @@ import io.circe.Json
 
 import scala.concurrent.Future
 
+import java.nio.file.Files
 import java.util.UUID
 
 /** Tests of Clio's wgs-ubam functionality. */
@@ -27,7 +28,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
   def runUpsertWgsUbam(key: TransferWgsUbamV1Key,
                        metadata: TransferWgsUbamV1Metadata): Future[UUID] = {
-    val tmpMetadata = writeTmpJson(metadata)
+    val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addWgsUbamName,
       "--flowcell-barcode",
@@ -341,7 +342,6 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     for {
       _ <- upserts
       _ <- checkQuery(expectedLength = 3)
-      // TODO: This should use the delete CLP once we figure out how to test the I/O portion.
       deleteResponse <- runUpsertWgsUbam(
         deleteKey,
         deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
@@ -375,6 +375,114 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         } else {
           result.documentStatus should be(Some(DocumentStatus.Normal))
         }
+      }
+    }
+  }
+
+  it should "move wgs-ubams in GCP" in {
+    val barcode = s"abcdefg$randomId"
+    val lane = 3
+    val library = s"lib$randomId"
+
+    val fileContents = s"$randomId --- I am a dummy ubam --- $randomId"
+    val cloudPath = rootTestStorageDir.resolve(
+      s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
+    )
+    val cloudPath2 =
+      cloudPath.getParent.resolve(s"moved/$randomId.unmapped.bam")
+
+    val key = TransferWgsUbamV1Key(barcode, lane, library, Location.GCP)
+    val metadata =
+      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri.toString))
+
+    // Clio needs the metadata to be added before it can be moved.
+    val _ = Files.write(cloudPath, fileContents.getBytes)
+    val result = for {
+      _ <- runUpsertWgsUbam(key, metadata)
+      _ <- runClient(
+        ClioCommand.moveWgsUbamName,
+        "--flowcell-barcode",
+        barcode,
+        "--lane",
+        lane.toString,
+        "--library-name",
+        library,
+        "--location",
+        Location.GCP.entryName,
+        "--destination",
+        cloudPath2.toUri.toString
+      )
+    } yield {
+      Files.exists(cloudPath) should be(false)
+      Files.exists(cloudPath2) should be(true)
+      new String(Files.readAllBytes(cloudPath2)) should be(fileContents)
+    }
+
+    result.andThen[Unit] {
+      case _ => {
+        val _ = Seq(cloudPath, cloudPath2).map(Files.deleteIfExists)
+      }
+    }
+  }
+
+  it should "delete wgs-ubams in GCP" in {
+    val barcode = s"abcdefg$randomId"
+    val lane = 4
+    val library = s"lib$randomId"
+
+    val fileContents = s"$randomId --- I am fated to die --- $randomId"
+    val cloudPath = rootTestStorageDir.resolve(
+      s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
+    )
+    val deleteNote =
+      s"""Deleted by the integration tests, contents were:
+         |$fileContents
+       """.stripMargin
+
+    val key = TransferWgsUbamV1Key(barcode, lane, library, Location.GCP)
+    val metadata =
+      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri.toString))
+
+    // Clio needs the metadata to be added before it can be deleted.
+    val _ = Files.write(cloudPath, fileContents.getBytes)
+    val result = for {
+      _ <- runUpsertWgsUbam(key, metadata)
+      _ <- runClient(
+        ClioCommand.deleteWgsUbamName,
+        "--flowcell-barcode",
+        barcode,
+        "--lane",
+        lane.toString,
+        "--library-name",
+        library,
+        "--location",
+        Location.GCP.entryName,
+        "--note",
+        deleteNote
+      )
+      _ = Files.exists(cloudPath) should be(false)
+      response <- runClient(
+        ClioCommand.queryWgsUbamName,
+        "--flowcell-barcode",
+        barcode,
+        "--lane",
+        lane.toString,
+        "--library-name",
+        library,
+        "--location",
+        Location.GCP.entryName,
+        "--include-deleted"
+      )
+      outputs <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
+    } yield {
+      outputs should have length 1
+      outputs.head.notes should be(Some(deleteNote))
+      outputs.head.documentStatus should be(Some(DocumentStatus.Deleted))
+    }
+
+    result.andThen[Unit] {
+      case _ => {
+        val _ = Files.deleteIfExists(cloudPath)
       }
     }
   }
