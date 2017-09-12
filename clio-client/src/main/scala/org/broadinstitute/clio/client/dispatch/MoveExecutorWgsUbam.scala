@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveWgsUbam}
 import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.util.WgsUbamUtil._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Metadata,
@@ -15,7 +16,10 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 import scala.concurrent.{ExecutionContext, Future}
+
 class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
+
+  private val prettyKey = moveWgsUbamCommand.transferWgsUbamV1Key.prettyKey
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
@@ -30,15 +34,15 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
         "An error occurred while copying the files in the cloud. No files have been moved."
       upsertUbam <- upsertUpdatedWgsUbam(webClient) logErrorMsg
         s"""An error occurred while upserting the wgs-ubam.
-           |The ubam exists in both at both the old and the new locations.
-           |At this time, Clio only knows about the bam at the old location.
-           |Try removing the ubam at the new location and re-running this command.
+           |The wgs-ubam exists in both at both the old and the new locations.
+           |At this time, Clio only knows about the wgs-ubam at the old location.
+           |Try removing the wgs-ubam at the new location and re-running this command.
            |If this cannot be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.
         """.stripMargin
       _ <- deleteGoogleObject(wgsUbamPath, ioUtil) logErrorMsg
-        s"""The old bam was not able to be deleted. Clio has been updated to point to the new bam.
-           | Please delete the old bam. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
-           | """.stripMargin
+        s"""The old wgs-ubam was not able to be deleted. Clio has been updated to point to the new wgs-ubam.
+           |Please delete the old wgs-ubam. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
+         """.stripMargin
     } yield {
       logger.info(
         s"Successfully moved '$wgsUbamPath' to '${moveWgsUbamCommand.destination}'"
@@ -60,11 +64,11 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
           wgsUbams.head
         case 0 =>
           throw new Exception(
-            s"No wgs-ubams were found for Key($prettyKey). You can add this wgs-ubam using the '${ClioCommand.addWgsUbamName}' command in the Clio client."
+            s"No wgs-ubams were found for $prettyKey. You can add this wgs-ubam using the '${ClioCommand.addWgsUbamName}' command in the Clio client."
           )
         case s =>
           throw new Exception(
-            s"$s wgs-ubams were returned for Key($prettyKey), expected 1. You can see what was returned by running the '${ClioCommand.queryWgsUbamName}' command in the Clio client."
+            s"$s wgs-ubams were returned for $prettyKey, expected 1. You can see what was returned by running the '${ClioCommand.queryWgsUbamName}' command in the Clio client."
           )
       }
     }
@@ -93,7 +97,7 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
       .map {
         _.ubamPath.getOrElse {
           throw new Exception(
-            s"The ubam for Key($prettyKey) has no registered path, and can't be moved."
+            s"The wgs-ubam for $prettyKey has no registered path, and can't be moved."
           )
         }
       }
@@ -137,18 +141,16 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
       .map(webClient.ensureOkResponse)
   }
 
-  private def prettyKey: String = {
-    s"FlowcellBarcode: ${moveWgsUbamCommand.transferWgsUbamV1Key.flowcellBarcode}, " +
-      s"LibraryName: ${moveWgsUbamCommand.transferWgsUbamV1Key.libraryName}, " +
-      s"Lane: ${moveWgsUbamCommand.transferWgsUbamV1Key.lane}, Location: ${moveWgsUbamCommand.transferWgsUbamV1Key.location}"
-  }
-
   private def verifyCloudPaths(ioUtil: IoUtil): Unit = {
     if (moveWgsUbamCommand.transferWgsUbamV1Key.location != Location.GCP) {
-      throw new Exception("Only GCP unmapped bams are supported at this time.")
-    } else if (!ioUtil.isGoogleObject(moveWgsUbamCommand.destination)) {
       throw new Exception(
-        s"The destination of the ubam must be a cloud path. ${moveWgsUbamCommand.destination} is not a cloud path."
+        "Only GCP unmapped wgs-ubams are supported at this time."
+      )
+    }
+
+    if (!ioUtil.isGoogleObject(moveWgsUbamCommand.destination)) {
+      throw new Exception(
+        s"The destination of the wgs-ubam must be a cloud path. ${moveWgsUbamCommand.destination} is not a cloud path."
       )
     }
   }

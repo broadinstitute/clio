@@ -5,6 +5,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveGvcf}
 import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.util.GvcfUtil._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferGvcfV1Metadata,
@@ -17,6 +18,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
 
+  private val prettyKey = moveGvcfCommand.transferGvcfV1Key.prettyKey
+
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken
@@ -25,20 +28,20 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
       _ <- Future(verifyCloudPaths(ioUtil)) logErrorMsg
         "Clio client can only handle cloud operations right now."
       gvcfPath <- queryForGvcfPath(webClient) logErrorMsg
-        "Could not query the Gvcf. No files have been moved."
+        "Could not query the gvcf. No files have been moved."
       _ <- copyGoogleObject(gvcfPath, moveGvcfCommand.destination, ioUtil) logErrorMsg
         "An error occurred while copying the files in the cloud. No files have been moved."
       upsertGvcf <- upsertUpdatedGvcf(webClient) logErrorMsg
-        s"""An error occurred while upserting the Gvcf.
+        s"""An error occurred while upserting the gvcf.
            |The gvcf exists in both at both the old and the new locations.
-           |At this time, Clio only knows about the bam at the old location.
+           |At this time, Clio only knows about the gvcf at the old location.
            |Try removing the gvcf at the new location and re-running this command.
            |If this cannot be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.
         """.stripMargin
       _ <- deleteGoogleObject(gvcfPath, ioUtil) logErrorMsg
-        s"""The old bam was not able to be deleted. Clio has been updated to point to the new bam.
-           | Please delete the old bam. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
-           | """.stripMargin
+        s"""The old gvcf was not able to be deleted. Clio has been updated to point to the new gvcf.
+           |Please delete the old gvcf. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
+           |""".stripMargin
     } yield {
       logger.info(
         s"Successfully moved '$gvcfPath' to '${moveGvcfCommand.destination}'"
@@ -59,12 +62,12 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
         case 1 =>
           gvcfs.headOption.getOrElse(
             throw new Exception(
-              s"No Gvcfs were found for Key($prettyKey). You can add this Gvcf using the '${ClioCommand.addGvcfName}' command in the Clio client."
+              s"No gvcfs were found for $prettyKey. You can add this Gvcf using the '${ClioCommand.addGvcfName}' command in the Clio client."
             )
           )
         case s =>
           throw new Exception(
-            s"$s Gvcfs were returned for Key($prettyKey), expected 1. You can see what was returned by running the '${ClioCommand.queryGvcfName}' command in the Clio client."
+            s"$s gvcfs were returned for $prettyKey, expected 1. You can see what was returned by running the '${ClioCommand.queryGvcfName}' command in the Clio client."
           )
 
       }
@@ -93,7 +96,7 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
       .map {
         _.gvcfPath.getOrElse {
           throw new Exception(
-            s"The gvcf for Key($prettyKey) has no registered path, and can't be moved."
+            s"The gvcf for $prettyKey has no registered path, and can't be moved."
           )
         }
       }
@@ -136,16 +139,12 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
       .map(webClient.ensureOkResponse)
   }
 
-  private def prettyKey: String = {
-    s"Project: ${moveGvcfCommand.transferGvcfV1Key.project}, " +
-      s"SampleAlias: ${moveGvcfCommand.transferGvcfV1Key.sampleAlias}, " +
-      s"Version: ${moveGvcfCommand.transferGvcfV1Key.version}, Location: ${moveGvcfCommand.transferGvcfV1Key.location}"
-  }
-
   private def verifyCloudPaths(ioUtil: IoUtil): Unit = {
     if (moveGvcfCommand.transferGvcfV1Key.location != Location.GCP) {
       throw new Exception("Only GCP gvcfs are supported at this time.")
-    } else if (!ioUtil.isGoogleObject(moveGvcfCommand.destination)) {
+    }
+
+    if (!ioUtil.isGoogleObject(moveGvcfCommand.destination)) {
       throw new Exception(
         s"The destination of the gvcf must be a cloud path. ${moveGvcfCommand.destination} is not a cloud path."
       )

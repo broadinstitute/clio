@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.commands.DeleteGvcf
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.util.GvcfUtil.TransferGvcfV1QueryOutputUtil
+import org.broadinstitute.clio.client.util.GvcfUtil._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferGvcfV1Key,
@@ -26,7 +26,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
   ): Future[HttpResponse] = {
     if (!deleteGvcf.transferGvcfV1Key.location.equals(Location.GCP)) {
       Future
-        .failed(new Exception("Only GCP Gvcfs are supported at this time"))
+        .failed(new Exception("Only GCP gvcfs are supported at this time"))
     } else {
       for {
         queryResponses <- webClient
@@ -40,26 +40,26 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
             ),
             includeDeleted = false
           )
-          .map(webClient.ensureOkResponse) logErrorMsg "There was a problem querying the Clio server for Gvcfs."
+          .map(webClient.ensureOkResponse) logErrorMsg "There was a problem querying the Clio server for gvcfs."
         gvcf <- webClient
           .unmarshal[Seq[TransferGvcfV1QueryOutput]](queryResponses)
           .logErrorMsg(
             "There was a problem unmarshalling the JSON response from Clio."
           )
-        deleteResponses <- deleteGvcfs(gvcf, webClient, ioUtil) logErrorMsg "There was an error while deleting some of all of the Gvcfs."
+        deleteResponses <- deleteGvcfs(gvcf, webClient, ioUtil) logErrorMsg "There was an error while deleting some of all of the gvcfs."
       } yield {
         deleteResponses.size match {
           case 0 =>
             throw new Exception(
-              "Deleted 0 Gvcfs. None of the Gvcfs queried were able to be deleted."
+              "Deleted 0 gvcfs. None of the gvcfs queried were able to be deleted."
             )
           case s if s == gvcf.size =>
-            logger.info(s"Successfully deleted ${s} Gvcfs.")
+            logger.info(s"Successfully deleted $s Gvcfs.")
             queryResponses
           case _ =>
             throw new Exception(
-              s"Deleted ${deleteResponses.size} Gvcfs. " +
-                s"Not all of the Gvcfs queried for were able to be deleted! Check the log for details"
+              s"Deleted ${deleteResponses.size} gvcfs. " +
+                s"Not all of the gvcfs queried for were able to be deleted! Check the log for details"
             )
         }
       }
@@ -75,7 +75,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
     if (gvcf.isEmpty) {
       Future.failed(
         new Exception(
-          s"No Gvcfs were found for ${deleteGvcf.transferGvcfV1Key}. Nothing has been deleted."
+          s"No gvcfs were found for ${deleteGvcf.transferGvcfV1Key}. Nothing has been deleted."
         )
       )
     } else {
@@ -109,50 +109,89 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
 
-    val gvcfPath: String = gvcf.gvcfPath.getOrElse("")
+    val key = TransferGvcfV1Key(
+      gvcf.location,
+      gvcf.project,
+      gvcf.sampleAlias,
+      gvcf.version
+    )
+    val prettyKey = key.prettyKey
 
-    def deleteInClio(): Future[HttpResponse] = {
-      logger.info(s"Deleting ${gvcf.prettyKey()} in Clio.")
-      webClient
-        .addGvcf(
-          TransferGvcfV1Key(
-            location = gvcf.location,
-            project = gvcf.project,
-            sampleAlias = gvcf.sampleAlias,
-            version = gvcf.version
-          ),
-          TransferGvcfV1Metadata(
-            documentStatus = Option(DocumentStatus.Deleted),
-            notes = gvcf.notes
-              .map(notes => s"$notes\n${deleteGvcf.note}")
-              .orElse(Some(deleteGvcf.note))
-          )
-        )
-        .map(webClient.ensureOkResponse)
-        .logErrorMsg(
-          s"Failed to delete the Gvcf ${gvcf.prettyKey()} in Clio. " +
-            s"The file has been deleted in the cloud. " +
-            s"Clio now has a 'dangling pointer' to $gvcfPath. " +
-            s"Please try updating Clio by manually adding the Gvcf and setting the documentStatus to Deleted and making the gvcfPath an empty String."
-        )
+    def addNote(note: String): String = {
+      gvcf.notes
+        .map(existing => s"$existing\n$note")
+        .getOrElse(note)
     }
 
-    logger.info(s"Deleting $gvcfPath in the cloud.")
-    if (ioUtil.googleObjectExists(gvcfPath)) {
-      if (ioUtil.deleteGoogleObject(gvcfPath) == 0) {
-        deleteInClio()
-      } else {
-        Future.failed(
-          new Exception(
-            s"Failed to delete $gvcfPath in the cloud. The Gvcf still exists in Clio and on cloud storage"
+    gvcf.gvcfPath
+      .map { gvcfPath =>
+        if (!ioUtil.isGoogleObject(gvcfPath)) {
+          Future.failed(
+            new Exception(
+              s"Inconsistent state detected: non-cloud path $gvcfPath is registered to the gvcf for $prettyKey."
+            )
           )
+        }
+
+        if (ioUtil.googleObjectExists(gvcfPath)) {
+          logger.info(s"Deleting $gvcfPath in the cloud.")
+          if (ioUtil.deleteGoogleObject(gvcfPath) == 0) {
+            deleteInClio(key, addNote(deleteGvcf.note), webClient).logErrorMsg(
+              s"Failed to delete the gvcf for $prettyKey in Clio. " +
+                s"The file has been deleted in the cloud. " +
+                s"Clio now has a 'dangling pointer' to $gvcfPath. " +
+                s"Please try updating Clio by manually adding the gvcf and setting the documentStatus to Deleted and making the gvcfPath an empty String."
+            )
+          } else {
+            Future.failed(
+              new Exception(
+                s"Failed to delete $gvcfPath in the cloud. The gvcf still exists in Clio and on cloud storage."
+              )
+            )
+          }
+        } else {
+          logger.warn(
+            s"$gvcfPath associated with gvcf for $prettyKey does not exist in the cloud. Deleting the record in Clio to reflect this."
+          )
+          deleteInClio(
+            key,
+            addNote(
+              s"${deleteGvcf.note}\nNOTE: Path did not exist at time of deletion"
+            ),
+            webClient
+          )
+        }
+      }
+      .getOrElse {
+        logger.warn(s"No path associated with gvcf for $prettyKey.")
+        deleteInClio(
+          key,
+          addNote(
+            s"${deleteGvcf.note}\nNOTE: No path in metadata at time of deletion"
+          ),
+          webClient
         )
       }
-    } else {
-      logger.warn(
-        s"$gvcfPath does not exist in the cloud. Deleting the Gvcf in Clio to reflect this."
+  }
+
+  private def deleteInClio(key: TransferGvcfV1Key,
+                           notes: String,
+                           webClient: ClioWebClient)(
+    implicit ec: ExecutionContext,
+    bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
+
+    val prettyKey = key.prettyKey
+
+    logger.info(s"Deleting gvcf for $prettyKey in Clio.")
+    webClient
+      .addGvcf(
+        key,
+        TransferGvcfV1Metadata(
+          documentStatus = Some(DocumentStatus.Deleted),
+          notes = Some(notes)
+        )
       )
-      deleteInClio()
-    }
+      .map(webClient.ensureOkResponse)
   }
 }

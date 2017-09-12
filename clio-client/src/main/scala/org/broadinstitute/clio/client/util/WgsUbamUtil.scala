@@ -8,22 +8,26 @@ import org.broadinstitute.clio.transfer.model.{
 object WgsUbamUtil {
 
   implicit class TransferWgsUbamV1KeyUtil(key: TransferWgsUbamV1Key) {
-    def prettyKey(): String = {
-      s"FlowcellBarcode: ${key.flowcellBarcode}, LibraryName: ${key.libraryName}, " +
-        s"Lane: ${key.lane}, Location: ${key.location}"
+    def prettyKey: String = {
+      Seq(
+        s"FlowcellBarcode: ${key.flowcellBarcode}",
+        s"LibraryName: ${key.libraryName}",
+        s"Lane: ${key.lane}",
+        s"Location: ${key.location}"
+      ).mkString("[", ", ", "]")
     }
   }
 
   implicit class TransferWgsUbamV1QueryOutputUtil(
     output: TransferWgsUbamV1QueryOutput
   ) {
-    def prettyKey(): String = {
+    def prettyKey: String = {
       TransferWgsUbamV1Key(
         flowcellBarcode = output.flowcellBarcode,
         libraryName = output.libraryName,
         lane = output.lane,
         location = output.location
-      ).prettyKey()
+      ).prettyKey
     }
   }
 }
