@@ -78,7 +78,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val expected = TransferGvcfV1QueryOutput(
       location = location,
       project = "testProject",
-      sampleAlias = "someAlias",
+      sampleAlias = s"someAlias$randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
       gvcfPath = Some("gs://path/gvcf.gvcf")
@@ -109,8 +109,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
           returnedClioId <- responseFuture
           queryResponse <- runClient(
             ClioCommand.queryGvcfName,
-            "--location",
-            location.entryName
+            "--sample-alias",
+            expected.sampleAlias
           )
           outputs <- Unmarshal(queryResponse)
             .to[Seq[TransferGvcfV1QueryOutput]]
