@@ -7,9 +7,13 @@ set -e
 #
 declare -r APPLICATION=clio-elasticsearch
 
+# The number of Elasticsearch nodes to try before giving up.
+#
+declare -i -r ELASTICSEARCH_NODE_COUNT=3
+
 # Echo the GCS bucket named for $environment.
 #
-function gcsBucketForEnvionment () {
+function bucketForEnvionment () {
     local -r environment=$1
     echo broad-gotc-$environment-$APPLICATION
 }
@@ -21,7 +25,7 @@ function help () {
     local -r -a environments=(dev prod staging)
     local -r -a tools=(curl date jq)
     local -r -a verbs=(list take configure restore delete)
-    local -r bucket=$(gcsBucketForEnvionment '<environment>')
+    local -r bucket=$(bucketForEnvionment '<environment>')
     local -a usage=(
         ''
         "$av0: Snapshot an Elasticsearch cluster into a GCS bucket."
@@ -47,27 +51,33 @@ function help () {
     )
     local ok=yes x
     for x in "${tools[@]}"; do which $x >/dev/null || ok=no; done
-    if test $ok = no
-    then
-        usage+=("${av0}: You need these tools on PATH: ${tools[*]}")
-    fi
+    test $ok = no && usage+=("${av0}: You need these tools on PATH: ${tools[*]}")
     ok=no
     for x in ${environments[*]}; do test $x = "$environment" && ok=yes; done
-    if test $ok = no
-    then
-        usage+=("${av0}: No environment: '$environment'")
-    fi
+    test $ok = no && usage+=("${av0}: No environment: '$environment'")
     ok=no
     for x in ${verbs[*]}; do test $x = "$verb" && ok=yes; done
-    if test $ok = no
-    then
-        usage+=("${av0}: No verb: '$verb'")
-    fi
+    test $ok = no && usage+=("${av0}: No verb: '$verb'")
     if test $ok = no
     then
         for line in "${usage[@]}"; do echo 1>&2 "$line"; done
         exit 1
     fi
+}
+
+# Echo ELASTICSEARCH_NODE_COUNT names of Elasticsearch nodes.
+#
+function elasticsearchNodes () {
+    local -i n last first=100
+    local -r prefix=elasticsearch
+    let 'last = first + ELASTICSEARCH_NODE_COUNT' 'n = first'
+    local result
+    while let 'n < last'
+    do
+        result="$result $prefix$n"
+        let 'n = n + 1'
+    done
+    echo $result
 }
 
 # Report that $av0 is running the rest of arguments as a command line.
@@ -80,7 +90,9 @@ function echoRunJq () {
     for arg in "$@"; do command+=("'$arg'"); done
     echo $av0: Running "${command[@]}"
     result=$("$@")
+    local -r status=$?
     echo "$result" | jq .
+    return $status
 }
 
 # Configure snapshots to $bucket in for the $es cluster.
@@ -149,13 +161,20 @@ function snapshot_delete () {
     done
 }
 
+# Fail or run $snapshot on $nodes until one succeeds.
+#
 function main () {
     local -r av0="${0##*/}" environment="$1" verb="$2"
     help "$av0" "$@" ; shift 2
-    local -r bucket=$(gcsBucketForEnvionment $environment)
+    local node es snapshot=snapshot_$verb nodes=$(elasticsearchNodes)
+    local -r bucket=$(bucketForEnvionment $environment)
     local -r domain=gotc-$environment.broadinstitute.org
-    local -r es=http://elasticsearch1.$domain:9200
-    echo snapshot_$verb "$av0" $es $bucket "$@"
+    for node in $nodes
+    do
+        $snapshot "$av0" http://$node.$domain:9200 $bucket "$@" && return 0
+    done
+    echo 1>&2 "$av0:" $verb failed on all: $nodes
+    return 1
 }
 
 main "$@"
