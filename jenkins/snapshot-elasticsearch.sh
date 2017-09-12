@@ -47,8 +47,7 @@ function help () {
         "Example: $av0 dev list"
         ''
         "BTW, you ran: $*"
-        ''
-    )
+        '')
     local ok=yes x
     for x in "${tools[@]}"; do which $x >/dev/null || ok=no; done
     test $ok = no && usage+=("${av0}: You need these tools on PATH: ${tools[*]}")
@@ -68,7 +67,7 @@ function help () {
 # Echo ELASTICSEARCH_NODE_COUNT names of Elasticsearch nodes.
 #
 function elasticsearchNodes () {
-    local -i n last first=101
+    local -i n last first=1
     local -r prefix=elasticsearch
     let 'last = first + ELASTICSEARCH_NODE_COUNT' 'n = first'
     local result
@@ -89,7 +88,7 @@ function echoRunJq () {
     local arg result
     for arg in "$@"; do command+=("'$arg'"); done
     echo $av0: Running "${command[@]}"
-    result=$("$@")
+    result=$(echo "$@")         # That echo disables this script!
     local -r status=$?
     echo "$result" | jq .
     return $status
