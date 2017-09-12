@@ -6,10 +6,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeleteGvcf
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferGvcfV1Key,
-  TransferGvcfV1Metadata
-}
+import org.broadinstitute.clio.transfer.model.TransferGvcfV1Key
 import org.broadinstitute.clio.util.model.Location
 
 class DeleteGvcfSpec extends BaseClientSpec {
@@ -20,14 +17,13 @@ class DeleteGvcfSpec extends BaseClientSpec {
   it should "throw an exception if the location is not GCP" in {
     recoverToSucceededIf[Exception] {
       val command = DeleteGvcf(
-        metadata =
-          TransferGvcfV1Metadata(gvcfPath = testGvcfCloudDestinationPath),
         transferGvcfV1Key = TransferGvcfV1Key(
           location = Location.OnPrem,
           project = testProject,
           sampleAlias = testSampleAlias,
           version = testVersion
-        )
+        ),
+        note = "Deleting for test"
       )
       succeedingDispatcher.dispatch(command)
     }
@@ -39,7 +35,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw an exception if Clio doesn't return a Gvcf" in {
+  it should "throw an exception if Clio doesn't return a gvcf" in {
     recoverToSucceededIf[Exception] {
       succeedingDispatcher.dispatch(goodGvcfDeleteCommand)
     }
@@ -56,9 +52,9 @@ class DeleteGvcfSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw an exception if Clio can't delete the Gvcf" in {
+  it should "throw an exception if Clio can't delete the gvcf" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath.get)
+    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     recoverToSucceededIf[Exception] {
       new CommandDispatch(MockClioWebClient.failingToAddGvcf, mockIoUtil)
         .dispatch(goodGvcfDeleteCommand)
@@ -73,7 +69,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
 
   it should "delete a gvcf in Clio and the cloud" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath.get)
+    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     succeedingReturningDispatcherGvcf(mockIoUtil)
       .dispatch(goodGvcfDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
@@ -81,8 +77,8 @@ class DeleteGvcfSpec extends BaseClientSpec {
 
   it should "delete multiple gvcfs in Clio and the cloud" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath.get)
-    mockIoUtil.putFileInCloud(testGvcfCloudDestinationPath.get)
+    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
+    mockIoUtil.putFileInCloud(testGvcfCloudDestinationPath)
 
     new CommandDispatch(MockClioWebClient.returningTwoGvcfs, mockIoUtil)
       .dispatch(goodGvcfDeleteCommand)

@@ -5,8 +5,10 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveGvcf}
 import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.util.GvcfUtil._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
+  TransferGvcfV1Metadata,
   TransferGvcfV1QueryInput,
   TransferGvcfV1QueryOutput
 }
@@ -16,38 +18,41 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
 
+  private val prettyKey = moveGvcfCommand.transferGvcfV1Key.prettyKey
+
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
     for {
-      _ <- verifyCloudPaths logErrorMsg
+      _ <- Future(verifyCloudPaths(ioUtil)) logErrorMsg
         "Clio client can only handle cloud operations right now."
       gvcfPath <- queryForGvcfPath(webClient) logErrorMsg
-        "Could not query the Gvcf. No files have been moved."
-      _ <- copyGoogleObject(gvcfPath, moveGvcfCommand.metadata.gvcfPath, ioUtil) logErrorMsg
+        "Could not query the gvcf. No files have been moved."
+      _ <- copyGoogleObject(gvcfPath, moveGvcfCommand.destination, ioUtil) logErrorMsg
         "An error occurred while copying the files in the cloud. No files have been moved."
       upsertGvcf <- upsertUpdatedGvcf(webClient) logErrorMsg
-        s"""An error occurred while upserting the Gvcf.
+        s"""An error occurred while upserting the gvcf.
            |The gvcf exists in both at both the old and the new locations.
-           |At this time, Clio only knows about the bam at the old location.
+           |At this time, Clio only knows about the gvcf at the old location.
            |Try removing the gvcf at the new location and re-running this command.
            |If this cannot be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.
         """.stripMargin
       _ <- deleteGoogleObject(gvcfPath, ioUtil) logErrorMsg
-        s"""The old bam was not able to be deleted. Clio has been updated to point to the new bam.
-           | Please delete the old bam. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
-           | """.stripMargin
+        s"""The old gvcf was not able to be deleted. Clio has been updated to point to the new gvcf.
+           |Please delete the old gvcf. If this cannot be done, contact Green Team at ${ClioClientConfig.greenTeamEmail}.
+           |""".stripMargin
     } yield {
-      logger.info(s"Successfully moved '${gvcfPath
-        .map(name => name)}' to '${moveGvcfCommand.metadata.gvcfPath.map(name => name)}'")
+      logger.info(
+        s"Successfully moved '$gvcfPath' to '${moveGvcfCommand.destination}'"
+      )
       upsertGvcf
     }
   }
 
   private def queryForGvcfPath(
     webClient: ClioWebClient
-  )(implicit bearerToken: OAuth2BearerToken): Future[Option[String]] = {
+  )(implicit bearerToken: OAuth2BearerToken): Future[String] = {
     implicit val ec: ExecutionContext = webClient.executionContext
 
     def ensureOnlyOne(
@@ -57,12 +62,12 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
         case 1 =>
           gvcfs.headOption.getOrElse(
             throw new Exception(
-              s"No Gvcfs were found for Key($prettyKey). You can add this Gvcf using the '${ClioCommand.addGvcfName}' command in the Clio client."
+              s"No gvcfs were found for $prettyKey. You can add this Gvcf using the '${ClioCommand.addGvcfName}' command in the Clio client."
             )
           )
         case s =>
           throw new Exception(
-            s"$s Gvcfs were returned for Key($prettyKey), expected 1. You can see what was returned by running the '${ClioCommand.queryGvcfName}' command in the Clio client."
+            s"$s gvcfs were returned for $prettyKey, expected 1. You can see what was returned by running the '${ClioCommand.queryGvcfName}' command in the Clio client."
           )
 
       }
@@ -76,7 +81,8 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
           project = Option(moveGvcfCommand.transferGvcfV1Key.project),
           sampleAlias = Option(moveGvcfCommand.transferGvcfV1Key.sampleAlias),
           version = Option(moveGvcfCommand.transferGvcfV1Key.version)
-        )
+        ),
+        includeDeleted = false
       )
       .recoverWith {
         case ex: Exception =>
@@ -87,31 +93,35 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
       .map(webClient.ensureOkResponse)
       .flatMap(webClient.unmarshal[Seq[TransferGvcfV1QueryOutput]])
       .map(ensureOnlyOne)
-      .map(_.gvcfPath)
+      .map {
+        _.gvcfPath.getOrElse {
+          throw new Exception(
+            s"The gvcf for $prettyKey has no registered path, and can't be moved."
+          )
+        }
+      }
   }
 
-  private def copyGoogleObject(source: Option[String],
-                               destination: Option[String],
+  private def copyGoogleObject(source: String,
+                               destination: String,
                                ioUtil: IoUtil): Future[Unit] = {
-    ioUtil.copyGoogleObject(source.get, destination.get) match {
-      case 0 => Future.successful(())
-      case _ =>
-        Future.failed(
-          new Exception(s"Copy files in the cloud failed from '${source
-            .getOrElse("")}' to '${destination.getOrElse("")}'")
-        )
-    }
-  }
-
-  private def deleteGoogleObject(path: Option[String],
-                                 ioUtil: IoUtil): Future[Unit] = {
-    ioUtil.deleteGoogleObject(path.get) match {
+    ioUtil.copyGoogleObject(source, destination) match {
       case 0 => Future.successful(())
       case _ =>
         Future.failed(
           new Exception(
-            s"Deleting file in the cloud failed for path '${path.getOrElse("")}'"
+            s"Copy files in the cloud failed from '$source' to '$destination'"
           )
+        )
+    }
+  }
+
+  private def deleteGoogleObject(path: String, ioUtil: IoUtil): Future[Unit] = {
+    ioUtil.deleteGoogleObject(path) match {
+      case 0 => Future.successful(())
+      case _ =>
+        Future.failed(
+          new Exception(s"Deleting file in the cloud failed for path '$path'")
         )
     }
   }
@@ -123,40 +133,21 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
     webClient
       .addGvcf(
         input = moveGvcfCommand.transferGvcfV1Key,
-        transferGvcfV1Metadata = moveGvcfCommand.metadata
+        transferGvcfV1Metadata =
+          TransferGvcfV1Metadata(gvcfPath = Some(moveGvcfCommand.destination))
       )
       .map(webClient.ensureOkResponse)
   }
 
-  private def prettyKey: String = {
-    s"Project: ${moveGvcfCommand.transferGvcfV1Key.project}, " +
-      s"SampleAlias: ${moveGvcfCommand.transferGvcfV1Key.sampleAlias}, " +
-      s"Version: ${moveGvcfCommand.transferGvcfV1Key.version}, Location: ${moveGvcfCommand.transferGvcfV1Key.location}"
-  }
-
-  private def verifyCloudPaths: Future[Unit] = {
-    val errorOption = for {
-      locationError <- moveGvcfCommand.transferGvcfV1Key.location match {
-        case Location.GCP => Some("")
-        case _ =>
-          Some("Only GCP gvcf are supported at this time.")
-      }
-      pathError <- moveGvcfCommand.metadata.gvcfPath.map {
-        case loc if loc.startsWith("gs://") => ""
-        case _ =>
-          s"The destination of the gvcf must be a cloud path. ${moveGvcfCommand.metadata.gvcfPath
-            .map(name => name)} is not a cloud path."
-      }
-    } yield {
-      if (locationError.isEmpty && pathError.isEmpty) {
-        Future.successful(())
-      } else {
-        Future.failed(new Exception(String.join(" ", locationError, pathError)))
-      }
+  private def verifyCloudPaths(ioUtil: IoUtil): Unit = {
+    if (moveGvcfCommand.transferGvcfV1Key.location != Location.GCP) {
+      throw new Exception("Only GCP gvcfs are supported at this time.")
     }
-    errorOption.getOrElse(
-      Future
-        .failed(new Exception("Either location or gvcfPath were not supplied"))
-    )
+
+    if (!ioUtil.isGoogleObject(moveGvcfCommand.destination)) {
+      throw new Exception(
+        s"The destination of the gvcf must be a cloud path. ${moveGvcfCommand.destination} is not a cloud path."
+      )
+    }
   }
 }

@@ -47,14 +47,14 @@ final case class QueryWgsUbam(
 
 @CommandName(ClioCommand.moveWgsUbamName)
 final case class MoveWgsUbam(
-  @Recurse metadata: TransferWgsUbamV1Metadata,
-  @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key
+  @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key,
+  destination: String
 ) extends ClioCommand
 
 @CommandName(ClioCommand.deleteWgsUbamName)
 final case class DeleteWgsUbam(
-  @Recurse metadata: TransferWgsUbamV1Metadata,
-  @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key
+  @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key,
+  note: String
 ) extends ClioCommand
 
 // GVCF commands.
@@ -74,13 +74,13 @@ final case class QueryGvcf(
 ) extends ClioCommand
 
 @CommandName(ClioCommand.moveGvcfName)
-final case class MoveGvcf(@Recurse metadata: TransferGvcfV1Metadata,
-                          @Recurse transferGvcfV1Key: TransferGvcfV1Key)
+final case class MoveGvcf(@Recurse transferGvcfV1Key: TransferGvcfV1Key,
+                          destination: String)
     extends ClioCommand
 
 @CommandName(ClioCommand.deleteGvcfName)
-final case class DeleteGvcf(@Recurse metadata: TransferGvcfV1Metadata,
-                            @Recurse transferGvcfV1Key: TransferGvcfV1Key)
+final case class DeleteGvcf(@Recurse transferGvcfV1Key: TransferGvcfV1Key,
+                            note: String)
     extends ClioCommand
 
 object ClioCommand extends ClioParsers {

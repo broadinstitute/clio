@@ -2,7 +2,7 @@ package org.broadinstitute.clio.client.dispatch
 
 import org.broadinstitute.clio.client.commands.DeleteWgsUbam
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.util.WgsUbamUtil.TransferWgsUbamV1QueryOutputUtil
+import org.broadinstitute.clio.client.util.WgsUbamUtil._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
@@ -39,7 +39,8 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
               libraryName = Some(deleteWgsUbam.transferWgsUbamV1Key.libraryName),
               location = Some(deleteWgsUbam.transferWgsUbamV1Key.location),
               documentStatus = Some(DocumentStatus.Normal)
-            )
+            ),
+            includeDeleted = false
           )
           .map(webClient.ensureOkResponse) logErrorMsg "There was a problem querying the Clio server for wgs-ubams."
         wgsUbams <- webClient
@@ -112,51 +113,90 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
 
-    def deleteInClio(): Future[HttpResponse] = {
-      logger.info(s"Deleting ${wgsUbam.prettyKey()} in Clio.")
-      webClient
-        .addWgsUbam(
-          TransferWgsUbamV1Key(
-            flowcellBarcode = wgsUbam.flowcellBarcode,
-            lane = wgsUbam.lane,
-            libraryName = wgsUbam.libraryName,
-            location = wgsUbam.location
-          ),
-          TransferWgsUbamV1Metadata(
-            documentStatus = Option(DocumentStatus.Deleted),
-            notes = wgsUbam.notes
-              .map(
-                notes =>
-                  s"$notes\n${deleteWgsUbam.metadata.notes.getOrElse("")}"
-              )
-              .orElse(deleteWgsUbam.metadata.notes)
-          )
-        )
-        .map(webClient.ensureOkResponse)
-        .logErrorMsg(
-          s"Failed to delete the WgsUbam ${wgsUbam.prettyKey()} in Clio. " +
-            s"The file has been deleted in the cloud. " +
-            s"Clio now has a 'dangling pointer' to ${wgsUbam.ubamPath.getOrElse("")}. " +
-            s"Please try updating Clio by manually adding the wgs-ubam and setting the documentStatus to Deleted and making the ubamPath an empty String."
-        )
+    val key = TransferWgsUbamV1Key(
+      wgsUbam.flowcellBarcode,
+      wgsUbam.lane,
+      wgsUbam.libraryName,
+      wgsUbam.location
+    )
+    val prettyKey = key.prettyKey
+
+    def addNote(note: String): String = {
+      wgsUbam.notes
+        .map(existing => s"$existing\n$note")
+        .getOrElse(note)
     }
 
-    logger.info(s"Deleting ${wgsUbam.ubamPath.getOrElse("")} in the cloud.")
-    if (ioUtil.googleObjectExists(wgsUbam.ubamPath.getOrElse(""))) {
-      if (ioUtil.deleteGoogleObject(wgsUbam.ubamPath.getOrElse("")) == 0) {
-        deleteInClio()
-      } else {
-        Future.failed(
-          new Exception(
-            s"Failed to delete ${wgsUbam.ubamPath.getOrElse("")} in the cloud. The wgs-ubam still exists in Clio and on cloud storage"
+    wgsUbam.ubamPath
+      .map { ubamPath =>
+        if (!ioUtil.isGoogleObject(ubamPath)) {
+          Future.failed(
+            new Exception(
+              s"Inconsistent state detected: non-cloud path $ubamPath is registered to the wgs-ubam for $prettyKey"
+            )
           )
+        }
+
+        if (ioUtil.googleObjectExists(ubamPath)) {
+          logger.info(s"Deleting $ubamPath in the cloud.")
+          if (ioUtil.deleteGoogleObject(ubamPath) == 0) {
+            deleteInClio(key, addNote(deleteWgsUbam.note), webClient)
+              .logErrorMsg(
+                s"Failed to delete the wgs-ubam $prettyKey in Clio. " +
+                  s"The file has been deleted in the cloud. " +
+                  s"Clio now has a 'dangling pointer' to ${wgsUbam.ubamPath.getOrElse("")}. " +
+                  s"Please try updating Clio by manually adding the wgs-ubam and setting the documentStatus to Deleted and making the ubamPath an empty String."
+              )
+          } else {
+            Future.failed(
+              new Exception(
+                s"Failed to delete $ubamPath in the cloud. The wgs-ubam still exists in Clio and on cloud storage."
+              )
+            )
+          }
+        } else {
+          logger.warn(
+            s"$ubamPath associated with wgs-ubam for $prettyKey does not exist in the cloud. Deleting the record in Clio to reflect this."
+          )
+          deleteInClio(
+            key,
+            addNote(
+              s"${deleteWgsUbam.note}\nNOTE: Path did not exist at time of deletion"
+            ),
+            webClient
+          )
+        }
+      }
+      .getOrElse {
+        logger.warn(s"No path associated with wgs-ubam for $prettyKey.")
+        deleteInClio(
+          key,
+          addNote(
+            s"${deleteWgsUbam.note}\nNOTE: No path in metadata at time of deletion"
+          ),
+          webClient
         )
       }
-    } else {
-      logger.warn(
-        s"${wgsUbam.ubamPath.getOrElse("")} does not exist in the cloud. Deleting the wgs-ubam in Clio to reflect this."
+  }
+
+  private def deleteInClio(key: TransferWgsUbamV1Key,
+                           notes: String,
+                           webClient: ClioWebClient)(
+    implicit ec: ExecutionContext,
+    bearerToken: OAuth2BearerToken
+  ): Future[HttpResponse] = {
+
+    val prettyKey = key.prettyKey
+
+    logger.info(s"Deleting wgs-ubam for $prettyKey in Clio.")
+    webClient
+      .addWgsUbam(
+        key,
+        TransferWgsUbamV1Metadata(
+          documentStatus = Some(DocumentStatus.Deleted),
+          notes = Some(notes)
+        )
       )
-      deleteInClio()
-    }
+      .map(webClient.ensureOkResponse)
   }
 }

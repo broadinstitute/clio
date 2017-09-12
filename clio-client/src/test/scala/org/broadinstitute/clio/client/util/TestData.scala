@@ -56,14 +56,14 @@ trait TestData {
   val testRunDateStart: OffsetDateTime = OffsetDateTime.now()
   val testRunDateEnd: OffsetDateTime = OffsetDateTime.now().plusHours(1)
 
-  val testUbamCloudSourcePath: Option[String] =
-    Some("gs://testProject/testSample/ubamPath1.unmapped.bam")
-  val testUbamCloudDestinationPath: Option[String] =
-    Some("gs://testProject/testSample/ubamPath2.unmapped.bam")
-  val testGvcfCloudSourcePath: Option[String] =
-    Some("gs://testProject/testSample/gvcfPath1.gvcf")
-  val testGvcfCloudDestinationPath: Option[String] =
-    Some("gs://testProject/testSample/gvcfPath2.gvcf")
+  val testUbamCloudSourcePath: String =
+    "gs://testProject/testSample/ubamPath1.unmapped.bam"
+  val testUbamCloudDestinationPath: String =
+    "gs://testProject/testSample/ubamPath2.unmapped.bam"
+  val testGvcfCloudSourcePath: String =
+    "gs://testProject/testSample/gvcfPath1.gvcf"
+  val testGvcfCloudDestinationPath: String =
+    "gs://testProject/testSample/gvcfPath2.gvcf"
 
   val testCommon = CommonOptions(bearerToken = Some(testBearer))
   val testCommonNoToken = CommonOptions()
@@ -90,15 +90,13 @@ trait TestData {
   )
 
   val goodMoveCommand = MoveWgsUbam(
-    metadata =
-      TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
-    transferWgsUbamV1Key = testTransferV1Key
+    transferWgsUbamV1Key = testTransferV1Key,
+    destination = testUbamCloudDestinationPath
   )
 
   val goodDeleteCommand = DeleteWgsUbam(
-    metadata =
-      TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
-    transferWgsUbamV1Key = testTransferV1Key
+    transferWgsUbamV1Key = testTransferV1Key,
+    note = "Good delete for test"
   )
 
   val goodGvcfQueryCommand = QueryGvcf(
@@ -111,13 +109,13 @@ trait TestData {
   )
 
   val goodGvcfMoveCommand = MoveGvcf(
-    metadata = TransferGvcfV1Metadata(gvcfPath = testGvcfCloudDestinationPath),
-    transferGvcfV1Key = testGvcfTransferV1Key
+    transferGvcfV1Key = testGvcfTransferV1Key,
+    destination = testGvcfCloudDestinationPath
   )
 
   val goodGvcfDeleteCommand = DeleteGvcf(
-    metadata = TransferGvcfV1Metadata(gvcfPath = testGvcfCloudDestinationPath),
-    transferGvcfV1Key = testGvcfTransferV1Key
+    transferGvcfV1Key = testGvcfTransferV1Key,
+    note = "Good delete for test"
   )
 
   val testServerPort: Int = 8080

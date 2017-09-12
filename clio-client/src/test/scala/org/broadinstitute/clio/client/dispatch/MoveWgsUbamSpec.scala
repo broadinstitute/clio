@@ -4,10 +4,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.MoveWgsUbam
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata
-}
+import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1Key
 import org.broadinstitute.clio.util.model.Location
 
 import akka.http.scaladsl.model.StatusCodes
@@ -21,9 +18,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   it should "throw an exception if the destination path scheme is invalid" in {
     recoverToSucceededIf[Exception] {
       val command = MoveWgsUbam(
-        metadata =
-          TransferWgsUbamV1Metadata(ubamPath = Some("gs://not_a_valid_path")),
-        transferWgsUbamV1Key = testTransferV1Key
+        transferWgsUbamV1Key = testTransferV1Key,
+        destination = "gs://not_a_valid_path"
       )
       succeedingDispatcher.dispatch(command)
     }
@@ -33,9 +29,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     recoverToSucceededIf[Exception] {
       val command =
         MoveWgsUbam(
-          metadata =
-            TransferWgsUbamV1Metadata(ubamPath = testUbamCloudSourcePath),
-          transferWgsUbamV1Key = testTransferV1Key
+          transferWgsUbamV1Key = testTransferV1Key,
+          destination = testUbamCloudSourcePath
         )
       succeedingDispatcher.dispatch(command)
     }
@@ -43,13 +38,12 @@ class MoveWgsUbamSpec extends BaseClientSpec {
 
   it should "throw an exception if the source and destination paths are the same" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     recoverToSucceededIf[Exception] {
       val command =
         MoveWgsUbam(
-          metadata =
-            TransferWgsUbamV1Metadata(ubamPath = testUbamCloudSourcePath),
-          transferWgsUbamV1Key = testTransferV1Key
+          transferWgsUbamV1Key = testTransferV1Key,
+          destination = testUbamCloudSourcePath
         )
       succeedingReturningDispatcherWgsUbam(mockIoUtil).dispatch(command)
     }
@@ -59,9 +53,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     recoverToSucceededIf[Exception] {
       val command =
         MoveWgsUbam(
-          metadata =
-            TransferWgsUbamV1Metadata(ubamPath = testUbamCloudSourcePath),
-          transferWgsUbamV1Key = testTransferV1Key
+          transferWgsUbamV1Key = testTransferV1Key,
+          destination = testUbamCloudSourcePath
         )
       failingDispatcherWgsUbam.dispatch(command)
     }
@@ -71,9 +64,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     recoverToSucceededIf[Exception] {
       val command =
         MoveWgsUbam(
-          metadata =
-            TransferWgsUbamV1Metadata(ubamPath = testUbamCloudSourcePath),
-          transferWgsUbamV1Key = testTransferV1Key
+          transferWgsUbamV1Key = testTransferV1Key,
+          destination = testUbamCloudSourcePath
         )
       succeedingDispatcher.dispatch(command)
     }
@@ -81,7 +73,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
 
   it should "throw an exception if Clio can't upsert the new WgsUbam" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     recoverToSucceededIf[Exception] {
       new CommandDispatch(MockClioWebClient.failingToAddWgsUbam, mockIoUtil)
         .dispatch(goodMoveCommand)
@@ -91,14 +83,13 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   it should "throw and exception if given a non-GCP unmapped bam" in {
     recoverToSucceededIf[Exception] {
       val command = MoveWgsUbam(
-        metadata =
-          TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
         transferWgsUbamV1Key = TransferWgsUbamV1Key(
           flowcellBarcode = testFlowcell,
           lane = testLane,
           libraryName = testLibName,
           location = Location.OnPrem
-        )
+        ),
+        destination = testUbamCloudDestinationPath
       )
       succeedingDispatcher.dispatch(command)
     }
@@ -107,9 +98,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   it should "throw and exception if the destination path is not in GCP" in {
     recoverToSucceededIf[Exception] {
       val command = MoveWgsUbam(
-        metadata =
-          TransferWgsUbamV1Metadata(ubamPath = Some("/this/is/a/local/path")),
-        transferWgsUbamV1Key = testTransferV1Key
+        transferWgsUbamV1Key = testTransferV1Key,
+        destination = "/this/is/a/local/path"
       )
       succeedingDispatcher.dispatch(command)
     }
@@ -117,7 +107,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
 
   it should "move clio unmapped bams if no errors are encountered" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     succeedingReturningDispatcherWgsUbam(mockIoUtil)
       .dispatch(goodMoveCommand)
       .map(_.status should be(StatusCodes.OK))
