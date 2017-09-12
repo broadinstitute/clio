@@ -185,15 +185,17 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
   /**
     * Run a command with arbitrary args through the main clio-client.
-    *
-    * Fails the test immediately if the client exits early.
+    * Returns a failed future if the command exits early.
     */
   def runClient(command: String, args: String*): Future[HttpResponse] = {
     clioClient
       .instanceMain(
         (Seq("--bearer-token", bearerToken.token, command) ++ args).toArray
       )
-      .fold(err => fail(s"Command exited early with $err"), identity)
+      .fold(
+        err => Future.failed(new Exception(s"Command exited early with $err")),
+        identity
+      )
   }
 
   /**

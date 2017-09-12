@@ -421,6 +421,24 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "not move gvcfs without a destination" in {
+    recoverToExceptionIf[Exception] {
+      runClient(
+        ClioCommand.moveGvcfName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        randomId,
+        "--sample-alias",
+        randomId,
+        "--version",
+        "123"
+      )
+    }.map {
+      _.getMessage should include("--destination")
+    }
+  }
+
   it should "delete gvcfs in GCP" in {
     val project = s"abcdefg$randomId"
     val sample = s"sample$randomId"
@@ -480,6 +498,24 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       case _ => {
         val _ = Files.deleteIfExists(cloudPath)
       }
+    }
+  }
+
+  it should "not delete gvcfs without a note" in {
+    recoverToExceptionIf[Exception] {
+      runClient(
+        ClioCommand.deleteGvcfName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        randomId,
+        "--sample-alias",
+        randomId,
+        "--version",
+        "123"
+      )
+    }.map {
+      _.getMessage should include("--note")
     }
   }
 }

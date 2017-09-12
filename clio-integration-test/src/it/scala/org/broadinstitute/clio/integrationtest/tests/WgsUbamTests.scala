@@ -425,6 +425,24 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "not move wgs-ubams without a destination" in {
+    recoverToExceptionIf[Exception] {
+      runClient(
+        ClioCommand.moveWgsUbamName,
+        "--flowcell-barcode",
+        randomId,
+        "--lane",
+        "123",
+        "--library-name",
+        randomId,
+        "--location",
+        Location.GCP.entryName
+      )
+    }.map {
+      _.getMessage should include("--destination")
+    }
+  }
+
   it should "delete wgs-ubams in GCP" in {
     val barcode = s"abcdefg$randomId"
     val lane = 4
@@ -484,6 +502,24 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       case _ => {
         val _ = Files.deleteIfExists(cloudPath)
       }
+    }
+  }
+
+  it should "not delete wgs-ubams without a note" in {
+    recoverToExceptionIf[Exception] {
+      runClient(
+        ClioCommand.deleteWgsUbamName,
+        "--flowcell-barcode",
+        randomId,
+        "--lane",
+        "123",
+        "--library-name",
+        randomId,
+        "--location",
+        Location.GCP.entryName
+      )
+    }.map {
+      _.getMessage should include("--note")
     }
   }
 }
