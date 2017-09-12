@@ -68,7 +68,7 @@ function help () {
 # Echo ELASTICSEARCH_NODE_COUNT names of Elasticsearch nodes.
 #
 function elasticsearchNodes () {
-    local -i n last first=100
+    local -i n last first=101
     local -r prefix=elasticsearch
     let 'last = first + ELASTICSEARCH_NODE_COUNT' 'n = first'
     local result
