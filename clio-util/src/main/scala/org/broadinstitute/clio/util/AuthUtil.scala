@@ -36,10 +36,7 @@ object AuthUtil extends ModelAutoDerivation {
               null
             )
           )
-      }
-      .getOrElse(
-        new AccessToken(Process("gcloud auth print-access-token").!!.trim, null)
-      )
+      }.getOrElse(throw new RuntimeException("Could not get authorization"))
   }
 
   def loadServiceAccountJson(serviceAccountPath: Path): ServiceAccount = {
