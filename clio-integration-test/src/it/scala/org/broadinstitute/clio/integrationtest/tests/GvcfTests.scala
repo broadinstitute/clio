@@ -439,7 +439,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "delete gvcfs in GCP" in {
+  def addAndDeleteGvcf(
+    deleteNote: String,
+    existingNote: Option[String]
+  ): Future[TransferGvcfV1QueryOutput] = {
     val project = s"abcdefg$randomId"
     val sample = s"sample$randomId"
     val version = 3
@@ -448,14 +451,13 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val cloudPath = rootTestStorageDir.resolve(
       s"gvcf/$project/$sample/v$version/$randomId.vcf.gz"
     )
-    val deleteNote =
-      s"""Deleted by the integration tests, contents were:
-         |$fileContents
-       """.stripMargin
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata =
-      TransferGvcfV1Metadata(gvcfPath = Some(cloudPath.toUri.toString))
+      TransferGvcfV1Metadata(
+        gvcfPath = Some(cloudPath.toUri.toString),
+        notes = existingNote
+      )
 
     // Clio needs the metadata to be added before it can be deleted.
     val _ = Files.write(cloudPath, fileContents.getBytes)
@@ -490,14 +492,37 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       outputs <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
     } yield {
       outputs should have length 1
-      outputs.head.notes should be(Some(deleteNote))
-      outputs.head.documentStatus should be(Some(DocumentStatus.Deleted))
+      outputs.head
     }
 
     result.andThen[Unit] {
       case _ => {
         val _ = Files.deleteIfExists(cloudPath)
       }
+    }
+  }
+
+  it should "delete gvcfs in GCP" in {
+    val deleteNote =
+      s"$randomId --- Deleted by the integration tests --- $randomId"
+
+    val deletedWithNoExistingNote = addAndDeleteGvcf(deleteNote, None)
+    deletedWithNoExistingNote.map { output =>
+      output.notes should be(Some(deleteNote))
+      output.documentStatus should be(Some(DocumentStatus.Deleted))
+    }
+  }
+
+  it should "preserve existing notes when deleting gvcfs" in {
+    val deleteNote =
+      s"$randomId --- Deleted by the integration tests --- $randomId"
+    val existingNote = s"$randomId --- I am an existing note --- $randomId"
+
+    val deletedWithExistingNote =
+      addAndDeleteGvcf(deleteNote, Some(existingNote))
+    deletedWithExistingNote.map { output =>
+      output.notes should be(Some(s"$existingNote\n$deleteNote"))
+      output.documentStatus should be(Some(DocumentStatus.Deleted))
     }
   }
 

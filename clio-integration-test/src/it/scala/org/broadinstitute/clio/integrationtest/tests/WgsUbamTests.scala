@@ -443,7 +443,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "delete wgs-ubams in GCP" in {
+  def addAndDeleteWgsUbam(
+    deleteNote: String,
+    existingNote: Option[String]
+  ): Future[TransferWgsUbamV1QueryOutput] = {
     val barcode = s"abcdefg$randomId"
     val lane = 4
     val library = s"lib$randomId"
@@ -452,14 +455,12 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val cloudPath = rootTestStorageDir.resolve(
       s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
     )
-    val deleteNote =
-      s"""Deleted by the integration tests, contents were:
-         |$fileContents
-       """.stripMargin
 
     val key = TransferWgsUbamV1Key(barcode, lane, library, Location.GCP)
-    val metadata =
-      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri.toString))
+    val metadata = TransferWgsUbamV1Metadata(
+      ubamPath = Some(cloudPath.toUri.toString),
+      notes = existingNote
+    )
 
     // Clio needs the metadata to be added before it can be deleted.
     val _ = Files.write(cloudPath, fileContents.getBytes)
@@ -494,14 +495,37 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       outputs <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
       outputs should have length 1
-      outputs.head.notes should be(Some(deleteNote))
-      outputs.head.documentStatus should be(Some(DocumentStatus.Deleted))
+      outputs.head
     }
 
     result.andThen[Unit] {
       case _ => {
         val _ = Files.deleteIfExists(cloudPath)
       }
+    }
+  }
+
+  it should "delete wgs-ubams in GCP" in {
+    val deleteNote =
+      s"$randomId --- Deleted by the integration tests --- $randomId"
+
+    val deletedWithNoExistingNote = addAndDeleteWgsUbam(deleteNote, None)
+    deletedWithNoExistingNote.map { output =>
+      output.notes should be(Some(deleteNote))
+      output.documentStatus should be(Some(DocumentStatus.Deleted))
+    }
+  }
+
+  it should "preserve existing notes when deleting wgs-ubams" in {
+    val deleteNote =
+      s"$randomId --- Deleted by the integration tests --- $randomId"
+    val existingNote = s"$randomId --- I am an existing note --- $randomId"
+
+    val deletedWithExistingNote =
+      addAndDeleteWgsUbam(deleteNote, Some(existingNote))
+    deletedWithExistingNote.map { output =>
+      output.notes should be(Some(s"$existingNote\n$deleteNote"))
+      output.documentStatus should be(Some(DocumentStatus.Deleted))
     }
   }
 
