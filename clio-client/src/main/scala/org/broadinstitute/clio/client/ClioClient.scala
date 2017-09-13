@@ -250,8 +250,9 @@ class ClioClient(webClient: ClioWebClient,
         .getOrElse {
           OAuth2BearerToken(
             AuthUtil
-              .getAccessToken(ClioClientConfig.serviceAccountJson)
-              .getTokenValue
+              .getAccessToken(ClioClientConfig.serviceAccountJson).getOrElse(
+              throw new RuntimeException("Could not get authorization")
+            ).getTokenValue
           )
         }
       val commandDispatch = new CommandDispatch(webClient, ioUtil)

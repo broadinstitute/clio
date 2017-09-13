@@ -25,18 +25,14 @@ object AuthUtil extends ModelAutoDerivation {
     *
     * @param serviceAccountPath Option of path to the service account json
     */
-  def getAccessToken(serviceAccountPath: Option[Path]): AccessToken = {
-    serviceAccountPath
-      .map { jsonPath =>
-        Try(loadServiceAccountJson(jsonPath))
-          .map(getCredsFromServiceAccount)
-          .getOrElse(
-            new AccessToken(
-              Process("gcloud auth print-access-token").!!.trim,
-              null
-            )
-          )
-      }.getOrElse(throw new RuntimeException("Could not get authorization"))
+  def getAccessToken(serviceAccountPath: Option[Path]): Try[AccessToken] = {
+    def shellOutAuthToken: AccessToken =
+      new AccessToken(Process("gcloud auth print-access-token").!!.trim, null)
+
+    serviceAccountPath.map { jsonPath =>
+      Try(loadServiceAccountJson(jsonPath)).map(getCredsFromServiceAccount)
+        .recover { case ex => shellOutAuthToken }
+    }.getOrElse(Try(shellOutAuthToken))
   }
 
   def loadServiceAccountJson(serviceAccountPath: Path): ServiceAccount = {
@@ -54,7 +50,6 @@ object AuthUtil extends ModelAutoDerivation {
         s"Could not find service account JSON at $serviceAccountPath"
       )
     }
-
   }
 
   def getCredsFromServiceAccount(serviceAccount: ServiceAccount): AccessToken = {
