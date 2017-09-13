@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.util
 
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 
 import com.google.auth.oauth2.AccessToken
 import io.circe.parser.decode
@@ -9,6 +9,7 @@ import org.broadinstitute.clio.util.model.ServiceAccount
 
 import scala.io.Source
 import scala.sys.process.Process
+import scala.util.Try
 
 object AuthUtil extends ModelAutoDerivation {
 
@@ -27,22 +28,36 @@ object AuthUtil extends ModelAutoDerivation {
   def getAccessToken(serviceAccountPath: Option[Path]): AccessToken = {
     serviceAccountPath
       .map { jsonPath =>
-        loadServiceAccountJson(jsonPath)
+        Try(loadServiceAccountJson(jsonPath))
+          .map(getCredsFromServiceAccount)
+          .getOrElse(
+            new AccessToken(
+              Process("gcloud auth print-access-token").!!.trim,
+              null
+            )
+          )
       }
-      .fold(
+      .getOrElse(
         new AccessToken(Process("gcloud auth print-access-token").!!.trim, null)
-      )(getCredsFromServiceAccount)
+      )
   }
 
   def loadServiceAccountJson(serviceAccountPath: Path): ServiceAccount = {
-    val jsonBlob =
-      Source.fromFile(serviceAccountPath.toFile).mkString.stripMargin
-    decode[ServiceAccount](jsonBlob).fold({ error =>
+    if (Files.exists(serviceAccountPath)) {
+      val jsonBlob =
+        Source.fromFile(serviceAccountPath.toFile).mkString.stripMargin
+      decode[ServiceAccount](jsonBlob).fold({ error =>
+        throw new RuntimeException(
+          s"Could not decode service account JSON at $serviceAccountPath",
+          error
+        )
+      }, identity)
+    } else {
       throw new RuntimeException(
-        s"Could not decode service account JSON at $serviceAccountPath",
-        error
+        s"Could not find service account JSON at $serviceAccountPath"
       )
-    }, identity)
+    }
+
   }
 
   def getCredsFromServiceAccount(serviceAccount: ServiceAccount): AccessToken = {
