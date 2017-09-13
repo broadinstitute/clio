@@ -62,15 +62,21 @@ object ClioClient extends LazyLogging {
 
     client
       .instanceMain(args)
-      .fold({
-        case UsageOrHelpAsked(message) => {
-          println(message)
-          Future.successful(())
-        }
-        case ParsingError(error) => {
-          Future.failed(new RuntimeException(error))
-        }
-      }, identity)
+      .fold(
+        {
+          case UsageOrHelpAsked(message) => {
+            println(message)
+            Future.successful(())
+          }
+          case ParsingError(error) => {
+            Future.failed(new RuntimeException(error))
+          }
+          case AuthorizationError(error) => {
+            Future.failed(new RuntimeException(error))
+          }
+        },
+        identity
+      )
       .onComplete {
         case Success(_) => sys.exit(0)
         case Failure(ex) => {
@@ -216,11 +222,16 @@ class ClioClient(webClient: ClioWebClient,
     Either.cond(!asked, (), UsageOrHelpAsked(message))
   }
 
-  private def getAccessToken(tokenOption: Option[OAuth2BearerToken]): Either[EarlyReturn, OAuth2BearerToken] = {
-    tokenOption.toRight().left.flatMap {_ =>
-      AuthUtil.getAccessToken(ClioClientConfig.serviceAccountJson)
+  private def getAccessToken(
+    tokenOption: Option[OAuth2BearerToken]
+  ): Either[EarlyReturn, OAuth2BearerToken] = {
+    tokenOption.toRight(()).left.flatMap { _ =>
+      AuthUtil
+        .getAccessToken(ClioClientConfig.serviceAccountJson)
         .map(token => OAuth2BearerToken(token.getTokenValue))
-        .toEither.left.map(ex => AuthorizationError(ex.getMessage))
+        .toEither
+        .left
+        .map(ex => AuthorizationError(ex.getMessage))
     }
   }
 

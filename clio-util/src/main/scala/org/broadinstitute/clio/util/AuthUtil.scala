@@ -29,10 +29,13 @@ object AuthUtil extends ModelAutoDerivation {
     def shellOutAuthToken: AccessToken =
       new AccessToken(Process("gcloud auth print-access-token").!!.trim, null)
 
-    serviceAccountPath.map { jsonPath =>
-      Try(loadServiceAccountJson(jsonPath)).map(getCredsFromServiceAccount)
-        .recover { case ex => shellOutAuthToken }
-    }.getOrElse(Try(shellOutAuthToken))
+    serviceAccountPath
+      .map { jsonPath =>
+        Try(loadServiceAccountJson(jsonPath))
+          .map(getCredsFromServiceAccount)
+          .recover { case _ => shellOutAuthToken }
+      }
+      .getOrElse(Try(shellOutAuthToken))
   }
 
   def loadServiceAccountJson(serviceAccountPath: Path): ServiceAccount = {
