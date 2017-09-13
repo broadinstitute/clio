@@ -7,7 +7,6 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp.core.{Messages, WithHelp}
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.clio.client.ClioClient.AuthorizationError
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.AuthUtil
@@ -41,9 +40,8 @@ object ClioClient extends LazyLogging {
     * different return codes accordingly.
     */
   sealed trait EarlyReturn
-  final case class ParsingError(error: String) extends EarlyReturn
+  final case class ParsingOrAuthError(error: String) extends EarlyReturn
   final case class UsageOrHelpAsked(message: String) extends EarlyReturn
-  final case class AuthorizationError(error: String) extends EarlyReturn
 
   val progName = "clio-client"
 
@@ -68,10 +66,7 @@ object ClioClient extends LazyLogging {
             println(message)
             Future.successful(())
           }
-          case ParsingError(error) => {
-            Future.failed(new RuntimeException(error))
-          }
-          case AuthorizationError(error) => {
+          case ParsingOrAuthError(error) => {
             Future.failed(new RuntimeException(error))
           }
         },
@@ -112,7 +107,7 @@ object ClioClient extends LazyLogging {
 class ClioClient(webClient: ClioWebClient,
                  ioUtil: IoUtil)(implicit ec: ExecutionContext)
     extends LazyLogging {
-  import ClioClient.{EarlyReturn, ParsingError, UsageOrHelpAsked}
+  import ClioClient.{EarlyReturn, ParsingOrAuthError, UsageOrHelpAsked}
 
   /**
     * Common option messages, updated to include our program
@@ -197,7 +192,7 @@ class ClioClient(webClient: ClioWebClient,
               wrapError(commandParse)
                 .flatMap(commandMain(commonOpts, _))
             }
-            .getOrElse(Left(ParsingError(usageMessage)))
+            .getOrElse(Left(ParsingOrAuthError(usageMessage)))
         } yield {
           response
         }
@@ -210,7 +205,7 @@ class ClioClient(webClient: ClioWebClient,
     * for cleaner use in for-comprehensions.
     */
   private def wrapError[X](either: Either[String, X]): Either[EarlyReturn, X] = {
-    either.left.map(ParsingError.apply)
+    either.left.map(ParsingOrAuthError.apply)
   }
 
   /**
@@ -231,7 +226,7 @@ class ClioClient(webClient: ClioWebClient,
         .map(token => OAuth2BearerToken(token.getTokenValue))
         .toEither
         .left
-        .map(ex => AuthorizationError(ex.getMessage))
+        .map(ex => ParsingOrAuthError(ex.getMessage))
     }
   }
 
@@ -245,7 +240,7 @@ class ClioClient(webClient: ClioWebClient,
     Either.cond(
       remainingArgs.isEmpty,
       (),
-      ParsingError(s"Found extra arguments: ${remainingArgs.mkString(" ")}")
+      ParsingOrAuthError(s"Found extra arguments: ${remainingArgs.mkString(" ")}")
     )
   }
 
