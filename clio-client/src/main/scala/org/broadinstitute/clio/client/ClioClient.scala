@@ -7,6 +7,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp.core.{Messages, WithHelp}
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.clio.client.ClioClient.AuthorizationError
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.AuthUtil
@@ -42,6 +43,7 @@ object ClioClient extends LazyLogging {
   sealed trait EarlyReturn
   final case class ParsingError(error: String) extends EarlyReturn
   final case class UsageOrHelpAsked(message: String) extends EarlyReturn
+  final case class AuthorizationError(error: String) extends EarlyReturn
 
   val progName = "clio-client"
 
@@ -214,6 +216,14 @@ class ClioClient(webClient: ClioWebClient,
     Either.cond(!asked, (), UsageOrHelpAsked(message))
   }
 
+  private def getAccessToken(tokenOption: Option[OAuth2BearerToken]): Either[EarlyReturn, OAuth2BearerToken] = {
+    tokenOption.toRight().left.flatMap {_ =>
+      AuthUtil.getAccessToken(ClioClientConfig.serviceAccountJson)
+        .map(token => OAuth2BearerToken(token.getTokenValue))
+        .toEither.left.map(ex => AuthorizationError(ex.getMessage))
+    }
+  }
+
   /**
     * Utility for wrapping a check for extra arguments in our
     * type infrastructure, for cleaner use in for-comprehensions.
@@ -243,18 +253,11 @@ class ClioClient(webClient: ClioWebClient,
     for {
       _ <- messageIfAsked(commandHelp(commandName), commandParse.help)
       _ <- messageIfAsked(commandUsage(commandName), commandParse.usage)
+      token <- getAccessToken(commonOpts.bearerToken)
       command <- wrapError(commandParse.baseOrError)
       _ <- checkRemainingArgs(args ++ args0)
     } yield {
-      implicit val bearerToken: OAuth2BearerToken = commonOpts.bearerToken
-        .getOrElse {
-          OAuth2BearerToken(
-            AuthUtil
-              .getAccessToken(ClioClientConfig.serviceAccountJson).getOrElse(
-              throw new RuntimeException("Could not get authorization")
-            ).getTokenValue
-          )
-        }
+      implicit val bearerToken: OAuth2BearerToken = token
       val commandDispatch = new CommandDispatch(webClient, ioUtil)
       commandDispatch.dispatch(command)
     }
