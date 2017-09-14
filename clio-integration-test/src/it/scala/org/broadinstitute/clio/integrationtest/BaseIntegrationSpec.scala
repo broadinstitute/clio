@@ -36,8 +36,7 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-import java.io.File
-import java.nio.file.{FileSystem, Files, Path}
+import java.nio.file.{FileSystem, Files, Path, Paths}
 import java.util.UUID
 
 /**
@@ -96,9 +95,9 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   private val vaultPath = "secret/dsde/gotc/test/clio/clio-account.json"
 
   /** List of possible token-file locations, in order of preference. */
-  private val vaultTokenFiles = Seq(
-    new File("/etc/vault-token-dsde"),
-    new File(s"${System.getProperty("user.home")}/.vault-token")
+  private val vaultTokenPaths = Seq(
+    Paths.get("/etc/vault-token-dsde"),
+    Paths.get(System.getProperty("user.home"), ".vault-token")
   )
 
   /** Scopes needed from Google to write to our test-storage bucket. */
@@ -110,10 +109,10 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * Service account credentials for use when accessing cloud resources.
     */
   protected lazy val serviceAccount: ServiceAccount = {
-    val vaultToken: String = vaultTokenFiles
-      .find(_.exists)
-      .map { file =>
-        new String(Files.readAllBytes(file.toPath)).stripLineEnd
+    val vaultToken: String = vaultTokenPaths
+      .find(Files.exists(_))
+      .map { path =>
+        new String(Files.readAllBytes(path)).stripLineEnd
       }
       .getOrElse {
         sys.error("Vault token not found on filesystem!")
@@ -145,24 +144,31 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   }
 
   /**
-    * Path to the cloud directory to which all GCP test data
-    * should be written.
+    * Get a path to the root of a bucket in cloud-storage,
+    * using Google's NIO filesystem adapter.
     */
-  lazy val rootTestStorageDir: Path = {
+  def rootPathForBucketInEnv(env: String, scopes: Seq[String]): Path = {
     val storageOptions = StorageOptions
       .newBuilder()
-      .setProjectId("broad-gotc-test-storage")
-      .setCredentials(serviceAccount.credentialForScopes(testStorageScopes))
+      .setProjectId(s"broad-gotc-$env-storage")
+      .setCredentials(serviceAccount.credentialForScopes(scopes))
       .build()
 
     val gcs: FileSystem = CloudStorageFileSystem.forBucket(
-      "broad-gotc-clio-test",
+      s"broad-gotc-$env-clio",
       CloudStorageConfiguration.DEFAULT,
       storageOptions
     )
 
     gcs.getPath("/")
   }
+
+  /**
+    * Path to the cloud directory to which all GCP test data
+    * should be written.
+    */
+  lazy val rootTestStorageDir: Path =
+    rootPathForBucketInEnv("test", testStorageScopes)
 
   /**
     * Path to the root directory in which metadata updates will
@@ -193,7 +199,9 @@ abstract class BaseIntegrationSpec(clioDescription: String)
         (Seq("--bearer-token", bearerToken.token, command) ++ args).toArray
       )
       .fold(
-        err => Future.failed(new Exception(s"Command exited early with $err")),
+        earlyReturn =>
+          Future
+            .failed(new Exception(s"Command exited early with $earlyReturn")),
         identity
       )
   }

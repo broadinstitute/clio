@@ -5,13 +5,8 @@ import org.broadinstitute.clio.util.AuthUtil
 
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import com.google.cloud.storage.StorageOptions
-import com.google.cloud.storage.contrib.nio.{
-  CloudStorageConfiguration,
-  CloudStorageFileSystem
-}
 
-import java.nio.file.{FileSystem, Path}
+import java.nio.file.Path
 
 /**
   * An integration spec that runs entirely against a Clio instance
@@ -46,21 +41,8 @@ abstract class EnvIntegrationSpec(env: String)
         .getTokenValue
     )
 
-  override lazy val rootPersistenceDir: Path = {
-    val storageOptions = StorageOptions
-      .newBuilder()
-      .setProjectId(s"broad-gotc-$env-storage")
-      .setCredentials(serviceAccount.credentialForScopes(storageScopes))
-      .build()
-
-    val gcs: FileSystem = CloudStorageFileSystem.forBucket(
-      s"broad-gotc-$env-clio",
-      CloudStorageConfiguration.DEFAULT,
-      storageOptions
-    )
-
-    gcs.getPath("/")
-  }
+  override lazy val rootPersistenceDir: Path =
+    rootPathForBucketInEnv(env, storageScopes)
 }
 
 /** The integration spec that runs against Clio in dev. */

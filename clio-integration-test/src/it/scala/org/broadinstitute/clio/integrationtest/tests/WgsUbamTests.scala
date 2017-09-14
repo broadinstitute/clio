@@ -380,7 +380,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "move wgs-ubams in GCP" in {
-    val barcode = s"abcdefg$randomId"
+    val barcode = s"barcode$randomId"
     val lane = 3
     val library = s"lib$randomId"
 
@@ -420,6 +420,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     result.andThen[Unit] {
       case _ => {
+        // Without `val _ =`, the compiler complains about discarded non-Unit value.
         val _ = Seq(cloudPath, cloudPath2).map(Files.deleteIfExists)
       }
     }
@@ -447,7 +448,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     deleteNote: String,
     existingNote: Option[String]
   ): Future[TransferWgsUbamV1QueryOutput] = {
-    val barcode = s"abcdefg$randomId"
+    val barcode = s"barcode$randomId"
     val lane = 4
     val library = s"lib$randomId"
 
@@ -500,6 +501,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     result.andThen[Unit] {
       case _ => {
+        // Without `val _ =`, the compiler complains about discarded non-Unit value.
         val _ = Files.deleteIfExists(cloudPath)
       }
     }

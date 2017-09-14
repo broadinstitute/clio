@@ -377,7 +377,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
   }
 
   it should "move gvcfs in GCP" in {
-    val project = s"abcdefg$randomId"
+    val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
 
@@ -416,6 +416,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     result.andThen[Unit] {
       case _ => {
+        // Without `val _ =`, the compiler complains about discarded non-Unit value.
         val _ = Seq(cloudPath, cloudPath2).map(Files.deleteIfExists)
       }
     }
@@ -443,7 +444,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     deleteNote: String,
     existingNote: Option[String]
   ): Future[TransferGvcfV1QueryOutput] = {
-    val project = s"abcdefg$randomId"
+    val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
 
@@ -497,6 +498,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     result.andThen[Unit] {
       case _ => {
+        // Without `val _ =`, the compiler complains about discarded non-Unit value.
         val _ = Files.deleteIfExists(cloudPath)
       }
     }
