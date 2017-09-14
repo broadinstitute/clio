@@ -1,12 +1,11 @@
-package org.broadinstitute.client.util
+package org.broadinstitute.clio.client.util
 
-import org.broadinstitute.clio.client.util.TestData
+import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 import org.broadinstitute.clio.status.model.{
   ServerStatusInfo,
   StatusInfo,
   SystemStatusInfo
 }
-import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http

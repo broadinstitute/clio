@@ -30,7 +30,7 @@ abstract class EnvIntegrationSpec(env: String)
   private val vaultUrl = "https://clotho.broadinstitute.org:8200/"
 
   /** Path in vault to the service account JSON to use in testing. */
-  private val vaultPath = "secret/dsde/gotc/clio/test/clio-account.json"
+  private val vaultPath = "secret/dsde/gotc/test/clio/clio-account.json"
 
   /** List of possible token-file locations, in order of preference. */
   private val vaultTokenFiles = Seq(

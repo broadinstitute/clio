@@ -4,10 +4,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeleteWgsUbam
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata
-}
+import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1Key
 import org.broadinstitute.clio.util.model.Location
 
 import akka.http.scaladsl.model.StatusCodes
@@ -21,14 +18,13 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   it should "throw an exception if the location is not GCP" in {
     recoverToSucceededIf[Exception] {
       val command = DeleteWgsUbam(
-        metadata =
-          TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
         transferWgsUbamV1Key = TransferWgsUbamV1Key(
           flowcellBarcode = testFlowcell,
           lane = testLane,
           libraryName = testLibName,
           location = Location.OnPrem
-        )
+        ),
+        note = "Deleting for test"
       )
       succeedingDispatcher.dispatch(command)
     }
@@ -36,7 +32,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
 
   it should "throw an exception if Clio returns an error" in {
     recoverToSucceededIf[Exception] {
-      failingDispatcher.dispatch(goodDeleteCommand)
+      failingDispatcherWgsUbam.dispatch(goodDeleteCommand)
     }
   }
 
@@ -52,14 +48,14 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
       override def googleObjectExists(path: String): Boolean = true
     }
     recoverToSucceededIf[Exception] {
-      succeedingReturningDispatcher(new FailingDeleteMockIoUtil)
+      succeedingReturningDispatcherWgsUbam(new FailingDeleteMockIoUtil)
         .dispatch(goodDeleteCommand)
     }
   }
 
   it should "throw an exception if Clio can't delete the WgsUbam" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     recoverToSucceededIf[Exception] {
       new CommandDispatch(MockClioWebClient.failingToAddWgsUbam, mockIoUtil)
         .dispatch(goodDeleteCommand)
@@ -67,23 +63,23 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "delete a WgsUbam in Clio if the cloud ubam does not exist" in {
-    succeedingReturningDispatcher(new MockIoUtil)
+    succeedingReturningDispatcherWgsUbam(new MockIoUtil)
       .dispatch(goodDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }
 
   it should "delete a WgsUbam in Clio and the cloud" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
-    succeedingReturningDispatcher(mockIoUtil)
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
+    succeedingReturningDispatcherWgsUbam(mockIoUtil)
       .dispatch(goodDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }
 
   it should "delete multiple WgsUbams in Clio and the cloud" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testUbamCloudSourcePath.get)
-    mockIoUtil.putFileInCloud(testUbamCloudDestinationPath.get)
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
+    mockIoUtil.putFileInCloud(testUbamCloudDestinationPath)
 
     new CommandDispatch(MockClioWebClient.returningTwoWgsUbams, mockIoUtil)
       .dispatch(goodDeleteCommand)

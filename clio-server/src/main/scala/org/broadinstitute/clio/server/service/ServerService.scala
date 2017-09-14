@@ -62,6 +62,7 @@ class ServerService private (
     for {
       _ <- serverStatusDAO.setStatus(ServerStatusInfo.Starting)
       _ <- persistenceDAO.initialize(ElasticsearchIndex.WgsUbam)
+      _ <- persistenceDAO.initialize(ElasticsearchIndex.Gvcf)
       _ <- searchDAO.initialize()
       _ <- httpServerDAO.startup()
       _ <- serverStatusDAO.setStatus(ServerStatusInfo.Started)

@@ -1,11 +1,7 @@
 package org.broadinstitute.clio.client.util
 
 import org.broadinstitute.clio.client.commands._
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput
-}
+import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
@@ -27,10 +23,25 @@ trait TestData {
     "clio-client/src/test/resources/testdata/testWgsUbams"
   )
 
-  val badMetadataFileLocation =
-    "clio-client/src/test/resources/testdata/badmetadata"
   val metadataPlusExtraFieldsFileLocation =
     "clio-client/src/test/resources/testdata/metadataplusextrafields"
+
+  val gvcfMetadataFileLocation =
+    "clio-client/src/test/resources/testdata/gvcfMetadata"
+
+  val testGvcfLocation = Some(
+    "clio-client/src/test/resources/testdata/testGvcf"
+  )
+
+  val testTwoGvcfsLocation = Some(
+    "clio-client/src/test/resources/testdata/testGvcfs"
+  )
+
+  val gvcfMetadataPlusExtraFieldsFileLocation =
+    "clio-client/src/test/resources/testdata/gvcfMetadataplusextrafields"
+
+  val badMetadataFileLocation =
+    "clio-client/src/test/resources/testdata/badmetadata"
 
   val testBearer = OAuth2BearerToken("testBearerToken")
   val testFlowcell = "testFlowcell"
@@ -40,14 +51,19 @@ trait TestData {
   val testLcSet = "testLcSet"
   val testProject = "testProject"
   val testSampleAlias = "testSampleAlias"
+  val testVersion = 1
   val testDocumentStatus: DocumentStatus.Normal.type = DocumentStatus.Normal
   val testRunDateStart: OffsetDateTime = OffsetDateTime.now()
   val testRunDateEnd: OffsetDateTime = OffsetDateTime.now().plusHours(1)
 
-  val testUbamCloudSourcePath: Option[String] =
-    Some("gs://testProject/testSample/ubamPath1.unmapped.bam")
-  val testUbamCloudDestinationPath: Option[String] =
-    Some("gs://testProject/testSample/ubamPath2.unmapped.bam")
+  val testUbamCloudSourcePath: String =
+    "gs://testProject/testSample/ubamPath1.unmapped.bam"
+  val testUbamCloudDestinationPath: String =
+    "gs://testProject/testSample/ubamPath2.unmapped.bam"
+  val testGvcfCloudSourcePath: String =
+    "gs://testProject/testSample/gvcfPath1.gvcf"
+  val testGvcfCloudDestinationPath: String =
+    "gs://testProject/testSample/gvcfPath2.gvcf"
 
   val testCommon = CommonOptions(bearerToken = Some(testBearer))
   val testCommonNoToken = CommonOptions()
@@ -56,6 +72,12 @@ trait TestData {
     lane = testLane,
     libraryName = testLibName,
     location = Location.pathMatcher(testLocation)
+  )
+  val testGvcfTransferV1Key = TransferGvcfV1Key(
+    location = Location.pathMatcher(testLocation),
+    project = testProject,
+    sampleAlias = testSampleAlias,
+    version = testVersion
   )
 
   val goodQueryCommand = QueryWgsUbam(
@@ -68,14 +90,32 @@ trait TestData {
   )
 
   val goodMoveCommand = MoveWgsUbam(
-    metadata =
-      TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
-    transferWgsUbamV1Key = testTransferV1Key
+    transferWgsUbamV1Key = testTransferV1Key,
+    destination = testUbamCloudDestinationPath
   )
+
   val goodDeleteCommand = DeleteWgsUbam(
-    metadata =
-      TransferWgsUbamV1Metadata(ubamPath = testUbamCloudDestinationPath),
-    transferWgsUbamV1Key = testTransferV1Key
+    transferWgsUbamV1Key = testTransferV1Key,
+    note = "Good delete for test"
+  )
+
+  val goodGvcfQueryCommand = QueryGvcf(
+    transferGvcfV1QueryInput = TransferGvcfV1QueryInput()
+  )
+
+  val goodGvcfAddCommand = AddGvcf(
+    metadataLocation = gvcfMetadataFileLocation,
+    transferGvcfV1Key = testGvcfTransferV1Key
+  )
+
+  val goodGvcfMoveCommand = MoveGvcf(
+    transferGvcfV1Key = testGvcfTransferV1Key,
+    destination = testGvcfCloudDestinationPath
+  )
+
+  val goodGvcfDeleteCommand = DeleteGvcf(
+    transferGvcfV1Key = testGvcfTransferV1Key,
+    note = "Good delete for test"
   )
 
   val testServerPort: Int = 8080
