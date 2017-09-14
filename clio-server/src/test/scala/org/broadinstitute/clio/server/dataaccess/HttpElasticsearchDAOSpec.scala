@@ -13,11 +13,9 @@ import io.circe.parser
 import org.apache.http.util.EntityUtils
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   AutoElasticsearchIndex,
-  AutoElasticsearchQueryMapper,
   ClioDocument,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.ResponseException
 import org.scalatest._
@@ -109,26 +107,54 @@ class HttpElasticsearchDAOSpec
     } yield succeed
   }
 
+  it should "return documents in ClioId order" in {
+    import HttpElasticsearchDAOSpec._
+    import com.sksamuel.elastic4s.circe._
+    import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
+    import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+
+    val index =
+      new AutoElasticsearchIndex[Document]("place-" + UUID.randomUUID())
+    val mapper = AutoElasticsearchQueryMapper[Input, Output, Document]
+    for (_ <- httpElasticsearchDAO.createIndexType(index)) yield ()
+    val input = Input(Some("Nigeria"))
+    val cities = Seq("Aba", "Ede", "Owo")
+    val uuids = (1 to 3).map { _ =>
+      UUID.randomUUID()
+    }
+    for {
+      cityAndID <- cities zip uuids
+      place = Document(cityAndID._2, cityAndID._1, input.country.get)
+      _ = httpElasticsearchDAO.updateMetadata(place.city, place, index)
+    } yield ()
+
+    Thread.sleep(2000)
+
+    for {
+      outputs <- httpElasticsearchDAO.queryMetadata(
+        input,
+        index,
+        mapper,
+        "clio-id"
+      )
+      _ <- {
+        outputs.size should be(3)
+        outputs map { _.city } should be(
+          (cities zip uuids)
+            .sortBy(cityAndId => cityAndId._2.toString)
+            .map(_._1)
+        )
+      }
+    } yield {
+      succeed
+    }
+  }
+
   case class City(name: String,
                   country: String,
                   continent: String,
                   status: String,
                   slogan: Option[String])
-      extends ClioDocument {
-    override val clioId: UUID = ClioUUIDGenerator.getUUID()
-  }
-
-  case class CityQueryInput(name: Option[String],
-                            country: Option[String],
-                            continent: Option[String],
-                            status: Option[String],
-                            slogan: Option[String])
-
-  case class CityQueryOutput(name: Option[String],
-                             country: Option[String],
-                             continent: Option[String],
-                             status: Option[String],
-                             slogan: Option[String])
 
   it should "perform various CRUD-like operations" in {
     val clusterHealthDefinition: ClusterHealthDefinition =
@@ -206,26 +232,19 @@ class HttpElasticsearchDAOSpec
         city.status should be("Awesome")
       }
 
-      cityIndex = new AutoElasticsearchIndex[City]("city")
-      london = search.to[City].head
-      update <- httpElasticsearchDAO.updateMetadata(
-        "uk",
-        london.copy(status = "Brexited"),
-        cityIndex
-      )
-
-      query <- httpElasticsearchDAO.queryMetadata(
-        london,
-        cityIndex,
-        AutoElasticsearchQueryMapper[CityQueryInput, CityQueryOutput, City]
-      )
-      //      _ = query should be(Seq(???))
-
       delete <- httpClient execute deleteDefinition
       _ = delete.found should be(true)
       delete <- httpClient execute deleteDefinition
       _ = delete.found should be(false)
-
     } yield succeed
   }
+}
+
+object HttpElasticsearchDAOSpec {
+  import java.util.UUID
+
+  case class Document(clioId: UUID, city: String, country: String)
+      extends ClioDocument
+  case class Input(country: Option[String])
+  case class Output(city: String, country: String)
 }

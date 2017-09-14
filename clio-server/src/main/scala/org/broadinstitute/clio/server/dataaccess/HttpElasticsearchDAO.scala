@@ -64,6 +64,29 @@ class HttpElasticsearchDAO private[dataaccess] (
     }
   }
 
+  def queryMetadata[I, O, D: HitReader](
+    queryInput: I,
+    index: ElasticsearchIndex[D],
+    queryBuilder: ElasticsearchQueryMapper[I, O, D],
+    sortByFieldName: String = HttpElasticsearchDAO.DocumentScrollSort
+  ): Future[Seq[O]] = {
+    if (queryBuilder.isEmpty(queryInput)) {
+      Future.successful(Seq.empty)
+    } else {
+      val searchDefinition = search(index.indexName / index.indexType)
+        .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
+        .size(HttpElasticsearchDAO.DocumentScrollSize)
+        .sortByFieldAsc(sortByFieldName)
+        .query(queryBuilder.buildQuery(queryInput))
+      val searchResponse = httpClient execute searchDefinition
+      searchResponse flatMap foldScroll(
+        Seq.empty[O],
+        queryBuilder,
+        searchDefinition.keepAlive
+      )
+    }
+  }
+
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {
     val clusterHealthDefinition = clusterHealth()
     httpClient execute clusterHealthDefinition
