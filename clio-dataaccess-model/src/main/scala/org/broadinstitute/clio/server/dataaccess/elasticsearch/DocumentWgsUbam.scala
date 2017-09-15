@@ -6,6 +6,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 case class DocumentWgsUbam(clioId: UUID,
+                           entityId: String,
                            flowcellBarcode: String,
                            lane: Int,
                            libraryName: String,

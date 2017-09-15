@@ -6,6 +6,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 case class DocumentMock(clioId: UUID,
+                        entityId: String,
                         mockKeyLong: Long,
                         mockKeyString: String,
                         mockFieldDate: Option[OffsetDateTime] = None,
@@ -19,6 +20,7 @@ case class DocumentMock(clioId: UUID,
 object DocumentMock {
   def default: DocumentMock = DocumentMock(
     clioId = ClioUUIDGenerator.getUUID(),
+    entityId = "1234.the-string",
     mockKeyLong = 1234L,
     mockKeyString = "the-string"
   )

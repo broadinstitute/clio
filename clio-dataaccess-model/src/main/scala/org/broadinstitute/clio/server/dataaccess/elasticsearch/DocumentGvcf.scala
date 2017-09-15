@@ -6,6 +6,7 @@ import java.util.UUID
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 case class DocumentGvcf(clioId: UUID,
+                        entityId: String,
                         location: Location,
                         project: String,
                         sampleAlias: String,

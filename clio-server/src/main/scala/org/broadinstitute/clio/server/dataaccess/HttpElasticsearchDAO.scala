@@ -34,15 +34,14 @@ class HttpElasticsearchDAO private[dataaccess] (
     HttpClient.fromRestClient(restClient)
   }
 
-  override def updateMetadata[D: Indexable](
-    id: String,
+  override def updateMetadata[D <: ClioDocument: Indexable](
     document: D,
     index: ElasticsearchIndex[D]
   ): Future[Unit] = {
-    bulkUpdate(updatePartialDocument(index, id, document))
+    bulkUpdate(updatePartialDocument(index, document))
   }
 
-  override def queryMetadata[D: HitReader](
+  override def queryMetadata[D <: ClioDocument: HitReader](
     queryDefinition: QueryDefinition,
     index: ElasticsearchIndex[D]
   ): Future[Seq[D]] = {
@@ -117,12 +116,11 @@ class HttpElasticsearchDAO private[dataaccess] (
     }
   }
 
-  private[dataaccess] def updatePartialDocument[A: Indexable](
-    index: ElasticsearchIndex[A],
-    id: Any,
-    document: A
+  private[dataaccess] def updatePartialDocument[D <: ClioDocument: Indexable](
+    index: ElasticsearchIndex[D],
+    document: D
   ): BulkCompatibleDefinition = {
-    update(id) in index.indexName / index.indexType docAsUpsert document
+    update(document.entityId) in index.indexName / index.indexType docAsUpsert document
   }
 
   private def foldScroll[I, D: HitReader](

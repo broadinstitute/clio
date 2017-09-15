@@ -101,7 +101,7 @@ class GvcfWebServiceSpec
       status shouldEqual StatusCodes.OK
       memorySearchDAO.updateCalls should have length 1
       val firstUpdate = memorySearchDAO.updateCalls.headOption
-        .map(_._2)
+        .map(_._1)
         .getOrElse {
           // Doing this .headOption.getOrElse dance because Codacy
           // scolds us for using .head
@@ -140,13 +140,14 @@ class GvcfWebServiceSpec
     ) ~> webService.gvcfPostMetadata ~> check {
       status shouldEqual StatusCodes.OK
       memorySearchDAO.updateCalls should have length 2
-      val secondUpdate = memorySearchDAO
-        .updateCalls(1)
-        .asInstanceOf[(_, DocumentGvcf, _)]
-      secondUpdate._2.gvcfMd5 should be(Some("abcgithashdef"))
-      secondUpdate._2.notes should be(Some("some note"))
-      secondUpdate._2.documentStatus should be(Some(DocumentStatus.Deleted))
-      secondUpdate._2.gvcfPath should be(Some(""))
+      val secondUpdate = memorySearchDAO.updateCalls
+        .map(_._1)
+        .apply(1)
+        .asInstanceOf[DocumentGvcf]
+      secondUpdate.gvcfMd5 should be(Some("abcgithashdef"))
+      secondUpdate.notes should be(Some("some note"))
+      secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))
+      secondUpdate.gvcfPath should be(Some(""))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement

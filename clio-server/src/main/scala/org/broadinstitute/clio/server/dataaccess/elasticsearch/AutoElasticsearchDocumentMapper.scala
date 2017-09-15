@@ -30,13 +30,13 @@ class AutoElasticsearchDocumentMapper[
   private val modelMetadataMapper = new CaseClassMapper[ModelMetadata]
   private val documentMapper = new CaseClassMapper[Document]
 
-  override def id(key: ModelKey): String = key.productIterator.mkString(".")
-
   override def empty(key: ModelKey): Document = {
     val keyVals = modelKeyMapper.vals(key)
-    val document = documentMapper.newInstance(
-      keyVals + (ClioDocument.IdFieldName -> genId())
+    val bookkeeping = Map(
+      ClioDocument.UpsertIdFieldName -> genId(),
+      ClioDocument.EntityIdFieldName -> key.productIterator.mkString(".")
     )
+    val document = documentMapper.newInstance(keyVals ++ bookkeeping)
     document
   }
 

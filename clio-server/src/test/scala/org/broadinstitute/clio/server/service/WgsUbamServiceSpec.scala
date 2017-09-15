@@ -101,13 +101,7 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
         Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
       )
       memorySearchDAO.updateCalls should be(
-        Seq(
-          (
-            WgsUbamService.v1DocumentConverter.id(transferKey),
-            expectedDocument,
-            ElasticsearchIndex.WgsUbam
-          )
-        )
+        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

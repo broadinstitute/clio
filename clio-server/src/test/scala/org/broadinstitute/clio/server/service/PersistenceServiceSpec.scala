@@ -44,13 +44,7 @@ class PersistenceServiceSpec extends AsyncFlatSpec with Matchers {
         Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
       )
       searchDAO.updateCalls should be(
-        Seq(
-          (
-            "barcode.1.library.OnPrem",
-            expectedDocument,
-            ElasticsearchIndex.WgsUbam
-          )
-        )
+        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
       )
     }
   }

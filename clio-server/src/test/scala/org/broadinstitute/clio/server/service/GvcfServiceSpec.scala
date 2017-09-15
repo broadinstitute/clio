@@ -101,13 +101,7 @@ class GvcfServiceSpec extends AsyncFlatSpec with Matchers {
         Seq((expectedDocument, ElasticsearchIndex.Gvcf))
       )
       memorySearchDAO.updateCalls should be(
-        Seq(
-          (
-            GvcfService.v1DocumentConverter.id(transferKey),
-            expectedDocument,
-            ElasticsearchIndex.Gvcf
-          )
-        )
+        Seq((expectedDocument, ElasticsearchIndex.Gvcf))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

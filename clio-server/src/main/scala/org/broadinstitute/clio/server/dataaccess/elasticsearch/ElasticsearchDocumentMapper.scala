@@ -10,14 +10,6 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 abstract class ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] {
 
   /**
-    * Returns the document id for a key.
-    *
-    * @param key The key.
-    * @return The document id.
-    */
-  def id(key: ModelKey): String
-
-  /**
     * Returns an empty document for a key.
     *
     * @param key The key.
