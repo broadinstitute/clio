@@ -6,10 +6,9 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
   ElasticsearchQueryMapper
 }
-
 import com.sksamuel.elastic4s.HitReader
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Service responsible for running queries against a search DAO.
@@ -31,8 +30,12 @@ class SearchService private (searchDAO: SearchDAO) {
     transferInput: TI,
     index: ElasticsearchIndex[D],
     queryMapper: ElasticsearchQueryMapper[TI, TO, D]
-  ): Future[Seq[TO]] = {
-    searchDAO.queryMetadata(transferInput, index, queryMapper)
+  )(implicit ec: ExecutionContext): Future[Seq[TO]] = {
+    if (queryMapper.isEmpty(transferInput)) {
+      Future.successful(Seq.empty)
+    } else {
+      searchDAO.queryMetadata(queryMapper.buildQuery(transferInput), index) map queryMapper.toQueryOutputs
+    }
   }
 }
 

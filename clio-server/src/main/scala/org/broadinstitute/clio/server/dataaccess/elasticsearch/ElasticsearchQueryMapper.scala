@@ -1,11 +1,9 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import com.sksamuel.elastic4s.HitReader
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.search.SearchResponse
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-
 import java.time.OffsetDateTime
+
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 
 /**
   * Maps query input and outputs.
@@ -42,10 +40,8 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput,
     */
   def toQueryOutput(document: Document): ModelQueryOutput
 
-  private[dataaccess] def toQueryOutputs(
-    searchResponse: SearchResponse
-  )(implicit hitReader: HitReader[Document]): Seq[ModelQueryOutput] = {
-    searchResponse.to[Document].map(toQueryOutput)
+  def toQueryOutputs(documents: Seq[Document]): Seq[ModelQueryOutput] = {
+    documents.map(toQueryOutput)
   }
 }
 
