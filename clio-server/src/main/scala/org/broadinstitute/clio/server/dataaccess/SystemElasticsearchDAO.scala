@@ -41,7 +41,9 @@ trait SystemElasticsearchDAO extends SearchDAO { this: HttpElasticsearchDAO =>
   }
 
   /** If an index with the name doesn't exist then create it, and then separately update the fields on the index. */
-  private def createOrUpdateIndex(index: ElasticsearchIndex[_]): Future[Unit] = {
+  private[dataaccess] def createOrUpdateIndex(
+    index: ElasticsearchIndex[_]
+  ): Future[Unit] = {
     for {
       exists <- existsIndexType(index)
       _ <- if (exists) Future.successful(()) else createIndexType(index)

@@ -26,9 +26,11 @@ import java.time.OffsetDateTime
   * @tparam Document         The Elasticsearch documents being queried, with a context bound also specifying that an
   *                          `implicit ctagDocument: ClassTag[Document]` exists.
   */
-class AutoElasticsearchQueryMapper[ModelQueryInput: ClassTag: FieldMapper,
-                                   ModelQueryOutput: ClassTag,
-                                   Document <: ClioDocument: ClassTag] private
+class AutoElasticsearchQueryMapper[
+  ModelQueryInput: ClassTag: FieldMapper,
+  ModelQueryOutput: ClassTag,
+  Document <: ClioDocument: ClassTag
+] private[dataaccess]
     extends ElasticsearchQueryMapper[
       ModelQueryInput,
       ModelQueryOutput,

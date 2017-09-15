@@ -20,6 +20,8 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.ResponseException
 import org.scalatest._
 
+import scala.concurrent.Future
+
 class HttpElasticsearchDAOSpec
     extends AbstractElasticsearchDAOSpec("HttpElasticsearchDAO")
     with AsyncFlatSpecLike
@@ -115,39 +117,33 @@ class HttpElasticsearchDAOSpec
 
     val index =
       new AutoElasticsearchIndex[Document]("place-" + UUID.randomUUID())
-    val mapper = AutoElasticsearchQueryMapper[Input, Output, Document]
-    for (_ <- httpElasticsearchDAO.createIndexType(index)) yield ()
-    val input = Input(Some("Nigeria"))
-    val cities = Seq("Aba", "Ede", "Owo")
-    val uuids = (1 to 3).map { _ =>
-      UUID.randomUUID()
+    val mapper = new AutoElasticsearchQueryMapper[Input, Document, Document] {
+      override def toQueryOutput(document: Document): Document = document
     }
-    for {
-      cityAndID <- cities zip uuids
-      place = Document(cityAndID._2, cityAndID._1, input.country.get)
-      _ = httpElasticsearchDAO.updateMetadata(place.city, place, index)
-    } yield ()
 
-    Thread.sleep(2000)
+    val input = Input(Some("Nigeria"))
+    val places = Seq("Aba", "Ede", "Owo").map(
+      Document(UUID.randomUUID(), _, input.country.get)
+    )
 
     for {
+      _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
+      _ <- Future.sequence(
+        places.map(
+          place => httpElasticsearchDAO.updateMetadata(place.city, place, index)
+        )
+      )
       outputs <- httpElasticsearchDAO.queryMetadata(
         input,
         index,
         mapper,
-        "clio-id"
+        "clio_id"
       )
-      _ <- {
+      _ = {
         outputs.size should be(3)
-        outputs map { _.city } should be(
-          (cities zip uuids)
-            .sortBy(cityAndId => cityAndId._2.toString)
-            .map(_._1)
-        )
+        outputs should be(places.sortBy(_.clioId))
       }
-    } yield {
-      succeed
-    }
+    } yield succeed
   }
 
   case class City(name: String,
