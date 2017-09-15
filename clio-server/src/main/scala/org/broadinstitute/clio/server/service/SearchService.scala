@@ -34,7 +34,9 @@ class SearchService private (searchDAO: SearchDAO) {
     if (queryMapper.isEmpty(transferInput)) {
       Future.successful(Seq.empty)
     } else {
-      searchDAO.queryMetadata(queryMapper.buildQuery(transferInput), index) map queryMapper.toQueryOutputs
+      searchDAO
+        .queryMetadata(queryMapper.buildQuery(transferInput), index)
+        .map(queryMapper.toQueryOutputs)
     }
   }
 }

@@ -55,27 +55,21 @@ class HttpElasticsearchDAO private[dataaccess] (
     searchResponse flatMap foldScroll(Seq.empty[D], searchDefinition.keepAlive)
   }
 
-  def queryMetadata[I, O, D: HitReader](
-    queryInput: I,
-    index: ElasticsearchIndex[D],
-    queryBuilder: ElasticsearchQueryMapper[I, O, D],
-    sortByFieldName: String = HttpElasticsearchDAO.DocumentScrollSort
-  ): Future[Seq[O]] = {
-    if (queryBuilder.isEmpty(queryInput)) {
-      Future.successful(Seq.empty)
-    } else {
-      val searchDefinition = search(index.indexName / index.indexType)
-        .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
-        .size(HttpElasticsearchDAO.DocumentScrollSize)
-        .sortByFieldAsc(sortByFieldName)
-        .query(queryBuilder.buildQuery(queryInput))
-      val searchResponse = httpClient execute searchDefinition
-      searchResponse flatMap foldScroll(
-        Seq.empty[O],
-        queryBuilder,
-        searchDefinition.keepAlive
-      )
-    }
+  def queryMetadata[D: HitReader](
+                                         queryDefinition: QueryDefinition,
+                                         index: ElasticsearchIndex[D],
+                                         sortByFieldName: String = HttpElasticsearchDAO.DocumentScrollSort
+                                       ): Future[Seq[D]] = {
+    val searchDefinition = search(index.indexName / index.indexType)
+      .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
+      .size(HttpElasticsearchDAO.DocumentScrollSize)
+      .sortByFieldAsc(sortByFieldName)
+      .query(queryDefinition)
+    val searchResponse = httpClient execute searchDefinition
+    searchResponse flatMap foldScroll(
+      Seq.empty[D],
+      searchDefinition.keepAlive
+    )
   }
 
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {

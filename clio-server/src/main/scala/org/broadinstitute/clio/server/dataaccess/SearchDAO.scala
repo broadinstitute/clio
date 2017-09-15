@@ -44,7 +44,8 @@ trait SearchDAO {
     *
     * @param queryDefinition       The query to run.
     * @param index       The index to run the query against.
-    * @tparam D The type of the document to query.
+
+    * @tparam D          The type of the document to query.
     */
   def queryMetadata[D: HitReader](queryDefinition: QueryDefinition,
                                   index: ElasticsearchIndex[D]): Future[Seq[D]]
