@@ -33,7 +33,7 @@ trait SearchDAO {
     * @param document A (potentially partial) metadata document containing
     *                 new fields to set on the document in the index.
     * @param index    The index in which to update the document.
-    * @tparam D The type of the document.
+    * @tparam D       The type of the document.
     */
   def updateMetadata[D: Indexable](id: String,
                                    document: D,
@@ -43,8 +43,8 @@ trait SearchDAO {
     * Query a metadata index.
     *
     * @param queryDefinition       The query to run.
-    * @param index       The index to run the query against.
-    * @tparam D The type of the document to query.
+    * @param index                 The index to run the query against.
+    * @tparam D                    The type of the document to query.
     */
   def queryMetadata[D: HitReader](queryDefinition: QueryDefinition,
                                   index: ElasticsearchIndex[D]): Future[Seq[D]]
