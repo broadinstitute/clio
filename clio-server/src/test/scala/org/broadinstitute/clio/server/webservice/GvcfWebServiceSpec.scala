@@ -15,6 +15,9 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 import org.scalatest.{FlatSpec, Matchers}
 import java.util.UUID
 
+import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import org.broadinstitute.clio.server.service.GvcfService
+
 class GvcfWebServiceSpec
     extends FlatSpec
     with Matchers
@@ -24,14 +27,14 @@ class GvcfWebServiceSpec
   it should "postMetadata with OnPrem location" in {
     val webService = new MockGvcfWebService()
     Post("/metadata/OnPrem/proj0/sample_alias0/1", Map("notes" -> "some note")) ~> webService.gvcfPostMetadata ~> check {
-      responseAs[String] should not be (empty)
+      responseAs[String] should not be empty
     }
   }
 
   it should "postMetadata with GCP location" in {
     val webService = new MockGvcfWebService()
     Post("/metadata/GCP/proj0/sample_alias0/1", Map("notes" -> "some note")) ~> webService.gvcfPostMetadata ~> check {
-      responseAs[String] should not be (empty)
+      responseAs[String] should not be empty
     }
   }
 
@@ -68,7 +71,7 @@ class GvcfWebServiceSpec
             project = Some("proj0"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        )
+        ).map(GvcfService.v1QueryConverter.buildQuery)
       )
     }
 
@@ -78,9 +81,8 @@ class GvcfWebServiceSpec
     ) ~> webService.gvcfQuery ~> check {
       memorySearchDAO.queryCalls should have length 2
       val secondQuery =
-        memorySearchDAO.queryCalls(1).asInstanceOf[TransferGvcfV1QueryInput]
-      secondQuery.project should be(Some("testProject1"))
-      secondQuery.sampleAlias should be(Some("sample1"))
+        memorySearchDAO.queryCalls(1).asInstanceOf[BoolQueryDefinition]
+      secondQuery.must should have length 3
     }
   }
 
@@ -123,7 +125,7 @@ class GvcfWebServiceSpec
             location = Some(Location.GCP),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        )
+        ).map(GvcfService.v1QueryConverter.buildQuery)
       )
     }
 
@@ -160,7 +162,7 @@ class GvcfWebServiceSpec
           ),
           // No documentStatus restriction from /queryall
           TransferGvcfV1QueryInput(location = Some(Location.GCP))
-        )
+        ).map(GvcfService.v1QueryConverter.buildQuery)
       )
     }
   }

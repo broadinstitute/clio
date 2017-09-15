@@ -63,7 +63,9 @@ object GvcfService {
       DocumentGvcf
     ]
 
-  private[service] val v1QueryConverter =
+  val v1QueryConverter: ElasticsearchQueryMapper[TransferGvcfV1QueryInput,
+                                                 TransferGvcfV1QueryOutput,
+                                                 DocumentGvcf] =
     AutoElasticsearchQueryMapper[
       TransferGvcfV1QueryInput,
       TransferGvcfV1QueryOutput,

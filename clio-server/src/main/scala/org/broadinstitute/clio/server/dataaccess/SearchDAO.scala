@@ -1,11 +1,8 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchIndex,
-  ElasticsearchQueryMapper
-}
-
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.{HitReader, Indexable}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.concurrent.Future
 
@@ -36,7 +33,7 @@ trait SearchDAO {
     * @param document A (potentially partial) metadata document containing
     *                 new fields to set on the document in the index.
     * @param index    The index in which to update the document.
-    * @tparam D       The type of the document.
+    * @tparam D The type of the document.
     */
   def updateMetadata[D: Indexable](id: String,
                                    document: D,
@@ -45,18 +42,10 @@ trait SearchDAO {
   /**
     * Query a metadata index.
     *
-    * @param input       An object describing the query to run.
+    * @param queryDefinition       The query to run.
     * @param index       The index to run the query against.
-    * @param queryMapper Utility for mapping the query input to an
-    *                    elastic4s query object, and for mapping the
-    *                    query results back to a query output type.
-    * @tparam I          The type of the query input.
-    * @tparam O          The type of the query output.
-    * @tparam D          The type of the document to query.
+    * @tparam D The type of the document to query.
     */
-  def queryMetadata[I, O, D: HitReader](
-    input: I,
-    index: ElasticsearchIndex[D],
-    queryMapper: ElasticsearchQueryMapper[I, O, D]
-  ): Future[Seq[O]]
+  def queryMetadata[D: HitReader](queryDefinition: QueryDefinition,
+                                  index: ElasticsearchIndex[D]): Future[Seq[D]]
 }

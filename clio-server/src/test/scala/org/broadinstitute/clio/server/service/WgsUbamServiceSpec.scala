@@ -49,7 +49,11 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
     } yield {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(
-        Seq(transferInput.copy(documentStatus = Some(DocumentStatus.Normal)))
+        Seq(
+          WgsUbamService.v1QueryConverter.buildQuery(
+            transferInput.copy(documentStatus = Some(DocumentStatus.Normal))
+          )
+        )
       )
     }
   }

@@ -40,7 +40,7 @@ object ClioClient extends LazyLogging {
     * different return codes accordingly.
     */
   sealed trait EarlyReturn
-  final case class ParsingError(error: String) extends EarlyReturn
+  final case class ParsingOrAuthError(error: String) extends EarlyReturn
   final case class UsageOrHelpAsked(message: String) extends EarlyReturn
 
   val progName = "clio-client"
@@ -60,15 +60,18 @@ object ClioClient extends LazyLogging {
 
     client
       .instanceMain(args)
-      .fold({
-        case UsageOrHelpAsked(message) => {
-          println(message)
-          Future.successful(())
-        }
-        case ParsingError(error) => {
-          Future.failed(new RuntimeException(error))
-        }
-      }, identity)
+      .fold(
+        {
+          case UsageOrHelpAsked(message) => {
+            println(message)
+            Future.successful(())
+          }
+          case ParsingOrAuthError(error) => {
+            Future.failed(new RuntimeException(error))
+          }
+        },
+        identity
+      )
       .onComplete {
         case Success(_) => sys.exit(0)
         case Failure(ex) => {
@@ -104,7 +107,7 @@ object ClioClient extends LazyLogging {
 class ClioClient(webClient: ClioWebClient,
                  ioUtil: IoUtil)(implicit ec: ExecutionContext)
     extends LazyLogging {
-  import ClioClient.{EarlyReturn, ParsingError, UsageOrHelpAsked}
+  import ClioClient.{EarlyReturn, ParsingOrAuthError, UsageOrHelpAsked}
 
   /**
     * Common option messages, updated to include our program
@@ -189,7 +192,7 @@ class ClioClient(webClient: ClioWebClient,
               wrapError(commandParse)
                 .flatMap(commandMain(commonOpts, _))
             }
-            .getOrElse(Left(ParsingError(usageMessage)))
+            .getOrElse(Left(ParsingOrAuthError(usageMessage)))
         } yield {
           response
         }
@@ -202,7 +205,7 @@ class ClioClient(webClient: ClioWebClient,
     * for cleaner use in for-comprehensions.
     */
   private def wrapError[X](either: Either[String, X]): Either[EarlyReturn, X] = {
-    either.left.map(ParsingError.apply)
+    either.left.map(ParsingOrAuthError.apply)
   }
 
   /**
@@ -212,6 +215,19 @@ class ClioClient(webClient: ClioWebClient,
   private def messageIfAsked(message: String,
                              asked: Boolean): Either[EarlyReturn, Unit] = {
     Either.cond(!asked, (), UsageOrHelpAsked(message))
+  }
+
+  private def getAccessToken(
+    tokenOption: Option[OAuth2BearerToken]
+  ): Either[EarlyReturn, OAuth2BearerToken] = {
+    tokenOption.toRight(()).left.flatMap { _ =>
+      AuthUtil
+        .getAccessToken(ClioClientConfig.serviceAccountJson)
+        .map(token => OAuth2BearerToken(token.getTokenValue))
+        .toEither
+        .left
+        .map(ex => ParsingOrAuthError(ex.getMessage))
+    }
   }
 
   /**
@@ -224,7 +240,9 @@ class ClioClient(webClient: ClioWebClient,
     Either.cond(
       remainingArgs.isEmpty,
       (),
-      ParsingError(s"Found extra arguments: ${remainingArgs.mkString(" ")}")
+      ParsingOrAuthError(
+        s"Found extra arguments: ${remainingArgs.mkString(" ")}"
+      )
     )
   }
 
@@ -243,17 +261,11 @@ class ClioClient(webClient: ClioWebClient,
     for {
       _ <- messageIfAsked(commandHelp(commandName), commandParse.help)
       _ <- messageIfAsked(commandUsage(commandName), commandParse.usage)
+      token <- getAccessToken(commonOpts.bearerToken)
       command <- wrapError(commandParse.baseOrError)
       _ <- checkRemainingArgs(args ++ args0)
     } yield {
-      implicit val bearerToken: OAuth2BearerToken = commonOpts.bearerToken
-        .getOrElse {
-          OAuth2BearerToken(
-            AuthUtil
-              .getAccessToken(ClioClientConfig.serviceAccountJson)
-              .getTokenValue
-          )
-        }
+      implicit val bearerToken: OAuth2BearerToken = token
       val commandDispatch = new CommandDispatch(webClient, ioUtil)
       commandDispatch.dispatch(command)
     }

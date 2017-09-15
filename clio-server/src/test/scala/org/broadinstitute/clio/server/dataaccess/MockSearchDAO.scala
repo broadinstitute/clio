@@ -1,11 +1,8 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchIndex,
-  ElasticsearchQueryMapper
-}
-
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.{HitReader, Indexable}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.concurrent.Future
 
@@ -30,11 +27,10 @@ class MockSearchDAO extends SearchDAO {
     Future.successful(())
   }
 
-  override def queryMetadata[I, O, D: HitReader](
-    queryInput: I,
-    index: ElasticsearchIndex[D],
-    queryBuilder: ElasticsearchQueryMapper[I, O, D]
-  ): Future[Seq[O]] = {
-    Future.successful(Seq.empty[O])
+  override def queryMetadata[D: HitReader](
+    queryDefinition: QueryDefinition,
+    index: ElasticsearchIndex[D]
+  ): Future[Seq[D]] = {
+    Future.successful(Seq.empty[D])
   }
 }

@@ -7,13 +7,13 @@ import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.cluster.ClusterHealthResponse
 import com.sksamuel.elastic4s.http.search.SearchResponse
 import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.{HitReader, Indexable}
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.RestClient
 
@@ -42,26 +42,17 @@ class HttpElasticsearchDAO private[dataaccess] (
     bulkUpdate(updatePartialDocument(index, id, document))
   }
 
-  override def queryMetadata[I, O, D: HitReader](
-    queryInput: I,
-    index: ElasticsearchIndex[D],
-    queryBuilder: ElasticsearchQueryMapper[I, O, D]
-  ): Future[Seq[O]] = {
-    if (queryBuilder.isEmpty(queryInput)) {
-      Future.successful(Seq.empty)
-    } else {
-      val searchDefinition = search(index.indexName / index.indexType)
-        .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
-        .size(HttpElasticsearchDAO.DocumentScrollSize)
-        .sortByFieldAsc(HttpElasticsearchDAO.DocumentScrollSort)
-        .query(queryBuilder.buildQuery(queryInput))
-      val searchResponse = httpClient execute searchDefinition
-      searchResponse flatMap foldScroll(
-        Seq.empty[O],
-        queryBuilder,
-        searchDefinition.keepAlive
-      )
-    }
+  override def queryMetadata[D: HitReader](
+    queryDefinition: QueryDefinition,
+    index: ElasticsearchIndex[D]
+  ): Future[Seq[D]] = {
+    val searchDefinition = search(index.indexName / index.indexType)
+      .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
+      .size(HttpElasticsearchDAO.DocumentScrollSize)
+      .sortByFieldAsc(HttpElasticsearchDAO.DocumentScrollSort)
+      .query(queryDefinition)
+    val searchResponse = httpClient execute searchDefinition
+    searchResponse flatMap foldScroll(Seq.empty[D], searchDefinition.keepAlive)
   }
 
   def queryMetadata[I, O, D: HitReader](
@@ -157,11 +148,10 @@ class HttpElasticsearchDAO private[dataaccess] (
     update(id) in index.indexName / index.indexType docAsUpsert document
   }
 
-  private def foldScroll[I, O, D: HitReader](
-    acc: Seq[O],
-    queryBuilder: ElasticsearchQueryMapper[I, O, D],
+  private def foldScroll[I, D: HitReader](
+    acc: Seq[D],
     keepAlive: Option[String]
-  )(searchResponse: SearchResponse): Future[Seq[O]] = {
+  )(searchResponse: SearchResponse): Future[Seq[D]] = {
     searchResponse.scrollId match {
       case Some(scrollId) =>
         if (searchResponse.nonEmpty) {
@@ -169,8 +159,7 @@ class HttpElasticsearchDAO private[dataaccess] (
             searchScroll(scrollId).copy(keepAlive = keepAlive)
           val scrollResponse = httpClient execute scrollDefinition
           scrollResponse flatMap foldScroll(
-            acc ++ queryBuilder.toQueryOutputs(searchResponse),
-            queryBuilder,
+            acc ++ searchResponse.to[D],
             keepAlive
           )
         } else {
@@ -178,7 +167,7 @@ class HttpElasticsearchDAO private[dataaccess] (
           clearResponse transform (_ => Success(acc))
         }
       case None =>
-        Future.successful(acc ++ queryBuilder.toQueryOutputs(searchResponse))
+        Future.successful(acc ++ searchResponse.to[D])
     }
   }
 }

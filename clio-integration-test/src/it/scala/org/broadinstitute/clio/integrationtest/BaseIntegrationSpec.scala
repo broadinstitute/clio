@@ -8,12 +8,19 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.ServiceAccount
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
+import com.bettercloud.vault.{Vault, VaultConfig}
+import com.google.cloud.storage.StorageOptions
+import com.google.cloud.storage.contrib.nio.{
+  CloudStorageConfiguration,
+  CloudStorageFileSystem
+}
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
@@ -25,10 +32,11 @@ import org.apache.http.HttpHost
 import org.elasticsearch.client.RestClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
+import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{FileSystem, Files, Path, Paths}
 import java.util.UUID
 
 /**
@@ -80,6 +88,88 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   def elasticsearchUri: Uri
 
+  /** URL of vault server to use when getting bearer tokens for service accounts. */
+  private val vaultUrl = "https://clotho.broadinstitute.org:8200/"
+
+  /** Path in vault to the service account JSON to use in testing. */
+  private val vaultPath = "secret/dsde/gotc/test/clio/clio-account.json"
+
+  /** List of possible token-file locations, in order of preference. */
+  private val vaultTokenPaths = Seq(
+    Paths.get("/etc/vault-token-dsde"),
+    Paths.get(System.getProperty("user.home"), ".vault-token")
+  )
+
+  /** Scopes needed from Google to write to our test-storage bucket. */
+  private val testStorageScopes = Seq(
+    "https://www.googleapis.com/auth/devstorage.read_write"
+  )
+
+  /**
+    * Service account credentials for use when accessing cloud resources.
+    */
+  protected lazy val serviceAccount: ServiceAccount = {
+    val vaultToken: String = vaultTokenPaths
+      .find(Files.exists(_))
+      .map { path =>
+        new String(Files.readAllBytes(path)).stripLineEnd
+      }
+      .getOrElse {
+        sys.error("Vault token not found on filesystem!")
+      }
+
+    val vaultConfig = new VaultConfig()
+      .address(vaultUrl)
+      .token(vaultToken)
+      .build()
+
+    val vaultDriver = new Vault(vaultConfig)
+    val accountJSON =
+      vaultDriver
+        .logical()
+        .read(vaultPath)
+        .getData
+        .asScala
+        .toMap[String, String]
+        .asJson
+
+    accountJSON
+      .as[ServiceAccount]
+      .fold({ err =>
+        throw new RuntimeException(
+          s"Failed to decode service account JSON from Vault at $vaultPath",
+          err
+        )
+      }, identity)
+  }
+
+  /**
+    * Get a path to the root of a bucket in cloud-storage,
+    * using Google's NIO filesystem adapter.
+    */
+  def rootPathForBucketInEnv(env: String, scopes: Seq[String]): Path = {
+    val storageOptions = StorageOptions
+      .newBuilder()
+      .setProjectId(s"broad-gotc-$env-storage")
+      .setCredentials(serviceAccount.credentialForScopes(scopes))
+      .build()
+
+    val gcs: FileSystem = CloudStorageFileSystem.forBucket(
+      s"broad-gotc-$env-clio",
+      CloudStorageConfiguration.DEFAULT,
+      storageOptions
+    )
+
+    gcs.getPath("/")
+  }
+
+  /**
+    * Path to the cloud directory to which all GCP test data
+    * should be written.
+    */
+  lazy val rootTestStorageDir: Path =
+    rootPathForBucketInEnv("test", testStorageScopes)
+
   /**
     * Path to the root directory in which metadata updates will
     * be persisted.
@@ -101,15 +191,19 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
   /**
     * Run a command with arbitrary args through the main clio-client.
-    *
-    * Fails the test immediately if the client exits early.
+    * Returns a failed future if the command exits early.
     */
   def runClient(command: String, args: String*): Future[HttpResponse] = {
     clioClient
       .instanceMain(
         (Seq("--bearer-token", bearerToken.token, command) ++ args).toArray
       )
-      .fold(err => fail(s"Command exited early with $err"), identity)
+      .fold(
+        earlyReturn =>
+          Future
+            .failed(new Exception(s"Command exited early with $earlyReturn")),
+        identity
+      )
   }
 
   /**
@@ -152,11 +246,11 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   }
 
   /**
-    * Write an object as JSON to a temp file.
+    * Write an object as JSON to a local temp file.
     *
     * Registers the temp file for deletion.
     */
-  def writeTmpJson[A: Encoder](obj: A): Path = {
+  def writeLocalTmpJson[A: Encoder](obj: A): Path = {
     val tmpFile = Files.createTempFile("clio-integration", ".json")
     val json = obj.asJson.pretty(implicitly[Printer])
     Files.write(tmpFile, json.getBytes)

@@ -12,10 +12,11 @@ import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1QueryInput
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.DocumentStatus
-
 import org.scalatest.{FlatSpec, Matchers}
-
 import java.util.UUID
+
+import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import org.broadinstitute.clio.server.service.WgsUbamService
 
 class WgsUbamWebServiceSpec
     extends FlatSpec
@@ -29,7 +30,7 @@ class WgsUbamWebServiceSpec
       "/metadata/barcodeOnPrem/3/libraryOnPrem/OnPrem",
       Map("project" -> "testOnPremLocation")
     ) ~> webService.postMetadata ~> check {
-      responseAs[String] should not be (empty)
+      responseAs[String] should not be empty
     }
   }
 
@@ -39,7 +40,7 @@ class WgsUbamWebServiceSpec
       "/metadata/barcodeGCP/4/libraryGCP/GCP",
       Map("project" -> "testGCPlocation")
     ) ~> webService.postMetadata ~> check {
-      responseAs[String] should not be (empty)
+      responseAs[String] should not be empty
     }
   }
 
@@ -76,7 +77,7 @@ class WgsUbamWebServiceSpec
             project = Some("testProject1"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        )
+        ).map(WgsUbamService.v1QueryConverter.buildQuery)
       )
     }
 
@@ -86,9 +87,8 @@ class WgsUbamWebServiceSpec
     ) ~> webService.query ~> check {
       memorySearchDAO.queryCalls should have length 2
       val secondQuery =
-        memorySearchDAO.queryCalls(1).asInstanceOf[TransferWgsUbamV1QueryInput]
-      secondQuery.project should be(Some("testProject1"))
-      secondQuery.sampleAlias should be(Some("sample1"))
+        memorySearchDAO.queryCalls(1).asInstanceOf[BoolQueryDefinition]
+      secondQuery.must should have length 3
     }
   }
 
@@ -131,7 +131,7 @@ class WgsUbamWebServiceSpec
             flowcellBarcode = Some("FC123"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        )
+        ).map(WgsUbamService.v1QueryConverter.buildQuery)
       )
     }
 
@@ -168,10 +168,9 @@ class WgsUbamWebServiceSpec
           ),
           // No documentStatus restriction from /queryall
           TransferWgsUbamV1QueryInput(flowcellBarcode = Some("FC123"))
-        )
+        ).map(WgsUbamService.v1QueryConverter.buildQuery)
       )
     }
-
   }
 
   it should "query with a BoGuS project and sample and return nothing" in {
