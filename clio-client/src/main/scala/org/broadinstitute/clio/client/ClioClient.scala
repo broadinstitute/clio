@@ -240,7 +240,9 @@ class ClioClient(webClient: ClioWebClient,
     Either.cond(
       remainingArgs.isEmpty,
       (),
-      ParsingOrAuthError(s"Found extra arguments: ${remainingArgs.mkString(" ")}")
+      ParsingOrAuthError(
+        s"Found extra arguments: ${remainingArgs.mkString(" ")}"
+      )
     )
   }
 

@@ -69,7 +69,9 @@ object WgsUbamService {
       DocumentWgsUbam
     ]
 
-  private[service] val v1QueryConverter =
+  val v1QueryConverter: ElasticsearchQueryMapper[TransferWgsUbamV1QueryInput,
+                                                 TransferWgsUbamV1QueryOutput,
+                                                 DocumentWgsUbam] =
     AutoElasticsearchQueryMapper[
       TransferWgsUbamV1QueryInput,
       TransferWgsUbamV1QueryOutput,

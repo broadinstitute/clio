@@ -1,10 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchIndex,
-  ElasticsearchQueryMapper
-}
-
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.{HitReader, Indexable}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.concurrent.Future
 
@@ -17,11 +14,10 @@ class FailingSearchDAO extends SearchDAO {
 
   override def close(): Future[Unit] = failure
 
-  override def queryMetadata[I, O, D: HitReader](
-    input: I,
-    index: ElasticsearchIndex[D],
-    queryMapper: ElasticsearchQueryMapper[I, O, D]
-  ): Future[Seq[O]] = failure
+  override def queryMetadata[D: HitReader](
+    queryDefinition: QueryDefinition,
+    index: ElasticsearchIndex[D]
+  ): Future[Seq[D]] = failure
 
   override def updateMetadata[D: Indexable](
     id: String,
