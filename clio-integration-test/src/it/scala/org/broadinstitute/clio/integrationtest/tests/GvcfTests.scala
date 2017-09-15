@@ -106,7 +106,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     } else {
       it should s"handle upserts and queries for gvcf location $location" in {
         for {
-          returnedClioId <- responseFuture
+          returnedUpsertId <- responseFuture
           queryResponse <- runClient(
             ClioCommand.queryGvcfName,
             "--sample-alias",
@@ -119,7 +119,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
           outputs.head should be(expected)
 
           val storedDocument =
-            getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, returnedClioId)
+            getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, returnedUpsertId)
           storedDocument.location should be(expected.location)
           storedDocument.project should be(expected.project)
           storedDocument.sampleAlias should be(expected.sampleAlias)
@@ -130,7 +130,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "assign different clioIds to different gvcf upserts" in {
+  it should "assign different upsertIds to different gvcf upserts" in {
     val upsertKey = TransferGvcfV1Key(
       location = Location.GCP,
       project = s"project$randomId",
@@ -139,35 +139,35 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     )
 
     for {
-      clioId1 <- runUpsertGvcf(
+      upsertId1 <- runUpsertGvcf(
         upsertKey,
         TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf1.gvcf"))
       )
-      clioId2 <- clioWebClient
+      upsertId2 <- clioWebClient
         .addGvcf(
           upsertKey,
           TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf2.gvcf"))
         )
         .flatMap(Unmarshal(_).to[UUID])
     } yield {
-      clioId2.compareTo(clioId1) should be(1)
+      upsertId2.compareTo(upsertId1) should be(1)
 
       val storedDocument1 =
-        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, clioId1)
+        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId1)
       storedDocument1.gvcfPath should be(Some("gs://path/gvcf1.gvcf"))
 
       val storedDocument2 =
-        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, clioId2)
+        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId2)
       storedDocument2.gvcfPath should be(Some("gs://path/gvcf2.gvcf"))
 
       storedDocument1.copy(
-        clioId = clioId2,
+        upsertId = upsertId2,
         gvcfPath = Some("gs://path/gvcf2.gvcf")
       ) should be(storedDocument2)
     }
   }
 
-  it should "assign different clioIds to equal gvcf upserts" in {
+  it should "assign different upsertIds to equal gvcf upserts" in {
     val upsertKey = TransferGvcfV1Key(
       location = Location.GCP,
       project = s"project$randomId",
@@ -178,16 +178,16 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf1.gvcf"))
 
     for {
-      clioId1 <- runUpsertGvcf(upsertKey, upsertData)
-      clioId2 <- runUpsertGvcf(upsertKey, upsertData)
+      upsertId1 <- runUpsertGvcf(upsertKey, upsertData)
+      upsertId2 <- runUpsertGvcf(upsertKey, upsertData)
     } yield {
-      clioId2.compareTo(clioId1) should be(1)
+      upsertId2.compareTo(upsertId1) should be(1)
 
       val storedDocument1 =
-        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, clioId1)
+        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId1)
       val storedDocument2 =
-        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, clioId2)
-      storedDocument1.copy(clioId = clioId2) should be(storedDocument2)
+        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId2)
+      storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
     }
   }
 

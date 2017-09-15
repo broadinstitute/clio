@@ -5,7 +5,8 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 import java.time.OffsetDateTime
 import java.util.UUID
 
-case class DocumentWgsUbam(clioId: UUID,
+case class DocumentWgsUbam(upsertId: UUID,
+                           entityId: String,
                            flowcellBarcode: String,
                            lane: Int,
                            libraryName: String,

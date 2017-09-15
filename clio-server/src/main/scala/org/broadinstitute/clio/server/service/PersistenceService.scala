@@ -41,15 +41,14 @@ class PersistenceService private (persistenceDAO: PersistenceDAO,
     index: ElasticsearchIndex[D],
     documentMapper: ElasticsearchDocumentMapper[TK, TM, D]
   )(implicit ec: ExecutionContext): Future[UUID] = {
-    val id = documentMapper.id(transferKey)
     val empty = documentMapper.empty(transferKey)
     val document = documentMapper.withMetadata(empty, transferMetadata)
 
     for {
       _ <- persistenceDAO.writeUpdate(document, index)
-      _ <- searchDAO.updateMetadata(id, document, index)
+      _ <- searchDAO.updateMetadata(document, index)
     } yield {
-      document.clioId
+      document.upsertId
     }
   }
 }

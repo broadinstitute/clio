@@ -1,8 +1,12 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.{HitReader, Indexable}
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
+  ElasticsearchIndex
+}
+
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 
 import scala.concurrent.Future
 
@@ -29,15 +33,15 @@ trait SearchDAO {
   /**
     * Update-or-insert (upsert) metadata into an index.
     *
-    * @param id       The key identifier for the document to upsert.
     * @param document A (potentially partial) metadata document containing
     *                 new fields to set on the document in the index.
     * @param index    The index in which to update the document.
     * @tparam D       The type of the document.
     */
-  def updateMetadata[D: Indexable](id: String,
-                                   document: D,
-                                   index: ElasticsearchIndex[D]): Future[Unit]
+  def updateMetadata[D <: ClioDocument: Indexable](
+    document: D,
+    index: ElasticsearchIndex[D]
+  ): Future[Unit]
 
   /**
     * Query a metadata index.
@@ -46,6 +50,8 @@ trait SearchDAO {
     * @param index                 The index to run the query against.
     * @tparam D                    The type of the document to query.
     */
-  def queryMetadata[D: HitReader](queryDefinition: QueryDefinition,
-                                  index: ElasticsearchIndex[D]): Future[Seq[D]]
+  def queryMetadata[D <: ClioDocument: HitReader](
+    queryDefinition: QueryDefinition,
+    index: ElasticsearchIndex[D]
+  ): Future[Seq[D]]
 }
