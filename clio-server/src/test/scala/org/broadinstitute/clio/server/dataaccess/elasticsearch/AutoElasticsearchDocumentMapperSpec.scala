@@ -20,7 +20,7 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
   it should "empty" in {
     mapper.empty(ModelMockKey(12345L, "key")) should be(
       DocumentMock(
-        clioId = expectedId,
+        upsertId = expectedId,
         entityId = "12345.key",
         mockFieldDate = None,
         mockFieldDouble = None,
@@ -36,7 +36,7 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
 
   it should "withMetadata" in {
     val document = DocumentMock(
-      clioId = expectedId,
+      upsertId = expectedId,
       entityId = "12345.key",
       mockFieldDate = None,
       mockFieldDouble = Option(1.23),
@@ -55,7 +55,7 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
       )
     mapper.withMetadata(document, metadata) should be(
       DocumentMock(
-        clioId = expectedId,
+        upsertId = expectedId,
         entityId = "12345.key",
         mockFieldDate = None,
         mockFieldDouble = Option(1.23),

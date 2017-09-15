@@ -48,7 +48,7 @@ class PersistenceService private (persistenceDAO: PersistenceDAO,
       _ <- persistenceDAO.writeUpdate(document, index)
       _ <- searchDAO.updateMetadata(document, index)
     } yield {
-      document.clioId
+      document.upsertId
     }
   }
 }

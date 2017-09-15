@@ -73,7 +73,7 @@ trait PersistenceDAO extends LazyLogging {
       val writePath =
         Files.createDirectories(rootPath.resolve(index.currentPersistenceDir))
       val written = Files.write(
-        writePath.resolve(s"${document.clioId}.json"),
+        writePath.resolve(s"${document.upsertId}.json"),
         indexable.json(document).getBytes
       )
       logger.debug(s"Wrote document $document to ${written.toUri}")

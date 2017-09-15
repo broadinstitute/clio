@@ -115,7 +115,7 @@ class WgsUbamWebServiceSpec
         }
         .asInstanceOf[DocumentWgsUbam]
 
-      firstUpdate.clioId should be(responseAs[UUID])
+      firstUpdate.upsertId should be(responseAs[UUID])
       firstUpdate.project should be(Some("G123"))
       firstUpdate.sampleAlias should be(Some("sample1"))
       firstUpdate.ubamPath should be(Some("gs://path/ubam.bam"))

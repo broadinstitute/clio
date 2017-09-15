@@ -106,7 +106,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     } else {
       it should s"handle upserts and queries for wgs-ubam location $location" in {
         for {
-          returnedClioId <- responseFuture
+          returnedUpsertId <- responseFuture
           queryResponse <- runClient(
             ClioCommand.queryWgsUbamName,
             "--library-name",
@@ -120,7 +120,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
           val storedDocument = getJsonFrom[DocumentWgsUbam](
             ElasticsearchIndex.WgsUbam,
-            returnedClioId
+            returnedUpsertId
           )
           storedDocument.flowcellBarcode should be(expected.flowcellBarcode)
           storedDocument.lane should be(expected.lane)
@@ -132,43 +132,43 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "assign different clioIds to different wgs-ubam upserts" in {
+  it should "assign different upsertIds to different wgs-ubam upserts" in {
     val upsertKey = TransferWgsUbamV1Key(
-      "testClioIdBarcode",
+      "testupsertIdBarcode",
       2,
       s"library$randomId",
       Location.GCP
     )
 
     for {
-      clioId1 <- runUpsertWgsUbam(
+      upsertId1 <- runUpsertWgsUbam(
         upsertKey,
         TransferWgsUbamV1Metadata(project = Some("testProject1"))
       )
-      clioId2 <- runUpsertWgsUbam(
+      upsertId2 <- runUpsertWgsUbam(
         upsertKey,
         TransferWgsUbamV1Metadata(project = Some("testProject2"))
       )
     } yield {
-      clioId2.compareTo(clioId1) should be(1)
+      upsertId2.compareTo(upsertId1) should be(1)
 
       val storedDocument1 =
-        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId1)
+        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId1)
       storedDocument1.project should be(Some("testProject1"))
 
       val storedDocument2 =
-        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId2)
+        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId2)
       storedDocument2.project should be(Some("testProject2"))
 
-      storedDocument1.copy(clioId = clioId2, project = Some("testProject2")) should be(
+      storedDocument1.copy(upsertId = upsertId2, project = Some("testProject2")) should be(
         storedDocument2
       )
     }
   }
 
-  it should "assign different clioIds to equal wgs-ubam upserts" in {
+  it should "assign different upsertIds to equal wgs-ubam upserts" in {
     val upsertKey = TransferWgsUbamV1Key(
-      "testClioIdBarcode",
+      "testupsertIdBarcode",
       2,
       s"library$randomId",
       Location.GCP
@@ -176,16 +176,16 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val metadata = TransferWgsUbamV1Metadata(project = Some("testProject1"))
 
     for {
-      clioId1 <- runUpsertWgsUbam(upsertKey, metadata)
-      clioId2 <- runUpsertWgsUbam(upsertKey, metadata)
+      upsertId1 <- runUpsertWgsUbam(upsertKey, metadata)
+      upsertId2 <- runUpsertWgsUbam(upsertKey, metadata)
     } yield {
-      clioId2.compareTo(clioId1) should be(1)
+      upsertId2.compareTo(upsertId1) should be(1)
 
       val storedDocument1 =
-        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId1)
+        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId1)
       val storedDocument2 =
-        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, clioId2)
-      storedDocument1.copy(clioId = clioId2) should be(storedDocument2)
+        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId2)
+      storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
     }
   }
 

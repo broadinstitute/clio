@@ -39,7 +39,7 @@ class PersistenceServiceSpec extends AsyncFlatSpec with Matchers {
       )
     } yield {
       val expectedDocument =
-        WgsUbamService.v1DocumentConverter.empty(mockKey).copy(clioId = uuid)
+        WgsUbamService.v1DocumentConverter.empty(mockKey).copy(upsertId = uuid)
       persistenceDAO.writeCalls should be(
         Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
       )

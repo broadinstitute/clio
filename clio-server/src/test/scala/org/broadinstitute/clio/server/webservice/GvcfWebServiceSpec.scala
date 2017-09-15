@@ -109,7 +109,7 @@ class GvcfWebServiceSpec
         }
         .asInstanceOf[DocumentGvcf]
 
-      firstUpdate.clioId should be(responseAs[UUID])
+      firstUpdate.upsertId should be(responseAs[UUID])
       firstUpdate.gvcfMd5 should be(Some("abcgithashdef"))
       firstUpdate.notes should be(Some("some note"))
       firstUpdate.gvcfPath should be(Some("gs://path/gvcf.gvcf"))

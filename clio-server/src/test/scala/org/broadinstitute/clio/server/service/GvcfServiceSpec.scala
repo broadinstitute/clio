@@ -85,7 +85,7 @@ class GvcfServiceSpec extends AsyncFlatSpec with Matchers {
         )
       )
     for {
-      returnedClioId <- gvcfService.upsertMetadata(
+      returnedUpsertId <- gvcfService.upsertMetadata(
         transferKey,
         transferMetadata
       )
@@ -95,7 +95,7 @@ class GvcfServiceSpec extends AsyncFlatSpec with Matchers {
           GvcfService.v1DocumentConverter.empty(transferKey),
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
-        .copy(clioId = returnedClioId)
+        .copy(upsertId = returnedUpsertId)
 
       memoryPersistenceDAO.writeCalls should be(
         Seq((expectedDocument, ElasticsearchIndex.Gvcf))

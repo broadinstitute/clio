@@ -46,7 +46,7 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
       Seq(document, document2).foreach { doc =>
         val expectedPath =
           dao.rootPath.resolve(
-            s"${index.currentPersistenceDir}/${doc.clioId}.json"
+            s"${index.currentPersistenceDir}/${doc.upsertId}.json"
           )
 
         Files.exists(expectedPath) should be(true)

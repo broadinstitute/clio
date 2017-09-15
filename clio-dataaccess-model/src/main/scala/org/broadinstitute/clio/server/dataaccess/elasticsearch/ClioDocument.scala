@@ -9,11 +9,12 @@ import java.util.UUID
 trait ClioDocument {
 
   /**
-    * Uniquely identifies a document instance. Used both for debugging and for recording
-    * an ordering to metadata updates in Clio's source of truth, so disaster recovery can
-    * determine the order in which updates should be re-applied.
+    * Uniquely identifies a partial document generated during an upsert operation.
+    * Used both for debugging and for recording an ordering to metadata updates in
+    * Clio's source of truth, so disaster recovery can determine the order in which
+    * updates should be re-applied.
     */
-  val clioId: UUID
+  val upsertId: UUID
 
   /**
     * The unique key for an entity referred to by a document, used for tracking updates
@@ -34,7 +35,7 @@ object ClioDocument {
     * Used by the auto-document-mapper to generate UUIDs on the fly, and by
     * the auto-query-mapper to strip the IDs from returned query outputs.
     */
-  val UpsertIdFieldName: String = "clioId"
+  val UpsertIdFieldName: String = "upsertId"
 
   /**
     * Name of the ID field used in all Clio documents to identify a specific entity.
