@@ -25,18 +25,14 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers {
     }
 
     it should "fields for indexDocument" in {
-      index.fields should contain theSameElementsAs Seq(
-        // Snake-case-ify the bookkeeping fields.
-        keywordField(
-          ClioDocument.UpsertIdFieldName
-            .replaceAll("([A-Z])", "_$1")
-            .toLowerCase
-        ),
-        keywordField(
-          ClioDocument.EntityIdFieldName
-            .replaceAll("([A-Z])", "_$1")
-            .toLowerCase
-        ),
+      // Snake-case-ify the bookkeeping fields.
+      val bookkeeping =
+        Seq(ClioDocument.UpsertIdFieldName, ClioDocument.EntityIdFieldName)
+          .map { name =>
+            keywordField(name.replaceAll("([A-Z])", "_$1").toLowerCase)
+          }
+
+      index.fields should contain theSameElementsAs bookkeeping ++ Seq(
         dateField("mock_field_date"),
         doubleField("mock_field_double"),
         intField("mock_field_int"),

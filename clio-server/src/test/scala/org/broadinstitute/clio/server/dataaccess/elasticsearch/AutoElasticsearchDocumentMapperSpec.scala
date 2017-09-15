@@ -17,19 +17,23 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
     DocumentMock
   ](() => expectedId)
 
+  val keyLong = 12345L
+  val keyString = "key"
+  val expectedEntityId = s"$keyLong.$keyString"
+
   it should "empty" in {
-    mapper.empty(ModelMockKey(12345L, "key")) should be(
+    mapper.empty(ModelMockKey(keyLong, keyString)) should be(
       DocumentMock(
         upsertId = expectedId,
-        entityId = "12345.key",
+        entityId = expectedEntityId,
         mockFieldDate = None,
         mockFieldDouble = None,
         mockFieldInt = None,
         mockFileMd5 = None,
         mockFilePath = None,
         mockFileSize = None,
-        mockKeyLong = 12345L,
-        mockKeyString = "key"
+        mockKeyLong = keyLong,
+        mockKeyString = keyString
       )
     )
   }
@@ -37,15 +41,15 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
   it should "withMetadata" in {
     val document = DocumentMock(
       upsertId = expectedId,
-      entityId = "12345.key",
+      entityId = expectedEntityId,
       mockFieldDate = None,
       mockFieldDouble = Option(1.23),
       mockFieldInt = None,
       mockFileMd5 = None,
       mockFilePath = None,
       mockFileSize = None,
-      mockKeyLong = 12345L,
-      mockKeyString = "key"
+      mockKeyLong = keyLong,
+      mockKeyString = keyString
     )
     val metadata =
       ModelMockMetadata(
@@ -56,15 +60,15 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
     mapper.withMetadata(document, metadata) should be(
       DocumentMock(
         upsertId = expectedId,
-        entityId = "12345.key",
+        entityId = expectedEntityId,
         mockFieldDate = None,
         mockFieldDouble = Option(1.23),
         mockFieldInt = Option(456),
         mockFileMd5 = None,
         mockFilePath = None,
         mockFileSize = None,
-        mockKeyLong = 12345L,
-        mockKeyString = "key"
+        mockKeyLong = keyLong,
+        mockKeyString = keyString
       )
     )
   }
