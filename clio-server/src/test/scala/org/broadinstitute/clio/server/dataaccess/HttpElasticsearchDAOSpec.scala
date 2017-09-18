@@ -123,25 +123,22 @@ class HttpElasticsearchDAOSpec
 
     val input = Input(Some("Nigeria"))
     val places = Seq("Aba", "Ede", "Owo").map(
-      Document(UUID.randomUUID(), _, input.country.get)
+      city => Document(UUID.randomUUID(), city, city, input.country.get)
     )
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
       _ <- Future.sequence(
-        places.map(
-          place => httpElasticsearchDAO.updateMetadata(place.city, place, index)
-        )
+        places.map(place => httpElasticsearchDAO.updateMetadata(place, index))
       )
       outputs <- httpElasticsearchDAO.queryMetadata(
-        input,
+        mapper.buildQuery(input),
         index,
-        mapper,
-        "clio_id"
+        "upsert_id"
       )
       _ = {
         outputs.size should be(3)
-        outputs should be(places.sortBy(_.clioId))
+        outputs should be(places.sortBy(_.upsertId))
       }
     } yield succeed
   }
@@ -239,7 +236,10 @@ class HttpElasticsearchDAOSpec
 object HttpElasticsearchDAOSpec {
   import java.util.UUID
 
-  case class Document(clioId: UUID, city: String, country: String)
+  case class Document(upsertId: UUID,
+                      entityId: String,
+                      city: String,
+                      country: String)
       extends ClioDocument
   case class Input(country: Option[String])
   case class Output(city: String, country: String)
