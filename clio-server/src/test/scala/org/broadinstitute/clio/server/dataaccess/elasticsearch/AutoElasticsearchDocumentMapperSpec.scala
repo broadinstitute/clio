@@ -17,37 +17,39 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
     DocumentMock
   ](() => expectedId)
 
-  it should "id" in {
-    mapper.id(ModelMockKey(12345L, "key")) should be("12345.key")
-  }
+  val keyLong = 12345L
+  val keyString = "key"
+  val expectedEntityId = s"$keyLong.$keyString"
 
   it should "empty" in {
-    mapper.empty(ModelMockKey(12345L, "key")) should be(
+    mapper.empty(ModelMockKey(keyLong, keyString)) should be(
       DocumentMock(
-        clioId = expectedId,
+        upsertId = expectedId,
+        entityId = expectedEntityId,
         mockFieldDate = None,
         mockFieldDouble = None,
         mockFieldInt = None,
         mockFileMd5 = None,
         mockFilePath = None,
         mockFileSize = None,
-        mockKeyLong = 12345L,
-        mockKeyString = "key"
+        mockKeyLong = keyLong,
+        mockKeyString = keyString
       )
     )
   }
 
   it should "withMetadata" in {
     val document = DocumentMock(
-      clioId = expectedId,
+      upsertId = expectedId,
+      entityId = expectedEntityId,
       mockFieldDate = None,
       mockFieldDouble = Option(1.23),
       mockFieldInt = None,
       mockFileMd5 = None,
       mockFilePath = None,
       mockFileSize = None,
-      mockKeyLong = 12345L,
-      mockKeyString = "key"
+      mockKeyLong = keyLong,
+      mockKeyString = keyString
     )
     val metadata =
       ModelMockMetadata(
@@ -57,15 +59,16 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
       )
     mapper.withMetadata(document, metadata) should be(
       DocumentMock(
-        clioId = expectedId,
+        upsertId = expectedId,
+        entityId = expectedEntityId,
         mockFieldDate = None,
         mockFieldDouble = Option(1.23),
         mockFieldInt = Option(456),
         mockFileMd5 = None,
         mockFilePath = None,
         mockFileSize = None,
-        mockKeyLong = 12345L,
-        mockKeyString = "key"
+        mockKeyLong = keyLong,
+        mockKeyString = keyString
       )
     )
   }

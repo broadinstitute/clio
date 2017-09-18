@@ -3,6 +3,7 @@ package org.broadinstitute.clio.server.service
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.SearchDAO
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
   ElasticsearchIndex,
   ElasticsearchQueryMapper
 }
@@ -26,7 +27,7 @@ class SearchService private (searchDAO: SearchDAO) {
     * @tparam D  The type of the Document.
     * @return The result of the query.
     */
-  def queryMetadata[TI, TO, D: HitReader](
+  def queryMetadata[TI, TO, D <: ClioDocument: HitReader](
     transferInput: TI,
     index: ElasticsearchIndex[D],
     queryMapper: ElasticsearchQueryMapper[TI, TO, D]

@@ -107,7 +107,7 @@ class WgsUbamWebServiceSpec
       status shouldEqual StatusCodes.OK
       memorySearchDAO.updateCalls should have length 1
       val firstUpdate = memorySearchDAO.updateCalls.headOption
-        .map(_._2)
+        .map(_._1)
         .getOrElse {
           // Doing this .headOption.getOrElse dance because Codacy
           // scolds us for using .head
@@ -115,7 +115,7 @@ class WgsUbamWebServiceSpec
         }
         .asInstanceOf[DocumentWgsUbam]
 
-      firstUpdate.clioId should be(responseAs[UUID])
+      firstUpdate.upsertId should be(responseAs[UUID])
       firstUpdate.project should be(Some("G123"))
       firstUpdate.sampleAlias should be(Some("sample1"))
       firstUpdate.ubamPath should be(Some("gs://path/ubam.bam"))
@@ -146,13 +146,14 @@ class WgsUbamWebServiceSpec
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
       memorySearchDAO.updateCalls should have length 2
-      val secondUpdate = memorySearchDAO
-        .updateCalls(1)
-        .asInstanceOf[(_, DocumentWgsUbam, _)]
-      secondUpdate._2.project should be(Some("G123"))
-      secondUpdate._2.sampleAlias should be(Some("sample1"))
-      secondUpdate._2.documentStatus should be(Some(DocumentStatus.Deleted))
-      secondUpdate._2.ubamPath should be(Some(""))
+      val secondUpdate = memorySearchDAO.updateCalls
+        .map(_._1)
+        .apply(1)
+        .asInstanceOf[DocumentWgsUbam]
+      secondUpdate.project should be(Some("G123"))
+      secondUpdate.sampleAlias should be(Some("sample1"))
+      secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))
+      secondUpdate.ubamPath should be(Some(""))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement

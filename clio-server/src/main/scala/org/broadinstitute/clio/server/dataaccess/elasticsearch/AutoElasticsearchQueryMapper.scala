@@ -53,7 +53,12 @@ class AutoElasticsearchQueryMapper[
 
   override def toQueryOutput(document: Document): ModelQueryOutput = {
     val vals = documentMapper.vals(document)
-    outputMapper.newInstance(vals - ClioDocument.IdFieldName)
+    outputMapper.newInstance(
+      vals -- Seq(
+        ClioDocument.UpsertIdFieldName,
+        ClioDocument.EntityIdFieldName
+      )
+    )
   }
 
   /**

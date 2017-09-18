@@ -85,7 +85,7 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
         )
       )
     for {
-      returnedClioId <- wgsUbamService.upsertMetadata(
+      returnedUpsertId <- wgsUbamService.upsertMetadata(
         transferKey,
         transferMetadata
       )
@@ -95,19 +95,13 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
           WgsUbamService.v1DocumentConverter.empty(transferKey),
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
-        .copy(clioId = returnedClioId)
+        .copy(upsertId = returnedUpsertId)
 
       memoryPersistenceDAO.writeCalls should be(
         Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
       )
       memorySearchDAO.updateCalls should be(
-        Seq(
-          (
-            WgsUbamService.v1DocumentConverter.id(transferKey),
-            expectedDocument,
-            ElasticsearchIndex.WgsUbam
-          )
-        )
+        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
       )
       memorySearchDAO.queryCalls should be(empty)
     }
