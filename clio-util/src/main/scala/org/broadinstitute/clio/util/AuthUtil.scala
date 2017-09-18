@@ -1,13 +1,11 @@
 package org.broadinstitute.clio.util
 
 import java.nio.file.{Files, Path}
-
 import com.google.auth.oauth2.AccessToken
 import io.circe.parser.decode
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.ServiceAccount
 
-import scala.io.Source
 import scala.sys.process.Process
 import scala.util.Try
 
@@ -19,44 +17,66 @@ object AuthUtil extends ModelAutoDerivation {
     "https://www.googleapis.com/auth/userinfo.email"
   )
 
+  /** Get an access token by calling out to gcloud. */
+  private def shellOutAuthToken: Either[Throwable, AccessToken] =
+    Try {
+      new AccessToken(Process("gcloud auth print-access-token").!!.trim, null)
+    }.toEither
+
   /**
     * Get google credentials either from the service account json or
     * from the user's default setup.
     *
     * @param serviceAccountPath Option of path to the service account json
     */
-  def getAccessToken(serviceAccountPath: Option[Path]): Try[AccessToken] = {
-    def shellOutAuthToken: AccessToken =
-      new AccessToken(Process("gcloud auth print-access-token").!!.trim, null)
-
+  def getAccessToken(
+    serviceAccountPath: Option[Path]
+  ): Either[Throwable, AccessToken] = {
     serviceAccountPath
       .map { jsonPath =>
-        Try(loadServiceAccountJson(jsonPath))
-          .map(getCredsFromServiceAccount)
-          .recover { case _ => shellOutAuthToken }
+        loadServiceAccountJson(jsonPath)
+          .flatMap(getCredsFromServiceAccount)
+          .left
+          .flatMap(_ => shellOutAuthToken)
       }
-      .getOrElse(Try(shellOutAuthToken))
+      .getOrElse(shellOutAuthToken)
   }
 
-  def loadServiceAccountJson(serviceAccountPath: Path): ServiceAccount = {
-    if (Files.exists(serviceAccountPath)) {
-      val jsonBlob =
-        Source.fromFile(serviceAccountPath.toFile).mkString.stripMargin
-      decode[ServiceAccount](jsonBlob).fold({ error =>
-        throw new RuntimeException(
-          s"Could not decode service account JSON at $serviceAccountPath",
-          error
+  /** Load JSON for a google service account. */
+  def loadServiceAccountJson(
+    serviceAccountPath: Path
+  ): Either[Throwable, ServiceAccount] = {
+    val accountOrErr = for {
+      jsonPath <- Either.cond(
+        Files.exists(serviceAccountPath),
+        serviceAccountPath,
+        new RuntimeException(
+          s"Could not find service account JSON at $serviceAccountPath"
         )
-      }, identity)
-    } else {
-      throw new RuntimeException(
-        s"Could not find service account JSON at $serviceAccountPath"
+      )
+      jsonBytes <- Try(Files.readAllBytes(jsonPath)).toEither
+      account <- decode[ServiceAccount](new String(jsonBytes).stripMargin)
+    } yield {
+      account
+    }
+
+    accountOrErr.left.map { error =>
+      new RuntimeException(
+        s"Could not decode service account JSON at $serviceAccountPath",
+        error
       )
     }
   }
 
-  def getCredsFromServiceAccount(serviceAccount: ServiceAccount): AccessToken = {
-    val creds = serviceAccount.credentialForScopes(authScopes)
-    creds.refreshAccessToken()
-  }
+  /**
+    * Request an access token for the given service account with the
+    * scopes needed to talk through Clio's OpenIDC proxy.
+    */
+  def getCredsFromServiceAccount(
+    serviceAccount: ServiceAccount
+  ): Either[Throwable, AccessToken] =
+    Try {
+      val creds = serviceAccount.credentialForScopes(authScopes)
+      creds.refreshAccessToken()
+    }.toEither
 }
