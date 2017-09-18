@@ -60,25 +60,25 @@ object ClioClient extends LazyLogging {
 
     client
       .instanceMain(args)
-      .fold(
+      .fold[Unit](
         {
           case UsageOrHelpAsked(message) => {
             println(message)
-            Future.successful(())
+            sys.exit(0)
           }
           case ParsingOrAuthError(error) => {
-            Future.failed(new RuntimeException(error))
+            System.err.println(error)
+            sys.exit(1)
           }
         },
-        identity
-      )
-      .onComplete {
-        case Success(_) => sys.exit(0)
-        case Failure(ex) => {
-          logger.error("Failed to execute command", ex)
-          sys.exit(1)
+        _.onComplete {
+          case Success(_) => sys.exit(0)
+          case Failure(ex) => {
+            logger.error("Failed to execute command", ex)
+            sys.exit(1)
+          }
         }
-      }
+      )
   }
 }
 
