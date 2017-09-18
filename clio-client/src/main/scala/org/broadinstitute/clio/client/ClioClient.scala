@@ -40,7 +40,8 @@ object ClioClient extends LazyLogging {
     * different return codes accordingly.
     */
   sealed trait EarlyReturn
-  final case class ParsingOrAuthError(error: String) extends EarlyReturn
+  final case class ParsingError(error: String) extends EarlyReturn
+  final case class AuthError(cause: Throwable) extends EarlyReturn
   final case class UsageOrHelpAsked(message: String) extends EarlyReturn
 
   val progName = "clio-client"
@@ -66,8 +67,15 @@ object ClioClient extends LazyLogging {
             println(message)
             sys.exit(0)
           }
-          case ParsingOrAuthError(error) => {
+          case ParsingError(error) => {
             System.err.println(error)
+            sys.exit(1)
+          }
+          case AuthError(cause) => {
+            logger.error(
+              "Failed to automatically generate bearer token, try manually passing one via --bearer-token",
+              cause
+            )
             sys.exit(1)
           }
         },
@@ -107,7 +115,7 @@ object ClioClient extends LazyLogging {
 class ClioClient(webClient: ClioWebClient,
                  ioUtil: IoUtil)(implicit ec: ExecutionContext)
     extends LazyLogging {
-  import ClioClient.{EarlyReturn, ParsingOrAuthError, UsageOrHelpAsked}
+  import ClioClient.{AuthError, EarlyReturn, ParsingError, UsageOrHelpAsked}
 
   /**
     * Common option messages, updated to include our program
@@ -192,7 +200,7 @@ class ClioClient(webClient: ClioWebClient,
               wrapError(commandParse)
                 .flatMap(commandMain(commonOpts, _))
             }
-            .getOrElse(Left(ParsingOrAuthError(usageMessage)))
+            .getOrElse(Left(ParsingError(usageMessage)))
         } yield {
           response
         }
@@ -205,7 +213,7 @@ class ClioClient(webClient: ClioWebClient,
     * for cleaner use in for-comprehensions.
     */
   private def wrapError[X](either: Either[String, X]): Either[EarlyReturn, X] = {
-    either.left.map(ParsingOrAuthError.apply)
+    either.left.map(ParsingError.apply)
   }
 
   /**
@@ -226,7 +234,7 @@ class ClioClient(webClient: ClioWebClient,
         .map(token => OAuth2BearerToken(token.getTokenValue))
         .toEither
         .left
-        .map(ex => ParsingOrAuthError(ex.getMessage))
+        .map(ex => AuthError(ex))
     }
   }
 
@@ -240,9 +248,7 @@ class ClioClient(webClient: ClioWebClient,
     Either.cond(
       remainingArgs.isEmpty,
       (),
-      ParsingOrAuthError(
-        s"Found extra arguments: ${remainingArgs.mkString(" ")}"
-      )
+      ParsingError(s"Found extra arguments: ${remainingArgs.mkString(" ")}")
     )
   }
 
