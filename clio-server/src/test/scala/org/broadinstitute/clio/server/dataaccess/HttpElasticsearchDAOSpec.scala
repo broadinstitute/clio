@@ -142,12 +142,13 @@ class HttpElasticsearchDAOSpec
     val index =
       new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID())
 
-    recoverToSucceededIf[Exception] {
-      for {
-        _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
-        _ <- httpElasticsearchDAO.getMostRecentDocument(index)
-      } yield ()
-    }
+    for {
+      _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
+      exception <- recoverToExceptionIf[Exception] {
+        httpElasticsearchDAO.getMostRecentDocument(index)
+      }
+    } yield
+      exception.getMessage should include("Could not get most recent document")
   }
 
   case class City(name: String,
