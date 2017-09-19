@@ -103,5 +103,11 @@ object ClioServerConfig extends ConfigReaders {
     val readinessRetries: Int = elasticsearch.as[Int]("readiness.retries")
     val readinessPatience: FiniteDuration =
       elasticsearch.as[FiniteDuration]("readiness.patience")
+
+    /**
+      * The time to wait for an HTTP Request to complete when communicating with elasticsearch.
+      */
+    val httpRequestTimeout: FiniteDuration =
+      elasticsearch.as[FiniteDuration]("http-request-timeout")
   }
 }

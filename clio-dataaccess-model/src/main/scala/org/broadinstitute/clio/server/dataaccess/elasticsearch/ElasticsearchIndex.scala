@@ -1,12 +1,11 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.util.generic.FieldMapper
+import java.time.OffsetDateTime
 
 import com.sksamuel.elastic4s.mappings.FieldDefinition
+import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.{ClassTag, classTag}
-
-import java.time.OffsetDateTime
 
 /**
   * An index for an Elasticsearch document.
@@ -58,10 +57,10 @@ object ElasticsearchIndex {
     */
   private[dataaccess] def indexDocument[Document: ClassTag: FieldMapper]
     : ElasticsearchIndex[Document] = {
-    import s_mach.string._
-    val nameSnake = classTag[Document].runtimeClass.getSimpleName
-      .toSnakeCase(Lexer.CamelCase)
-      .stripPrefix("document_")
-    new AutoElasticsearchIndex[Document](nameSnake)
+    val esName =
+      ElasticsearchUtil
+        .toElasticsearchName(classTag[Document].runtimeClass.getSimpleName)
+        .stripPrefix("document_")
+    new AutoElasticsearchIndex[Document](esName)
   }
 }

@@ -30,7 +30,15 @@ class HttpElasticsearchDAO private[dataaccess] (
     with StrictLogging {
 
   private[dataaccess] val httpClient = {
-    val restClient = RestClient.builder(httpHosts: _*).build()
+    val restClient = RestClient
+      .builder(httpHosts: _*)
+      // The default timeout is 100̈ms, which is too slow for query operations.
+      .setRequestConfigCallback(
+        _.setConnectionRequestTimeout(
+          ClioServerConfig.Elasticsearch.httpRequestTimeout.toMillis.toInt
+        )
+      )
+      .build()
     HttpClient.fromRestClient(restClient)
   }
 
@@ -52,6 +60,34 @@ class HttpElasticsearchDAO private[dataaccess] (
       .query(queryDefinition)
     val searchResponse = httpClient execute searchDefinition
     searchResponse flatMap foldScroll(Seq.empty[D], searchDefinition.keepAlive)
+  }
+
+  /**
+    * Given an elastic search index, return the most recent document for that index.
+    *
+    * Document ordering is determined by the "upsert ID", which must be indexed field.
+    *
+    * @param index the elasticsearch index
+    * @tparam D the document type this index contains
+    * @return the most recent document for this index, if any
+    */
+  def getMostRecentDocument[D <: ClioDocument: HitReader](
+    index: ElasticsearchIndex[D]
+  ): Future[D] = {
+    val searchDefinition = search(index.indexName / index.indexType)
+      .size(1)
+      .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
+    for {
+      searchResponse <- httpClient execute searchDefinition
+    } yield {
+      searchResponse.to[D] match {
+        case Seq(document) => document
+        case _ =>
+          throw new RuntimeException(
+            s"Could not get most recent document for index ${index.indexName}, found ${searchResponse.hits.total} documents."
+          )
+      }
+    }
   }
 
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {

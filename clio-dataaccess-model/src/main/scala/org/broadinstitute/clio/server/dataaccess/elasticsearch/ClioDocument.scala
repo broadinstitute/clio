@@ -38,6 +38,15 @@ object ClioDocument {
   val UpsertIdFieldName: String = "upsertId"
 
   /**
+    * Elasticsearch name for the upsert ID field in a document.
+    *
+    * This name is used by elasticsearch to uniquely identify each document (upsert)
+    * and to provide an ordering over the documents.
+    */
+  val UpsertIdElasticSearchName: String =
+    ElasticsearchUtil.toElasticsearchName(UpsertIdFieldName)
+
+  /**
     * Name of the ID field used in all Clio documents to identify a specific entity.
     *
     * Used by the auto-document-mapper to inject IDs on the fly, and by the

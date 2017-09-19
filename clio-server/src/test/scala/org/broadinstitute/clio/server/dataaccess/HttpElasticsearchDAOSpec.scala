@@ -1,9 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  AutoElasticsearchIndex,
-  ElasticsearchIndex
-}
+import java.util.UUID
 
 import com.sksamuel.elastic4s.analyzers._
 import com.sksamuel.elastic4s.bulk.BulkDefinition
@@ -14,9 +11,17 @@ import com.sksamuel.elastic4s.indexes.CreateIndexDefinition
 import com.sksamuel.elastic4s.searches.SearchDefinition
 import io.circe.parser
 import org.apache.http.util.EntityUtils
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  AutoElasticsearchIndex,
+  ClioDocument,
+  ElasticsearchIndex
+}
+import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.ResponseException
 import org.scalatest._
+
+import scala.concurrent.Future
 
 class HttpElasticsearchDAOSpec
     extends AbstractElasticsearchDAOSpec("HttpElasticsearchDAO")
@@ -105,7 +110,46 @@ class HttpElasticsearchDAOSpec
     } yield succeed
   }
 
-  // TODO: The following tests are demo code, and should be replaced with actual DAO methods/specs.
+  it should "return the most recent document" in {
+    import HttpElasticsearchDAOSpec._
+    import com.sksamuel.elastic4s.circe._
+    import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
+    import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+
+    val index =
+      new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID())
+
+    val documents =
+      (1 to 4)
+        .map("document-" + _)
+        .map(Document(ClioUUIDGenerator.getUUID(), _))
+
+    for {
+      _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
+      _ <- Future.sequence(
+        documents.map(httpElasticsearchDAO.updateMetadata(_, index))
+      )
+      document <- httpElasticsearchDAO.getMostRecentDocument(index)
+    } yield document should be(documents.last)
+  }
+
+  it should "throw an exception if no documents exist" in {
+    import HttpElasticsearchDAOSpec._
+    import com.sksamuel.elastic4s.circe._
+    import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
+    import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+
+    val index =
+      new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID())
+
+    for {
+      _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
+      exception <- recoverToExceptionIf[Exception] {
+        httpElasticsearchDAO.getMostRecentDocument(index)
+      }
+    } yield
+      exception.getMessage should include("Could not get most recent document")
+  }
 
   case class City(name: String,
                   country: String,
@@ -188,10 +232,17 @@ class HttpElasticsearchDAOSpec
         city.continent should be("Europe")
         city.status should be("Awesome")
       }
+
       delete <- httpClient execute deleteDefinition
       _ = delete.found should be(true)
       delete <- httpClient execute deleteDefinition
       _ = delete.found should be(false)
     } yield succeed
   }
+}
+
+object HttpElasticsearchDAOSpec {
+  import java.util.UUID
+
+  case class Document(upsertId: UUID, entityId: String) extends ClioDocument
 }
