@@ -75,7 +75,14 @@ class HttpElasticsearchDAO private[dataaccess] (
       .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
     for {
       searchResponse <- httpClient execute searchDefinition
-    } yield searchResponse.to[D].head
+    } yield
+      searchResponse.to[D] match {
+        case Seq(document) => document
+        case _ =>
+          throw new RuntimeException(
+            s"Could not get most recent document for index ${index.indexName}, found ${searchResponse.hits.total} documents."
+          )
+      }
   }
 
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {

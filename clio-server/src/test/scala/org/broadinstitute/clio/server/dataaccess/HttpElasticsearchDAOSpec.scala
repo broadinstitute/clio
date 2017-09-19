@@ -136,6 +136,23 @@ class HttpElasticsearchDAOSpec
     } yield succeed
   }
 
+  it should "throw an exception if no documents exist" in {
+    import HttpElasticsearchDAOSpec._
+    import com.sksamuel.elastic4s.circe._
+    import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
+    import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+
+    val index =
+      new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID())
+
+    recoverToSucceededIf[Exception] {
+      for {
+        _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
+        _ <- httpElasticsearchDAO.getMostRecentDocument(index)
+      } yield ()
+    }
+  }
+
   case class City(name: String,
                   country: String,
                   continent: String,
