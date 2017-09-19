@@ -60,7 +60,7 @@ class HttpElasticsearchDAO private[dataaccess] (
 
   /**
     * Given an elastic search index, return the most recent document for that index.
-    * <p>
+    *
     * Document ordering is determined by the "upsert ID", which must be indexed field.
     *
     * @param index the elasticsearch index
