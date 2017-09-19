@@ -18,13 +18,26 @@ import java.nio.file.{FileSystem, Path}
 class GcsPersistenceDAO(gcsConfig: Persistence.GcsConfig)
     extends PersistenceDAO {
 
-  private lazy val storageOptions = StorageOptions
-    .newBuilder()
-    .setProjectId(gcsConfig.projectId)
-    .setCredentials(
-      gcsConfig.account.credentialForScopes(GcsPersistenceDAO.storageScopes)
-    )
-    .build()
+  private lazy val storageOptions = {
+    gcsConfig.account
+      .credentialForScopes(GcsPersistenceDAO.storageScopes)
+      .fold(
+        { err =>
+          val scopeString =
+            GcsPersistenceDAO.storageScopes.mkString("[", ", ", "]")
+          throw new RuntimeException(
+            s"Failed to get credential for GCS config '$gcsConfig', scopes $scopeString",
+            err
+          )
+        }, { credential =>
+          StorageOptions
+            .newBuilder()
+            .setProjectId(gcsConfig.projectId)
+            .setCredentials(credential)
+            .build()
+        }
+      )
+  }
 
   private lazy val gcs: FileSystem =
     CloudStorageFileSystem.forBucket(

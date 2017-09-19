@@ -6,10 +6,12 @@ import io.circe.parser.decode
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.ServiceAccount
 
+import com.typesafe.scalalogging.LazyLogging
+
 import scala.sys.process.Process
 import scala.util.Try
 
-object AuthUtil extends ModelAutoDerivation {
+object AuthUtil extends ModelAutoDerivation with LazyLogging {
 
   /** Scopes needed from Google to get past Clio's auth proxy. */
   private val authScopes = Seq(
@@ -18,7 +20,7 @@ object AuthUtil extends ModelAutoDerivation {
   )
 
   /** Get an access token by calling out to gcloud. */
-  private def shellOutAuthToken: Either[Throwable, AccessToken] =
+  private def shellOutAuthToken(): Either[Throwable, AccessToken] =
     Try {
       new AccessToken(Process("gcloud auth print-access-token").!!.trim, null)
     }.toEither
@@ -32,21 +34,23 @@ object AuthUtil extends ModelAutoDerivation {
   def getAccessToken(
     serviceAccountPath: Option[Path]
   ): Either[Throwable, AccessToken] = {
-    serviceAccountPath
-      .map { jsonPath =>
-        loadServiceAccountJson(jsonPath)
-          .flatMap(getCredsFromServiceAccount)
-          .left
-          .flatMap(_ => shellOutAuthToken)
-      }
-      .getOrElse(shellOutAuthToken)
+    serviceAccountPath.fold(shellOutAuthToken()) { jsonPath =>
+      loadServiceAccountJson(jsonPath)
+        .fold(err => {
+          logger.warn(
+            s"Failed to load service account JSON at $jsonPath, falling back to gcloud",
+            err
+          )
+          shellOutAuthToken()
+        }, getCredsFromServiceAccount)
+    }
   }
 
   /** Load JSON for a google service account. */
   def loadServiceAccountJson(
     serviceAccountPath: Path
   ): Either[Throwable, ServiceAccount] = {
-    val accountOrErr = for {
+    for {
       jsonPath <- Either.cond(
         Files.exists(serviceAccountPath),
         serviceAccountPath,
@@ -59,13 +63,6 @@ object AuthUtil extends ModelAutoDerivation {
     } yield {
       account
     }
-
-    accountOrErr.left.map { error =>
-      new RuntimeException(
-        s"Could not decode service account JSON at $serviceAccountPath",
-        error
-      )
-    }
   }
 
   /**
@@ -74,9 +71,14 @@ object AuthUtil extends ModelAutoDerivation {
     */
   def getCredsFromServiceAccount(
     serviceAccount: ServiceAccount
-  ): Either[Throwable, AccessToken] =
-    Try {
-      val creds = serviceAccount.credentialForScopes(authScopes)
-      creds.refreshAccessToken()
-    }.toEither
+  ): Either[Throwable, AccessToken] = {
+    val tokenOrErr = for {
+      creds <- serviceAccount.credentialForScopes(authScopes)
+      token <- Try(creds.refreshAccessToken())
+    } yield {
+      token
+    }
+
+    tokenOrErr.toEither
+  }
 }

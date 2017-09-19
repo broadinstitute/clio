@@ -112,9 +112,9 @@ object ClioClient extends LazyLogging {
   * @param ec        the execution context to use when scheduling
   *                  asynchronous events
   */
-class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
-  implicit ec: ExecutionContext
-) extends LazyLogging {
+class ClioClient(webClient: ClioWebClient,
+                 ioUtil: IoUtil)(implicit ec: ExecutionContext)
+    extends LazyLogging {
   import ClioClient.{AuthError, EarlyReturn, ParsingError, UsageOrHelpAsked}
 
   /**
@@ -212,9 +212,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     * Utility for wrapping a parsing error in our type infrastructure,
     * for cleaner use in for-comprehensions.
     */
-  private def wrapError[X](
-    either: Either[String, X]
-  ): Either[EarlyReturn, X] = {
+  private def wrapError[X](either: Either[String, X]): Either[EarlyReturn, X] = {
     either.left.map(ParsingError.apply)
   }
 
