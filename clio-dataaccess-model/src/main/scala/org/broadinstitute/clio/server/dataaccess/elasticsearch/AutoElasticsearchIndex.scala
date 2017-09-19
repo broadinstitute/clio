@@ -1,13 +1,14 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.util.generic.FieldMapper
+import java.time.OffsetDateTime
+import java.util.UUID
+
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import enumeratum.EnumEntry
+import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.runtime.universe.Type
-import java.time.OffsetDateTime
-import java.util.UUID
 
 /**
   * Builds an ElasticsearchIndex using shapeless and reflection.
@@ -34,32 +35,31 @@ object AutoElasticsearchIndex {
 
   private def getFieldDefinition(fieldName: String,
                                  fieldType: Type): FieldDefinition = {
-    import s_mach.string._
-    val nameSnake = fieldName.toSnakeCase(Lexer.CamelCase)
     import scala.reflect.runtime.universe.typeOf
-    fieldType match {
-      case tpe if tpe =:= typeOf[Boolean]           => booleanField(nameSnake)
-      case tpe if tpe =:= typeOf[Int]               => intField(nameSnake)
-      case tpe if tpe =:= typeOf[Long]              => longField(nameSnake)
-      case tpe if tpe =:= typeOf[Float]             => floatField(nameSnake)
-      case tpe if tpe =:= typeOf[Double]            => doubleField(nameSnake)
-      case tpe if tpe =:= typeOf[String]            => keywordField(nameSnake)
-      case tpe if tpe <:< typeOf[EnumEntry]         => keywordField(nameSnake)
-      case tpe if tpe =:= typeOf[OffsetDateTime]    => dateField(nameSnake)
-      case tpe if tpe =:= typeOf[UUID]              => keywordField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[Boolean]]   => booleanField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[Int]]       => intField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[Long]]      => longField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[Float]]     => floatField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[Double]]    => doubleField(nameSnake)
-      case tpe if tpe =:= typeOf[Option[String]]    => keywordField(nameSnake)
-      case tpe if tpe <:< typeOf[Option[EnumEntry]] => keywordField(nameSnake)
+    val stringToDefinition = fieldType match {
+      case tpe if tpe =:= typeOf[Boolean]           => booleanField _
+      case tpe if tpe =:= typeOf[Int]               => intField _
+      case tpe if tpe =:= typeOf[Long]              => longField _
+      case tpe if tpe =:= typeOf[Float]             => floatField _
+      case tpe if tpe =:= typeOf[Double]            => doubleField _
+      case tpe if tpe =:= typeOf[String]            => keywordField _
+      case tpe if tpe <:< typeOf[EnumEntry]         => keywordField _
+      case tpe if tpe =:= typeOf[OffsetDateTime]    => dateField _
+      case tpe if tpe =:= typeOf[UUID]              => keywordField _
+      case tpe if tpe =:= typeOf[Option[Boolean]]   => booleanField _
+      case tpe if tpe =:= typeOf[Option[Int]]       => intField _
+      case tpe if tpe =:= typeOf[Option[Long]]      => longField _
+      case tpe if tpe =:= typeOf[Option[Float]]     => floatField _
+      case tpe if tpe =:= typeOf[Option[Double]]    => doubleField _
+      case tpe if tpe =:= typeOf[Option[String]]    => keywordField _
+      case tpe if tpe <:< typeOf[Option[EnumEntry]] => keywordField _
       case tpe if tpe =:= typeOf[Option[OffsetDateTime]] =>
-        dateField(nameSnake)
+        dateField _
       case _ =>
         throw new IllegalArgumentException(
           s"No support for $fieldName: $fieldType"
         )
     }
+    stringToDefinition(ElasticSearchUtil.toElasticSearchName(fieldName))
   }
 }

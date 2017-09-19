@@ -30,7 +30,11 @@ class HttpElasticsearchDAO private[dataaccess] (
     with StrictLogging {
 
   private[dataaccess] val httpClient = {
-    val restClient = RestClient.builder(httpHosts: _*).build()
+    val restClient = RestClient
+      .builder(httpHosts: _*)
+      // The default timeout is 100̈ms, which is too slow for query operations.
+      .setRequestConfigCallback(_.setConnectionRequestTimeout(10000))
+      .build()
     HttpClient.fromRestClient(restClient)
   }
 
@@ -54,18 +58,24 @@ class HttpElasticsearchDAO private[dataaccess] (
     searchResponse flatMap foldScroll(Seq.empty[D], searchDefinition.keepAlive)
   }
 
-  def queryMetadata[D: HitReader](
-    queryDefinition: QueryDefinition,
-    index: ElasticsearchIndex[D],
-    sortByFieldName: String = HttpElasticsearchDAO.DocumentScrollSort
-  ): Future[Seq[D]] = {
+  /**
+    * Given an elastic search index, return the most recent document for that index.
+    * <p>
+    * Document ordering is determined by the "upsert ID", which must be indexed field.
+    *
+    * @param index the elasticsearch index
+    * @tparam D the document type this index contains
+    * @return the most recent document for this index, if any
+    */
+  def getMostRecentDocument[D: HitReader](
+    index: ElasticsearchIndex[D]
+  ): Future[D] = {
     val searchDefinition = search(index.indexName / index.indexType)
-      .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
-      .size(HttpElasticsearchDAO.DocumentScrollSize)
-      .sortByFieldAsc(sortByFieldName)
-      .query(queryDefinition)
-    val searchResponse = httpClient execute searchDefinition
-    searchResponse flatMap foldScroll(Seq.empty[D], searchDefinition.keepAlive)
+      .size(1)
+      .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
+    for {
+      searchResponse <- httpClient execute searchDefinition
+    } yield searchResponse.to[D].head
   }
 
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {

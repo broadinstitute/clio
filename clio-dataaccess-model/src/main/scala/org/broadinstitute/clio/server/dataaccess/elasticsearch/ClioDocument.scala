@@ -37,6 +37,9 @@ object ClioDocument {
     */
   val UpsertIdFieldName: String = "upsertId"
 
+  val UpsertIdElasticSearchName: String =
+    ElasticSearchUtil.toElasticSearchName(UpsertIdFieldName)
+
   /**
     * Name of the ID field used in all Clio documents to identify a specific entity.
     *

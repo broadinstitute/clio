@@ -1,17 +1,16 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
+import java.time.OffsetDateTime
+
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import org.broadinstitute.clio.util.generic.{
   CaseClassMapper,
   CaseClassMapperWithTypes,
   FieldMapper
 }
 
-import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-
 import scala.reflect.ClassTag
-
-import java.time.OffsetDateTime
 
 /**
   * Builds an ElasticsearchQueryMapper using shapeless and reflection.
@@ -71,31 +70,29 @@ class AutoElasticsearchQueryMapper[
   private def build(name: String, value: Any): QueryDefinition = {
     import ElasticsearchQueryMapper._
 
-    import s_mach.string._
-
     import scala.reflect.runtime.universe.typeOf
 
-    val nameSnake = name.toSnakeCase(Lexer.PascalCase)
+    val esName = ElasticSearchUtil.toElasticSearchName(name)
 
     // Get the scala Type of the field and match the types. All filter fields are wrapped in an Option.
     inputMapper.types(name) match {
       case tpe
-          if tpe =:= typeOf[Option[OffsetDateTime]] && nameSnake.endsWith(
+          if tpe =:= typeOf[Option[OffsetDateTime]] && esName.endsWith(
             "_start"
           ) =>
         queryOnOrAfter(
-          nameSnake.stripSuffix("_start"),
+          esName.stripSuffix("_start"),
           value.asInstanceOf[OffsetDateTime]
         )
       case tpe
-          if tpe =:= typeOf[Option[OffsetDateTime]] && nameSnake.endsWith(
+          if tpe =:= typeOf[Option[OffsetDateTime]] && esName.endsWith(
             "_end"
           ) =>
         queryOnOrBefore(
-          nameSnake.stripSuffix("_end"),
+          esName.stripSuffix("_end"),
           value.asInstanceOf[OffsetDateTime]
         )
-      case _ => queryVal(nameSnake, value)
+      case _ => queryVal(esName, value)
     }
   }
 

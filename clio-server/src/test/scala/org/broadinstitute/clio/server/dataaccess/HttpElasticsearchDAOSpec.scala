@@ -16,6 +16,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
+import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.ResponseException
 import org.scalatest._
@@ -109,36 +110,28 @@ class HttpElasticsearchDAOSpec
     } yield succeed
   }
 
-  it should "return documents in ClioId order" in {
+  it should "return the most recent document" in {
     import HttpElasticsearchDAOSpec._
     import com.sksamuel.elastic4s.circe._
     import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
     import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 
     val index =
-      new AutoElasticsearchIndex[Document]("place-" + UUID.randomUUID())
-    val mapper = new AutoElasticsearchQueryMapper[Input, Document, Document] {
-      override def toQueryOutput(document: Document): Document = document
-    }
+      new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID())
 
-    val input = Input(Some("Nigeria"))
-    val places = Seq("Aba", "Ede", "Owo").map(
-      city => Document(UUID.randomUUID(), city, city, input.country.get)
-    )
+    val documents =
+      (1 to 4)
+        .map("document-" + _)
+        .map(Document(ClioUUIDGenerator.getUUID(), _))
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
       _ <- Future.sequence(
-        places.map(place => httpElasticsearchDAO.updateMetadata(place, index))
+        documents.map(httpElasticsearchDAO.updateMetadata(_, index))
       )
-      outputs <- httpElasticsearchDAO.queryMetadata(
-        mapper.buildQuery(input),
-        index,
-        "upsert_id"
-      )
+      document <- httpElasticsearchDAO.getMostRecentDocument(index)
       _ = {
-        outputs.size should be(3)
-        outputs should be(places.sortBy(_.upsertId))
+        document should be(documents.last)
       }
     } yield succeed
   }
@@ -236,11 +229,5 @@ class HttpElasticsearchDAOSpec
 object HttpElasticsearchDAOSpec {
   import java.util.UUID
 
-  case class Document(upsertId: UUID,
-                      entityId: String,
-                      city: String,
-                      country: String)
-      extends ClioDocument
-  case class Input(country: Option[String])
-  case class Output(city: String, country: String)
+  case class Document(upsertId: UUID, entityId: String) extends ClioDocument
 }
