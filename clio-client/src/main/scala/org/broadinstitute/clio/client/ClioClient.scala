@@ -228,14 +228,13 @@ class ClioClient(webClient: ClioWebClient,
   private def getAccessToken(
     tokenOption: Option[OAuth2BearerToken]
   ): Either[EarlyReturn, OAuth2BearerToken] = {
-    tokenOption.toRight(()).left.flatMap { _ =>
+    tokenOption.fold({
       AuthUtil
         .getAccessToken(ClioClientConfig.serviceAccountJson)
         .map(token => OAuth2BearerToken(token.getTokenValue))
-        .toEither
         .left
         .map(AuthError.apply)
-    }
+    })(Right(_))
   }
 
   /**

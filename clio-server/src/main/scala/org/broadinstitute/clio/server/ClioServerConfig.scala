@@ -47,7 +47,17 @@ object ClioServerConfig extends ConfigReaders {
             val bucket = persistence.as[String]("bucket")
             val jsonPath = persistence.as[Path]("service-account-json")
             val serviceAccount = AuthUtil.loadServiceAccountJson(jsonPath)
-            Some(GcsConfig(projectId, bucket, serviceAccount))
+            serviceAccount.fold(
+              { err =>
+                throw new ConfigException.BadValue(
+                  "clio.server.persistence.service-account-json",
+                  s"Could not load service account JSON from '$jsonPath'",
+                  err
+                )
+              }, { account =>
+                Some(GcsConfig(projectId, bucket, account))
+              }
+            )
           }
           case Location.Unknown => None
         }

@@ -34,12 +34,16 @@ abstract class EnvIntegrationSpec(env: String)
     s"http://elasticsearch1.gotc-$env.broadinstitute.org:9200"
   )
 
-  override lazy implicit val bearerToken: OAuth2BearerToken =
-    OAuth2BearerToken(
-      AuthUtil
-        .getCredsFromServiceAccount(serviceAccount)
-        .getTokenValue
+  override lazy implicit val bearerToken: OAuth2BearerToken = {
+    val tokenOrErr = AuthUtil
+      .getCredsFromServiceAccount(serviceAccount)
+      .map(_.getTokenValue)
+
+    tokenOrErr.fold(
+      fail(s"Couldn't get access token for account $serviceAccount", _),
+      OAuth2BearerToken.apply
     )
+  }
 
   override lazy val rootPersistenceDir: Path =
     rootPathForBucketInEnv(env, storageScopes)

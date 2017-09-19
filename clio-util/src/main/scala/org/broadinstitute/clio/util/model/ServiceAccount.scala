@@ -3,6 +3,7 @@ package org.broadinstitute.clio.util.model
 import com.google.auth.oauth2.ServiceAccountCredentials
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 import java.net.URI
 
@@ -29,15 +30,16 @@ case class ServiceAccount(authProviderX509CertUrl: URI,
 
   assert(`type` == "service_account")
 
-  def credentialForScopes(scopes: Seq[String]): ServiceAccountCredentials = {
-    ServiceAccountCredentials.fromPkcs8(
-      clientId,
-      clientEmail,
-      privateKey,
-      privateKeyId,
-      scopes.asJava,
-      null,
-      tokenUri
-    )
-  }
+  def credentialForScopes(scopes: Seq[String]): Try[ServiceAccountCredentials] =
+    Try {
+      ServiceAccountCredentials.fromPkcs8(
+        clientId,
+        clientEmail,
+        privateKey,
+        privateKeyId,
+        scopes.asJava,
+        null,
+        tokenUri
+      )
+    }
 }
