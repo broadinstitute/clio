@@ -61,7 +61,7 @@ object ClioClient extends LazyLogging {
 
     client
       .instanceMain(args)
-      .fold[Unit](
+      .fold(
         {
           case UsageOrHelpAsked(message) => {
             println(message)
@@ -234,7 +234,7 @@ class ClioClient(webClient: ClioWebClient,
         .map(token => OAuth2BearerToken(token.getTokenValue))
         .toEither
         .left
-        .map(ex => AuthError(ex))
+        .map(AuthError.apply)
     }
   }
 
