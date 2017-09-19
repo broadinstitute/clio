@@ -148,11 +148,26 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * using Google's NIO filesystem adapter.
     */
   def rootPathForBucketInEnv(env: String, scopes: Seq[String]): Path = {
-    val storageOptions = StorageOptions
-      .newBuilder()
-      .setProjectId(s"broad-gotc-$env-storage")
-      .setCredentials(serviceAccount.credentialForScopes(scopes))
-      .build()
+    val storageOptions = {
+      val project = s"broad-gotc-$env-storage"
+      serviceAccount
+        .credentialForScopes(scopes)
+        .fold(
+          { err =>
+            val scopesString = scopes.mkString("[", ", ", "]")
+            fail(
+              s"Failed to get credential for project '$project', scopes $scopesString",
+              err
+            )
+          }, { credential =>
+            StorageOptions
+              .newBuilder()
+              .setProjectId(project)
+              .setCredentials(credential)
+              .build()
+          }
+        )
+    }
 
     val gcs: FileSystem = CloudStorageFileSystem.forBucket(
       s"broad-gotc-$env-clio",
