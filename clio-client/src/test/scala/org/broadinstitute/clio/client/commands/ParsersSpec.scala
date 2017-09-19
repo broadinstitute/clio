@@ -44,9 +44,12 @@ class ParsersSpec extends BaseClientSpec {
         }
       case Left(_) => fail("Could not parse outer command.")
     }
+
+    val validLocations = Location.namesToValuesMap.keys.mkString("|")
+
     errorMessage should be(
       Some(
-        "Unknown enum value BadValue for type org.broadinstitute.clio.util.model.Location "
+        s"Unknown enum value 'BadValue' for type org.broadinstitute.clio.util.model.Location, valid values are [$validLocations]"
       )
     )
   }

@@ -22,13 +22,19 @@ trait ClioParsers {
   implicit def enumEntryParser[T <: EnumEntry: Enum](
     implicit c: ClassTag[T]
   ): ArgParser[T] = {
-    ArgParser.instance[T]("entry") { entry =>
-      val value = implicitly[Enum[T]].withNameOption(entry)
-      Either.cond(
-        value.isDefined,
-        value.get,
-        s"Unknown enum value $entry for type ${c.runtimeClass.getName} "
-      )
+    val enum = implicitly[Enum[T]]
+    val enumName = c.runtimeClass.getName
+    val entryMap = enum.namesToValuesMap
+    val entryString = entryMap.keys.mkString("|")
+
+    ArgParser.instance[T](entryString) { maybeEntry =>
+      entryMap
+        .get(maybeEntry)
+        .fold[Either[String, T]](
+          Left(
+            s"Unknown enum value '$maybeEntry' for type $enumName, valid values are [$entryString]"
+          )
+        )(Right.apply)
     }
   }
 
