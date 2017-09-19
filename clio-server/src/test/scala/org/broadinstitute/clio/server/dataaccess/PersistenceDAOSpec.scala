@@ -5,12 +5,11 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
-
 import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
 import org.scalatest.{AsyncFlatSpec, Matchers}
-
 import java.nio.file.Files
+import java.util.UUID
 
 class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
   behavior of "PersistenceDAO"
@@ -60,5 +59,40 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
       }
       succeed
     }
+  }
+
+  it should "return metadata documents from GCS in order" in {
+    val dao = new MemoryPersistenceDAO()
+    val half = 5
+    val documents = (0L until (2L * half)).map(
+      n =>
+        DocumentMock.default.copy(
+          mockKeyLong = n,
+          mockFilePath = Some(s"gs://document-mock-key-${n}")
+      )
+    )
+    val expected = documents.drop(half)
+    val result = dao
+      .initialize(index)
+      .map(
+        _ =>
+          documents
+            .map(document => dao.writeUpdate(document, index))
+      )
+      .flatMap(_ => dao.getAllSince(expected.head.upsertId, index))
+    documents.toSet.size should be(documents.size)
+    documents.map(_.upsertId).toSet.size should be(documents.size)
+    result.flatMap(_.toVector should be(expected))
+  }
+
+  it should "fail unless upsertId is found exactly once" in {
+    val upsertId = UUID.randomUUID()
+    val dao = new MemoryPersistenceDAO()
+    val result = dao
+      .initialize(index)
+      .map(_ => dao.writeUpdate(DocumentMock.default, index))
+      .flatMap(_ => dao.getAllSince(upsertId, index))
+    recoverToExceptionIf[RuntimeException](result)
+      .map(x => x.getMessage should endWith(s" files end with ${upsertId}.json"))
   }
 }

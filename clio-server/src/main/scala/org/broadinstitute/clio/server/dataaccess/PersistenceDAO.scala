@@ -6,13 +6,18 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
-
 import com.sksamuel.elastic4s.Indexable
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
-
 import java.nio.file.{Files, Path}
+import java.util.UUID
+
+import io.circe.Decoder
+import io.circe.parser._
+
+import scala.util.Try
+import scala.collection.JavaConverters._
 
 /**
   * Persists metadata updates to a source of truth, allowing
@@ -77,6 +82,43 @@ trait PersistenceDAO extends LazyLogging {
         indexable.json(document).getBytes
       )
       logger.debug(s"Wrote document $document to ${written.toUri}")
+    }
+
+  /**
+    * Return the GCS bucket metadata files for `index` upserted with
+    * or after `upsertId` decoded from JSON as `ClioDocument`s sorted by
+    * `upsertId`.
+    *
+    * @param upsertId of the last known upserted document
+    * @param index  to query against.
+    * @param ec is the implicit ExecutionContext
+    * @tparam D is a ClioDocument type with a JSON Decoder
+    * @return a Future Seq of ClioDocument
+    */
+  def getAllSince[D <: ClioDocument: Decoder](
+    upsertId: UUID,
+    index: ElasticsearchIndex[D]
+  )(implicit ec: ExecutionContext): Future[Seq[D]] =
+    Future {
+      val rootDirectory = rootPath.resolve(index.currentPersistenceDir)
+      val files = Try(Files.newDirectoryStream(rootDirectory))
+        .map(_.asScala)
+        .fold(throw _, identity)
+        .toSeq
+      val filesWithId = files.filter(_.endsWith(s"${upsertId}.json"))
+      val withId = filesWithId match {
+        case Seq(result) => result
+        case _ =>
+          throw new RuntimeException(
+            s"${filesWithId.size} files end with ${upsertId.toString}.json"
+          )
+      }
+      val (_, after) = files.span(path => !path.equals(withId))
+      after
+        .map(Files.readAllBytes)
+        .map(new String(_))
+        .map(decode[D])
+        .map(_.fold(throw _, identity))
     }
 }
 
