@@ -43,7 +43,7 @@ class CaseClassMapper[T: ClassTag] {
   /** Creates an instance of T from a Map of field names to values. */
   def newInstance(vals: Map[String, _]): T = {
 
-    /** When there is no value for an field, default the value as None, or throw an error if the type isn't Option. */
+    /* When there is no value for a field, default the value as None, or throw an error if the type isn't Option. */
     def defaultNone(name: String, tpe: Class[_]): None.type = {
       if (!tpe.isAssignableFrom(classOf[Option[_]]))
         throw new IllegalArgumentException(

@@ -38,6 +38,8 @@ val commonDockerSettings: Seq[Setting[_]] = Seq(
 val commonTestDockerSettings: Seq[Setting[_]] = Seq(
   resourceGenerators in Test += Docker.writeTestImagesConfig.taskValue
 )
+val commonNoPublishSettings: Seq[Setting[_]] =
+  Seq(publishArtifact := false, publish := {})
 
 /**
   * Root Clio project aggregating all sub-projects.
@@ -47,6 +49,7 @@ val commonTestDockerSettings: Seq[Setting[_]] = Seq(
 lazy val clio = project
   .in(file("."))
   .settings(commonSettings)
+  .settings(commonNoPublishSettings)
   .aggregate(
     `clio-util`,
     `clio-transfer-model`,
@@ -65,6 +68,7 @@ lazy val clio = project
   */
 lazy val `clio-util` = project
   .settings(commonSettings)
+  .enablePlugins(ClioPublishingPlugin)
   .disablePlugins(AssemblyPlugin)
   .settings(libraryDependencies ++= Dependencies.UtilDependencies)
 
@@ -76,6 +80,7 @@ lazy val `clio-util` = project
 lazy val `clio-transfer-model` = project
   .dependsOn(`clio-util`)
   .settings(commonSettings)
+  .enablePlugins(ClioPublishingPlugin)
   .disablePlugins(AssemblyPlugin)
   .settings(libraryDependencies ++= Dependencies.TransferModelDependencies)
 
@@ -87,6 +92,7 @@ lazy val `clio-transfer-model` = project
 lazy val `clio-dataaccess-model` = project
   .dependsOn(`clio-util`)
   .settings(commonSettings)
+  .settings(commonNoPublishSettings)
   .disablePlugins(AssemblyPlugin)
   .settings(libraryDependencies ++= Dependencies.DataaccessModelDependencies)
 
@@ -103,6 +109,7 @@ lazy val `clio-server` = project
     dependencyOverrides ++= Dependencies.ServerOverrideDependencies
   )
   .settings(commonSettings)
+  .settings(commonNoPublishSettings)
   .enablePlugins(DockerPlugin)
   .settings(commonDockerSettings)
   .settings(dockerfile in docker := Docker.serverDockerFile.value)
@@ -113,6 +120,7 @@ lazy val `clio-server` = project
   */
 lazy val `clio-client` = project
   .dependsOn(`clio-transfer-model`)
+  .enablePlugins(ClioPublishingPlugin)
   .settings(libraryDependencies ++= Dependencies.ClientDependencies)
   .settings(commonSettings)
   .settings(commonTestDockerSettings)
@@ -125,6 +133,7 @@ lazy val `clio-integration-test` = project
   .enablePlugins(ClioIntegrationTestPlugin)
   .disablePlugins(AssemblyPlugin)
   .settings(commonSettings)
+  .settings(commonNoPublishSettings)
   .settings(libraryDependencies ++= Dependencies.IntegrationTestDependencies)
 
 addCommandAlias(
