@@ -85,9 +85,9 @@ trait PersistenceDAO extends LazyLogging {
     }
 
   /**
-    * Return the GCS bucket metadata files for `index` upserted with
-    * or after `upsertId` decoded from JSON as `ClioDocument`s sorted by
-    * `upsertId`.
+    * Return the GCS bucket metadata files for `index` upserted on or
+    * after `upsertId`.  Decode the files from JSON as `ClioDocument`s
+    * sorted by `upsertId`.
     *
     * @param upsertId of the last known upserted document
     * @param index  to query against.
