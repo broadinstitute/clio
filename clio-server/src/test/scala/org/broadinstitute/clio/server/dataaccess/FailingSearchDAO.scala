@@ -19,7 +19,7 @@ class FailingSearchDAO extends SearchDAO {
 
   override def close(): Future[Unit] = failure
 
-  override def queryMetadata[D: HitReader](
+  override def queryMetadata[D <: ClioDocument: HitReader](
     queryDefinition: QueryDefinition,
     index: ElasticsearchIndex[D]
   ): Future[Seq[D]] = failure

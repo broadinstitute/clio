@@ -67,7 +67,7 @@ class HttpElasticsearchDAO private[dataaccess] (
     * @tparam D the document type this index contains
     * @return the most recent document for this index, if any
     */
-  def getMostRecentDocument[D: HitReader](
+  def getMostRecentDocument[D <: ClioDocument: HitReader](
     index: ElasticsearchIndex[D]
   ): Future[D] = {
     val searchDefinition = search(index.indexName / index.indexType)
@@ -75,7 +75,7 @@ class HttpElasticsearchDAO private[dataaccess] (
       .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
     for {
       searchResponse <- httpClient execute searchDefinition
-    } yield
+    } yield {
       searchResponse.to[D] match {
         case Seq(document) => document
         case _ =>
@@ -83,6 +83,7 @@ class HttpElasticsearchDAO private[dataaccess] (
             s"Could not get most recent document for index ${index.indexName}, found ${searchResponse.hits.total} documents."
           )
       }
+    }
   }
 
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {

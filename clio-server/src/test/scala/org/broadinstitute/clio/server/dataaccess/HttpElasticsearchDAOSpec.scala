@@ -130,10 +130,7 @@ class HttpElasticsearchDAOSpec
         documents.map(httpElasticsearchDAO.updateMetadata(_, index))
       )
       document <- httpElasticsearchDAO.getMostRecentDocument(index)
-      _ = {
-        document should be(documents.last)
-      }
-    } yield succeed
+    } yield document should be(documents.last)
   }
 
   it should "throw an exception if no documents exist" in {
