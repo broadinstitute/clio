@@ -44,7 +44,7 @@ object ClioDocument {
     * and to provide an ordering over the documents.
     */
   val UpsertIdElasticSearchName: String =
-    ElasticSearchUtil.toElasticSearchName(UpsertIdFieldName)
+    ElasticsearchUtil.toElasticsearchName(UpsertIdFieldName)
 
   /**
     * Name of the ID field used in all Clio documents to identify a specific entity.

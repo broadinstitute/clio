@@ -35,7 +35,7 @@ class HttpElasticsearchDAO private[dataaccess] (
       // The default timeout is 100̈ms, which is too slow for query operations.
       .setRequestConfigCallback(
         _.setConnectionRequestTimeout(
-          ClioServerConfig.Elasticsearch.httpRequestTimeout.toMicros.toInt
+          ClioServerConfig.Elasticsearch.httpRequestTimeout.toMillis.toInt
         )
       )
       .build()

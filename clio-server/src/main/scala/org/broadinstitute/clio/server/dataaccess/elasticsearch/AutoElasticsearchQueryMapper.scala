@@ -72,7 +72,7 @@ class AutoElasticsearchQueryMapper[
 
     import scala.reflect.runtime.universe.typeOf
 
-    val esName = ElasticSearchUtil.toElasticSearchName(name)
+    val esName = ElasticsearchUtil.toElasticsearchName(name)
 
     // Get the scala Type of the field and match the types. All filter fields are wrapped in an Option.
     inputMapper.types(name) match {

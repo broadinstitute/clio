@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import s_mach.string._
 
-object ElasticSearchUtil {
+object ElasticsearchUtil {
 
   /**
     * Convert a scala name (such as type or field) to its corresponding elastic
@@ -11,6 +11,6 @@ object ElasticSearchUtil {
     * @param scalaName the name to convert
     * @return the name as an elastic search name
     */
-  def toElasticSearchName(scalaName: String): String =
+  def toElasticsearchName(scalaName: String): String =
     scalaName.toSnakeCase(Lexer.CamelCase)
 }

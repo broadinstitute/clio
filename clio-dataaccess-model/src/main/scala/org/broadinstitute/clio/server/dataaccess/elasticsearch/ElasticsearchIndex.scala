@@ -58,8 +58,8 @@ object ElasticsearchIndex {
   private[dataaccess] def indexDocument[Document: ClassTag: FieldMapper]
     : ElasticsearchIndex[Document] = {
     val esName =
-      ElasticSearchUtil
-        .toElasticSearchName(classTag[Document].runtimeClass.getSimpleName)
+      ElasticsearchUtil
+        .toElasticsearchName(classTag[Document].runtimeClass.getSimpleName)
         .stripPrefix("document_")
     new AutoElasticsearchIndex[Document](esName)
   }

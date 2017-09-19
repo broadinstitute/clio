@@ -60,6 +60,6 @@ object AutoElasticsearchIndex {
           s"No support for $fieldName: $fieldType"
         )
     }
-    stringToDefinition(ElasticSearchUtil.toElasticSearchName(fieldName))
+    stringToDefinition(ElasticsearchUtil.toElasticsearchName(fieldName))
   }
 }
