@@ -33,7 +33,11 @@ class HttpElasticsearchDAO private[dataaccess] (
     val restClient = RestClient
       .builder(httpHosts: _*)
       // The default timeout is 100̈ms, which is too slow for query operations.
-      .setRequestConfigCallback(_.setConnectionRequestTimeout(10000))
+      .setRequestConfigCallback(
+        _.setConnectionRequestTimeout(
+          ClioServerConfig.Elasticsearch.httpRequestTimeout.toMicros.toInt
+        )
+      )
       .build()
     HttpClient.fromRestClient(restClient)
   }
