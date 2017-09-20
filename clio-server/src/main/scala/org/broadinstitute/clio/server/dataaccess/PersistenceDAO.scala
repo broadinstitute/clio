@@ -101,11 +101,21 @@ trait PersistenceDAO extends LazyLogging {
       logger.debug(s"Wrote document $document to ${written.toUri}")
     }
 
+  /**
+    * Throw or return the `ClioDocument` at `path`.
+    * @param path to a JSON-encoded `ClioDocument``
+    * @tparam D is the type of `ClioDocument` at `path`
+    * @return the `ClioDocument` at `path`
+    */
   def documentFromPath[D <: ClioDocument: Decoder](path: Path): D = {
     decode[D](new String(Files.readAllBytes(path))).fold(throw _, identity)
   }
 
-  def isParamsFile(path: Path) = {
+  /**
+    * @param path in some params `FileSystem`
+    * @return true if `path` is a "params file"
+    */
+  def isParamsFile(path: Path): Boolean = {
     val s = path.toString
     val parts = s.split(File.separator)
     val last = parts.last
@@ -114,6 +124,16 @@ trait PersistenceDAO extends LazyLogging {
     parts.length == 6 && isJson && hasUuid
   }
 
+  /**
+    * Return the `ClioDocument`s under `rootdir` upserted no earlier
+    * than `withId`.
+    *
+    * @param rootDir is path to a bucket of "params files"
+    * @param withId is the path of earliest "params file" to return
+    * @param ec is an `ExecutionContext`
+    * @tparam D is the type of `ClioDocument` expected under `rootDir`
+    * @return the `ClioDocument` at `withId` and all later ones
+    */
   def sinceId[D <: ClioDocument: Decoder](rootDir: Path, withId: Path)(
     implicit ec: ExecutionContext
   ): Future[Seq[D]] = {
@@ -124,13 +144,11 @@ trait PersistenceDAO extends LazyLogging {
       .filter(!before(_))
       .runWith(Sink.seq)
       .map(_.sortBy(before))
-    val result = Source
+    Source
       .fromFuture(after)
       .mapConcat(identity)
-      .map(p => { logger.info(s"p == ${p.toString}"); p })
       .via(Flow[Path].map(p => documentFromPath(p)))
       .runWith(Sink.seq[D])
-    result
   }
 
   /**
@@ -150,27 +168,15 @@ trait PersistenceDAO extends LazyLogging {
   )(implicit ec: ExecutionContext): Future[Seq[D]] = {
     val rootDir = rootPath.resolve(index.rootDir)
     val suffix = s"/${upsertId}.json"
-    val filesWithId = Directory
+    Directory
       .walk(rootDir)
       .filter(p => isParamsFile(p))
       .filter(_.toString.endsWith(suffix))
-      .limit(23)
       .runWith(Sink.seq)
-    val result = filesWithId
       .map(_.map(sinceId(rootDir, _)))
       .map(Future.sequence(_))
       .flatMap(identity)
       .map(_.flatMap(identity))
-    result
-      .map(_.size)
-      .foreach(n => {
-        if (n < 1) {
-          throw new RuntimeException(
-            s"No file in ${rootDir.normalize.toString} ends with '${suffix}'."
-          )
-        }
-      })
-    result
   }
 }
 
