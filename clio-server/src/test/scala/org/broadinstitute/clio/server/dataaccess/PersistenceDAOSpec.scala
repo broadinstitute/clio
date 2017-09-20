@@ -63,12 +63,12 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
 
   it should "return metadata documents from GCS in order" in {
     val dao = new MemoryPersistenceDAO()
-    val half = 5
+    val half = 2
     val documents = (0L until (2L * half)).map(
       n =>
-        DocumentMock.default.copy(
-          mockKeyLong = n,
-          mockFilePath = Some(s"gs://document-mock-key-${n}")
+      DocumentMock.default.copy(
+        mockKeyLong = n,
+        mockFilePath = Some(s"gs://document-mock-key-${n}")
       )
     )
     val expected = documents.drop(half)
@@ -76,8 +76,8 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
       .initialize(index)
       .map(
         _ =>
-          documents
-            .map(document => dao.writeUpdate(document, index))
+        documents
+          .map(document => dao.writeUpdate(document, index))
       )
       .flatMap(_ => dao.getAllSince(expected.head.upsertId, index))
     documents.toSet.size should be(documents.size)
@@ -88,11 +88,14 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
   it should "fail unless upsertId is found exactly once" in {
     val upsertId = UUID.randomUUID()
     val dao = new MemoryPersistenceDAO()
-    val result = dao
-      .initialize(index)
-      .map(_ => dao.writeUpdate(DocumentMock.default, index))
-      .flatMap(_ => dao.getAllSince(upsertId, index))
-    recoverToExceptionIf[RuntimeException](result)
-      .map(x => x.getMessage should endWith(s" files end with ${upsertId}.json"))
+    for {
+      _ <- dao.initialize(index)
+      _ <- dao.writeUpdate(DocumentMock.default, index)
+      x <- recoverToExceptionIf[RuntimeException] {
+        dao.getAllSince(upsertId, index)
+      }
+    } yield {
+      x.getMessage should include(s" file ends with /${upsertId}.json in ")
+    }
   }
 }

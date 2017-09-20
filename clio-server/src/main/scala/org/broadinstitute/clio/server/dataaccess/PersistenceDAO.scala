@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import java.io.File
+
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -13,17 +15,32 @@ import scala.concurrent.{ExecutionContext, Future}
 import java.nio.file.{Files, Path}
 import java.util.UUID
 
+import akka.actor.ActorSystem
+import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import akka.stream.alpakka.file.scaladsl.Directory
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import io.circe.Decoder
 import io.circe.parser._
-
-import scala.util.Try
-import scala.collection.JavaConverters._
 
 /**
   * Persists metadata updates to a source of truth, allowing
   * for playback during disaster recovery.
   */
 trait PersistenceDAO extends LazyLogging {
+
+  private implicit val system = ActorSystem("clio")
+
+  private val loggingDecider: Supervision.Decider = { error =>
+    logger.error("stopping due to error", error)
+    Supervision.Stop
+  }
+
+  private lazy val actorMaterializerSettings =
+    ActorMaterializerSettings(system).withSupervisionStrategy(loggingDecider)
+
+  private implicit lazy val materializer = ActorMaterializer(
+    actorMaterializerSettings
+  )
 
   /**
     * Root path for all metadata writes.
@@ -84,6 +101,37 @@ trait PersistenceDAO extends LazyLogging {
       logger.debug(s"Wrote document $document to ${written.toUri}")
     }
 
+  def documentFromPath[D <: ClioDocument: Decoder](path: Path): D = {
+    decode[D](new String(Files.readAllBytes(path))).fold(throw _, identity)
+  }
+
+  def isParamsFile(path: Path) = {
+    val s = path.toString
+    val parts = s.split(File.separator)
+    val last = parts.last
+    val isJson = last.endsWith(".json")
+    val hasUuid = last.split('-').length == 5
+    parts.length == 6 && isJson && hasUuid
+  }
+
+  def sinceId[D <: ClioDocument: Decoder](rootDir: Path, withId: Path)(
+    implicit ec: ExecutionContext
+  ): Future[Seq[D]] = {
+    val before = (p: Path) => p.compareTo(withId) < 0
+    val after = Directory
+      .walk(rootDir)
+      .filter(p => isParamsFile(p))
+      .filter(!before(_))
+      .runWith(Sink.seq)
+      .map(_.sortBy(before))
+    val result = Source
+      .fromFuture(after)
+      .mapConcat(identity)
+      .via(Flow[Path].map(p => documentFromPath(p)))
+      .runWith(Sink.seq[D])
+    result
+  }
+
   /**
     * Return the GCS bucket metadata files for `index` upserted on or
     * after `upsertId`.  Decode the files from JSON as `ClioDocument`s
@@ -98,28 +146,30 @@ trait PersistenceDAO extends LazyLogging {
   def getAllSince[D <: ClioDocument: Decoder](
     upsertId: UUID,
     index: ElasticsearchIndex[D]
-  )(implicit ec: ExecutionContext): Future[Seq[D]] =
-    Future {
-      val rootDirectory = rootPath.resolve(index.currentPersistenceDir)
-      val files = Try(Files.newDirectoryStream(rootDirectory))
-        .map(_.asScala)
-        .fold(throw _, identity)
-        .toSeq
-      val filesWithId = files.filter(_.endsWith(s"${upsertId}.json"))
-      val withId = filesWithId match {
-        case Seq(result) => result
-        case _ =>
+  )(implicit ec: ExecutionContext): Future[Seq[D]] = {
+    val rootDir = rootPath.resolve(index.rootDir)
+    val suffix = s"/${upsertId}.json"
+    val filesWithId = Directory
+      .walk(rootDir)
+      .filter(p => isParamsFile(p))
+      .filter(_.toString.endsWith(suffix))
+      .limit(23)
+      .runWith(Sink.seq)
+    filesWithId
+      .map(_.size)
+      .map(n => {
+        if (n != 1) {
           throw new RuntimeException(
-            s"${filesWithId.size} files end with ${upsertId.toString}.json"
+            s"${n} files end with ${suffix} in ${rootDir.normalize.toString}"
           )
-      }
-      val (_, after) = files.span(path => !path.equals(withId))
-      after
-        .map(Files.readAllBytes)
-        .map(new String(_))
-        .map(decode[D])
-        .map(_.fold(throw _, identity))
-    }
+        }
+      })
+    filesWithId
+      .map(_.map(sinceId(rootDir, _)))
+      .map(Future.sequence(_))
+      .flatMap(identity)
+      .map(_.flatMap(identity))
+  }
 }
 
 object PersistenceDAO {
