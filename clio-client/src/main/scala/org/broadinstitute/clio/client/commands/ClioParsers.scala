@@ -30,11 +30,9 @@ trait ClioParsers {
     ArgParser.instance[T](entryString) { maybeEntry =>
       entryMap
         .get(maybeEntry)
-        .fold[Either[String, T]](
-          Left(
-            s"Unknown enum value '$maybeEntry' for type $enumName, valid values are [$entryString]"
-          )
-        )(Right.apply)
+        .toRight(
+          s"Unknown enum value '$maybeEntry' for type $enumName, valid values are [$entryString]"
+        )
     }
   }
 
