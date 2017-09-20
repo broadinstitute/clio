@@ -6,6 +6,7 @@ import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
 import org.scalatest.{AsyncFlatSpec, Matchers}
 import java.nio.file.Files
+import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
@@ -65,7 +66,7 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
 
   it should "return metadata documents from GCS in order" in {
     val dao = new MemoryPersistenceDAO()
-    val half = 2
+    val half = 23
     val documents = (0L until (2L * half)).map(
       n =>
         DocumentMock.default.copy(
@@ -85,5 +86,19 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
       )
       .flatMap(_ => dao.getAllSince(expected.head.upsertId, index))
     result.flatMap(_.toVector should be(expected))
+  }
+
+  it should "fail unless upsertId is found exactly once" in {
+    val upsertId = UUID.randomUUID()
+    val dao = new MemoryPersistenceDAO()
+    for {
+      _ <- dao.initialize(index)
+      _ <- dao.writeUpdate(DocumentMock.default, index)
+      x <- recoverToExceptionIf[RuntimeException] {
+        dao.getAllSince(upsertId, index)
+      }
+    } yield {
+      x.getMessage should include(s" files end with /${upsertId}.json in ")
+    }
   }
 }

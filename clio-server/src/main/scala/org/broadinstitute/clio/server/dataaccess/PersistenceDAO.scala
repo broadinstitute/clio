@@ -128,11 +128,21 @@ trait PersistenceDAO extends LazyLogging {
   ): Future[Seq[D]] = {
     val rootDir = rootPath.resolve(index.rootDir)
     val suffix = s"/${upsertId}.json"
-    Directory
+    val filesWithId = Directory
       .walk(rootDir)
       .filter(_.toString.endsWith(suffix))
-      .runWith(Sink.head)
-      .map(sinceId(rootDir, _))
+      .runWith(Sink.seq)
+    filesWithId
+      .map(paths => {
+        val count = paths.size
+        if (count == 1) {
+          sinceId[D](rootDir, paths.head)
+        } else {
+          throw new RuntimeException(
+            s"${count} files end with ${suffix} in ${rootDir.toString}"
+          )
+        }
+      })
       .flatMap(identity)
   }
 }
