@@ -15,7 +15,7 @@ object ArtifactoryPublishingPlugin extends AutoPlugin {
   private val artifactoryHost = "broadinstitute.jfrog.io"
   private val artifactoryRealm = "Artifactory Realm"
   private val artifactoryResolver =
-    artifactoryRealm at s"https://$artifactoryHost/libs-release-local;build.timestamp=$buildTimestamp"
+    artifactoryRealm at s"https://$artifactoryHost/broadinstitute/libs-release-local;build.timestamp=$buildTimestamp"
 
   private val artifactoryUsernameVar = "ARTIFACTORY_USERNAME"
   private val artifactoryPasswordVar = "ARTIFACTORY_PASSWORD"
