@@ -1,6 +1,9 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{DocumentMock, ElasticsearchIndex}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  DocumentMock,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
 import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
@@ -12,7 +15,11 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 
-class PersistenceDAOSpec extends TestKit(ActorSystem("PeristenceDAOSpec")) with AsyncFlatSpecLike with BeforeAndAfterAll with Matchers {
+class PersistenceDAOSpec
+    extends TestKit(ActorSystem("PeristenceDAOSpec"))
+    with AsyncFlatSpecLike
+    with BeforeAndAfterAll
+    with Matchers {
   behavior of "PersistenceDAO"
 
   private implicit val materializer = ActorMaterializer()

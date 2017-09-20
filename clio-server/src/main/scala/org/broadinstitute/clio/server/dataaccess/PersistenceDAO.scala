@@ -143,7 +143,7 @@ trait PersistenceDAO extends LazyLogging {
           )
         }
       })
-      .flatMap(identity)
+      .flatten
   }
 }
 
