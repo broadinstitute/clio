@@ -45,7 +45,7 @@ class ParsersSpec extends BaseClientSpec {
       case Left(_) => fail("Could not parse outer command.")
     }
 
-    val validLocations = Location.namesToValuesMap.keys.mkString("|")
+    val validLocations = Location.namesToValuesMap.keys.mkString(",")
 
     errorMessage should be(
       Some(

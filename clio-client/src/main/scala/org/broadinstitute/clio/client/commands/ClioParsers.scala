@@ -25,7 +25,7 @@ trait ClioParsers {
     val enum = implicitly[Enum[T]]
     val enumName = c.runtimeClass.getName
     val entryMap = enum.namesToValuesMap
-    val entryString = entryMap.keys.mkString("|")
+    val entryString = entryMap.keys.mkString(",")
 
     ArgParser.instance[T](entryString) { maybeEntry =>
       entryMap
