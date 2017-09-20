@@ -70,6 +70,8 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
         mockFilePath = Some(s"gs://document-mock-key-${n}")
       )
     )
+    documents.toSet.size should be(documents.size)
+    documents.map(_.upsertId).toSet.size should be(documents.size)
     val expected = documents.drop(half)
     val result = dao
       .initialize(index)
@@ -79,8 +81,6 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
           .map(document => dao.writeUpdate(document, index))
       )
       .flatMap(_ => dao.getAllSince(expected.head.upsertId, index))
-    documents.toSet.size should be(documents.size)
-    documents.map(_.upsertId).toSet.size should be(documents.size)
     result.flatMap(_.toVector should be(expected))
   }
 }
