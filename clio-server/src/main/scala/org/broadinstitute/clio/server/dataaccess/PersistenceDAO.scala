@@ -127,6 +127,7 @@ trait PersistenceDAO extends LazyLogging {
     val result = Source
       .fromFuture(after)
       .mapConcat(identity)
+      .map(p => { logger.info(s"p == ${p.toString}"); p })
       .via(Flow[Path].map(p => documentFromPath(p)))
       .runWith(Sink.seq[D])
     result
@@ -155,20 +156,21 @@ trait PersistenceDAO extends LazyLogging {
       .filter(_.toString.endsWith(suffix))
       .limit(23)
       .runWith(Sink.seq)
-    filesWithId
-      .map(_.size)
-      .map(n => {
-        if (n != 1) {
-          throw new RuntimeException(
-            s"${n} files end with ${suffix} in ${rootDir.normalize.toString}"
-          )
-        }
-      })
-    filesWithId
+    val result = filesWithId
       .map(_.map(sinceId(rootDir, _)))
       .map(Future.sequence(_))
       .flatMap(identity)
       .map(_.flatMap(identity))
+    result
+      .map(_.size)
+      .foreach(n => {
+        if (n < 1) {
+          throw new RuntimeException(
+            s"No file in ${rootDir.normalize.toString} ends with '${suffix}'."
+          )
+        }
+      })
+    result
   }
 }
 

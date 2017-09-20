@@ -85,17 +85,19 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
     result.flatMap(_.toVector should be(expected))
   }
 
-  it should "fail unless upsertId is found exactly once" in {
+  it should "fail unless upsertId is found" in {
     val upsertId = UUID.randomUUID()
     val dao = new MemoryPersistenceDAO()
     for {
       _ <- dao.initialize(index)
       _ <- dao.writeUpdate(DocumentMock.default, index)
-      x <- recoverToExceptionIf[RuntimeException] {
+      exception <- recoverToExceptionIf[RuntimeException] {
         dao.getAllSince(upsertId, index)
       }
     } yield {
-      x.getMessage should include(s" file ends with /${upsertId}.json in ")
+      val message = exception.getMessage
+      message should startWith("No file in ")
+      message should endWith(s" ends with '${upsertId}.json'.")
     }
   }
 }
