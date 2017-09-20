@@ -1,7 +1,5 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import java.io.File
-
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -15,10 +13,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import java.nio.file.{Files, Path}
 import java.util.UUID
 
-import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.Sink
 import io.circe.Decoder
 import io.circe.parser._
 
@@ -27,20 +24,6 @@ import io.circe.parser._
   * for playback during disaster recovery.
   */
 trait PersistenceDAO extends LazyLogging {
-
-  private implicit val system = ActorSystem("clio")
-
-  private val loggingDecider: Supervision.Decider = { error =>
-    logger.error("stopping due to error", error)
-    Supervision.Stop
-  }
-
-  private lazy val actorMaterializerSettings =
-    ActorMaterializerSettings(system).withSupervisionStrategy(loggingDecider)
-
-  private implicit lazy val materializer = ActorMaterializer(
-    actorMaterializerSettings
-  )
 
   /**
     * Root path for all metadata writes.
@@ -102,29 +85,6 @@ trait PersistenceDAO extends LazyLogging {
     }
 
   /**
-    * Throw or return the `ClioDocument` at `path`.
-    * @param path to a JSON-encoded `ClioDocument``
-    * @tparam D is the type of `ClioDocument` at `path`
-    * @return the `ClioDocument` at `path`
-    */
-  def documentFromPath[D <: ClioDocument: Decoder](path: Path): D = {
-    decode[D](new String(Files.readAllBytes(path))).fold(throw _, identity)
-  }
-
-  /**
-    * @param path in some params `FileSystem`
-    * @return true if `path` is a "params file"
-    */
-  def isParamsFile(path: Path): Boolean = {
-    val s = path.toString
-    val parts = s.split(File.separator)
-    val last = parts.last
-    val isJson = last.endsWith(".json")
-    val hasUuid = last.split('-').length == 5
-    parts.length == 6 && isJson && hasUuid
-  }
-
-  /**
     * Return the `ClioDocument`s under `rootdir` upserted no earlier
     * than `withId`.
     *
@@ -135,20 +95,19 @@ trait PersistenceDAO extends LazyLogging {
     * @return the `ClioDocument` at `withId` and all later ones
     */
   def sinceId[D <: ClioDocument: Decoder](rootDir: Path, withId: Path)(
-    implicit ec: ExecutionContext
+    implicit ec: ExecutionContext,
+    materializer: Materializer
   ): Future[Seq[D]] = {
     val before = (p: Path) => p.compareTo(withId) < 0
-    val after = Directory
+    val document = (p: Path) => {
+      decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
+    }
+    Directory
       .walk(rootDir)
-      .filter(p => isParamsFile(p))
       .filter(!before(_))
       .runWith(Sink.seq)
       .map(_.sortBy(before))
-    Source
-      .fromFuture(after)
-      .mapConcat(identity)
-      .via(Flow[Path].map(p => documentFromPath(p)))
-      .runWith(Sink.seq[D])
+      .map(_.map(p => document(p)))
   }
 
   /**
@@ -162,21 +121,19 @@ trait PersistenceDAO extends LazyLogging {
     * @tparam D is a ClioDocument type with a JSON Decoder
     * @return a Future Seq of ClioDocument
     */
-  def getAllSince[D <: ClioDocument: Decoder](
-    upsertId: UUID,
-    index: ElasticsearchIndex[D]
-  )(implicit ec: ExecutionContext): Future[Seq[D]] = {
+  def getAllSince[D <: ClioDocument: Decoder](upsertId: UUID,
+                                              index: ElasticsearchIndex[D])(
+    implicit ec: ExecutionContext,
+    materializer: Materializer
+  ): Future[Seq[D]] = {
     val rootDir = rootPath.resolve(index.rootDir)
     val suffix = s"/${upsertId}.json"
     Directory
       .walk(rootDir)
-      .filter(p => isParamsFile(p))
       .filter(_.toString.endsWith(suffix))
-      .runWith(Sink.seq)
-      .map(_.map(sinceId(rootDir, _)))
-      .map(Future.sequence(_))
+      .runWith(Sink.head)
+      .map(sinceId(rootDir, _))
       .flatMap(identity)
-      .map(_.flatMap(identity))
   }
 }
 

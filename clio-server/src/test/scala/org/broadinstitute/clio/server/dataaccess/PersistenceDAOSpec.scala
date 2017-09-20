@@ -1,17 +1,20 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentMock,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{DocumentMock, ElasticsearchIndex}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
 import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
 import org.scalatest.{AsyncFlatSpec, Matchers}
 import java.nio.file.Files
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+
 class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
   behavior of "PersistenceDAO"
+
+  private implicit val system = ActorSystem()
+  private implicit val materializer = ActorMaterializer()
 
   val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
 
@@ -62,12 +65,12 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
 
   it should "return metadata documents from GCS in order" in {
     val dao = new MemoryPersistenceDAO()
-    val half = 23
+    val half = 2
     val documents = (0L until (2L * half)).map(
       n =>
-      DocumentMock.default.copy(
-        mockKeyLong = n,
-        mockFilePath = Some(s"gs://document-mock-key-${n}")
+        DocumentMock.default.copy(
+          mockKeyLong = n,
+          mockFilePath = Some(s"gs://document-mock-key-${n}")
       )
     )
     documents.toSet.size should be(documents.size)
@@ -77,8 +80,8 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
       .initialize(index)
       .map(
         _ =>
-        documents
-          .map(document => dao.writeUpdate(document, index))
+          documents
+            .map(document => dao.writeUpdate(document, index))
       )
       .flatMap(_ => dao.getAllSince(expected.head.upsertId, index))
     result.flatMap(_.toVector should be(expected))
