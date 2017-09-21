@@ -5,15 +5,24 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
-
 import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
-import org.scalatest.{AsyncFlatSpec, Matchers}
-
+import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 import java.nio.file.Files
+import java.util.UUID
 
-class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
+import akka.testkit.TestKit
+
+class PersistenceDAOSpec
+    extends TestKit(ActorSystem("PeristenceDAOSpec"))
+    with AsyncFlatSpecLike
+    with BeforeAndAfterAll
+    with Matchers {
   behavior of "PersistenceDAO"
+
+  private implicit val materializer = ActorMaterializer()
 
   val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
 
@@ -60,5 +69,48 @@ class PersistenceDAOSpec extends AsyncFlatSpec with Matchers {
       }
       succeed
     }
+  }
+
+  it should "return metadata documents from GCS in order" in {
+    val dao = new MemoryPersistenceDAO()
+    val half = 23
+    val documents = (0L until (2L * half)).map(
+      n =>
+        DocumentMock.default.copy(
+          mockKeyLong = n,
+          mockFilePath = Some(s"gs://document-mock-key-${n}")
+      )
+    )
+    documents.toSet.size should be(documents.size)
+    documents.map(_.upsertId).toSet.size should be(documents.size)
+    val expected = documents.drop(half)
+    val result = dao
+      .initialize(index)
+      .map(
+        _ =>
+          documents
+            .map(document => dao.writeUpdate(document, index))
+      )
+      .flatMap(_ => dao.getAllSince(expected.head.upsertId, index))
+    result.flatMap(_.toVector should be(expected))
+  }
+
+  it should "fail unless upsertId is found exactly once" in {
+    val upsertId = UUID.randomUUID()
+    val dao = new MemoryPersistenceDAO()
+    for {
+      _ <- dao.initialize(index)
+      _ <- dao.writeUpdate(DocumentMock.default, index)
+      x <- recoverToExceptionIf[RuntimeException] {
+        dao.getAllSince(upsertId, index)
+      }
+    } yield {
+      x.getMessage should include(s" files end with /${upsertId}.json in ")
+    }
+  }
+
+  override def afterAll(): Unit = {
+    shutdown()
+    super.afterAll()
   }
 }

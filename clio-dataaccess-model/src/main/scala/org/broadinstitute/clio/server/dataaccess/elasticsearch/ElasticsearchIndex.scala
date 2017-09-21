@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import org.broadinstitute.clio.util.generic.FieldMapper
@@ -21,12 +22,18 @@ abstract class ElasticsearchIndex[Document] {
   lazy val rootDir: String = indexName.replaceAll("_", "-")
 
   /**
-    * The source-of-truth directory in which updates to this index should be persisted
-    * at this moment.
+    * Format the directory path for the indexed meta-data files.
+    */
+  lazy val dateTimeFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy/MM/dd")
+
+  /**
+    * The source-of-truth directory in which updates to this index
+    * should be persisted now.
     */
   def currentPersistenceDir: String = {
-    val now = OffsetDateTime.now()
-    s"$rootDir/${now.getYear}/${now.getMonthValue}/${now.getDayOfMonth}"
+    val now = OffsetDateTime.now().format(dateTimeFormatter)
+    s"$rootDir/$now"
   }
 
   /**

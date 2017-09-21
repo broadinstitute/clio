@@ -6,13 +6,18 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
-
 import com.sksamuel.elastic4s.Indexable
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.concurrent.{ExecutionContext, Future}
-
 import java.nio.file.{Files, Path}
+import java.util.UUID
+
+import akka.stream.Materializer
+import akka.stream.alpakka.file.scaladsl.Directory
+import akka.stream.scaladsl.Sink
+import io.circe.Decoder
+import io.circe.parser._
 
 /**
   * Persists metadata updates to a source of truth, allowing
@@ -78,6 +83,68 @@ trait PersistenceDAO extends LazyLogging {
       )
       logger.debug(s"Wrote document $document to ${written.toUri}")
     }
+
+  /**
+    * Return the `ClioDocument`s under `rootdir` upserted no earlier
+    * than `withId`.
+    *
+    * @param rootDir is path to a bucket of "params files"
+    * @param withId is the path of earliest "params file" to return
+    * @param ec is an `ExecutionContext`
+    * @tparam D is the type of `ClioDocument` expected under `rootDir`
+    * @return the `ClioDocument` at `withId` and all later ones
+    */
+  def sinceId[D <: ClioDocument: Decoder](rootDir: Path, withId: Path)(
+    implicit ec: ExecutionContext,
+    materializer: Materializer
+  ): Future[Seq[D]] = {
+    val before = (p: Path) => p.compareTo(withId) < 0
+    val document = (p: Path) => {
+      decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
+    }
+    Directory
+      .walk(rootDir)
+      .filter(!before(_))
+      .runWith(Sink.seq)
+      .map(_.sortBy(before))
+      .map(_.map(p => document(p)))
+  }
+
+  /**
+    * Return the GCS bucket metadata files for `index` upserted on or
+    * after `upsertId`.  Decode the files from JSON as `ClioDocument`s
+    * sorted by `upsertId`.
+    *
+    * @param upsertId of the last known upserted document
+    * @param index  to query against.
+    * @param ec is the implicit ExecutionContext
+    * @tparam D is a ClioDocument type with a JSON Decoder
+    * @return a Future Seq of ClioDocument
+    */
+  def getAllSince[D <: ClioDocument: Decoder](upsertId: UUID,
+                                              index: ElasticsearchIndex[D])(
+    implicit ec: ExecutionContext,
+    materializer: Materializer
+  ): Future[Seq[D]] = {
+    val rootDir = rootPath.resolve(index.rootDir)
+    val suffix = s"/${upsertId}.json"
+    val filesWithId = Directory
+      .walk(rootDir)
+      .filter(_.toString.endsWith(suffix))
+      .runWith(Sink.seq)
+    filesWithId
+      .map(paths => {
+        val count = paths.size
+        if (count == 1) {
+          sinceId[D](rootDir, paths.head)
+        } else {
+          throw new RuntimeException(
+            s"${count} files end with ${suffix} in ${rootDir.toString}"
+          )
+        }
+      })
+      .flatten
+  }
 }
 
 object PersistenceDAO {
