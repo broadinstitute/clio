@@ -54,4 +54,17 @@ trait SearchDAO {
     queryDefinition: QueryDefinition,
     index: ElasticsearchIndex[D]
   ): Future[Seq[D]]
+
+  /**
+    * Given an elastic search index, return the most recent document for that index.
+    *
+    * Document ordering is determined by the "upsert ID", which must be indexed field.
+    *
+    * @param index the elasticsearch index
+    * @tparam D the document type this index contains
+    * @return the most recent document for this index, if any
+    */
+  def getMostRecentDocument[D <: ClioDocument: HitReader](
+    index: ElasticsearchIndex[D]
+  ): Future[D]
 }

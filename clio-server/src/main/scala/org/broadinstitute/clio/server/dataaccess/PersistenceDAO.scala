@@ -6,18 +6,19 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
-import com.sksamuel.elastic4s.Indexable
-import com.typesafe.scalalogging.LazyLogging
-
-import scala.concurrent.{ExecutionContext, Future}
-import java.nio.file.{Files, Path}
-import java.util.UUID
 
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.Sink
+import com.sksamuel.elastic4s.Indexable
+import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder
 import io.circe.parser._
+
+import scala.concurrent.{ExecutionContext, Future}
+
+import java.nio.file.{Files, Path}
+import java.util.UUID
 
 /**
   * Persists metadata updates to a source of truth, allowing
@@ -85,7 +86,7 @@ trait PersistenceDAO extends LazyLogging {
     }
 
   /**
-    * Return the `ClioDocument`s under `rootdir` upserted no earlier
+    * Return the `ClioDocument`s under `rootdir` upserted later
     * than `withId`.
     *
     * @param rootDir is path to a bucket of "params files"
@@ -98,15 +99,15 @@ trait PersistenceDAO extends LazyLogging {
     implicit ec: ExecutionContext,
     materializer: Materializer
   ): Future[Seq[D]] = {
-    val before = (p: Path) => p.compareTo(withId) < 0
+    val after = (p: Path) => p.compareTo(withId) > 0
     val document = (p: Path) => {
       decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
     }
     Directory
       .walk(rootDir)
-      .filter(!before(_))
+      .filter(after(_))
       .runWith(Sink.seq)
-      .map(_.sortBy(before))
+      .map(_.sortBy(!after(_)))
       .map(_.map(p => document(p)))
   }
 

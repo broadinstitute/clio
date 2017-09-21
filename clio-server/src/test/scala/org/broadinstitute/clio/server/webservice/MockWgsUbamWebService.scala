@@ -7,11 +7,13 @@ import org.broadinstitute.clio.server.service.{
 }
 import org.broadinstitute.clio.server.{ClioApp, MockClioApp}
 
+import akka.stream.Materializer
+
 import scala.concurrent.ExecutionContext
 
 class MockWgsUbamWebService(
   app: ClioApp = MockClioApp()
-)(implicit executionContext: ExecutionContext)
+)(implicit executionContext: ExecutionContext, mat: Materializer)
     extends WgsUbamWebService {
   private val persistence = PersistenceService(app)
   private val search = SearchService(app)

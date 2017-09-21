@@ -33,4 +33,14 @@ class MemorySearchDAO extends MockSearchDAO {
     queryCalls += queryDefinition
     super.queryMetadata(queryDefinition, index)
   }
+
+  override def getMostRecentDocument[D <: ClioDocument: HitReader](
+    index: ElasticsearchIndex[D]
+  ): Future[D] = {
+    if (updateCalls.isEmpty) {
+      Future.failed(new RuntimeException("No documents have been inserted!"))
+    } else {
+      Future.successful(updateCalls.last._1.asInstanceOf[D])
+    }
+  }
 }

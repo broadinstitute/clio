@@ -62,16 +62,7 @@ class HttpElasticsearchDAO private[dataaccess] (
     searchResponse flatMap foldScroll(Seq.empty[D], searchDefinition.keepAlive)
   }
 
-  /**
-    * Given an elastic search index, return the most recent document for that index.
-    *
-    * Document ordering is determined by the "upsert ID", which must be indexed field.
-    *
-    * @param index the elasticsearch index
-    * @tparam D the document type this index contains
-    * @return the most recent document for this index, if any
-    */
-  def getMostRecentDocument[D <: ClioDocument: HitReader](
+  override def getMostRecentDocument[D <: ClioDocument: HitReader](
     index: ElasticsearchIndex[D]
   ): Future[D] = {
     val searchDefinition = search(index.indexName / index.indexType)

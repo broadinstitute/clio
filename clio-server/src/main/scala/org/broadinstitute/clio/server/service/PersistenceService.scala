@@ -8,7 +8,9 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 
-import com.sksamuel.elastic4s.Indexable
+import akka.stream.Materializer
+import com.sksamuel.elastic4s.{HitReader, Indexable}
+import io.circe.Decoder
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -21,11 +23,13 @@ import java.util.UUID
   * Updates are written to storage to serve as the system of record for Clio,
   * allowing for update playback during disaster recovery.
   */
-class PersistenceService private (persistenceDAO: PersistenceDAO,
-                                  searchDAO: SearchDAO) {
+class PersistenceService private (
+  persistenceDAO: PersistenceDAO,
+  searchDAO: SearchDAO
+)(implicit mat: Materializer) {
 
   /**
-    * Update-or-insert (upsert) metadata.
+    * Update-or-insert (upsert) metadata for a given key.
     *
     * @param transferKey      The DTO for the key.
     * @param transferMetadata The DTO for the metadata.
@@ -51,10 +55,54 @@ class PersistenceService private (persistenceDAO: PersistenceDAO,
       document.upsertId
     }
   }
+
+  /**
+    * Recover missing documents for a given Elasticsearch index
+    * from the source of truth.
+    *
+    * Returns the number of updates pulled & applied on success.
+    *
+    * Fails immediately if an update pulled from the source of
+    * truth fails to be applied to the search index.
+    */
+  def recoverMetadata[D <: ClioDocument: Indexable: HitReader: Decoder](
+    index: ElasticsearchIndex[D]
+  )(implicit ec: ExecutionContext): Future[Long] = {
+    for {
+      lastDocument <- searchDAO.getMostRecentDocument(index)
+      documents <- persistenceDAO.getAllSince(lastDocument.upsertId, index)
+      count <- updateAndCount(documents, index)
+    } yield {
+      count
+    }
+  }
+
+  /**
+    * Apply a sequence of partial documents to an Elasticsearch index,
+    * returning the total number of documents applied.
+    *
+    * Updates run serially, and short-circuit if applying any one
+    * update fails.
+    */
+  private def updateAndCount[D <: ClioDocument: Indexable](
+    documents: Seq[D],
+    index: ElasticsearchIndex[D]
+  )(implicit ec: ExecutionContext): Future[Long] = {
+    documents.foldLeft(Future.successful(0L)) {
+      case (countFut, document) => {
+        for {
+          count <- countFut
+          _ <- searchDAO.updateMetadata(document, index)
+        } yield {
+          count + 1
+        }
+      }
+    }
+  }
 }
 
 object PersistenceService {
-  def apply(app: ClioApp): PersistenceService = {
+  def apply(app: ClioApp)(implicit mat: Materializer): PersistenceService = {
     new PersistenceService(app.persistenceDAO, app.searchDAO)
   }
 }

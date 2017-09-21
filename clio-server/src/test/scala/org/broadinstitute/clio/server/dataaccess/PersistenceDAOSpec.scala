@@ -1,28 +1,20 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentMock,
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
+
 import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
-import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
+
 import java.nio.file.Files
 import java.util.UUID
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
-import akka.testkit.TestKit
-
-class PersistenceDAOSpec
-    extends TestKit(ActorSystem("PeristenceDAOSpec"))
-    with AsyncFlatSpecLike
-    with BeforeAndAfterAll
-    with Matchers {
+class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
   behavior of "PersistenceDAO"
-
-  private implicit val materializer = ActorMaterializer()
 
   val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
 
@@ -92,7 +84,7 @@ class PersistenceDAOSpec
             .map(document => dao.writeUpdate(document, index))
       )
       .flatMap(_ => dao.getAllSince(expected.head.upsertId, index))
-    result.flatMap(_.toVector should be(expected))
+    result.flatMap(_.toVector should be(expected.tail))
   }
 
   it should "fail unless upsertId is found exactly once" in {
