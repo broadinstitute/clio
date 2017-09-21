@@ -49,11 +49,9 @@ class ServerServiceSpec
     val app = MockClioApp(serverStatusDAO = statusDAO)
     val serverService = ServerService(app)
     for {
-      _ <- serverService.startup()
+      _ <- serverService.beginStartup()
     } yield {
-      statusDAO.setCalls should be(
-        Seq(ServerStatusInfo.Starting, ServerStatusInfo.Started)
-      )
+      statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
     }
   }
 
@@ -66,9 +64,7 @@ class ServerServiceSpec
     val serverService = ServerService(app)
 
     recoverToSucceededIf[Exception] {
-      serverService.startup()
-    }.map { _ =>
-      statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
+      serverService.beginStartup()
     }
   }
 
@@ -81,9 +77,7 @@ class ServerServiceSpec
     val serverService = ServerService(app)
 
     recoverToSucceededIf[Exception] {
-      serverService.startup()
-    }.map { _ =>
-      statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
+      serverService.beginStartup()
     }
   }
 

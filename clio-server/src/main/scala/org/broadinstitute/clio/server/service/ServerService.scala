@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
@@ -18,22 +17,30 @@ class ServerService private (
   httpServerDAO: HttpServerDAO,
   persistenceDAO: PersistenceDAO,
   searchDAO: SearchDAO
-)(implicit executionContext: ExecutionContext)
-    extends StrictLogging {
+)(implicit executionContext: ExecutionContext) {
 
   /**
-    * Kick off a startup, and return immediately.
+    * Kick off a startup, initializing all DAOs.
     */
-  def beginStartup(): Unit = {
-    val startupAttempt = startup()
-    startupAttempt.failed foreach { exception =>
-      logger.error(
-        s"Server failed to startup due to ${exception.getMessage}",
-        exception
+  def beginStartup(): Future[Unit] = {
+    for {
+      _ <- serverStatusDAO.setStatus(ServerStatusInfo.Starting)
+      _ <- persistenceDAO.initialize(
+        ElasticsearchIndex.WgsUbam,
+        ElasticsearchIndex.Gvcf
       )
-      shutdown()
-    }
-    ()
+      _ <- searchDAO.initialize()
+    } yield ()
+  }
+
+  /**
+    * Bind a port, and mark the server as ready to receive messages.
+    */
+  def completeStartup(): Future[Unit] = {
+    for {
+      _ <- httpServerDAO.startup()
+      _ <- serverStatusDAO.setStatus(ServerStatusInfo.Started)
+    } yield ()
   }
 
   /**
@@ -56,18 +63,6 @@ class ServerService private (
   def shutdownAndWait(): Unit = {
     shutdown()
     awaitShutdown()
-  }
-
-  private[service] def startup(): Future[Unit] = {
-    for {
-      _ <- serverStatusDAO.setStatus(ServerStatusInfo.Starting)
-      _ <- persistenceDAO.initialize(ElasticsearchIndex.WgsUbam)
-      _ <- persistenceDAO.initialize(ElasticsearchIndex.Gvcf)
-      _ <- searchDAO.initialize()
-      _ <- httpServerDAO.startup()
-      _ <- serverStatusDAO.setStatus(ServerStatusInfo.Started)
-      _ = logger.info("Server started")
-    } yield ()
   }
 
   private[service] def shutdown(): Future[Unit] = {
