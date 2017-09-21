@@ -65,6 +65,7 @@ lazy val clio = project
   */
 lazy val `clio-util` = project
   .settings(commonSettings)
+  .enablePlugins(ArtifactoryPublishingPlugin)
   .disablePlugins(AssemblyPlugin)
   .settings(libraryDependencies ++= Dependencies.UtilDependencies)
 
@@ -76,6 +77,7 @@ lazy val `clio-util` = project
 lazy val `clio-transfer-model` = project
   .dependsOn(`clio-util`)
   .settings(commonSettings)
+  .enablePlugins(ArtifactoryPublishingPlugin)
   .disablePlugins(AssemblyPlugin)
   .settings(libraryDependencies ++= Dependencies.TransferModelDependencies)
 
@@ -113,6 +115,7 @@ lazy val `clio-server` = project
   */
 lazy val `clio-client` = project
   .dependsOn(`clio-transfer-model`)
+  .enablePlugins(ArtifactoryPublishingPlugin)
   .settings(libraryDependencies ++= Dependencies.ClientDependencies)
   .settings(commonSettings)
   .settings(commonTestDockerSettings)
