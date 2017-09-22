@@ -56,6 +56,8 @@ class PersistenceService private (
     }
   }
 
+  private val countZero = Future.successful(0L)
+
   /**
     * Recover missing documents for a given Elasticsearch index
     * from the source of truth.
@@ -68,12 +70,15 @@ class PersistenceService private (
   def recoverMetadata[D <: ClioDocument: Indexable: HitReader: Decoder](
     index: ElasticsearchIndex[D]
   )(implicit ec: ExecutionContext): Future[Long] = {
-    for {
-      lastDocument <- searchDAO.getMostRecentDocument(index)
-      documents <- persistenceDAO.getAllSince(lastDocument.upsertId, index)
-      count <- updateAndCount(documents, index)
-    } yield {
-      count
+    searchDAO.getMostRecentDocument(index).flatMap { maybeLastDocument =>
+      maybeLastDocument.fold(countZero) { lastDocument =>
+        for {
+          documents <- persistenceDAO.getAllSince(lastDocument.upsertId, index)
+          count <- updateAndCount(documents, index)
+        } yield {
+          count
+        }
+      }
     }
   }
 
@@ -88,7 +93,7 @@ class PersistenceService private (
     documents: Seq[D],
     index: ElasticsearchIndex[D]
   )(implicit ec: ExecutionContext): Future[Long] = {
-    documents.foldLeft(Future.successful(0L)) {
+    documents.foldLeft(countZero) {
       case (countFut, document) => {
         for {
           count <- countFut

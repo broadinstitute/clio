@@ -31,5 +31,5 @@ class FailingSearchDAO extends SearchDAO {
 
   override def getMostRecentDocument[D <: ClioDocument: HitReader](
     index: ElasticsearchIndex[D]
-  ): Future[D] = failure
+  ): Future[Option[D]] = failure
 }

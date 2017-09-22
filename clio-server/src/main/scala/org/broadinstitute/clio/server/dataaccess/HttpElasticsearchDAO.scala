@@ -64,20 +64,14 @@ class HttpElasticsearchDAO private[dataaccess] (
 
   override def getMostRecentDocument[D <: ClioDocument: HitReader](
     index: ElasticsearchIndex[D]
-  ): Future[D] = {
+  ): Future[Option[D]] = {
     val searchDefinition = search(index.indexName / index.indexType)
       .size(1)
       .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
     for {
       searchResponse <- httpClient execute searchDefinition
     } yield {
-      searchResponse.to[D] match {
-        case Seq(document) => document
-        case _ =>
-          throw new RuntimeException(
-            s"Could not get most recent document for index ${index.indexName}, found ${searchResponse.hits.total} documents."
-          )
-      }
+      searchResponse.to[D].headOption
     }
   }
 

@@ -66,5 +66,5 @@ trait SearchDAO {
     */
   def getMostRecentDocument[D <: ClioDocument: HitReader](
     index: ElasticsearchIndex[D]
-  ): Future[D]
+  ): Future[Option[D]]
 }
