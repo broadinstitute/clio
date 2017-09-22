@@ -10,6 +10,8 @@ import org.broadinstitute.clio.status.model.ServerStatusInfo
 
 import org.scalatest.{AsyncFlatSpecLike, Matchers}
 
+import scala.concurrent.Future
+
 class ServerServiceSpec
     extends TestKitSuite("ServerServiceSpec")
     with AsyncFlatSpecLike
@@ -44,14 +46,20 @@ class ServerServiceSpec
     succeed
   }
 
+  def startup(serverService: ServerService): Future[Unit] =
+    for {
+      _ <- serverService.beginStartup()
+      _ <- serverService.completeStartup()
+    } yield ()
+
   it should "startup" in {
     val statusDAO = new MemoryServerStatusDAO()
     val app = MockClioApp(serverStatusDAO = statusDAO)
     val serverService = ServerService(app)
-    for {
-      _ <- serverService.beginStartup()
-    } yield {
-      statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
+    startup(serverService).map { _ =>
+      statusDAO.setCalls should be(
+        Seq(ServerStatusInfo.Starting, ServerStatusInfo.Started)
+      )
     }
   }
 
@@ -64,7 +72,9 @@ class ServerServiceSpec
     val serverService = ServerService(app)
 
     recoverToSucceededIf[Exception] {
-      serverService.beginStartup()
+      startup(serverService)
+    }.map { _ =>
+      statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
     }
   }
 
@@ -77,7 +87,9 @@ class ServerServiceSpec
     val serverService = ServerService(app)
 
     recoverToSucceededIf[Exception] {
-      serverService.beginStartup()
+      startup(serverService)
+    }.map { _ =>
+      statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
     }
   }
 
