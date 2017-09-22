@@ -133,18 +133,14 @@ trait PersistenceDAO extends LazyLogging {
       .walk(rootDir)
       .filter(_.toString.endsWith(suffix))
       .runWith(Sink.seq)
-    filesWithId
-      .map(paths => {
-        val count = paths.size
-        if (count == 1) {
-          sinceId[D](rootDir, paths.head)
-        } else {
-          throw new RuntimeException(
-            s"${count} files end with ${suffix} in ${rootDir.toString}"
-          )
-        }
-      })
-      .flatten
+    filesWithId.map {
+      case Seq()     => Future.successful(Seq.empty)
+      case Seq(path) => sinceId[D](rootDir, path)
+      case paths =>
+        throw new RuntimeException(
+          s"${paths.size} files end with $suffix in ${rootDir.toUri}"
+        )
+    }.flatten
   }
 }
 

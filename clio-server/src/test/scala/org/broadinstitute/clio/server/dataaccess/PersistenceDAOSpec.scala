@@ -7,11 +7,12 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
 
+import com.sksamuel.elastic4s.Indexable
 import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
 
 import java.nio.file.Files
-import java.util.UUID
+import java.time.OffsetDateTime
 
 class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
   behavior of "PersistenceDAO"
@@ -87,17 +88,31 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
     result.flatMap(_.toVector should be(expected.tail))
   }
 
-  it should "fail unless upsertId is found exactly once" in {
-    val upsertId = UUID.randomUUID()
+  it should "fail if upsertId is found more than once" in {
+    val document = DocumentMock.default
+    val upsertId = document.upsertId
     val dao = new MemoryPersistenceDAO()
+
+    val now = OffsetDateTime.now()
+    val yesterday = now.minusDays(1L)
+    val filename = s"${document.upsertId}.json"
+    val indexable = implicitly[Indexable[DocumentMock]]
+
     for {
       _ <- dao.initialize(index)
-      _ <- dao.writeUpdate(DocumentMock.default, index)
+      _ = Seq(yesterday, now).map { dt =>
+        val dir = Files.createDirectories(
+          dao.rootPath.resolve(
+            s"${index.rootDir}/${dt.format(ElasticsearchIndex.dateTimeFormatter)}"
+          )
+        )
+        Files.write(dir.resolve(filename), indexable.json(document).getBytes)
+      }
       x <- recoverToExceptionIf[RuntimeException] {
         dao.getAllSince(upsertId, index)
       }
     } yield {
-      x.getMessage should include(s" files end with /${upsertId}.json in ")
+      x.getMessage should include(s" files end with /$upsertId.json in ")
     }
   }
 
