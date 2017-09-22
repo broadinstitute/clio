@@ -49,7 +49,7 @@ object Dependencies {
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
     "com.google.cloud" % "google-cloud-nio" % GoogleCloudNioVersion,
     "com.lightbend.akka" %% "akka-stream-alpakka-file" % AlpakkaVersion,
-    "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,
+    "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
@@ -143,6 +143,7 @@ object Dependencies {
 
   val DataaccessModelMainDependencies: Seq[ModuleID] = Seq(
     "com.fasterxml.uuid" % "java-uuid-generator" % UUIDVersion,
+    "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion
   )
   private val DataaccessModelTestDependencies: Seq[ModuleID] = Seq(
@@ -159,6 +160,8 @@ object Dependencies {
     "com.fasterxml.uuid" % "java-uuid-generator" % UUIDVersion,
     "com.google.cloud" % "google-cloud-nio" % GoogleCloudNioVersion,
     "com.lightbend.akka" %% "akka-stream-alpakka-file" % AlpakkaVersion,
+    "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
+    "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,

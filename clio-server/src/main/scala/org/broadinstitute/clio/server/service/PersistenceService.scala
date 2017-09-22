@@ -1,5 +1,10 @@
 package org.broadinstitute.clio.server.service
 
+import java.util.UUID
+
+import akka.stream.Materializer
+import com.sksamuel.elastic4s.{HitReader, Indexable}
+import io.circe.Decoder
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
@@ -8,13 +13,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 
-import akka.stream.Materializer
-import com.sksamuel.elastic4s.{HitReader, Indexable}
-import io.circe.Decoder
-
 import scala.concurrent.{ExecutionContext, Future}
-
-import java.util.UUID
 
 /**
   * Service responsible for persisting metadata updates first by
@@ -56,8 +55,6 @@ class PersistenceService private (
     }
   }
 
-  private val countZero = Future.successful(0L)
-
   /**
     * Recover missing documents for a given Elasticsearch index
     * from the source of truth.
@@ -70,15 +67,15 @@ class PersistenceService private (
   def recoverMetadata[D <: ClioDocument: Indexable: HitReader: Decoder](
     index: ElasticsearchIndex[D]
   )(implicit ec: ExecutionContext): Future[Long] = {
-    searchDAO.getMostRecentDocument(index).flatMap { maybeLastDocument =>
-      maybeLastDocument.fold(countZero) { lastDocument =>
-        for {
-          documents <- persistenceDAO.getAllSince(lastDocument.upsertId, index)
-          count <- updateAndCount(documents, index)
-        } yield {
-          count
-        }
-      }
+    for {
+      maybeLastDocument <- searchDAO.getMostRecentDocument(index)
+      documents <- persistenceDAO.getAllSince(
+        maybeLastDocument.map(_.upsertId),
+        index
+      )
+      count <- updateAndCount(documents, index)
+    } yield {
+      count
     }
   }
 
@@ -93,7 +90,7 @@ class PersistenceService private (
     documents: Seq[D],
     index: ElasticsearchIndex[D]
   )(implicit ec: ExecutionContext): Future[Long] = {
-    documents.foldLeft(countZero) {
+    documents.foldLeft(Future.successful(0L)) {
       case (countFut, document) => {
         for {
           count <- countFut

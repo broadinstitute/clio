@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.integrationtest
 
-import org.broadinstitute.clio.client.webclient.ClioWebClient
+import java.io.File
+import java.nio.file.{FileSystems, Path, Paths}
 
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
@@ -8,12 +9,11 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.file.scaladsl.FileTailSource
 import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
+import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.integrationtest.tests.RecoveryTests
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
-import java.io.File
-import java.nio.file.{FileSystems, Path, Paths}
 
 /**
   * An integration spec that spins up a Clio server instance and
@@ -24,10 +24,9 @@ import java.nio.file.{FileSystems, Path, Paths}
   * docker-compose file when forking to run integration tests.
   * @see `ClioIntegrationTestSettings` in the build
   */
-class DockerIntegrationSpec
+abstract class DockerIntegrationSpec
     extends BaseIntegrationSpec("Clio in Docker")
-    with ForAllTestContainer
-    with IntegrationSuite {
+    with ForAllTestContainer {
 
   // Docker-compose appends "_<instance #>" to service names.
   private val clioFullName = s"${DockerIntegrationSpec.clioServiceName}_1"
@@ -86,7 +85,11 @@ class DockerIntegrationSpec
     )
     val logStream = clioLogLines
       .map { line =>
-        if (!line.contains("DEBUG")) println(line)
+        if (line.contains("INFO") ||
+            line.contains("WARN") ||
+            line.contains("ERROR")) {
+          println(line)
+        }
         line
       }
       .takeWhile(line => !line.contains(DockerIntegrationSpec.clioReadyMessage))
@@ -96,17 +99,25 @@ class DockerIntegrationSpec
   }
 }
 
-/*
- * Constants for setting up / connecting into the docker-compose environment.
- *
- * NOTE: These values depend on:
- *
- *   1. The name / contents of our compose file,
- *   2. The default ports of our Dockerized services,
- *   3. The expected startup messages of clio-server.
- *
- * If you change any of those things, you need to update these constants to match.
- */
+/** Dockerized version of the integration tests that also run against our deployed Clios. */
+class CoreDockerIntegrationSpec
+    extends DockerIntegrationSpec
+    with IntegrationSuite
+
+/** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
+class RecoveryIntegrationSpec extends DockerIntegrationSpec with RecoveryTests
+
+/**
+  * Container for constants for setting up / connecting into the docker-compose environment.
+  *
+  * NOTE: These values depend on:
+  *
+  *   1. The name / contents of our compose file,
+  *   2. The default ports of our Dockerized services,
+  *   3. The expected startup messages of clio-server.
+  *
+  * If you change any of those things, you need to update these constants to match.
+  */
 object DockerIntegrationSpec {
 
   /**
