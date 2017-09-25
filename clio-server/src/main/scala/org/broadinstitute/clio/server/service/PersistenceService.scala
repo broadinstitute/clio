@@ -1,5 +1,8 @@
 package org.broadinstitute.clio.server.service
 
+import java.util.UUID
+
+import com.sksamuel.elastic4s.Indexable
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
@@ -8,11 +11,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 
-import com.sksamuel.elastic4s.Indexable
-
 import scala.concurrent.{ExecutionContext, Future}
-
-import java.util.UUID
 
 /**
   * Service responsible for persisting metadata updates first by
@@ -25,7 +24,7 @@ class PersistenceService private (persistenceDAO: PersistenceDAO,
                                   searchDAO: SearchDAO) {
 
   /**
-    * Update-or-insert (upsert) metadata.
+    * Update-or-insert (upsert) metadata for a given key.
     *
     * @param transferKey      The DTO for the key.
     * @param transferMetadata The DTO for the metadata.

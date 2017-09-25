@@ -7,6 +7,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
   ElasticsearchQueryMapper
 }
+
 import com.sksamuel.elastic4s.HitReader
 
 import scala.concurrent.{ExecutionContext, Future}

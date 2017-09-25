@@ -22,17 +22,11 @@ abstract class ElasticsearchIndex[Document] {
   lazy val rootDir: String = indexName.replaceAll("_", "-")
 
   /**
-    * Format the directory path for the indexed meta-data files.
-    */
-  lazy val dateTimeFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy/MM/dd")
-
-  /**
     * The source-of-truth directory in which updates to this index
     * should be persisted now.
     */
   def currentPersistenceDir: String = {
-    val now = OffsetDateTime.now().format(dateTimeFormatter)
+    val now = OffsetDateTime.now().format(ElasticsearchIndex.dateTimeFormatter)
     s"$rootDir/$now"
   }
 
@@ -52,6 +46,12 @@ object ElasticsearchIndex {
 
   val Gvcf: ElasticsearchIndex[DocumentGvcf] =
     indexDocument[DocumentGvcf]
+
+  /**
+    * Format the directory path for the indexed meta-data files.
+    */
+  lazy val dateTimeFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
   /**
     * Creates an index using shapeless and reflection.

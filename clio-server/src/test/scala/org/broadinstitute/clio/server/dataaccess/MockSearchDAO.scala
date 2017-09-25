@@ -36,4 +36,11 @@ class MockSearchDAO extends SearchDAO {
   ): Future[Seq[D]] = {
     Future.successful(Seq.empty[D])
   }
+
+  // Not implemented on purpose; there's nothing sensible to return here.
+  override def getMostRecentDocument[D <: ClioDocument: HitReader](
+    index: ElasticsearchIndex[D]
+  ): Future[Option[D]] = {
+    Future.successful(None)
+  }
 }

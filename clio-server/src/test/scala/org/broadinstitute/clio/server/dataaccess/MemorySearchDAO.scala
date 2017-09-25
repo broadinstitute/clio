@@ -33,4 +33,10 @@ class MemorySearchDAO extends MockSearchDAO {
     queryCalls += queryDefinition
     super.queryMetadata(queryDefinition, index)
   }
+
+  override def getMostRecentDocument[D <: ClioDocument: HitReader](
+    index: ElasticsearchIndex[D]
+  ): Future[Option[D]] = {
+    Future.successful(updateCalls.lastOption.map(_._1.asInstanceOf[D]))
+  }
 }

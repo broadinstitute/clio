@@ -130,10 +130,10 @@ class HttpElasticsearchDAOSpec
         documents.map(httpElasticsearchDAO.updateMetadata(_, index))
       )
       document <- httpElasticsearchDAO.getMostRecentDocument(index)
-    } yield document should be(documents.last)
+    } yield document should be(documents.lastOption)
   }
 
-  it should "throw an exception if no documents exist" in {
+  it should "not throw an exception if no documents exist" in {
     import HttpElasticsearchDAOSpec._
     import com.sksamuel.elastic4s.circe._
     import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
@@ -144,11 +144,10 @@ class HttpElasticsearchDAOSpec
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
-      exception <- recoverToExceptionIf[Exception] {
-        httpElasticsearchDAO.getMostRecentDocument(index)
-      }
-    } yield
-      exception.getMessage should include("Could not get most recent document")
+      res <- httpElasticsearchDAO.getMostRecentDocument(index)
+    } yield {
+      res should be(None)
+    }
   }
 
   case class City(name: String,
