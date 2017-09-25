@@ -4,8 +4,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveGvcf}
-import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.util.GvcfUtil._
+import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferGvcfV1Metadata,
@@ -18,7 +17,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
 
-  private val prettyKey = moveGvcfCommand.transferGvcfV1Key.prettyKey
+  private val prettyKey =
+    ClassUtil.formatFields(moveGvcfCommand.transferGvcfV1Key)
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,

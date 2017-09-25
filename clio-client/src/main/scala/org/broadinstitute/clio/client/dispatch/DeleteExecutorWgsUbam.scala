@@ -1,8 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
 import org.broadinstitute.clio.client.commands.DeleteWgsUbam
-import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.util.WgsUbamUtil._
+import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
@@ -11,7 +10,6 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
-
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
@@ -119,7 +117,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
       wgsUbam.libraryName,
       wgsUbam.location
     )
-    val prettyKey = key.prettyKey
+    val prettyKey = ClassUtil.formatFields(key)
 
     def addNote(note: String): String = {
       wgsUbam.notes
@@ -186,7 +184,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
 
-    val prettyKey = key.prettyKey
+    val prettyKey = ClassUtil.formatFields(key)
 
     logger.info(s"Deleting wgs-ubam for $prettyKey in Clio.")
     webClient

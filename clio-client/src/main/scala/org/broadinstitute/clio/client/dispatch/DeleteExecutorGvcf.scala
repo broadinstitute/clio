@@ -3,8 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.commands.DeleteGvcf
-import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.util.GvcfUtil._
+import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferGvcfV1Key,
@@ -115,7 +114,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
       gvcf.sampleAlias,
       gvcf.version
     )
-    val prettyKey = key.prettyKey
+    val prettyKey = ClassUtil.formatFields(key)
 
     def addNote(note: String): String = {
       gvcf.notes
@@ -181,7 +180,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
 
-    val prettyKey = key.prettyKey
+    val prettyKey = ClassUtil.formatFields(key)
 
     logger.info(s"Deleting gvcf for $prettyKey in Clio.")
     webClient
