@@ -1,21 +1,17 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.{
-  FailingPersistenceDAO,
-  FailingSearchDAO,
-  MemoryServerStatusDAO
+import com.sksamuel.elastic4s.circe._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  DocumentMock,
+  Elastic4sAutoDerivation
 }
+import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.status.model.ServerStatusInfo
 
-import org.scalatest.{AsyncFlatSpecLike, Matchers}
-
 import scala.concurrent.Future
 
-class ServerServiceSpec
-    extends TestKitSuite("ServerServiceSpec")
-    with AsyncFlatSpecLike
-    with Matchers {
+class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
   behavior of "ServerService"
 
   it should "beginStartup" in {
@@ -46,17 +42,13 @@ class ServerServiceSpec
     succeed
   }
 
-  def startup(serverService: ServerService): Future[Unit] =
-    for {
-      _ <- serverService.beginStartup()
-      _ <- serverService.completeStartup()
-    } yield ()
-
   it should "startup" in {
     val statusDAO = new MemoryServerStatusDAO()
-    val app = MockClioApp(serverStatusDAO = statusDAO)
+    val persistenceDAO = new MemoryPersistenceDAO()
+    val app =
+      MockClioApp(serverStatusDAO = statusDAO, persistenceDAO = persistenceDAO)
     val serverService = ServerService(app)
-    startup(serverService).map { _ =>
+    serverService.startup().map { _ =>
       statusDAO.setCalls should be(
         Seq(ServerStatusInfo.Starting, ServerStatusInfo.Started)
       )
@@ -72,7 +64,7 @@ class ServerServiceSpec
     val serverService = ServerService(app)
 
     recoverToSucceededIf[Exception] {
-      startup(serverService)
+      serverService.startup()
     }.map { _ =>
       statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
     }
@@ -87,9 +79,42 @@ class ServerServiceSpec
     val serverService = ServerService(app)
 
     recoverToSucceededIf[Exception] {
-      startup(serverService)
+      serverService.startup()
     }.map { _ =>
       statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
+    }
+  }
+
+  it should "recover metadata from storage" in {
+    import Elastic4sAutoDerivation._
+
+    val persistenceDAO = new MemoryPersistenceDAO()
+    val searchDAO = new MemorySearchDAO()
+    val app =
+      MockClioApp(persistenceDAO = persistenceDAO, searchDAO = searchDAO)
+
+    val numDocs = 1000
+    val initInSearch = numDocs / 2
+
+    val serverService = ServerService(app)
+    val initStoredDocuments = Seq.fill(numDocs)(DocumentMock.default)
+    val initSearchDocuments = initStoredDocuments.take(initInSearch)
+
+    for {
+      _ <- persistenceDAO.initialize(DocumentMock.index)
+      _ <- Future.sequence(
+        initStoredDocuments
+          .map(persistenceDAO.writeUpdate(_, DocumentMock.index))
+      )
+      _ <- Future.sequence(
+        initSearchDocuments.map(searchDAO.updateMetadata(_, DocumentMock.index))
+      )
+      numRestored <- serverService.recoverMetadata(DocumentMock.index)
+    } yield {
+      numRestored should be(numDocs - initInSearch)
+      searchDAO.updateCalls should be(
+        initStoredDocuments.map((_, DocumentMock.index))
+      )
     }
   }
 

@@ -58,7 +58,7 @@ trait SearchDAO {
   /**
     * Given an elastic search index, return the most recent document for that index.
     *
-    * Document ordering is determined by the "upsert ID", which must be indexed field.
+    * Document ordering is determined by the "upsert ID", which must be an indexed field.
     *
     * @param index the elasticsearch index
     * @tparam D the document type this index contains

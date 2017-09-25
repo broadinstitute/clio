@@ -1,25 +1,23 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
+import com.sksamuel.elastic4s.circe._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import Elastic4sAutoDerivation._
 import org.broadinstitute.clio.server.dataaccess.{
   FailingPersistenceDAO,
   MemoryPersistenceDAO,
   MemorySearchDAO
 }
+import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata
 }
 import org.broadinstitute.clio.util.model.Location
 
-import com.sksamuel.elastic4s.circe._
-
-import scala.concurrent.Future
-
 class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
   behavior of "PersistenceService"
+
+  import Elastic4sAutoDerivation._
 
   val mockKey = TransferWgsUbamV1Key("barcode", 1, "library", Location.OnPrem)
   val mockMetadata = TransferWgsUbamV1Metadata()
@@ -66,36 +64,6 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       )
     }.map { _ =>
       searchDAO.updateCalls should be(empty)
-    }
-  }
-
-  it should "recover metadata from storage" in {
-    val persistenceDAO = new MemoryPersistenceDAO()
-    val searchDAO = new MemorySearchDAO()
-    val app =
-      MockClioApp(persistenceDAO = persistenceDAO, searchDAO = searchDAO)
-
-    val numDocs = 1000
-    val initInSearch = numDocs / 2
-
-    val persistenceService = PersistenceService(app)
-    val initStoredDocuments = Seq.fill(numDocs)(DocumentMock.default)
-    val initSearchDocuments = initStoredDocuments.take(initInSearch)
-
-    for {
-      _ <- Future.sequence(
-        initStoredDocuments
-          .map(persistenceDAO.writeUpdate(_, DocumentMock.index))
-      )
-      _ <- Future.sequence(
-        initSearchDocuments.map(searchDAO.updateMetadata(_, DocumentMock.index))
-      )
-      numRestored <- persistenceService.recoverMetadata(DocumentMock.index)
-    } yield {
-      numRestored should be(numDocs - initInSearch)
-      searchDAO.updateCalls should be(
-        initStoredDocuments.map((_, DocumentMock.index))
-      )
     }
   }
 }

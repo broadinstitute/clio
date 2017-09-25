@@ -10,12 +10,7 @@ import com.sksamuel.elastic4s.circe._
 import io.circe.Encoder
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentGvcf,
-  DocumentWgsUbam,
-  Elastic4sAutoDerivation,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
 import org.broadinstitute.clio.transfer.model.{
   TransferGvcfV1QueryOutput,
@@ -30,10 +25,10 @@ import scala.util.Random
 trait RecoveryTests extends ForAllTestContainer {
   self: BaseIntegrationSpec =>
 
-  val documentCount = 10
+  val documentCount = 50
   val location = Location.GCP
 
-  val wgsUbams = Seq.fill(documentCount) {
+  val storedUbams = Seq.fill(documentCount) {
     val flowcellBarcode = s"flowcell$randomId"
     val lane = Random.nextInt()
     val libraryName = s"library$randomId"
@@ -48,7 +43,7 @@ trait RecoveryTests extends ForAllTestContainer {
       documentStatus = Some(DocumentStatus.Normal)
     )
   }
-  val gvcfs = Seq.fill(documentCount) {
+  val storedGvcfs = Seq.fill(documentCount) {
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
     val version = Random.nextInt()
@@ -64,77 +59,57 @@ trait RecoveryTests extends ForAllTestContainer {
     )
   }
 
+  // Simulate spreading the docs over time.
+  val daySpread = 10L
+  val today: OffsetDateTime = OffsetDateTime.now()
+  val earliest: OffsetDateTime = today.minusDays(daySpread)
+
+  def writeDocuments[D <: ClioDocument](
+    documents: Seq[D],
+    index: ElasticsearchIndex[D]
+  )(implicit encoder: Encoder[D]): Unit = {
+    val indexable =
+      indexableWithCirce[D](encoder, Elastic4sAutoDerivation.implicitEncoder)
+
+    documents.zipWithIndex.foreach {
+      case (doc, i) => {
+        val dateDir = earliest
+          .plusDays(i.toLong / (documentCount.toLong / daySpread))
+          .format(ElasticsearchIndex.dateTimeFormatter)
+
+        val writeDir = Files.createDirectories(
+          rootPersistenceDir.resolve(s"${index.rootDir}/$dateDir")
+        )
+
+        val _ = Files.write(
+          writeDir.resolve(s"${doc.upsertId}.json"),
+          indexable.json(doc).getBytes
+        )
+      }
+    }
+  }
+
   /**
     * Before starting any containers, we write a bunch of
     * documents to local storage, so we can check that Clio
     * recovers them properly on startup.
     */
   abstract override def run(testName: Option[String], args: Args): Status = {
-
-    // Simulate spreading the docs over time.
-    val daySpread = 10L
-    val now = OffsetDateTime.now()
-    val earliest = now.minusDays(daySpread)
-
-    val ubamIndexable = indexableWithCirce[DocumentWgsUbam](
-      implicitly[Encoder[DocumentWgsUbam]],
-      Elastic4sAutoDerivation.implicitEncoder
-    )
-    val gvcfIndexable = indexableWithCirce[DocumentGvcf](
-      implicitly[Encoder[DocumentGvcf]],
-      Elastic4sAutoDerivation.implicitEncoder
-    )
-
-    println("Cleaning local persistence directory")
-
+    logger.warn("Cleaning local persistence directory")
     Files
       .walk(rootPersistenceDir)
       .sorted(Comparator.reverseOrder())
       .forEach(f => Files.delete(f))
     Files.createDirectories(rootPersistenceDir)
 
-    println("Writing documents to local persistence directory")
-
-    wgsUbams.zipWithIndex.foreach {
-      case (doc, i) => {
-        val dateDir = earliest
-          .plusDays(i.toLong / (documentCount.toLong / daySpread))
-          .format(ElasticsearchIndex.dateTimeFormatter)
-
-        val writeDir = Files.createDirectories(
-          rootPersistenceDir
-            .resolve(s"${ElasticsearchIndex.WgsUbam.rootDir}/$dateDir")
-        )
-
-        val _ = Files.write(
-          writeDir.resolve(s"${doc.upsertId}.json"),
-          ubamIndexable.json(doc).getBytes
-        )
-      }
-    }
-
-    gvcfs.zipWithIndex.foreach {
-      case (doc, i) => {
-        val dateDir = earliest
-          .plusDays(i.toLong / (documentCount.toLong / daySpread))
-          .format(ElasticsearchIndex.dateTimeFormatter)
-
-        val writeDir = Files.createDirectories(
-          rootPersistenceDir
-            .resolve(s"${ElasticsearchIndex.Gvcf.rootDir}/$dateDir")
-        )
-
-        val _ = Files.write(
-          writeDir.resolve(s"${doc.upsertId}.json"),
-          gvcfIndexable.json(doc).getBytes
-        )
-      }
-    }
+    logger.info("Writing documents to local persistence directory")
+    writeDocuments(storedUbams, ElasticsearchIndex.WgsUbam)
+    writeDocuments(storedGvcfs, ElasticsearchIndex.Gvcf)
 
     super.run(testName, args)
   }
 
-  it should "recover metadata on startup" in {
+  it should "recover wgs-ubam metadata on startup" in {
     for {
       ubamQuery <- runClient(
         ClioCommand.queryWgsUbamName,
@@ -142,6 +117,16 @@ trait RecoveryTests extends ForAllTestContainer {
         location.entryName
       )
       ubams <- Unmarshal(ubamQuery).to[Seq[TransferWgsUbamV1QueryOutput]]
+    } yield {
+      ubams should have length documentCount.toLong
+      ubams.map(_.ubamPath) should contain theSameElementsAs storedUbams.map(
+        _.ubamPath
+      )
+    }
+  }
+
+  it should "recover gvcf metadata on startup" in {
+    for {
       gvcfQuery <- runClient(
         ClioCommand.queryGvcfName,
         "--location",
@@ -149,8 +134,10 @@ trait RecoveryTests extends ForAllTestContainer {
       )
       gvcfs <- Unmarshal(gvcfQuery).to[Seq[TransferGvcfV1QueryOutput]]
     } yield {
-      ubams should have length documentCount.toLong
       gvcfs should have length documentCount.toLong
+      gvcfs.map(_.gvcfPath) should contain theSameElementsAs gvcfs.map(
+        _.gvcfPath
+      )
     }
   }
 }

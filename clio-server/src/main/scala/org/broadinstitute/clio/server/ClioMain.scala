@@ -1,10 +1,9 @@
 package org.broadinstitute.clio.server
 
-import com.typesafe.scalalogging.LazyLogging
-
-object ClioMain extends LazyLogging {
+object ClioMain {
   def main(args: Array[String]): Unit = {
     sys addShutdownHook ClioServer.shutdownAndWait()
-    ClioServer.run()
+    ClioServer.beginStartup()
+    ClioServer.awaitShutdownInf()
   }
 }

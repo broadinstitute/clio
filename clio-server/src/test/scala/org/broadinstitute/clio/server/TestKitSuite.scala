@@ -16,6 +16,10 @@ abstract class TestKitSuite(actorSystemName: String)
     with Matchers
     with BeforeAndAfterAll {
 
+  /**
+    * Most Akka-streams APIs require an implicit Materializer, so we provide
+    * one here tied to the ActorSystem managed by the TestKit for convenience.
+    */
   protected implicit val materializer: Materializer = ActorMaterializer()
 
   override protected def afterAll(): Unit = {

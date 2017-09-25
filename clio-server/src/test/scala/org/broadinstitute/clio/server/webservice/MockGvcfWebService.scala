@@ -7,13 +7,11 @@ import org.broadinstitute.clio.server.service.{
 }
 import org.broadinstitute.clio.server.{ClioApp, MockClioApp}
 
-import akka.stream.Materializer
-
 import scala.concurrent.ExecutionContext
 
 class MockGvcfWebService(
   app: ClioApp = MockClioApp()
-)(implicit executionContext: ExecutionContext, mat: Materializer)
+)(implicit executionContext: ExecutionContext)
     extends GvcfWebService {
   private val persistence = PersistenceService(app)
   private val search = SearchService(app)
