@@ -18,8 +18,14 @@ abstract class ElasticsearchIndex[Document] {
   /** The name of the index. */
   def indexName: String
 
-  /** The root directory to use when persisting updates of this index to storage. */
-  lazy val rootDir: String = indexName.replaceAll("_", "-")
+  /**
+    * The root directory to use when persisting updates of this index to storage.
+    *
+    * NOTE: It's required that this end with '/'. On local disk it's a meaningless
+    * addition, but in GCS's filesystem adapter it's the only indication that this
+    * should be treated as a directory, not a file.
+    */
+  lazy val rootDir: String = indexName.replaceAll("_", "-") + "/"
 
   /**
     * The source-of-truth directory in which updates to this index
@@ -27,7 +33,7 @@ abstract class ElasticsearchIndex[Document] {
     */
   def currentPersistenceDir: String = {
     val now = OffsetDateTime.now().format(ElasticsearchIndex.dateTimeFormatter)
-    s"$rootDir/$now"
+    s"$rootDir$now/"
   }
 
   /**
