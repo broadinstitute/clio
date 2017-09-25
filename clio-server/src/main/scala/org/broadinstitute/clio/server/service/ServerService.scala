@@ -71,6 +71,9 @@ class ServerService private (
              * ensuring the order of updates is preserved.
              */
             _ <- accFuture
+            _ = logger.debug(
+              s"Recovering document with ID ${document.upsertId}"
+            )
             _ <- searchDAO.updateMetadata(document, index)
           } yield {
             ()

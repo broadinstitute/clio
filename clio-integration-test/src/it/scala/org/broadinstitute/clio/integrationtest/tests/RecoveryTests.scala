@@ -78,7 +78,7 @@ trait RecoveryTests extends ForAllTestContainer {
           .format(ElasticsearchIndex.dateTimeFormatter)
 
         val writeDir = Files.createDirectories(
-          rootPersistenceDir.resolve(s"${index.rootDir}/$dateDir")
+          rootPersistenceDir.resolve(s"${index.rootDir}$dateDir/")
         )
 
         val _ = Files.write(

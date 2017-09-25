@@ -128,20 +128,26 @@ trait PersistenceDAO extends LazyLogging {
     materializer: Materializer
   ): Future[Seq[D]] = {
     val rootDir = rootPath.resolve(index.rootDir)
+    val isJson = (p: Path) => p.toString.endsWith(".json")
 
     upsertId.fold(
       // If Elasticsearch contained no documents, load every JSON file in storage.
-      getAllMatching[D](rootDir, (p: Path) => p.toString.endsWith(".json"))
+      getAllMatching[D](rootDir, isJson)
     ) { uuid =>
+      logger.debug(s"Recovering all upserts since $uuid")
+
       val suffix = s"/$uuid.json"
       val filesWithId = Directory
         .walk(rootDir)
         .filter(_.toString.endsWith(suffix))
         .runWith(Sink.seq)
       filesWithId.map {
-        case Seq() => Future.successful(Seq.empty)
-        case Seq(path) =>
-          getAllMatching[D](rootDir, (p: Path) => p.compareTo(path) > 0)
+        case Seq(path) => {
+          getAllMatching[D](
+            rootDir,
+            (p: Path) => isJson(p) && p.compareTo(path) > 0
+          )
+        }
         case paths =>
           throw new RuntimeException(
             s"${paths.size} files end with $suffix in ${rootDir.toUri}"

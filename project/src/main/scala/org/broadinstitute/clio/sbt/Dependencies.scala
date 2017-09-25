@@ -17,7 +17,7 @@ object Dependencies {
   private val EnumeratumCirceVersion = "1.5.14"
   private val FicusVersion = "1.4.1"
   private val GoogleAuthHttpVersion = "0.7.1"
-  private val GoogleCloudNioVersion = "0.22.0-alpha"
+  private val GoogleCloudNioVersion = "0.24.0-alpha"
   private val JimfsVersion = "1.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
