@@ -42,7 +42,7 @@ class AddExecutorGvcf(addGvcf: AddGvcf) extends Executor {
       Future
         .failed(_) logErrorMsg s"Metadata at $metadataLoc cannot be added to Clio", {
         decoded =>
-          webClient.upsert(GvcfIndex(), addGvcf.transferGvcfV1Key, decoded)
+          webClient.upsert(GvcfIndex, addGvcf.transferGvcfV1Key, decoded)
       }
     )
   }

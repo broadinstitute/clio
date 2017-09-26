@@ -76,7 +76,7 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
 
     webClient
       .query(
-        GvcfIndex(),
+        GvcfIndex,
         TransferGvcfV1QueryInput(
           documentStatus = Option(DocumentStatus.Normal),
           location = Option(Location.GCP),
@@ -134,7 +134,7 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
     implicit val executionContext: ExecutionContext = webClient.executionContext
     webClient
       .upsert(
-        GvcfIndex(),
+        GvcfIndex,
         moveGvcfCommand.transferGvcfV1Key,
         TransferGvcfV1Metadata(gvcfPath = Some(moveGvcfCommand.destination))
       )

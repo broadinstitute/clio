@@ -22,17 +22,17 @@ class RetrieveAndPrintExecutor(command: ClioCommand) extends Executor {
     val responseFut = command match {
       case GetServerHealth  => webClient.getClioServerHealth
       case GetServerVersion => webClient.getClioServerVersion
-      case GetSchemaWgsUbam => webClient.getSchema(WgsUbamIndex())
-      case GetSchemaGvcf    => webClient.getSchema(GvcfIndex())
+      case GetSchemaWgsUbam => webClient.getSchema(WgsUbamIndex)
+      case GetSchemaGvcf    => webClient.getSchema(GvcfIndex)
       case queryWgsUbam: QueryWgsUbam =>
         webClient.query(
-          WgsUbamIndex(),
+          WgsUbamIndex,
           queryWgsUbam.transferWgsUbamV1QueryInput,
           queryWgsUbam.includeDeleted
         )
       case queryGvcf: QueryGvcf =>
         webClient.query(
-          GvcfIndex(),
+          GvcfIndex,
           queryGvcf.transferGvcfV1QueryInput,
           queryGvcf.includeDeleted
         )

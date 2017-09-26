@@ -25,7 +25,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
       for {
         queryResponses <- webClient
           .query(
-            WgsUbamIndex(),
+            WgsUbamIndex,
             TransferWgsUbamV1QueryInput(
               flowcellBarcode =
                 Some(deleteWgsUbam.transferWgsUbamV1Key.flowcellBarcode),
@@ -185,7 +185,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
     logger.info(s"Deleting wgs-ubam for $prettyKey in Clio.")
     webClient
       .upsert(
-        WgsUbamIndex(),
+        WgsUbamIndex,
         key,
         TransferWgsUbamV1Metadata(
           documentStatus = Some(DocumentStatus.Deleted),

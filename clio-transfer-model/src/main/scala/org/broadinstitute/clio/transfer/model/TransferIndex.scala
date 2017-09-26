@@ -18,12 +18,12 @@ sealed trait TransferIndex {
   def jsonSchema: Json
 }
 
-final case class GvcfIndex() extends TransferIndex {
+case object GvcfIndex extends TransferIndex {
   override def urlSegment: String = "gvcf"
   override def jsonSchema: Json = JsonSchemas.Gvcf
 }
 
-final case class WgsUbamIndex() extends TransferIndex {
+case object WgsUbamIndex extends TransferIndex {
   override def urlSegment: String = "wgsubam"
   override def jsonSchema: Json = JsonSchemas.WgsUbam
 }

@@ -25,7 +25,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
       for {
         queryResponses <- webClient
           .query(
-            GvcfIndex(),
+            GvcfIndex,
             TransferGvcfV1QueryInput(
               documentStatus = Some(DocumentStatus.Normal),
               location = Some(deleteGvcf.transferGvcfV1Key.location),
@@ -181,7 +181,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
     logger.info(s"Deleting gvcf for $prettyKey in Clio.")
     webClient
       .upsert(
-        GvcfIndex(),
+        GvcfIndex,
         key,
         TransferGvcfV1Metadata(
           documentStatus = Some(DocumentStatus.Deleted),

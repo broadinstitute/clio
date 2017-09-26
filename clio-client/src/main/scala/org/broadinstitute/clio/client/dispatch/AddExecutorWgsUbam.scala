@@ -43,7 +43,7 @@ class AddExecutorWgsUbam(addWgsUbam: AddWgsUbam) extends Executor {
         .failed(_) logErrorMsg s"Metadata at $metadataLoc cannot be added to Clio", {
         decoded =>
           webClient
-            .upsert(WgsUbamIndex(), addWgsUbam.transferWgsUbamV1Key, decoded)
+            .upsert(WgsUbamIndex, addWgsUbam.transferWgsUbamV1Key, decoded)
       }
     )
   }

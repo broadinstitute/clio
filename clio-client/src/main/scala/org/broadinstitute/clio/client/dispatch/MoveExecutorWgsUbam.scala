@@ -75,7 +75,7 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
 
     webClient
       .query(
-        WgsUbamIndex(),
+        WgsUbamIndex,
         TransferWgsUbamV1QueryInput(
           flowcellBarcode =
             Some(moveWgsUbamCommand.transferWgsUbamV1Key.flowcellBarcode),
@@ -134,7 +134,7 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
     implicit val executionContext: ExecutionContext = webClient.executionContext
     webClient
       .upsert(
-        WgsUbamIndex(),
+        WgsUbamIndex,
         key = moveWgsUbamCommand.transferWgsUbamV1Key,
         metadata = TransferWgsUbamV1Metadata(
           ubamPath = Some(moveWgsUbamCommand.destination)
