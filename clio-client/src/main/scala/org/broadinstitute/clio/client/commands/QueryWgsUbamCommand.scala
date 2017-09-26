@@ -24,7 +24,8 @@ object QueryWgsUbamCommand extends Command {
         sampleAlias = config.sampleAlias,
         runDateEnd = config.runDateEnd,
         runDateStart = config.runDateStart,
-        documentStatus = config.documentStatus
+        documentStatus = config.documentStatus,
+        researchProjectId = config.researchProjectId
       )
     )
   }

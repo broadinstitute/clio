@@ -16,6 +16,7 @@ case class BaseArgs(command: Option[CommandType] = None,
                     location: Option[String] = None,
                     lcSet: Option[String] = None,
                     project: Option[String] = None,
+                    researchProjectId: Option[String] = None,
                     sampleAlias: Option[String] = None,
                     documentStatus: Option[DocumentStatus] = None,
                     runDateEnd: Option[OffsetDateTime] = None,
@@ -101,7 +102,11 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
       opt[String]("project")
         .optional()
         .action((project, config) => config.copy(project = Some(project)))
-        .text("The project for this whole genome unmapped bam.")
+        .text("The project for this whole genome unmapped bam."),
+      opt[String]("research-project-id")
+        .optional()
+        .action((rpId, config) => config.copy(researchProjectId = Some(rpId)))
+        .text("The research project ID for this whole genome unmapped bam.")
     )
 
   checkConfig { config =>
