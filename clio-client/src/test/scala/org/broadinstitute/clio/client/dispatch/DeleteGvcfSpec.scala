@@ -31,7 +31,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
 
   it should "throw an exception if Clio returns an error" in {
     recoverToSucceededIf[Exception] {
-      failingDispatcherGvcf.dispatch(goodGvcfDeleteCommand)
+      failingDispatcher.dispatch(goodGvcfDeleteCommand)
     }
   }
 
@@ -56,7 +56,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     recoverToSucceededIf[Exception] {
-      new CommandDispatch(MockClioWebClient.failingToAddGvcf, mockIoUtil)
+      new CommandDispatch(MockClioWebClient.failingToUpsert, mockIoUtil)
         .dispatch(goodGvcfDeleteCommand)
     }
   }

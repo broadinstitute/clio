@@ -5,7 +5,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpCredentials
 import io.circe.parser.parse
 import io.circe.syntax._
-import io.circe.{Json, Printer}
+import io.circe.{Encoder, Json, Printer}
 import org.broadinstitute.clio.client.util.{IoUtil, TestData}
 import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 import org.broadinstitute.clio.status.model.{
@@ -15,7 +15,6 @@ import org.broadinstitute.clio.status.model.{
   VersionInfo
 }
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.json.JsonSchemas
 
 import scala.concurrent.Future
 
@@ -81,41 +80,21 @@ class MockClioWebClient(
     )
   }
 
-  override def upsertWgsUbam(
-    input: TransferWgsUbamV1Key,
-    transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
-  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
+  override def upsert[T](
+    transferIndex: TransferIndex,
+    key: TransferKey,
+    metadata: T
+  )(implicit credentials: HttpCredentials,
+    encoder: Encoder[T]): Future[HttpResponse] = {
     Future.successful(HttpResponse(status = status))
   }
 
-  override def upsertGvcf(
-    input: TransferGvcfV1Key,
-    transferGvcfV1Metadata: TransferGvcfV1Metadata
-  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
-    Future.successful(HttpResponse(status = status))
-  }
-
-  override def queryWgsUbam(
-    input: TransferWgsUbamV1QueryInput,
-    includeDeleted: Boolean = false
-  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
-    Future.successful(
-      HttpResponse(
-        status = status,
-        entity = HttpEntity(
-          ContentTypes.`application/json`,
-          json
-            .map(_.pretty(implicitly))
-            .getOrElse(Json.arr().pretty(implicitly))
-        )
-      )
-    )
-  }
-
-  override def queryGvcf(
-    input: TransferGvcfV1QueryInput,
-    includeDeleted: Boolean = false
-  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
+  override def query[T](
+    transferIndex: TransferIndex,
+    input: T,
+    includeDeleted: Boolean
+  )(implicit credentials: HttpCredentials,
+    encoder: Encoder[T]): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
         status = status,
@@ -134,11 +113,8 @@ object MockClioWebClient extends TestData {
   def returningOk(implicit system: ActorSystem) =
     new MockClioWebClient(status = StatusCodes.OK, None)
 
-  def returningInternalErrorWgsUbam(implicit system: ActorSystem) =
-    new MockClioWebClient(
-      status = StatusCodes.InternalServerError,
-      testWgsUbamLocation
-    )
+  def returningInternalError(implicit system: ActorSystem) =
+    new MockClioWebClient(status = StatusCodes.InternalServerError, None)
 
   def returningWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation)
@@ -148,47 +124,25 @@ object MockClioWebClient extends TestData {
     new MockClioWebClient(status = StatusCodes.OK, testTwoWgsUbamsLocation)
   }
 
-  def returningNoWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
-    class MockClioWebClientNoReturn
+  def failingToUpsert(implicit system: ActorSystem): MockClioWebClient = {
+    class MockClioWebClientCantUpsert
         extends MockClioWebClient(status = StatusCodes.OK, None) {
-      override def queryWgsUbam(
-        input: TransferWgsUbamV1QueryInput,
-        includeDeleted: Boolean = false
-      )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
-        Future.successful(
-          HttpResponse(
-            status = StatusCodes.OK,
-            entity = HttpEntity(
-              ContentTypes.`application/json`,
-              Json.arr().pretty(implicitly)
-            )
-          )
-        )
-      }
-    }
-    new MockClioWebClientNoReturn
-  }
-
-  def failingToAddWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
-    class MockClioWebClientCantAdd
-        extends MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation) {
-      override def upsertWgsUbam(
-        input: TransferWgsUbamV1Key,
-        transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
-      )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
+      override def upsert[T](
+        transferIndex: TransferIndex,
+        key: TransferKey,
+        metadata: T
+      )(implicit credentials: HttpCredentials,
+        encoder: Encoder[T]): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(status = StatusCodes.InternalServerError)
         )
       }
     }
-    new MockClioWebClientCantAdd
+    new MockClioWebClientCantUpsert
   }
 
   def returningInternalErrorGvcf(implicit system: ActorSystem) =
-    new MockClioWebClient(
-      status = StatusCodes.InternalServerError,
-      testGvcfLocation
-    )
+    new MockClioWebClient(status = StatusCodes.InternalServerError, None)
 
   def returningGvcf(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, testGvcfLocation)
@@ -196,41 +150,5 @@ object MockClioWebClient extends TestData {
 
   def returningTwoGvcfs(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, testTwoGvcfsLocation)
-  }
-
-  def returningNoGvcf(implicit system: ActorSystem): MockClioWebClient = {
-    class MockClioWebClientNoReturn
-        extends MockClioWebClient(status = StatusCodes.OK, None) {
-      override def queryGvcf(
-        input: TransferGvcfV1QueryInput,
-        includeDeleted: Boolean = false
-      )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
-        Future.successful(
-          HttpResponse(
-            status = StatusCodes.OK,
-            entity = HttpEntity(
-              ContentTypes.`application/json`,
-              Json.arr().pretty(implicitly)
-            )
-          )
-        )
-      }
-    }
-    new MockClioWebClientNoReturn
-  }
-
-  def failingToAddGvcf(implicit system: ActorSystem): MockClioWebClient = {
-    class MockClioWebClientCantAdd
-        extends MockClioWebClient(status = StatusCodes.OK, testGvcfLocation) {
-      override def upsertGvcf(
-        input: TransferGvcfV1Key,
-        transferGvcfV1Metadata: TransferGvcfV1Metadata
-      )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
-        Future.successful(
-          HttpResponse(status = StatusCodes.InternalServerError)
-        )
-      }
-    }
-    new MockClioWebClientCantAdd
   }
 }

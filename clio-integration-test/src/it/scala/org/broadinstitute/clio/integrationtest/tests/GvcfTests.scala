@@ -7,19 +7,18 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.transfer.model.{
+  GvcfIndex,
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryOutput
 }
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
-
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 
 import scala.concurrent.Future
-
 import java.nio.file.Files
 import java.util.UUID
 
@@ -144,7 +143,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf1.gvcf"))
       )
       upsertId2 <- clioWebClient
-        .upsertGvcf(
+        .upsert(
+          GvcfIndex(),
           upsertKey,
           TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf2.gvcf"))
         )

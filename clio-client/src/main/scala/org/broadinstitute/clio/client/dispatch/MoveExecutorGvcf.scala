@@ -7,6 +7,7 @@ import org.broadinstitute.clio.client.commands.{ClioCommand, MoveGvcf}
 import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
+  GvcfIndex,
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryInput,
   TransferGvcfV1QueryOutput
@@ -74,7 +75,8 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
     }
 
     webClient
-      .queryGvcf(
+      .query(
+        GvcfIndex(),
         TransferGvcfV1QueryInput(
           documentStatus = Option(DocumentStatus.Normal),
           location = Option(Location.GCP),
@@ -131,7 +133,8 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
   )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
     implicit val executionContext: ExecutionContext = webClient.executionContext
     webClient
-      .upsertGvcf(
+      .upsert(
+        GvcfIndex(),
         moveGvcfCommand.transferGvcfV1Key,
         TransferGvcfV1Metadata(gvcfPath = Some(moveGvcfCommand.destination))
       )

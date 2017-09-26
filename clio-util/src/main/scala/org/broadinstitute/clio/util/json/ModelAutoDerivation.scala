@@ -5,7 +5,6 @@ import java.time.OffsetDateTime
 
 import cats.syntax.either._
 import enumeratum._
-import io.circe.Decoder.Result
 import io.circe.generic.extras.{AutoDerivation, Configuration}
 import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
 import org.broadinstitute.clio.util.generic.CompanionCache
@@ -97,15 +96,13 @@ trait ModelAutoDerivation extends AutoDerivation {
   /**
     * Provides a decoder for Java URIs.
     */
-  implicit val decodeUri: Decoder[URI] = new Decoder[URI] {
-    override def apply(c: HCursor): Result[URI] = {
-      val stringDecoder = implicitly[Decoder[String]]
-      stringDecoder(c).flatMap { s =>
-        Try(new URI(s)) match {
-          case Success(uri) => Right(uri)
-          case Failure(err) =>
-            Left(DecodingFailure.fromThrowable(err, List.empty))
-        }
+  implicit val decodeUri: Decoder[URI] = (c: HCursor) => {
+    val stringDecoder = implicitly[Decoder[String]]
+    stringDecoder(c).flatMap { s =>
+      Try(new URI(s)) match {
+        case Success(uri) => Right(uri)
+        case Failure(err) =>
+          Left(DecodingFailure.fromThrowable(err, List.empty))
       }
     }
   }

@@ -5,12 +5,7 @@ import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.commands.DeleteWgsUbam
 import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput,
-  TransferWgsUbamV1QueryOutput
-}
+import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.collection.immutable.Seq
@@ -29,7 +24,8 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
     } else {
       for {
         queryResponses <- webClient
-          .queryWgsUbam(
+          .query(
+            WgsUbamIndex(),
             TransferWgsUbamV1QueryInput(
               flowcellBarcode =
                 Some(deleteWgsUbam.transferWgsUbamV1Key.flowcellBarcode),
@@ -188,7 +184,8 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
 
     logger.info(s"Deleting wgs-ubam for $prettyKey in Clio.")
     webClient
-      .upsertWgsUbam(
+      .upsert(
+        WgsUbamIndex(),
         key,
         TransferWgsUbamV1Metadata(
           documentStatus = Some(DocumentStatus.Deleted),

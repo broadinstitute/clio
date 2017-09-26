@@ -9,7 +9,8 @@ import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput,
-  TransferWgsUbamV1QueryOutput
+  TransferWgsUbamV1QueryOutput,
+  WgsUbamIndex
 }
 import org.broadinstitute.clio.util.model.Location
 
@@ -73,7 +74,8 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
     }
 
     webClient
-      .queryWgsUbam(
+      .query(
+        WgsUbamIndex(),
         TransferWgsUbamV1QueryInput(
           flowcellBarcode =
             Some(moveWgsUbamCommand.transferWgsUbamV1Key.flowcellBarcode),
@@ -131,7 +133,8 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
   )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
     implicit val executionContext: ExecutionContext = webClient.executionContext
     webClient
-      .upsertWgsUbam(
+      .upsert(
+        WgsUbamIndex(),
         key = moveWgsUbamCommand.transferWgsUbamV1Key,
         metadata = TransferWgsUbamV1Metadata(
           ubamPath = Some(moveWgsUbamCommand.destination)

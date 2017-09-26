@@ -8,7 +8,7 @@ import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import io.circe.Printer
+import io.circe.{Encoder, Printer}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.util.FutureWithErrorMessage
 import org.broadinstitute.clio.transfer.model._
@@ -65,12 +65,14 @@ class ClioWebClient(
     )
   }
 
-  def upsert(
-    transferIndex: TransferIndex,
-    key: TransferKey,
-    jsonMetadata: String
-  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
-    val entity = HttpEntity(ContentTypes.`application/json`, jsonMetadata)
+  def upsert[T](transferIndex: TransferIndex, key: TransferKey, metadata: T)(
+    implicit credentials: HttpCredentials,
+    encoder: Encoder[T]
+  ): Future[HttpResponse] = {
+    val entity = HttpEntity(
+      ContentTypes.`application/json`,
+      metadata.asJson.pretty(implicitly[Printer])
+    )
     dispatchRequest(
       HttpRequest(
         uri = s"/api/v1/${transferIndex.urlSegment}/metadata/${key.getUrlPath}",
@@ -80,14 +82,16 @@ class ClioWebClient(
     )
   }
 
-  private def query(
-    transferIndex: TransferIndex,
-    jsonMetadata: String,
-    includeDeleted: Boolean
-  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
+  def query[T](transferIndex: TransferIndex, input: T, includeDeleted: Boolean)(
+    implicit credentials: HttpCredentials,
+    encoder: Encoder[T]
+  ): Future[HttpResponse] = {
     val queryPath = if (includeDeleted) "queryall" else "query"
 
-    val entity = HttpEntity(ContentTypes.`application/json`, jsonMetadata)
+    val entity = HttpEntity(
+      ContentTypes.`application/json`,
+      input.asJson.pretty(implicitly[Printer])
+    )
     dispatchRequest(
       HttpRequest(
         uri = s"/api/v1/${transferIndex.urlSegment}/$queryPath",
@@ -95,35 +99,6 @@ class ClioWebClient(
         entity = entity
       ).addHeader(Authorization(credentials = credentials))
     )
-  }
-
-  def upsertWgsUbam(
-    key: TransferWgsUbamV1Key,
-    metadata: TransferWgsUbamV1Metadata
-  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
-    upsert(WgsUbamIndex(), key, metadata.asJson.pretty(implicitly[Printer]))
-  }
-
-  def queryWgsUbam(input: TransferWgsUbamV1QueryInput, includeDeleted: Boolean)(
-    implicit credentials: HttpCredentials
-  ): Future[HttpResponse] = {
-    query(
-      WgsUbamIndex(),
-      input.asJson.pretty(implicitly[Printer]),
-      includeDeleted
-    )
-  }
-
-  def upsertGvcf(key: TransferGvcfV1Key, metadata: TransferGvcfV1Metadata)(
-    implicit credentials: HttpCredentials
-  ): Future[HttpResponse] = {
-    upsert(GvcfIndex(), key, metadata.asJson.pretty(implicitly[Printer]))
-  }
-
-  def queryGvcf(input: TransferGvcfV1QueryInput, includeDeleted: Boolean)(
-    implicit credentials: HttpCredentials
-  ): Future[HttpResponse] = {
-    query(GvcfIndex(), input.asJson.pretty(implicitly[Printer]), includeDeleted)
   }
 
   def unmarshal[A: FromEntityUnmarshaller: TypeTag](

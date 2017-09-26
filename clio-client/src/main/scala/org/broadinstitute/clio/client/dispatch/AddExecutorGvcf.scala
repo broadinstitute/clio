@@ -6,7 +6,10 @@ import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands.{AddGvcf, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.TransferGvcfV1Metadata
+import org.broadinstitute.clio.transfer.model.{
+  GvcfIndex,
+  TransferGvcfV1Metadata
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,7 +42,7 @@ class AddExecutorGvcf(addGvcf: AddGvcf) extends Executor {
       Future
         .failed(_) logErrorMsg s"Metadata at $metadataLoc cannot be added to Clio", {
         decoded =>
-          webClient.upsertGvcf(addGvcf.transferGvcfV1Key, decoded)
+          webClient.upsert(GvcfIndex(), addGvcf.transferGvcfV1Key, decoded)
       }
     )
   }

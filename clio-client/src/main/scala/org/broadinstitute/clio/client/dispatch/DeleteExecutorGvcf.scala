@@ -5,12 +5,7 @@ import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.commands.DeleteGvcf
 import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferGvcfV1Key,
-  TransferGvcfV1Metadata,
-  TransferGvcfV1QueryInput,
-  TransferGvcfV1QueryOutput
-}
+import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.collection.immutable.Seq
@@ -29,7 +24,8 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
     } else {
       for {
         queryResponses <- webClient
-          .queryGvcf(
+          .query(
+            GvcfIndex(),
             TransferGvcfV1QueryInput(
               documentStatus = Some(DocumentStatus.Normal),
               location = Some(deleteGvcf.transferGvcfV1Key.location),
@@ -184,7 +180,8 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
 
     logger.info(s"Deleting gvcf for $prettyKey in Clio.")
     webClient
-      .upsertGvcf(
+      .upsert(
+        GvcfIndex(),
         key,
         TransferGvcfV1Metadata(
           documentStatus = Some(DocumentStatus.Deleted),

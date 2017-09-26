@@ -25,12 +25,14 @@ class RetrieveAndPrintExecutor(command: ClioCommand) extends Executor {
       case GetSchemaWgsUbam => webClient.getSchema(WgsUbamIndex())
       case GetSchemaGvcf    => webClient.getSchema(GvcfIndex())
       case queryWgsUbam: QueryWgsUbam =>
-        webClient.queryWgsUbam(
+        webClient.query(
+          WgsUbamIndex(),
           queryWgsUbam.transferWgsUbamV1QueryInput,
           queryWgsUbam.includeDeleted
         )
       case queryGvcf: QueryGvcf =>
-        webClient.queryGvcf(
+        webClient.query(
+          GvcfIndex(),
           queryGvcf.transferGvcfV1QueryInput,
           queryGvcf.includeDeleted
         )
