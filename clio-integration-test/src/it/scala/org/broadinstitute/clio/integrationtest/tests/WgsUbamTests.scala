@@ -21,13 +21,12 @@ import io.circe.Json
 import scala.concurrent.Future
 
 import java.nio.file.Files
-import java.util.UUID
 
 /** Tests of Clio's wgs-ubam functionality. */
 trait WgsUbamTests { self: BaseIntegrationSpec =>
 
   def runUpsertWgsUbam(key: TransferWgsUbamV1Key,
-                       metadata: TransferWgsUbamV1Metadata): Future[UUID] = {
+                       metadata: TransferWgsUbamV1Metadata): Future[String] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addWgsUbamName,
@@ -41,7 +40,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       key.location.entryName,
       "--metadata-location",
       tmpMetadata.toString
-    ).flatMap(Unmarshal(_).to[UUID])
+    ).flatMap(Unmarshal(_).to[String])
   }
 
   it should "create the expected wgs-ubam mapping in elasticsearch" in {
@@ -150,7 +149,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         TransferWgsUbamV1Metadata(project = Some("testProject2"))
       )
     } yield {
-      upsertId2.compareTo(upsertId1) should be(1)
+      upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
         getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId1)
@@ -179,7 +178,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertWgsUbam(upsertKey, metadata)
       upsertId2 <- runUpsertWgsUbam(upsertKey, metadata)
     } yield {
-      upsertId2.compareTo(upsertId1) should be(1)
+      upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
         getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId1)

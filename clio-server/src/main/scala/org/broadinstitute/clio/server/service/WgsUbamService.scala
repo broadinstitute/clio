@@ -11,8 +11,6 @@ import io.circe.Json
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import java.util.UUID
-
 /**
   * Service responsible for performing all wgs-ubam-specific logic
   * before handing off to the generic search / persistence services.
@@ -25,7 +23,7 @@ class WgsUbamService(
   def upsertMetadata(
     transferKey: TransferWgsUbamV1Key,
     transferMetadata: TransferWgsUbamV1Metadata
-  ): Future[UUID] = {
+  ): Future[String] = {
     val updatedTransferMetadata = transferMetadata.copy(
       documentStatus =
         transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))

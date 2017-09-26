@@ -3,9 +3,8 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import java.time.OffsetDateTime
-import java.util.UUID
 
-case class DocumentWgsUbam(upsertId: UUID,
+case class DocumentWgsUbam(upsertId: String,
                            entityId: String,
                            flowcellBarcode: String,
                            lane: Int,

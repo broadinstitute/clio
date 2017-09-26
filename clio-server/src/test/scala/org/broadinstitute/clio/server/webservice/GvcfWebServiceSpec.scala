@@ -13,7 +13,6 @@ import org.broadinstitute.clio.transfer.model.TransferGvcfV1QueryInput
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 import org.scalatest.{FlatSpec, Matchers}
-import java.util.UUID
 
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.GvcfService
@@ -109,7 +108,7 @@ class GvcfWebServiceSpec
         }
         .asInstanceOf[DocumentGvcf]
 
-      firstUpdate.upsertId should be(responseAs[UUID])
+      firstUpdate.upsertId should be(responseAs[String])
       firstUpdate.gvcfMd5 should be(Some("abcgithashdef"))
       firstUpdate.notes should be(Some("some note"))
       firstUpdate.gvcfPath should be(Some("gs://path/gvcf.gvcf"))
