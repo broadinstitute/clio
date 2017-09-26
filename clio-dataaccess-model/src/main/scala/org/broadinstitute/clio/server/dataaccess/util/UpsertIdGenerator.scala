@@ -7,7 +7,7 @@ import scala.util.Random
   *
   * A Push ID is a 20-byte string of by 8 characters of timestamp
   * followed by 12 characters of randomized (yet sequential) data.
-  * 
+  *
   * A recent one looks like this: -KuzbQJIFBhwvtkvrBHF
   *
   * @see [[https://firebase.googleblog.com/2015/02/the-2120-ways-to-ensure-unique_68.html]]
