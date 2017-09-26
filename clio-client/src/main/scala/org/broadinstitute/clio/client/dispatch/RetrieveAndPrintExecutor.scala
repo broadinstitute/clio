@@ -6,6 +6,7 @@ import io.circe.Json
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.transfer.model.{GvcfIndex, WgsUbamIndex}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -21,8 +22,8 @@ class RetrieveAndPrintExecutor(command: ClioCommand) extends Executor {
     val responseFut = command match {
       case GetServerHealth  => webClient.getClioServerHealth
       case GetServerVersion => webClient.getClioServerVersion
-      case GetSchemaWgsUbam => webClient.getSchemaWgsUbam
-      case GetSchemaGvcf    => webClient.getSchemaGvcf
+      case GetSchemaWgsUbam => webClient.getSchema(WgsUbamIndex())
+      case GetSchemaGvcf    => webClient.getSchema(GvcfIndex())
       case queryWgsUbam: QueryWgsUbam =>
         webClient.queryWgsUbam(
           queryWgsUbam.transferWgsUbamV1QueryInput,

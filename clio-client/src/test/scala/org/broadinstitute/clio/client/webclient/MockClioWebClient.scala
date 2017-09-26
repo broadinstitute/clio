@@ -67,29 +67,15 @@ class MockClioWebClient(
     )
   }
 
-  override def getSchemaWgsUbam(
-    implicit credentials: HttpCredentials
-  ): Future[HttpResponse] = {
+  override def getSchema(
+    transferIndex: TransferIndex
+  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
         status = status,
         entity = HttpEntity(
           ContentTypes.`application/json`,
-          JsonSchemas.WgsUbam.pretty(implicitly[Printer])
-        )
-      )
-    )
-  }
-
-  override def getSchemaGvcf(
-    implicit credentials: HttpCredentials
-  ): Future[HttpResponse] = {
-    Future.successful(
-      HttpResponse(
-        status = status,
-        entity = HttpEntity(
-          ContentTypes.`application/json`,
-          JsonSchemas.Gvcf.pretty(implicitly[Printer])
+          transferIndex.jsonSchema.pretty(implicitly[Printer])
         )
       )
     )

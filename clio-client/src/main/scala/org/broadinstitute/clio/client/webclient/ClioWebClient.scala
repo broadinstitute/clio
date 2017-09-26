@@ -97,12 +97,6 @@ class ClioWebClient(
     )
   }
 
-  def getSchemaWgsUbam(
-    implicit credentials: HttpCredentials
-  ): Future[HttpResponse] = {
-    getSchema(WgsUbamIndex())
-  }
-
   def upsertWgsUbam(
     key: TransferWgsUbamV1Key,
     metadata: TransferWgsUbamV1Metadata
@@ -118,12 +112,6 @@ class ClioWebClient(
       input.asJson.pretty(implicitly[Printer]),
       includeDeleted
     )
-  }
-
-  def getSchemaGvcf(
-    implicit credentials: HttpCredentials
-  ): Future[HttpResponse] = {
-    getSchema(GvcfIndex())
   }
 
   def upsertGvcf(key: TransferGvcfV1Key, metadata: TransferGvcfV1Metadata)(
