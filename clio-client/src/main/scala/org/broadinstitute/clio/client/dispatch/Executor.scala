@@ -1,13 +1,12 @@
 package org.broadinstitute.clio.client.dispatch
 
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.headers.HttpCredentials
+import com.typesafe.scalalogging.LazyLogging
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import org.broadinstitute.clio.client.util.{FutureWithErrorMessage, IoUtil}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import com.typesafe.scalalogging.LazyLogging
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -18,6 +17,6 @@ trait Executor
     with FutureWithErrorMessage {
   def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse]
 }

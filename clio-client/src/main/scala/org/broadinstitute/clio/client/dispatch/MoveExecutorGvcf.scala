@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveGvcf}
 import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
@@ -22,7 +22,7 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
     for {
       _ <- Future(verifyCloudPaths(ioUtil)) logErrorMsg
@@ -52,7 +52,7 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
 
   private def queryForGvcfPath(
     webClient: ClioWebClient
-  )(implicit bearerToken: OAuth2BearerToken): Future[String] = {
+  )(implicit credentials: HttpCredentials): Future[String] = {
     implicit val ec: ExecutionContext = webClient.executionContext
 
     def ensureOnlyOne(
@@ -128,13 +128,12 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
 
   private def upsertUpdatedGvcf(
     webClient: ClioWebClient
-  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
     implicit val executionContext: ExecutionContext = webClient.executionContext
     webClient
-      .addGvcf(
-        input = moveGvcfCommand.transferGvcfV1Key,
-        transferGvcfV1Metadata =
-          TransferGvcfV1Metadata(gvcfPath = Some(moveGvcfCommand.destination))
+      .upsertGvcf(
+        moveGvcfCommand.transferGvcfV1Key,
+        TransferGvcfV1Metadata(gvcfPath = Some(moveGvcfCommand.destination))
       )
       .map(webClient.ensureOkResponse)
   }

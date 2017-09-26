@@ -1,20 +1,19 @@
 package org.broadinstitute.clio.client.dispatch
 
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.headers.HttpCredentials
+import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands.{AddWgsUbam, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1Metadata
-
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import io.circe.parser.parse
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class AddExecutorWgsUbam(addWgsUbam: AddWgsUbam) extends Executor {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
     val metadataLoc = addWgsUbam.metadataLocation
 
@@ -40,9 +39,9 @@ class AddExecutorWgsUbam(addWgsUbam: AddWgsUbam) extends Executor {
       Future
         .failed(_) logErrorMsg s"Metadata at $metadataLoc cannot be added to Clio", {
         decoded =>
-          webClient.addWgsUbam(
-            transferWgsUbamV1Metadata = decoded,
-            input = addWgsUbam.transferWgsUbamV1Key
+          webClient.upsertWgsUbam(
+            metadata = decoded,
+            key = addWgsUbam.transferWgsUbamV1Key
           )
       }
     )

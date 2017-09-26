@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.headers.HttpCredentials
 import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands.{AddGvcf, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
@@ -13,7 +13,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class AddExecutorGvcf(addGvcf: AddGvcf) extends Executor {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
     val metadataLoc = addGvcf.metadataLocation
 
@@ -39,10 +39,7 @@ class AddExecutorGvcf(addGvcf: AddGvcf) extends Executor {
       Future
         .failed(_) logErrorMsg s"Metadata at $metadataLoc cannot be added to Clio", {
         decoded =>
-          webClient.addGvcf(
-            transferGvcfV1Metadata = decoded,
-            input = addGvcf.transferGvcfV1Key
-          )
+          webClient.upsertGvcf(addGvcf.transferGvcfV1Key, decoded)
       }
     )
   }

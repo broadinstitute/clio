@@ -1,5 +1,11 @@
 package org.broadinstitute.clio.client.webclient
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.HttpCredentials
+import io.circe.parser.parse
+import io.circe.syntax._
+import io.circe.{Json, Printer}
 import org.broadinstitute.clio.client.util.{IoUtil, TestData}
 import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 import org.broadinstitute.clio.status.model.{
@@ -10,13 +16,6 @@ import org.broadinstitute.clio.status.model.{
 }
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.json.JsonSchemas
-
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import io.circe.{Json, Printer}
-import io.circe.parser.parse
-import io.circe.syntax._
 
 import scala.concurrent.Future
 
@@ -69,7 +68,7 @@ class MockClioWebClient(
   }
 
   override def getSchemaWgsUbam(
-    implicit bearerToken: OAuth2BearerToken
+    implicit credentials: HttpCredentials
   ): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
@@ -83,7 +82,7 @@ class MockClioWebClient(
   }
 
   override def getSchemaGvcf(
-    implicit bearerToken: OAuth2BearerToken
+    implicit credentials: HttpCredentials
   ): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
@@ -96,24 +95,24 @@ class MockClioWebClient(
     )
   }
 
-  override def addWgsUbam(
+  override def upsertWgsUbam(
     input: TransferWgsUbamV1Key,
     transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
-  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
     Future.successful(HttpResponse(status = status))
   }
 
-  override def addGvcf(
+  override def upsertGvcf(
     input: TransferGvcfV1Key,
     transferGvcfV1Metadata: TransferGvcfV1Metadata
-  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
     Future.successful(HttpResponse(status = status))
   }
 
   override def queryWgsUbam(
     input: TransferWgsUbamV1QueryInput,
     includeDeleted: Boolean = false
-  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
         status = status,
@@ -130,7 +129,7 @@ class MockClioWebClient(
   override def queryGvcf(
     input: TransferGvcfV1QueryInput,
     includeDeleted: Boolean = false
-  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
     Future.successful(
       HttpResponse(
         status = status,
@@ -169,7 +168,7 @@ object MockClioWebClient extends TestData {
       override def queryWgsUbam(
         input: TransferWgsUbamV1QueryInput,
         includeDeleted: Boolean = false
-      )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+      )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(
             status = StatusCodes.OK,
@@ -187,10 +186,10 @@ object MockClioWebClient extends TestData {
   def failingToAddWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
     class MockClioWebClientCantAdd
         extends MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation) {
-      override def addWgsUbam(
+      override def upsertWgsUbam(
         input: TransferWgsUbamV1Key,
         transferWgsUbamV1Metadata: TransferWgsUbamV1Metadata
-      )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+      )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(status = StatusCodes.InternalServerError)
         )
@@ -219,7 +218,7 @@ object MockClioWebClient extends TestData {
       override def queryGvcf(
         input: TransferGvcfV1QueryInput,
         includeDeleted: Boolean = false
-      )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+      )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(
             status = StatusCodes.OK,
@@ -237,10 +236,10 @@ object MockClioWebClient extends TestData {
   def failingToAddGvcf(implicit system: ActorSystem): MockClioWebClient = {
     class MockClioWebClientCantAdd
         extends MockClioWebClient(status = StatusCodes.OK, testGvcfLocation) {
-      override def addGvcf(
+      override def upsertGvcf(
         input: TransferGvcfV1Key,
         transferGvcfV1Metadata: TransferGvcfV1Metadata
-      )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+      )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
         Future.successful(
           HttpResponse(status = StatusCodes.InternalServerError)
         )

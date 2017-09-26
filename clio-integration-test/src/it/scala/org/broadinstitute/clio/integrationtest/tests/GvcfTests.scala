@@ -144,7 +144,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf1.gvcf"))
       )
       upsertId2 <- clioWebClient
-        .addGvcf(
+        .upsertGvcf(
           upsertKey,
           TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf2.gvcf"))
         )

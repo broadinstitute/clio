@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.commands.DeleteGvcf
 import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -21,7 +21,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
     if (!deleteGvcf.transferGvcfV1Key.location.equals(Location.GCP)) {
       Future
@@ -69,7 +69,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
                           webClient: ClioWebClient,
                           ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[Seq[HttpResponse]] = {
     if (gvcf.isEmpty) {
       Future.failed(
@@ -105,7 +105,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
                          webClient: ClioWebClient,
                          ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
 
     val key = TransferGvcfV1Key(
@@ -177,14 +177,14 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
                            notes: String,
                            webClient: ClioWebClient)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
 
     val prettyKey = ClassUtil.formatFields(key)
 
     logger.info(s"Deleting gvcf for $prettyKey in Clio.")
     webClient
-      .addGvcf(
+      .upsertGvcf(
         key,
         TransferGvcfV1Metadata(
           documentStatus = Some(DocumentStatus.Deleted),

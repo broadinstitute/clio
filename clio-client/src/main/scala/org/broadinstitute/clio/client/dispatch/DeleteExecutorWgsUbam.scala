@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.commands.DeleteWgsUbam
 import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -10,8 +12,6 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 import scala.collection.immutable.Seq
 import scala.concurrent.{ExecutionContext, Future}
@@ -21,7 +21,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
     if (!deleteWgsUbam.transferWgsUbamV1Key.location.equals(Location.GCP)) {
       Future
@@ -72,7 +72,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
                              webClient: ClioWebClient,
                              ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[Seq[HttpResponse]] = {
     if (wgsUbams.isEmpty) {
       Future.failed(
@@ -108,7 +108,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
                             webClient: ClioWebClient,
                             ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
 
     val key = TransferWgsUbamV1Key(
@@ -181,14 +181,14 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
                            notes: String,
                            webClient: ClioWebClient)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
 
     val prettyKey = ClassUtil.formatFields(key)
 
     logger.info(s"Deleting wgs-ubam for $prettyKey in Clio.")
     webClient
-      .addWgsUbam(
+      .upsertWgsUbam(
         key,
         TransferWgsUbamV1Metadata(
           documentStatus = Some(DocumentStatus.Deleted),
