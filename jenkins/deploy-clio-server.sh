@@ -162,10 +162,12 @@ startcontainer
 STATUS=
 REPORTED_VERSION=
 
-# try 3 times at 20 second intervals
+# try 30 times at 20 second intervals (10 minutes total)
+# TODO: if we change the server to bind its port before recovery and report a "recovering" status of some kind,
+# we can be smarter about how long we wait here before rolling back.
 attempts=1
 
-while [ -z "$STATUS" ] && [ ${attempts} -le 3 ]
+while [ -z "$STATUS" ] && [ ${attempts} -le 30 ]
 do
   sleep 20
   echo "Attempt $attempts"
