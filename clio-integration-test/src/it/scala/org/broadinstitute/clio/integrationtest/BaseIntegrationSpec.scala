@@ -249,7 +249,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   ): Document = {
     val expectedPath =
       rootPersistenceDir.resolve(
-        s"${index.currentPersistenceDir}/$upsertId.json"
+        // `currentPersistenceDir` ends with '/' so GCS will recognize it as a directory.
+        s"${index.currentPersistenceDir}$upsertId.json"
       )
 
     Files.exists(expectedPath) should be(true)
