@@ -32,7 +32,7 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
     .action((token, conf) => conf.copy(bearerToken = Some(token)))
     .text("A valid bearer token for authentication.")
 
-  cmd(Commands.AddWgsUbam.toString)
+  cmd(Commands.AddWgsUbam.entryName)
     .action((_, c) => c.copy(command = Some(Commands.AddWgsUbam)))
     .text("This command is used to add a whole genome unmapped bam.")
     .children(
@@ -67,7 +67,7 @@ class BaseParser extends scopt.OptionParser[BaseArgs]("clio-client") {
         .text("The location for this whole genome unmapped bam. (Required)")
     )
 
-  cmd(Commands.QueryWgsUbam.toString)
+  cmd(Commands.QueryWgsUbam.entryName)
     .action((_, c) => c.copy(command = Some(Commands.QueryWgsUbam)))
     .text("This command is used to query a whole genome unmapped bam.")
     .children(

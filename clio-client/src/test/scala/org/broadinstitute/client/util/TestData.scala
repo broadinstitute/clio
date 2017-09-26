@@ -8,7 +8,9 @@ import org.broadinstitute.clio.util.model.DocumentStatus
 
 trait TestData {
 
-  val metadataFileLocation = Some("clio-client/src/test/resources/testdata/metadata")
+  val metadataFileLocation = Some(
+    "clio-client/src/test/resources/testdata/metadata"
+  )
   val badMetadataFileLocation =
     Some("clio-client/src/test/resources/testdata/badmetadata")
   val metadataPlusExtraFieldsFileLocation =
@@ -32,7 +34,7 @@ trait TestData {
 
   //missing lane
   val missingRequired = Array(
-    Commands.AddWgsUbam.toString,
+    Commands.AddWgsUbam.entryName,
     "-m",
     metadataFileLocation.get,
     "-f",
@@ -45,7 +47,7 @@ trait TestData {
 
   //missing lane
   val missingOptional = Array(
-    Commands.QueryWgsUbam.toString,
+    Commands.QueryWgsUbam.entryName,
     "-f",
     testFlowcell.get,
     "-n",
@@ -55,7 +57,7 @@ trait TestData {
   )
 
   val goodAddCommand = Array(
-    Commands.AddWgsUbam.toString,
+    Commands.AddWgsUbam.entryName,
     "-m",
     metadataFileLocation.get,
     "-f",
