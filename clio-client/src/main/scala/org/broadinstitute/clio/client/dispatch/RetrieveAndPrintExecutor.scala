@@ -20,10 +20,9 @@ class RetrieveAndPrintExecutor(command: ClioCommand) extends Executor {
     credentials: HttpCredentials
   ): Future[HttpResponse] = {
     val responseFut = command match {
-      case GetServerHealth  => webClient.getClioServerHealth
-      case GetServerVersion => webClient.getClioServerVersion
-      case GetSchemaWgsUbam => webClient.getSchema(WgsUbamIndex)
-      case GetSchemaGvcf    => webClient.getSchema(GvcfIndex)
+      case GetServerHealth           => webClient.getClioServerHealth
+      case GetServerVersion          => webClient.getClioServerVersion
+      case command: GetSchemaCommand => webClient.getSchema(command.index)
       case queryWgsUbam: QueryWgsUbam =>
         webClient.query(
           WgsUbamIndex,

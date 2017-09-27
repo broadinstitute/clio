@@ -84,10 +84,8 @@ trait TestData {
     transferWgsUbamV1QueryInput = TransferWgsUbamV1QueryInput()
   )
 
-  val goodAddCommand = AddWgsUbam(
-    metadataLocation = metadataFileLocation,
-    transferWgsUbamV1Key = testTransferV1Key
-  )
+  val goodAddCommand =
+    AddWgsUbam(metadataLocation = metadataFileLocation, key = testTransferV1Key)
 
   val goodMoveCommand = MoveWgsUbam(
     transferWgsUbamV1Key = testTransferV1Key,
@@ -105,7 +103,7 @@ trait TestData {
 
   val goodGvcfAddCommand = AddGvcf(
     metadataLocation = gvcfMetadataFileLocation,
-    transferGvcfV1Key = testGvcfTransferV1Key
+    key = testGvcfTransferV1Key
   )
 
   val goodGvcfMoveCommand = MoveGvcf(

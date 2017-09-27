@@ -21,6 +21,16 @@ import shapeless.CNil
   */
 sealed trait ClioCommand
 
+sealed trait GetSchemaCommand extends ClioCommand {
+  def index: TransferIndex
+}
+
+sealed trait AddCommand extends ClioCommand {
+  def index: TransferIndex
+  def key: TransferKey
+  def metadataLocation: String
+}
+
 // Generic commands.
 
 @CommandName(ClioCommand.getServerHealthName)
@@ -32,12 +42,16 @@ case object GetServerVersion extends ClioCommand
 // WGS-uBAM commands.
 
 @CommandName(ClioCommand.getWgsUbamSchemaName)
-case object GetSchemaWgsUbam extends ClioCommand
+case object GetSchemaWgsUbam extends GetSchemaCommand {
+  override def index: TransferIndex = WgsUbamIndex
+}
 
 @CommandName(ClioCommand.addWgsUbamName)
 final case class AddWgsUbam(metadataLocation: String,
-                            @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key)
-    extends ClioCommand
+                            @Recurse key: TransferWgsUbamV1Key)
+    extends AddCommand {
+  override def index: TransferIndex = WgsUbamIndex
+}
 
 @CommandName(ClioCommand.queryWgsUbamName)
 final case class QueryWgsUbam(
@@ -60,12 +74,16 @@ final case class DeleteWgsUbam(
 // GVCF commands.
 
 @CommandName(ClioCommand.getGvcfSchemaName)
-case object GetSchemaGvcf extends ClioCommand
+case object GetSchemaGvcf extends GetSchemaCommand {
+  override def index: TransferIndex = GvcfIndex
+}
 
 @CommandName(ClioCommand.addGvcfName)
 final case class AddGvcf(metadataLocation: String,
-                         @Recurse transferGvcfV1Key: TransferGvcfV1Key)
-    extends ClioCommand
+                         @Recurse key: TransferGvcfV1Key)
+    extends AddCommand {
+  override def index: TransferIndex = GvcfIndex
+}
 
 @CommandName(ClioCommand.queryGvcfName)
 final case class QueryGvcf(
@@ -88,6 +106,12 @@ object ClioCommand extends ClioParsers {
   // Names for generic commands.
   val getServerHealthName = "get-server-health"
   val getServerVersionName = "get-server-version"
+
+  val getSchemaPrefix = "get-schema-"
+  val addPrefix = "add-"
+  val queryPrefix = "query-"
+  val movePrefix = "move-"
+  val deletePrefix = "delete-"
 
   // Names for WGS uBAM commands.
   val getWgsUbamSchemaName = "get-schema-wgs-ubam"
