@@ -3,7 +3,7 @@ package org.broadinstitute.clio.server.dataaccess.util
 import scala.util.Random
 
 /**
-  * Generate a lexically-ordered, unique ID based on the Firebase Encoding ID.
+  * Generate a lexically-ordered, unique ID based on the Firebase Push ID.
   *
   * Each ID is a 20-byte string of by 8 characters of timestamp
   * followed by 12 characters of random (yet sequential) data.
