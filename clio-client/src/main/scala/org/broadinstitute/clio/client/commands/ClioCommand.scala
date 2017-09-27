@@ -2,8 +2,9 @@ package org.broadinstitute.clio.client.commands
 
 import org.broadinstitute.clio.transfer.model._
 
-import caseapp.{CommandName, CommandParser, Recurse}
-import caseapp.core.CommandsMessages
+import caseapp.{CommandName, Recurse}
+import caseapp.core.help.CommandsHelp
+import caseapp.core.commandparser.CommandParser
 import shapeless.CNil
 
 /**
@@ -130,6 +131,6 @@ object ClioCommand extends ClioParsers {
     * Sub-command-related messages to show when a users asks
     * for help or usage.
     */
-  val messages: CommandsMessages[ClioCommand] =
-    CommandsMessages[ClioCommand]
+  val messages: CommandsHelp[ClioCommand] =
+    CommandsHelp[ClioCommand]
 }

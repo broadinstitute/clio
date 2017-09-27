@@ -1,7 +1,8 @@
 package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import caseapp.core.ArgParser
+import caseapp.core.Error
+import caseapp.core.argparser.{ArgParser, SimpleArgParser}
 import enumeratum.{Enum, EnumEntry}
 
 import scala.reflect.ClassTag
@@ -27,36 +28,40 @@ trait ClioParsers {
     val entryMap = enum.namesToValuesMap
     val entryString = entryMap.keys.mkString(",")
 
-    ArgParser.instance[T](entryString) { maybeEntry =>
+    SimpleArgParser.from[T](entryString) { maybeEntry =>
       entryMap
         .get(maybeEntry)
         .toRight(
-          s"Unknown enum value '$maybeEntry' for type $enumName, valid values are [$entryString]"
+          Error.UnrecognizedValue(
+            s"Unknown enum value '$maybeEntry' for type $enumName, valid values are [$entryString]"
+          )
         )
     }
   }
 
   implicit val oauthBearerTokenParser: ArgParser[OAuth2BearerToken] = {
-    ArgParser.instance[OAuth2BearerToken]("token") { token =>
+    SimpleArgParser.from[OAuth2BearerToken]("token") { token =>
       //no need for left since this should never fail
       Right(OAuth2BearerToken(token))
     }
   }
 
   implicit val uuidParser: ArgParser[UUID] = {
-    ArgParser.instance[UUID]("uuid") { uuid =>
+    SimpleArgParser.from[UUID]("uuid") { uuid =>
       Try(UUID.fromString(uuid)) match {
-        case Success(value)     => Right(value)
-        case Failure(exception) => Left(exception.getMessage)
+        case Success(value) => Right(value)
+        case Failure(exception) =>
+          Left(Error.UnrecognizedValue(exception.getMessage))
       }
     }
   }
 
   implicit val offsetDateTimeParser: ArgParser[OffsetDateTime] = {
-    ArgParser.instance[OffsetDateTime]("date") { offsetDateAndTime =>
+    SimpleArgParser.from[OffsetDateTime]("date") { offsetDateAndTime =>
       Try(OffsetDateTime.parse(offsetDateAndTime)) match {
-        case Success(value)     => Right(value)
-        case Failure(exception) => Left(exception.getMessage)
+        case Success(value) => Right(value)
+        case Failure(exception) =>
+          Left(Error.UnrecognizedValue(exception.getMessage))
       }
     }
   }
