@@ -1,7 +1,5 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import java.util.UUID
-
 /**
   * Common trait for all document types Clio will store, used to force the inclusion of
   * bookkeeping fields in their type definitions.
@@ -14,7 +12,7 @@ trait ClioDocument {
     * Clio's source of truth, so disaster recovery can determine the order in which
     * updates should be re-applied.
     */
-  val upsertId: UUID
+  val upsertId: String
 
   /**
     * The unique key for an entity referred to by a document, used for tracking updates
@@ -32,7 +30,7 @@ object ClioDocument {
   /**
     * Name of the ID field used in all Clio documents to identify a specific upsert.
     *
-    * Used by the auto-document-mapper to generate UUIDs on the fly, and by
+    * Used by the auto-document-mapper to generate IDs on the fly, and by
     * the auto-query-mapper to strip the IDs from returned query outputs.
     */
   val UpsertIdFieldName: String = "upsertId"

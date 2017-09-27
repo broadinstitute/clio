@@ -11,15 +11,15 @@ import io.circe.Json
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import java.util.UUID
-
 class GvcfService(
   persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext) {
 
-  def upsertMetadata(transferKey: TransferGvcfV1Key,
-                     transferMetadata: TransferGvcfV1Metadata): Future[UUID] = {
+  def upsertMetadata(
+    transferKey: TransferGvcfV1Key,
+    transferMetadata: TransferGvcfV1Metadata
+  ): Future[String] = {
     val updatedTransferMetadata = transferMetadata.copy(
       documentStatus =
         transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))

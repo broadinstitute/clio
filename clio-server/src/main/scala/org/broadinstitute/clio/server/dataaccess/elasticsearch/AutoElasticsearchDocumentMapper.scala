@@ -1,11 +1,9 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
+import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 
 import scala.reflect.ClassTag
-
-import java.util.UUID
 
 /**
   * Builds an ElasticsearchDocumentMapper using shapeless and reflection.
@@ -23,7 +21,7 @@ import java.util.UUID
 class AutoElasticsearchDocumentMapper[
   ModelKey <: Product: ClassTag, ModelMetadata: ClassTag,
   Document <: ClioDocument: ClassTag
-] private[elasticsearch] (genId: () => UUID)
+] private[elasticsearch] (genId: () => String)
     extends ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] {
 
   private val modelKeyMapper = new CaseClassMapper[ModelKey]
@@ -56,6 +54,6 @@ object AutoElasticsearchDocumentMapper {
             ModelMetadata: ClassTag,
             Document <: ClioDocument: ClassTag]
     : ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] = {
-    new AutoElasticsearchDocumentMapper(ClioUUIDGenerator.getUUID)
+    new AutoElasticsearchDocumentMapper(UpsertIdGenerator.nextId)
   }
 }

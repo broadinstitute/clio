@@ -34,7 +34,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
     }
   }
 
-  it should "write metadata updates to storage using the UUID" in {
+  it should "write metadata updates to storage using the upsertId" in {
     val dao = new MemoryPersistenceDAO()
     val document =
       DocumentMock.default.copy(mockFilePath = Some("gs://the-file"))
@@ -88,7 +88,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
     result.flatMap(_.toVector should be(expected.tail))
   }
 
-  it should "return all documents from GCS if no latest UUID is given" in {
+  it should "return all documents from GCS if no latest upsertId is given" in {
     val dao = new MemoryPersistenceDAO()
     val documents = (0L until 26L).map(
       n =>

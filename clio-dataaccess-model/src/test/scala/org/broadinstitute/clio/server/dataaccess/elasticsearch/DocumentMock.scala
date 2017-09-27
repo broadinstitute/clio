@@ -1,11 +1,10 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
+import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
 
 import java.time.OffsetDateTime
-import java.util.UUID
 
-case class DocumentMock(upsertId: UUID,
+case class DocumentMock(upsertId: String,
                         entityId: String,
                         mockKeyLong: Long,
                         mockKeyString: String,
@@ -19,7 +18,7 @@ case class DocumentMock(upsertId: UUID,
 
 object DocumentMock {
   def default: DocumentMock = DocumentMock(
-    upsertId = ClioUUIDGenerator.getUUID(),
+    upsertId = UpsertIdGenerator.nextId(),
     entityId = "1234.the-string",
     mockKeyLong = 1234L,
     mockKeyString = "the-string"

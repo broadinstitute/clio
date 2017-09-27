@@ -245,7 +245,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   def getJsonFrom[Document <: ClioDocument: Decoder](
     index: ElasticsearchIndex[Document],
-    upsertId: UUID
+    upsertId: String
   ): Document = {
     val expectedPath =
       rootPersistenceDir
