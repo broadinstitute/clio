@@ -25,6 +25,6 @@ object CommonOptions extends ClioParsers {
     * Common-options-related messages to show when a user
     * asks for help or usage.
     */
-  val messages: Help[CommonOptions] =
+  val help: Help[CommonOptions] =
     Help[CommonOptions]
 }

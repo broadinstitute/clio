@@ -125,8 +125,8 @@ class ClioClient(webClient: ClioWebClient,
     * caseapp supports setting these through annotations, but
     * only if the values are constant strings.
     */
-  private val beforeCommandMessages: Help[CommonOptions] =
-    CommonOptions.messages.copy(
+  private val beforeCommandHelp: Help[CommonOptions] =
+    CommonOptions.help.copy(
       appName = "Clio Client",
       appVersion = ClioClientConfig.Version.value,
       progName = ClioClient.progName,
@@ -135,12 +135,12 @@ class ClioClient(webClient: ClioWebClient,
 
   /** Names of all valid sub-commands. */
   private val commands: Seq[String] =
-    ClioCommand.messages.messagesMap.keys.toSeq
+    ClioCommand.help.messagesMap.keys.toSeq
 
   /** Top-level help message to display on --help. */
   private val helpMessage: String =
     s"""
-       |${beforeCommandMessages.help}
+       |${beforeCommandHelp.help}
        |Available commands:
        |${commands.map(commandHelp).mkString("\n")}
      """.stripMargin
@@ -151,24 +151,24 @@ class ClioClient(webClient: ClioWebClient,
     */
   private val usageMessage: String =
     s"""
-       |${beforeCommandMessages.usage}
+       |${beforeCommandHelp.usage}
        |Available commands:
        |  ${commands.mkString(", ")}
      """.stripMargin
 
   /** Help message for a specific command. */
   private def commandHelp(command: String): String = {
-    ClioCommand.messages
+    ClioCommand.help
       .messagesMap(command)
-      .helpMessage(s"${beforeCommandMessages.progName} [options]", command)
+      .helpMessage(s"${beforeCommandHelp.progName} [options]", command)
   }
 
   /** Usage message for a specific command. */
   private def commandUsage(command: String): String = {
-    ClioCommand.messages
+    ClioCommand.help
       .messagesMap(command)
       .usageMessage(
-        s"${beforeCommandMessages.progName} [options]",
+        s"${beforeCommandHelp.progName} [options]",
         s"$command [command-options]"
       )
   }

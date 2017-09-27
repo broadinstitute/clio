@@ -131,6 +131,6 @@ object ClioCommand extends ClioParsers {
     * Sub-command-related messages to show when a users asks
     * for help or usage.
     */
-  val messages: CommandsHelp[ClioCommand] =
+  val help: CommandsHelp[ClioCommand] =
     CommandsHelp[ClioCommand]
 }
