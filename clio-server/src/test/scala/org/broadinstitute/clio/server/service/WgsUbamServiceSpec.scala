@@ -73,7 +73,7 @@ class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
     val wgsUbamService = new WgsUbamService(persistenceService, searchService)
 
     val transferKey =
-      TransferWgsUbamV1Key("barcode1", 2, "library3", Location.GCP)
+      TransferWgsUbamV1Key(Location.GCP, "barcode1", 2, "library3")
     val transferMetadataMapper =
       new CaseClassMapper[TransferWgsUbamV1Metadata]
     val transferMetadata =

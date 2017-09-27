@@ -22,11 +22,11 @@ trait WgsUbamWebService {
 
   private[webservice] val pathPrefixKey: Directive1[TransferWgsUbamV1Key] = {
     for {
+      location <- pathPrefix(Location.pathMatcher)
       flowcellBarcode <- pathPrefix(Segment)
       lane <- pathPrefix(IntNumber)
       libraryName <- pathPrefix(Segment)
-      location <- pathPrefix(Location.pathMatcher)
-    } yield TransferWgsUbamV1Key(flowcellBarcode, lane, libraryName, location)
+    } yield TransferWgsUbamV1Key(location, flowcellBarcode, lane, libraryName)
   }
 
   private[webservice] val postMetadata: Route = {

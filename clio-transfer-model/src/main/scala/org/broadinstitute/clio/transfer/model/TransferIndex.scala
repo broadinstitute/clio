@@ -23,8 +23,15 @@ sealed trait TransferIndex extends ModelAutoDerivation {
 
   type metadataType
 
-  def decoder: Decoder[metadataType]
-  def encoder: Encoder[metadataType]
+  type queryInputType
+
+  type outputType
+
+  def metadataDecoder: Decoder[metadataType]
+
+  def metadataEncoder: Encoder[metadataType]
+
+  def queryInputEncoder: Encoder[queryInputType]
 }
 
 case object GvcfIndex extends TransferIndex {
@@ -39,11 +46,18 @@ case object GvcfIndex extends TransferIndex {
 
   override type metadataType = TransferGvcfV1Metadata
 
-  override def decoder: Decoder[TransferGvcfV1Metadata] =
-    Decoder[TransferGvcfV1Metadata]
+  override type queryInputType = TransferGvcfV1QueryInput
 
-  override def encoder: Encoder[TransferGvcfV1Metadata] =
-    Encoder[TransferGvcfV1Metadata]
+  override type outputType = TransferGvcfV1QueryOutput
+
+  override def metadataDecoder: Decoder[metadataType] =
+    Decoder[metadataType]
+
+  override def metadataEncoder: Encoder[metadataType] =
+    Encoder[metadataType]
+
+  override def queryInputEncoder: Encoder[queryInputType] =
+    Encoder[queryInputType]
 }
 
 case object WgsUbamIndex extends TransferIndex {
@@ -57,9 +71,16 @@ case object WgsUbamIndex extends TransferIndex {
 
   override type metadataType = TransferWgsUbamV1Metadata
 
-  override def decoder: Decoder[TransferWgsUbamV1Metadata] =
-    Decoder[TransferWgsUbamV1Metadata]
+  override type queryInputType = TransferWgsUbamV1QueryInput
 
-  override def encoder: Encoder[TransferWgsUbamV1Metadata] =
-    Encoder[TransferWgsUbamV1Metadata]
+  override type outputType = TransferWgsUbamV1QueryOutput
+
+  override def metadataDecoder: Decoder[metadataType] =
+    Decoder[metadataType]
+
+  override def metadataEncoder: Encoder[metadataType] =
+    Encoder[metadataType]
+
+  override def queryInputEncoder: Encoder[queryInputType] =
+    Encoder[queryInputType]
 }

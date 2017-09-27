@@ -81,7 +81,7 @@ trait TestData {
   )
 
   val goodQueryCommand = QueryWgsUbam(
-    transferWgsUbamV1QueryInput = TransferWgsUbamV1QueryInput()
+    queryInput = TransferWgsUbamV1QueryInput()
   )
 
   val goodAddCommand =
@@ -97,9 +97,7 @@ trait TestData {
     note = "Good delete for test"
   )
 
-  val goodGvcfQueryCommand = QueryGvcf(
-    transferGvcfV1QueryInput = TransferGvcfV1QueryInput()
-  )
+  val goodGvcfQueryCommand = QueryGvcf(queryInput = TransferGvcfV1QueryInput())
 
   val goodGvcfAddCommand = AddGvcf(
     metadataLocation = gvcfMetadataFileLocation,

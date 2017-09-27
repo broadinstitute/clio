@@ -14,6 +14,8 @@ import scala.util.{Failure, Success}
 
 class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
 
+  private val index = WgsUbamIndex
+
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     credentials: HttpCredentials
@@ -25,15 +27,8 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
       for {
         queryResponses <- webClient
           .query(
-            WgsUbamIndex,
-            TransferWgsUbamV1QueryInput(
-              flowcellBarcode =
-                Some(deleteWgsUbam.transferWgsUbamV1Key.flowcellBarcode),
-              lane = Some(deleteWgsUbam.transferWgsUbamV1Key.lane),
-              libraryName = Some(deleteWgsUbam.transferWgsUbamV1Key.libraryName),
-              location = Some(deleteWgsUbam.transferWgsUbamV1Key.location),
-              documentStatus = Some(DocumentStatus.Normal)
-            ),
+            index,
+            deleteWgsUbam.transferWgsUbamV1Key,
             includeDeleted = false
           )
           .map(webClient.ensureOkResponse) logErrorMsg "There was a problem querying the Clio server for wgs-ubams."
@@ -107,12 +102,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
     credentials: HttpCredentials
   ): Future[HttpResponse] = {
 
-    val key = TransferWgsUbamV1Key(
-      wgsUbam.flowcellBarcode,
-      wgsUbam.lane,
-      wgsUbam.libraryName,
-      wgsUbam.location
-    )
+    val key = TransferWgsUbamV1Key(wgsUbam)
     val prettyKey = ClassUtil.formatFields(key)
 
     def addNote(note: String): String = {
@@ -139,7 +129,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
                 s"Failed to delete the wgs-ubam $prettyKey in Clio. " +
                   s"The file has been deleted in the cloud. " +
                   s"Clio now has a 'dangling pointer' to ${wgsUbam.ubamPath.getOrElse("")}. " +
-                  s"Please try updating Clio by manually adding the wgs-ubam and setting the documentStatus to Deleted and making the ubamPath an empty String."
+                  s"Please try updating Clio by manually adding the ${index.name} and setting the documentStatus to Deleted and making the ubamPath an empty String."
               )
           } else {
             Future.failed(
@@ -173,7 +163,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
       }
   }
 
-  private def deleteInClio(key: TransferWgsUbamV1Key,
+  private def deleteInClio(key: TransferKey,
                            notes: String,
                            webClient: ClioWebClient)(
     implicit ec: ExecutionContext,
@@ -185,9 +175,9 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
     logger.info(s"Deleting wgs-ubam for $prettyKey in Clio.")
     webClient
       .upsert(
-        WgsUbamIndex,
+        index,
         key,
-        TransferWgsUbamV1Metadata(
+        new index.metadataType(
           documentStatus = Some(DocumentStatus.Deleted),
           notes = Some(notes)
         )

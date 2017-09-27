@@ -91,10 +91,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
      */
     lazy val responseFuture = runUpsertWgsUbam(
       TransferWgsUbamV1Key(
+        expected.location,
         expected.flowcellBarcode,
         expected.lane,
-        expected.libraryName,
-        expected.location
+        expected.libraryName
       ),
       TransferWgsUbamV1Metadata(project = expected.project)
     )
@@ -134,10 +134,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
   it should "assign different upsertIds to different wgs-ubam upserts" in {
     val upsertKey = TransferWgsUbamV1Key(
+      Location.GCP,
       "testupsertIdBarcode",
       2,
-      s"library$randomId",
-      Location.GCP
+      s"library$randomId"
     )
 
     for {
@@ -168,10 +168,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
   it should "assign different upsertIds to equal wgs-ubam upserts" in {
     val upsertKey = TransferWgsUbamV1Key(
+      Location.GCP,
       "testupsertIdBarcode",
       2,
-      s"library$randomId",
-      Location.GCP
+      s"library$randomId"
     )
     val metadata = TransferWgsUbamV1Metadata(project = Some("testProject1"))
 
@@ -205,7 +205,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       libraries.zip(samples).map {
         case (library, sample) =>
           val key =
-            TransferWgsUbamV1Key(flowcellBarcode, lane, library, location)
+            TransferWgsUbamV1Key(location, flowcellBarcode, lane, library)
           val metadata = TransferWgsUbamV1Metadata(
             project = Some(project),
             sampleAlias = Some(sample)
@@ -244,7 +244,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
   it should "handle updates to wgs-ubam metadata" in {
     val key =
-      TransferWgsUbamV1Key("barcode2", 2, s"library$randomId", Location.GCP)
+      TransferWgsUbamV1Key(Location.GCP, "barcode2", 2, s"library$randomId")
     val project = s"testProject$randomId"
     val metadata = TransferWgsUbamV1Metadata(
       project = Some(project),
@@ -391,7 +391,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val cloudPath2 =
       cloudPath.getParent.resolve(s"moved/$randomId.unmapped.bam")
 
-    val key = TransferWgsUbamV1Key(barcode, lane, library, Location.GCP)
+    val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
     val metadata =
       TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri.toString))
 
@@ -457,7 +457,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
     )
 
-    val key = TransferWgsUbamV1Key(barcode, lane, library, Location.GCP)
+    val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
     val metadata = TransferWgsUbamV1Metadata(
       ubamPath = Some(cloudPath.toUri.toString),
       notes = existingNote

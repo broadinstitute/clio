@@ -20,7 +20,7 @@ import org.scalatest.{AsyncFlatSpec, Matchers}
 class PersistenceServiceSpec extends AsyncFlatSpec with Matchers {
   behavior of "PersistenceService"
 
-  val mockKey = TransferWgsUbamV1Key("barcode", 1, "library", Location.OnPrem)
+  val mockKey = TransferWgsUbamV1Key(Location.OnPrem, "barcode", 1, "library")
   val mockMetadata = TransferWgsUbamV1Metadata()
 
   it should "upsertMetadata" in {
