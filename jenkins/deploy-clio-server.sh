@@ -208,5 +208,3 @@ ${SSHCMD} "sudo rm -rf ${PREVIOUS_APP_BACKUP_DIR}"
 # GCE SSH key, which doesn't match its GitHub key. We push the tag as a follow-up
 # step using the git publisher.
 git tag -f "$ENV"
-
-exit 0
