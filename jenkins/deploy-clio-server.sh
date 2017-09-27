@@ -167,45 +167,46 @@ REPORTED_VERSION=
 # we can be smarter about how long we wait here before rolling back.
 attempts=1
 
-while [ -z "$STATUS" ] && [ ${attempts} -le 30 ]
+while [[ "$STATUS" != "OK" || "$REPORTED_VERSION" != "$DOCKER_TAG" ]]
 do
-  sleep 20
-  echo "Attempt $attempts"
-  STATUS=$(curl -fs https://"${CLIO_HOST}/health" | jq -r .search)
-  REPORTED_VERSION=$(curl -fs https://"${CLIO_HOST}/version" | jq -r .version)
-  attempts=$((attempts + 1))
-done
+  if [ ${attempts} -le 30 ]
+  then
+    sleep 20
+    echo "Attempt $attempts"
+    STATUS=$(curl -fs https://"${CLIO_HOST}/health" | jq -r .search)
+    REPORTED_VERSION=$(curl -fs https://"${CLIO_HOST}/version" | jq -r .version)
+    attempts=$((attempts + 1))
+  else
+    >&2 echo "Error: Clio failed to report expected health and version, rolling back deploy!!"
 
-if [[ "$STATUS" == "OK" && "$REPORTED_VERSION" == "$DOCKER_TAG" ]]; then
-  # rm /app.old.old
-  ${SSHCMD} "sudo rm -rf ${PREVIOUS_APP_BACKUP_DIR}"
+    # stop running the new container
+    stopcontainer
 
-  # tag the current commit with the name of the environment that was just deployed to
-  # this is a floating tag, so we have to use -f
-  #
-  # NOTE: we can't push the tag here because Jenkins has to run this script with its
-  # GCE SSH key, which doesn't match its GitHub key. We push the tag as a follow-up
-  # step using the git publisher.
-  git tag -f "$ENV"
-
-  exit 0
-else
-  >&2 echo "Error: Clio failed to report expected health and version, rolling back deploy!!"
-
-  # stop running the new container
-  stopcontainer
-
-  # rm /app
-  # move /app.old to /app
-  # move /app.old.old to /app.old
-  ${SSHCMD} <<-EOF
-    sudo rm -rf ${APP_DIR} &&
-    ([ ! -d ${PREVIOUS_APP_DIR} ] || sudo mv ${PREVIOUS_APP_DIR} ${APP_DIR}) &&
-    ([ ! -d ${PREVIOUS_APP_BACKUP_DIR} ] || sudo mv ${PREVIOUS_APP_BACKUP_DIR} ${PREVIOUS_APP_DIR})
+    # rm /app
+    # move /app.old to /app
+    # move /app.old.old to /app.old
+    ${SSHCMD} <<-EOF
+      sudo rm -rf ${APP_DIR} &&
+      ([ ! -d ${PREVIOUS_APP_DIR} ] || sudo mv ${PREVIOUS_APP_DIR} ${APP_DIR}) &&
+      ([ ! -d ${PREVIOUS_APP_BACKUP_DIR} ] || sudo mv ${PREVIOUS_APP_BACKUP_DIR} ${PREVIOUS_APP_DIR})
 EOF
 
-  # start running the old container
-  startcontainer
+    # start running the old container
+    startcontainer
 
-  exit 1
-fi
+    exit 1
+  fi
+done
+
+# rm /app.old.old
+${SSHCMD} "sudo rm -rf ${PREVIOUS_APP_BACKUP_DIR}"
+
+# tag the current commit with the name of the environment that was just deployed to
+# this is a floating tag, so we have to use -f
+#
+# NOTE: we can't push the tag here because Jenkins has to run this script with its
+# GCE SSH key, which doesn't match its GitHub key. We push the tag as a follow-up
+# step using the git publisher.
+git tag -f "$ENV"
+
+exit 0
