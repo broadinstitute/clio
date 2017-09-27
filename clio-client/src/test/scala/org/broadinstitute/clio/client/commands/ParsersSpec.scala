@@ -1,9 +1,10 @@
 package org.broadinstitute.clio.client.commands
 
+import java.time.OffsetDateTime
+
+import caseapp.core.Error
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
-
-import java.time.OffsetDateTime
 
 class ParsersSpec extends BaseClientSpec {
 
@@ -16,7 +17,7 @@ class ParsersSpec extends BaseClientSpec {
     val location: Option[Location] = (parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
-          case Right((_, query, _, _)) =>
+          case Right((_, query, _)) =>
             query
               .asInstanceOf[QueryWgsUbam]
               .transferWgsUbamV1QueryInput
@@ -35,7 +36,7 @@ class ParsersSpec extends BaseClientSpec {
     val errorMessage = parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
-          case Right((_, query, _, _)) =>
+          case Right((_, query, _)) =>
             query
               .asInstanceOf[QueryWgsUbam]
               .transferWgsUbamV1QueryInput
@@ -49,7 +50,9 @@ class ParsersSpec extends BaseClientSpec {
 
     errorMessage should be(
       Some(
-        s"Unknown enum value 'BadValue' for type org.broadinstitute.clio.util.model.Location, valid values are [$validLocations]"
+        Error.UnrecognizedValue(
+          s"Unknown enum value 'BadValue' for type org.broadinstitute.clio.util.model.Location, valid values are [$validLocations]"
+        )
       )
     )
   }
@@ -65,7 +68,7 @@ class ParsersSpec extends BaseClientSpec {
     val docStatus: Option[DocumentStatus] = (parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
-          case Right((_, query, _, _)) =>
+          case Right((_, query, _)) =>
             query
               .asInstanceOf[QueryWgsUbam]
               .transferWgsUbamV1QueryInput
@@ -88,7 +91,7 @@ class ParsersSpec extends BaseClientSpec {
     val runDateStart: Option[OffsetDateTime] = (parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
-          case Right((_, query, _, _)) =>
+          case Right((_, query, _)) =>
             query
               .asInstanceOf[QueryWgsUbam]
               .transferWgsUbamV1QueryInput
@@ -117,7 +120,7 @@ class ParsersSpec extends BaseClientSpec {
     val ignoreDeleted: Boolean = parsed match {
       case Right((_, _, optCmd)) => {
         optCmd map {
-          case Right((_, query, _, _)) =>
+          case Right((_, query, _)) =>
             query.asInstanceOf[QueryWgsUbam].includeDeleted
           case Left(_) => fail("Could not parse inner command.")
         }

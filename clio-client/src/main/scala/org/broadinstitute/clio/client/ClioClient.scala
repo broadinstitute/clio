@@ -5,7 +5,8 @@ import org.broadinstitute.clio.client.dispatch.CommandDispatch
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import caseapp.core.{Messages, WithHelp}
+import caseapp.core.{Error, RemainingArgs}
+import caseapp.core.help.{Help, WithHelp}
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -40,7 +41,7 @@ object ClioClient extends LazyLogging {
     * different return codes accordingly.
     */
   sealed trait EarlyReturn
-  final case class ParsingError(error: String) extends EarlyReturn
+  final case class ParsingError(error: Error) extends EarlyReturn
   final case class AuthError(cause: Throwable) extends EarlyReturn
   final case class UsageOrHelpAsked(message: String) extends EarlyReturn
 
@@ -68,7 +69,7 @@ object ClioClient extends LazyLogging {
             sys.exit(0)
           }
           case ParsingError(error) => {
-            System.err.println(error)
+            System.err.println(error.message)
             sys.exit(1)
           }
           case AuthError(cause) => {
@@ -94,7 +95,7 @@ object ClioClient extends LazyLogging {
   * The main clio-client application.
   *
   * Inspired by / partially copy-pasted from the
-  * [[caseapp.CommandAppWithPreCommand]], which demonstrates
+  * [[caseapp.core.app.CommandAppWithPreCommand]], which demonstrates
   * how to use caseapp's parsers to build a client with
   * subcommands sharing common options. This class
   * reimplements that class instead of extending it because
@@ -124,8 +125,8 @@ class ClioClient(webClient: ClioWebClient,
     * caseapp supports setting these through annotations, but
     * only if the values are constant strings.
     */
-  private val beforeCommandMessages: Messages[CommonOptions] =
-    CommonOptions.messages.copy(
+  private val beforeCommandHelp: Help[CommonOptions] =
+    CommonOptions.help.copy(
       appName = "Clio Client",
       appVersion = ClioClientConfig.Version.value,
       progName = ClioClient.progName,
@@ -134,12 +135,12 @@ class ClioClient(webClient: ClioWebClient,
 
   /** Names of all valid sub-commands. */
   private val commands: Seq[String] =
-    ClioCommand.messages.messagesMap.keys.toSeq
+    ClioCommand.help.messagesMap.keys.toSeq
 
   /** Top-level help message to display on --help. */
   private val helpMessage: String =
     s"""
-       |${beforeCommandMessages.helpMessage}
+       |${beforeCommandHelp.help}
        |Available commands:
        |${commands.map(commandHelp).mkString("\n")}
      """.stripMargin
@@ -150,24 +151,24 @@ class ClioClient(webClient: ClioWebClient,
     */
   private val usageMessage: String =
     s"""
-       |${beforeCommandMessages.usageMessage}
+       |${beforeCommandHelp.usage}
        |Available commands:
        |  ${commands.mkString(", ")}
      """.stripMargin
 
   /** Help message for a specific command. */
   private def commandHelp(command: String): String = {
-    ClioCommand.messages
+    ClioCommand.help
       .messagesMap(command)
-      .helpMessage(s"${beforeCommandMessages.progName} [options]", command)
+      .helpMessage(s"${beforeCommandHelp.progName} [options]", command)
   }
 
   /** Usage message for a specific command. */
   private def commandUsage(command: String): String = {
-    ClioCommand.messages
+    ClioCommand.help
       .messagesMap(command)
       .usageMessage(
-        s"${beforeCommandMessages.progName} [options]",
+        s"${beforeCommandHelp.progName} [options]",
         s"$command [command-options]"
       )
   }
@@ -200,7 +201,7 @@ class ClioClient(webClient: ClioWebClient,
               wrapError(commandParse)
                 .flatMap(commandMain(commonOpts, _))
             }
-            .getOrElse(Left(ParsingError(usageMessage)))
+            .getOrElse(Left(ParsingError(Error.Other(usageMessage))))
         } yield {
           response
         }
@@ -212,7 +213,7 @@ class ClioClient(webClient: ClioWebClient,
     * Utility for wrapping a parsing error in our type infrastructure,
     * for cleaner use in for-comprehensions.
     */
-  private def wrapError[X](either: Either[String, X]): Either[EarlyReturn, X] = {
+  private def wrapError[X](either: Either[Error, X]): Either[EarlyReturn, X] = {
     either.left.map(ParsingError.apply)
   }
 
@@ -247,7 +248,9 @@ class ClioClient(webClient: ClioWebClient,
     Either.cond(
       remainingArgs.isEmpty,
       (),
-      ParsingError(s"Found extra arguments: ${remainingArgs.mkString(" ")}")
+      ParsingError(
+        Error.Other(s"Found extra arguments: ${remainingArgs.mkString(" ")}")
+      )
     )
   }
 
@@ -256,19 +259,16 @@ class ClioClient(webClient: ClioWebClient,
     */
   private def commandMain(
     commonOpts: CommonOptions,
-    commandParseWithArgs: (String,
-                           WithHelp[ClioCommand],
-                           Seq[String],
-                           Seq[String])
+    commandParseWithArgs: (String, WithHelp[ClioCommand], RemainingArgs)
   ): Either[EarlyReturn, Future[HttpResponse]] = {
-    val (commandName, commandParse, args, args0) = commandParseWithArgs
+    val (commandName, commandParse, args) = commandParseWithArgs
 
     for {
       _ <- messageIfAsked(commandHelp(commandName), commandParse.help)
       _ <- messageIfAsked(commandUsage(commandName), commandParse.usage)
       token <- getAccessToken(commonOpts.bearerToken)
       command <- wrapError(commandParse.baseOrError)
-      _ <- checkRemainingArgs(args ++ args0)
+      _ <- checkRemainingArgs(args.remaining)
     } yield {
       implicit val bearerToken: OAuth2BearerToken = token
       val commandDispatch = new CommandDispatch(webClient, ioUtil)
