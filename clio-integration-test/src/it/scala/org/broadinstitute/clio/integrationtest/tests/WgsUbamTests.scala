@@ -188,7 +188,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "handle querying wgs-ubams by sample and project" in {
+  it should "handle querying wgs-ubams by sample, project, and research-project-id" in {
     val flowcellBarcode = "barcode2"
     val lane = 2
     val location = Location.GCP
@@ -199,15 +199,17 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       val sameId = "testSample" + randomId
       Seq(sameId, sameId, "testSample" + randomId)
     }
+    val researchProjectIds = Seq.fill(3)("rpId" + randomId)
 
     val upserts = Future.sequence {
-      libraries.zip(samples).map {
-        case (library, sample) =>
+      Seq(libraries, samples, researchProjectIds).transpose.map {
+        case Seq(library, sample, researchProjectId) =>
           val key =
             TransferWgsUbamV1Key(flowcellBarcode, lane, library, location)
           val metadata = TransferWgsUbamV1Metadata(
             project = Some(project),
-            sampleAlias = Some(sample)
+            sampleAlias = Some(sample),
+            researchProjectId = Some(researchProjectId)
           )
           runUpsertWgsUbam(key, metadata)
       }
@@ -229,6 +231,13 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       )
       sampleResults <- Unmarshal(sampleResponse)
         .to[Seq[TransferWgsUbamV1QueryOutput]]
+      rpIdResponse <- runClient(
+        ClioCommand.queryWgsUbamName,
+        "--research-project-id",
+        researchProjectIds.last
+      )
+      rpIdResults <- Unmarshal(rpIdResponse)
+        .to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
@@ -238,6 +247,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       sampleResults.foldLeft(succeed) { (_, result) =>
         result.sampleAlias should be(Some(samples.head))
       }
+      rpIdResults should have length 1
+      rpIdResults.headOption.flatMap(_.researchProjectId) should be(
+        researchProjectIds.lastOption
+      )
     }
   }
 
