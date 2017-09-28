@@ -16,20 +16,19 @@ import caseapp.core.commandparser.CommandParser
   */
 sealed trait ClioCommand
 
-sealed trait GetSchemaCommand extends ClioCommand {
-  def index: TransferIndex
-}
+sealed abstract class GetSchemaCommand[TI <: TransferIndex](
+  val index: TransferIndex
+) extends ClioCommand
 
-sealed trait AddCommand extends ClioCommand {
-  def index: TransferIndex
-  def key: TransferKey
+sealed abstract class AddCommand[TI <: TransferIndex](val index: TI)
+    extends ClioCommand {
+  def key: index.KeyType
   def metadataLocation: String
 }
 
-sealed trait QueryCommand extends ClioCommand {
-  def index: TransferIndex
-  // TODO: There should be a way to use the real type here, but we weren't able to get it working.
-  def queryInput: Any
+sealed abstract class QueryCommand[TI <: TransferIndex](val index: TI)
+    extends ClioCommand {
+  def queryInput: index.QueryInputType
   def includeDeleted: Boolean
 }
 
@@ -44,23 +43,17 @@ case object GetServerVersion extends ClioCommand
 // WGS-uBAM commands.
 
 @CommandName(ClioCommand.getWgsUbamSchemaName)
-case object GetSchemaWgsUbam extends GetSchemaCommand {
-  override def index: TransferIndex = WgsUbamIndex
-}
+case object GetSchemaWgsUbam extends GetSchemaCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.addWgsUbamName)
 final case class AddWgsUbam(metadataLocation: String,
                             @Recurse key: TransferWgsUbamV1Key)
-    extends AddCommand {
-  override def index: TransferIndex = WgsUbamIndex
-}
+    extends AddCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.queryWgsUbamName)
 final case class QueryWgsUbam(@Recurse queryInput: TransferWgsUbamV1QueryInput,
                               includeDeleted: Boolean = false)
-    extends QueryCommand {
-  override def index: TransferIndex = WgsUbamIndex
-}
+    extends QueryCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.moveWgsUbamName)
 final case class MoveWgsUbam(
@@ -77,23 +70,17 @@ final case class DeleteWgsUbam(
 // GVCF commands.
 
 @CommandName(ClioCommand.getGvcfSchemaName)
-case object GetSchemaGvcf extends GetSchemaCommand {
-  override def index: TransferIndex = GvcfIndex
-}
+case object GetSchemaGvcf extends GetSchemaCommand(GvcfIndex)
 
 @CommandName(ClioCommand.addGvcfName)
 final case class AddGvcf(metadataLocation: String,
                          @Recurse key: TransferGvcfV1Key)
-    extends AddCommand {
-  override def index: TransferIndex = GvcfIndex
-}
+    extends AddCommand(GvcfIndex)
 
 @CommandName(ClioCommand.queryGvcfName)
 final case class QueryGvcf(@Recurse queryInput: TransferGvcfV1QueryInput,
                            includeDeleted: Boolean = false)
-    extends QueryCommand {
-  override def index: TransferIndex = GvcfIndex
-}
+    extends QueryCommand(GvcfIndex)
 
 @CommandName(ClioCommand.moveGvcfName)
 final case class MoveGvcf(@Recurse transferGvcfV1Key: TransferGvcfV1Key,

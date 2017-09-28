@@ -21,6 +21,8 @@ sealed trait TransferIndex extends ModelAutoDerivation {
 
   val commandName: String
 
+  type KeyType <: TransferKey
+
   type MetadataType
 
   type QueryInputType
@@ -43,6 +45,8 @@ case object GvcfIndex extends TransferIndex {
   override val name: String = "Gvcf"
 
   override val commandName: String = "gvcf"
+
+  override type KeyType = TransferGvcfV1Key
 
   override type MetadataType = TransferGvcfV1Metadata
 
@@ -68,6 +72,8 @@ case object WgsUbamIndex extends TransferIndex {
   override val name: String = "WgsUbam"
 
   override val commandName: String = "wgs-ubam"
+
+  override type KeyType = TransferWgsUbamV1Key
 
   override type MetadataType = TransferWgsUbamV1Metadata
 
