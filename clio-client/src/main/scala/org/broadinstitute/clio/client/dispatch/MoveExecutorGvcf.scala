@@ -1,28 +1,30 @@
 package org.broadinstitute.clio.client.dispatch
 
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveGvcf}
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.util.GvcfUtil._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
+  GvcfIndex,
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryInput,
   TransferGvcfV1QueryOutput
 }
+import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
 
-  private val prettyKey = moveGvcfCommand.transferGvcfV1Key.prettyKey
+  private val prettyKey =
+    ClassUtil.formatFields(moveGvcfCommand.transferGvcfV1Key)
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
     for {
       _ <- Future(verifyCloudPaths(ioUtil)) logErrorMsg
@@ -52,7 +54,7 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
 
   private def queryForGvcfPath(
     webClient: ClioWebClient
-  )(implicit bearerToken: OAuth2BearerToken): Future[String] = {
+  )(implicit credentials: HttpCredentials): Future[String] = {
     implicit val ec: ExecutionContext = webClient.executionContext
 
     def ensureOnlyOne(
@@ -74,7 +76,8 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
     }
 
     webClient
-      .queryGvcf(
+      .query(
+        GvcfIndex,
         TransferGvcfV1QueryInput(
           documentStatus = Option(DocumentStatus.Normal),
           location = Option(Location.GCP),
@@ -128,13 +131,13 @@ class MoveExecutorGvcf(moveGvcfCommand: MoveGvcf) extends Executor {
 
   private def upsertUpdatedGvcf(
     webClient: ClioWebClient
-  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
     implicit val executionContext: ExecutionContext = webClient.executionContext
     webClient
-      .addGvcf(
-        input = moveGvcfCommand.transferGvcfV1Key,
-        transferGvcfV1Metadata =
-          TransferGvcfV1Metadata(gvcfPath = Some(moveGvcfCommand.destination))
+      .upsert(
+        GvcfIndex,
+        moveGvcfCommand.transferGvcfV1Key,
+        TransferGvcfV1Metadata(gvcfPath = Some(moveGvcfCommand.destination))
       )
       .map(webClient.ensureOkResponse)
   }

@@ -15,7 +15,7 @@ class AddGvcfSpec extends BaseClientSpec {
       succeedingDispatcher.dispatch(
         AddGvcf(
           metadataLocation = badMetadataFileLocation,
-          transferGvcfV1Key = testGvcfTransferV1Key
+          key = testGvcfTransferV1Key
         ),
       )
     }
@@ -26,7 +26,7 @@ class AddGvcfSpec extends BaseClientSpec {
       succeedingDispatcher.dispatch(
         AddGvcf(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
-          transferGvcfV1Key = testGvcfTransferV1Key
+          key = testGvcfTransferV1Key
         )
       )
     }
@@ -34,7 +34,7 @@ class AddGvcfSpec extends BaseClientSpec {
 
   it should "return a failed future if there was a server error" in {
     recoverToSucceededIf[Exception] {
-      failingDispatcherGvcf
+      failingDispatcher
         .dispatch(goodGvcfAddCommand)
     }
   }

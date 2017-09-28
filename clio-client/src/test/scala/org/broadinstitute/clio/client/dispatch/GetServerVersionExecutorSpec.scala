@@ -13,7 +13,7 @@ class GetServerVersionExecutorSpec extends BaseClientSpec {
 
   it should "return a failed future if there was a server error" in {
     recoverToSucceededIf[Exception] {
-      failingDispatcherWgsUbam.dispatch(GetServerVersion)
+      failingDispatcher.dispatch(GetServerVersion)
     }
   }
 

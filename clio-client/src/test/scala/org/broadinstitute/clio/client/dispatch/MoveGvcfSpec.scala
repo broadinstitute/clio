@@ -55,7 +55,7 @@ class MoveGvcfSpec extends BaseClientSpec {
           transferGvcfV1Key = testGvcfTransferV1Key,
           destination = testGvcfCloudSourcePath
         )
-      failingDispatcherGvcf.dispatch(command)
+      failingDispatcher.dispatch(command)
     }
   }
 
@@ -74,7 +74,7 @@ class MoveGvcfSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     recoverToSucceededIf[Exception] {
-      new CommandDispatch(MockClioWebClient.failingToAddGvcf, mockIoUtil)
+      new CommandDispatch(MockClioWebClient.failingToUpsert, mockIoUtil)
         .dispatch(goodGvcfMoveCommand)
     }
   }

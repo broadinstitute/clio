@@ -56,7 +56,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
           transferWgsUbamV1Key = testTransferV1Key,
           destination = testUbamCloudSourcePath
         )
-      failingDispatcherWgsUbam.dispatch(command)
+      failingDispatcher.dispatch(command)
     }
   }
 
@@ -75,7 +75,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     recoverToSucceededIf[Exception] {
-      new CommandDispatch(MockClioWebClient.failingToAddWgsUbam, mockIoUtil)
+      new CommandDispatch(MockClioWebClient.failingToUpsert, mockIoUtil)
         .dispatch(goodMoveCommand)
     }
   }

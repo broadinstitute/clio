@@ -16,6 +16,23 @@ import caseapp.core.commandparser.CommandParser
   */
 sealed trait ClioCommand
 
+sealed trait GetSchemaCommand extends ClioCommand {
+  def index: TransferIndex
+}
+
+sealed trait AddCommand extends ClioCommand {
+  def index: TransferIndex
+  def key: TransferKey
+  def metadataLocation: String
+}
+
+sealed trait QueryCommand extends ClioCommand {
+  def index: TransferIndex
+  // TODO: There should be a way to use the real type here, but we weren't able to get it working.
+  def queryInput: Any
+  def includeDeleted: Boolean
+}
+
 // Generic commands.
 
 @CommandName(ClioCommand.getServerHealthName)
@@ -27,18 +44,23 @@ case object GetServerVersion extends ClioCommand
 // WGS-uBAM commands.
 
 @CommandName(ClioCommand.getWgsUbamSchemaName)
-case object GetSchemaWgsUbam extends ClioCommand
+case object GetSchemaWgsUbam extends GetSchemaCommand {
+  override def index: TransferIndex = WgsUbamIndex
+}
 
 @CommandName(ClioCommand.addWgsUbamName)
 final case class AddWgsUbam(metadataLocation: String,
-                            @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key)
-    extends ClioCommand
+                            @Recurse key: TransferWgsUbamV1Key)
+    extends AddCommand {
+  override def index: TransferIndex = WgsUbamIndex
+}
 
 @CommandName(ClioCommand.queryWgsUbamName)
-final case class QueryWgsUbam(
-  @Recurse transferWgsUbamV1QueryInput: TransferWgsUbamV1QueryInput,
-  includeDeleted: Boolean = false
-) extends ClioCommand
+final case class QueryWgsUbam(@Recurse queryInput: TransferWgsUbamV1QueryInput,
+                              includeDeleted: Boolean = false)
+    extends QueryCommand {
+  override def index: TransferIndex = WgsUbamIndex
+}
 
 @CommandName(ClioCommand.moveWgsUbamName)
 final case class MoveWgsUbam(
@@ -55,18 +77,23 @@ final case class DeleteWgsUbam(
 // GVCF commands.
 
 @CommandName(ClioCommand.getGvcfSchemaName)
-case object GetSchemaGvcf extends ClioCommand
+case object GetSchemaGvcf extends GetSchemaCommand {
+  override def index: TransferIndex = GvcfIndex
+}
 
 @CommandName(ClioCommand.addGvcfName)
 final case class AddGvcf(metadataLocation: String,
-                         @Recurse transferGvcfV1Key: TransferGvcfV1Key)
-    extends ClioCommand
+                         @Recurse key: TransferGvcfV1Key)
+    extends AddCommand {
+  override def index: TransferIndex = GvcfIndex
+}
 
 @CommandName(ClioCommand.queryGvcfName)
-final case class QueryGvcf(
-  @Recurse transferGvcfV1QueryInput: TransferGvcfV1QueryInput,
-  includeDeleted: Boolean = false
-) extends ClioCommand
+final case class QueryGvcf(@Recurse queryInput: TransferGvcfV1QueryInput,
+                           includeDeleted: Boolean = false)
+    extends QueryCommand {
+  override def index: TransferIndex = GvcfIndex
+}
 
 @CommandName(ClioCommand.moveGvcfName)
 final case class MoveGvcf(@Recurse transferGvcfV1Key: TransferGvcfV1Key,
@@ -84,19 +111,25 @@ object ClioCommand extends ClioParsers {
   val getServerHealthName = "get-server-health"
   val getServerVersionName = "get-server-version"
 
+  val getSchemaPrefix = "get-schema-"
+  val addPrefix = "add-"
+  val queryPrefix = "query-"
+  val movePrefix = "move-"
+  val deletePrefix = "delete-"
+
   // Names for WGS uBAM commands.
-  val getWgsUbamSchemaName = "get-schema-wgs-ubam"
-  val addWgsUbamName = "add-wgs-ubam"
-  val queryWgsUbamName = "query-wgs-ubam"
-  val moveWgsUbamName = "move-wgs-ubam"
-  val deleteWgsUbamName = "delete-wgs-ubam"
+  val getWgsUbamSchemaName: String = getSchemaPrefix + WgsUbamIndex.commandName
+  val addWgsUbamName: String = addPrefix + WgsUbamIndex.commandName
+  val queryWgsUbamName: String = queryPrefix + WgsUbamIndex.commandName
+  val moveWgsUbamName: String = movePrefix + WgsUbamIndex.commandName
+  val deleteWgsUbamName: String = deletePrefix + WgsUbamIndex.commandName
 
   // Names for GVCF commands.
-  val getGvcfSchemaName = "get-schema-gvcf"
-  val addGvcfName = "add-gvcf"
-  val queryGvcfName = "query-gvcf"
-  val moveGvcfName = "move-gvcf"
-  val deleteGvcfName = "delete-gvcf"
+  val getGvcfSchemaName: String = getSchemaPrefix + GvcfIndex.commandName
+  val addGvcfName: String = addPrefix + GvcfIndex.commandName
+  val queryGvcfName: String = queryPrefix + GvcfIndex.commandName
+  val moveGvcfName: String = movePrefix + GvcfIndex.commandName
+  val deleteGvcfName: String = deletePrefix + GvcfIndex.commandName
 
   /** The caseapp parser to use for all Clio sub-commands. */
   val parser: CommandParser[ClioCommand] =

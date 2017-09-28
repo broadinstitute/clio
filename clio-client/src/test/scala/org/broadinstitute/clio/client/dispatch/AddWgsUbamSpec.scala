@@ -16,7 +16,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
       succeedingDispatcher.dispatch(
         AddWgsUbam(
           metadataLocation = badMetadataFileLocation,
-          transferWgsUbamV1Key = testTransferV1Key
+          key = testTransferV1Key
         ),
       )
     }
@@ -27,7 +27,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
       succeedingDispatcher.dispatch(
         AddWgsUbam(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
-          transferWgsUbamV1Key = testTransferV1Key
+          key = testTransferV1Key
         )
       )
     }
@@ -35,7 +35,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
 
   it should "return a failed future if there was a server error" in {
     recoverToSucceededIf[Exception] {
-      failingDispatcherWgsUbam
+      failingDispatcher
         .dispatch(goodAddCommand)
     }
   }

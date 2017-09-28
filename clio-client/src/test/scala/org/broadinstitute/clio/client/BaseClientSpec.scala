@@ -23,14 +23,9 @@ abstract class BaseClientSpec
     new CommandDispatch(MockClioWebClient.returningWgsUbam, mockIoUtil)
   def succeedingReturningDispatcherGvcf(mockIoUtil: MockIoUtil) =
     new CommandDispatch(MockClioWebClient.returningGvcf, mockIoUtil)
-  val failingDispatcherWgsUbam =
+  val failingDispatcher =
     new CommandDispatch(
-      MockClioWebClient.returningInternalErrorWgsUbam,
-      new MockIoUtil
-    )
-  val failingDispatcherGvcf =
-    new CommandDispatch(
-      MockClioWebClient.returningInternalErrorGvcf,
+      MockClioWebClient.returningInternalError,
       new MockIoUtil
     )
 

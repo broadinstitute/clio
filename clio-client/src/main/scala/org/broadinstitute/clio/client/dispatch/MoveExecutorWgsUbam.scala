@@ -1,29 +1,30 @@
 package org.broadinstitute.clio.client.dispatch
 
+import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveWgsUbam}
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.util.WgsUbamUtil._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput,
-  TransferWgsUbamV1QueryOutput
+  TransferWgsUbamV1QueryOutput,
+  WgsUbamIndex
 }
+import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.Location
-
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
 
-  private val prettyKey = moveWgsUbamCommand.transferWgsUbamV1Key.prettyKey
+  private val prettyKey =
+    ClassUtil.formatFields(moveWgsUbamCommand.transferWgsUbamV1Key)
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
     for {
       _ <- Future(verifyCloudPaths(ioUtil)) logErrorMsg
@@ -53,7 +54,7 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
 
   private def queryForWgsUbamPath(
     webClient: ClioWebClient
-  )(implicit bearerToken: OAuth2BearerToken): Future[String] = {
+  )(implicit credentials: HttpCredentials): Future[String] = {
     implicit val ec: ExecutionContext = webClient.executionContext
 
     def ensureOnlyOne(
@@ -74,7 +75,8 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
     }
 
     webClient
-      .queryWgsUbam(
+      .query(
+        WgsUbamIndex,
         TransferWgsUbamV1QueryInput(
           flowcellBarcode =
             Some(moveWgsUbamCommand.transferWgsUbamV1Key.flowcellBarcode),
@@ -129,12 +131,13 @@ class MoveExecutorWgsUbam(moveWgsUbamCommand: MoveWgsUbam) extends Executor {
 
   private def upsertUpdatedWgsUbam(
     webClient: ClioWebClient
-  )(implicit bearerToken: OAuth2BearerToken): Future[HttpResponse] = {
+  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
     implicit val executionContext: ExecutionContext = webClient.executionContext
     webClient
-      .addWgsUbam(
-        input = moveWgsUbamCommand.transferWgsUbamV1Key,
-        transferWgsUbamV1Metadata = TransferWgsUbamV1Metadata(
+      .upsert(
+        WgsUbamIndex,
+        key = moveWgsUbamCommand.transferWgsUbamV1Key,
+        metadata = TransferWgsUbamV1Metadata(
           ubamPath = Some(moveWgsUbamCommand.destination)
         )
       )

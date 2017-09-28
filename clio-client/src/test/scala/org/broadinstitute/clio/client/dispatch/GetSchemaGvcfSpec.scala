@@ -12,7 +12,7 @@ class GetSchemaGvcfSpec extends BaseClientSpec {
 
   it should "return a failed future if there was a server error" in {
     recoverToSucceededIf[Exception] {
-      failingDispatcherGvcf.dispatch(GetSchemaGvcf)
+      failingDispatcher.dispatch(GetSchemaGvcf)
     }
   }
 

@@ -6,3 +6,8 @@ case class TransferGvcfV1Key(location: Location,
                              project: String,
                              sampleAlias: String,
                              version: Int)
+    extends TransferKey {
+
+  def getUrlPath: String =
+    s"$location/$project/$sampleAlias/$version"
+}

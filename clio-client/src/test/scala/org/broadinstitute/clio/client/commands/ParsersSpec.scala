@@ -20,7 +20,7 @@ class ParsersSpec extends BaseClientSpec {
           case Right((_, query, _)) =>
             query
               .asInstanceOf[QueryWgsUbam]
-              .transferWgsUbamV1QueryInput
+              .queryInput
               .location
           case Left(_) => fail("Could not parse subcommand.")
         }
@@ -39,7 +39,7 @@ class ParsersSpec extends BaseClientSpec {
           case Right((_, query, _)) =>
             query
               .asInstanceOf[QueryWgsUbam]
-              .transferWgsUbamV1QueryInput
+              .queryInput
               .location
           case Left(error) => error
         }
@@ -71,7 +71,7 @@ class ParsersSpec extends BaseClientSpec {
           case Right((_, query, _)) =>
             query
               .asInstanceOf[QueryWgsUbam]
-              .transferWgsUbamV1QueryInput
+              .queryInput
               .documentStatus
           case Left(_) => fail("Could not parse subcommand.")
         }
@@ -94,7 +94,7 @@ class ParsersSpec extends BaseClientSpec {
           case Right((_, query, _)) =>
             query
               .asInstanceOf[QueryWgsUbam]
-              .transferWgsUbamV1QueryInput
+              .queryInput
               .runDateStart
           case Left(_) => fail("Could not parse subcommand.")
         }

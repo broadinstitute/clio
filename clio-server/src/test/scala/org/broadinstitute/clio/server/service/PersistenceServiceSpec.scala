@@ -19,7 +19,7 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
 
   import Elastic4sAutoDerivation._
 
-  val mockKey = TransferWgsUbamV1Key("barcode", 1, "library", Location.OnPrem)
+  val mockKey = TransferWgsUbamV1Key(Location.OnPrem, "barcode", 1, "library")
   val mockMetadata = TransferWgsUbamV1Metadata()
 
   it should "upsertMetadata" in {

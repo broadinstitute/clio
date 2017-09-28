@@ -2,7 +2,22 @@ package org.broadinstitute.clio.transfer.model
 
 import org.broadinstitute.clio.util.model.Location
 
-case class TransferWgsUbamV1Key(flowcellBarcode: String,
+case class TransferWgsUbamV1Key(location: Location,
+                                flowcellBarcode: String,
                                 lane: Int,
-                                libraryName: String,
-                                location: Location)
+                                libraryName: String)
+    extends TransferKey {
+
+  def getUrlPath: String =
+    s"$location/$flowcellBarcode/$lane/$libraryName"
+}
+
+object TransferWgsUbamV1Key {
+  def apply(wgsUbam: TransferWgsUbamV1QueryOutput): TransferWgsUbamV1Key =
+    new TransferWgsUbamV1Key(
+      wgsUbam.location,
+      wgsUbam.flowcellBarcode,
+      wgsUbam.lane,
+      wgsUbam.libraryName
+    )
+}

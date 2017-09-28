@@ -18,22 +18,19 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
     implicit ec: ExecutionContext,
     bearerToken: OAuth2BearerToken
   ): Future[HttpResponse] = {
-    command match {
-      case addWgsUbam: AddWgsUbam =>
-        new AddExecutorWgsUbam(addWgsUbam).execute(webClient, ioUtil)
+    (command match {
+      case addCommand: AddCommand => new AddExecutor(addCommand)
       case moveWgsUbam: MoveWgsUbam =>
-        new MoveExecutorWgsUbam(moveWgsUbam).execute(webClient, ioUtil)
+        new MoveExecutorWgsUbam(moveWgsUbam)
       case deleteWgsUbam: DeleteWgsUbam =>
-        new DeleteExecutorWgsUbam(deleteWgsUbam).execute(webClient, ioUtil)
-      case addGvcf: AddGvcf =>
-        new AddExecutorGvcf(addGvcf).execute(webClient, ioUtil)
+        new DeleteExecutorWgsUbam(deleteWgsUbam)
       case moveGvcf: MoveGvcf =>
-        new MoveExecutorGvcf(moveGvcf).execute(webClient, ioUtil)
+        new MoveExecutorGvcf(moveGvcf)
       case deleteGvcf: DeleteGvcf =>
-        new DeleteExecutorGvcf(deleteGvcf).execute(webClient, ioUtil)
+        new DeleteExecutorGvcf(deleteGvcf)
       case other =>
-        new RetrieveAndPrintExecutor(other).execute(webClient, ioUtil)
-    }
+        new RetrieveAndPrintExecutor(other)
+    }).execute(webClient, ioUtil)
   }
 
   def dispatch(command: ClioCommand)(

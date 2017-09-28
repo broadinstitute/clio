@@ -1,17 +1,12 @@
 package org.broadinstitute.clio.client.dispatch
 
 import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.commands.DeleteGvcf
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.util.GvcfUtil._
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{
-  TransferGvcfV1Key,
-  TransferGvcfV1Metadata,
-  TransferGvcfV1QueryInput,
-  TransferGvcfV1QueryOutput
-}
+import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.collection.immutable.Seq
@@ -22,7 +17,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
     if (!deleteGvcf.transferGvcfV1Key.location.equals(Location.GCP)) {
       Future
@@ -30,7 +25,8 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
     } else {
       for {
         queryResponses <- webClient
-          .queryGvcf(
+          .query(
+            GvcfIndex,
             TransferGvcfV1QueryInput(
               documentStatus = Some(DocumentStatus.Normal),
               location = Some(deleteGvcf.transferGvcfV1Key.location),
@@ -70,7 +66,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
                           webClient: ClioWebClient,
                           ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[Seq[HttpResponse]] = {
     if (gvcf.isEmpty) {
       Future.failed(
@@ -106,7 +102,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
                          webClient: ClioWebClient,
                          ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
 
     val key = TransferGvcfV1Key(
@@ -115,7 +111,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
       gvcf.sampleAlias,
       gvcf.version
     )
-    val prettyKey = key.prettyKey
+    val prettyKey = ClassUtil.formatFields(key)
 
     def addNote(note: String): String = {
       gvcf.notes
@@ -178,14 +174,15 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
                            notes: String,
                            webClient: ClioWebClient)(
     implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
+    credentials: HttpCredentials
   ): Future[HttpResponse] = {
 
-    val prettyKey = key.prettyKey
+    val prettyKey = ClassUtil.formatFields(key)
 
     logger.info(s"Deleting gvcf for $prettyKey in Clio.")
     webClient
-      .addGvcf(
+      .upsert(
+        GvcfIndex,
         key,
         TransferGvcfV1Metadata(
           documentStatus = Some(DocumentStatus.Deleted),

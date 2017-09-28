@@ -13,7 +13,7 @@ class GetSchemaWgsUbamSpec extends BaseClientSpec {
 
   it should "return a failed future if there was a server error" in {
     recoverToSucceededIf[Exception] {
-      failingDispatcherWgsUbam.dispatch(GetSchemaWgsUbam)
+      failingDispatcher.dispatch(GetSchemaWgsUbam)
     }
   }
 

@@ -17,3 +17,14 @@ case class TransferWgsUbamV1QueryInput(
   sampleAlias: Option[String] = None,
   documentStatus: Option[DocumentStatus] = None
 )
+
+object TransferWgsUbamV1QueryInput {
+  def apply(key: TransferWgsUbamV1Key): TransferWgsUbamV1QueryInput = {
+    TransferWgsUbamV1QueryInput(
+      flowcellBarcode = Some(key.flowcellBarcode),
+      lane = Some(key.lane),
+      libraryName = Some(key.libraryName),
+      location = Some(key.location)
+    )
+  }
+}
