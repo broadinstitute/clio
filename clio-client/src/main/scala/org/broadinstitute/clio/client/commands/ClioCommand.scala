@@ -28,6 +28,7 @@ sealed trait AddCommand extends ClioCommand {
 
 sealed trait QueryCommand extends ClioCommand {
   def index: TransferIndex
+  // TODO: There should be a way to use the real type here, but we weren't able to get it working.
   def queryInput: Any
   def includeDeleted: Boolean
 }
@@ -42,19 +43,19 @@ case object GetServerVersion extends ClioCommand
 
 // WGS-uBAM commands.
 
-@CommandName(ClioCommand.getSchemaPrefix + WgsUbamIndex.commandName)
+@CommandName(ClioCommand.getWgsUbamSchemaName)
 case object GetSchemaWgsUbam extends GetSchemaCommand {
   override def index: TransferIndex = WgsUbamIndex
 }
 
-@CommandName(ClioCommand.addPrefix + WgsUbamIndex.commandName)
+@CommandName(ClioCommand.addWgsUbamName)
 final case class AddWgsUbam(metadataLocation: String,
                             @Recurse key: TransferWgsUbamV1Key)
     extends AddCommand {
   override def index: TransferIndex = WgsUbamIndex
 }
 
-@CommandName(ClioCommand.queryPrefix + WgsUbamIndex.commandName)
+@CommandName(ClioCommand.queryWgsUbamName)
 final case class QueryWgsUbam(@Recurse queryInput: TransferWgsUbamV1QueryInput,
                               includeDeleted: Boolean = false)
     extends QueryCommand {
@@ -75,12 +76,12 @@ final case class DeleteWgsUbam(
 
 // GVCF commands.
 
-@CommandName(ClioCommand.getSchemaPrefix + GvcfIndex.commandName)
+@CommandName(ClioCommand.getGvcfSchemaName)
 case object GetSchemaGvcf extends GetSchemaCommand {
   override def index: TransferIndex = GvcfIndex
 }
 
-@CommandName(ClioCommand.addPrefix + GvcfIndex.commandName)
+@CommandName(ClioCommand.addGvcfName)
 final case class AddGvcf(metadataLocation: String,
                          @Recurse key: TransferGvcfV1Key)
     extends AddCommand {
