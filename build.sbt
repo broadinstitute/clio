@@ -28,7 +28,8 @@ inThisBuild(
 val commonSettings: Seq[Setting[_]] = Seq(
   scalacOptions in (Compile, doc) ++= Compilation.DocSettings,
   scalacOptions in (Compile, console) := Compilation.ConsoleSettings,
-  resourceGenerators in Compile += Versioning.writeVersionConfig.taskValue
+  resourceGenerators in Compile += Versioning.writeVersionConfig.taskValue,
+  fork in run := true
 )
 val commonDockerSettings: Seq[Setting[_]] = Seq(
   assemblyJarName in assembly := Versioning.assemblyName.value,
