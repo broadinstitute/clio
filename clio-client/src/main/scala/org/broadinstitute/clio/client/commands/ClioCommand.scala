@@ -16,9 +16,8 @@ import caseapp.core.commandparser.CommandParser
   */
 sealed trait ClioCommand
 
-sealed abstract class GetSchemaCommand[TI <: TransferIndex](
-  val index: TransferIndex
-) extends ClioCommand
+sealed abstract class GetSchemaCommand[TI <: TransferIndex](val index: TI)
+    extends ClioCommand
 
 sealed abstract class AddCommand[TI <: TransferIndex](val index: TI)
     extends ClioCommand {
