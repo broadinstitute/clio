@@ -11,7 +11,7 @@ import io.circe.Encoder
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import org.broadinstitute.clio.server.dataaccess.util.ClioUUIDGenerator
+import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
 import org.broadinstitute.clio.transfer.model.{
   TransferGvcfV1QueryOutput,
   TransferWgsUbamV1QueryOutput
@@ -33,7 +33,7 @@ trait RecoveryTests extends ForAllTestContainer {
     val lane = Random.nextInt()
     val libraryName = s"library$randomId"
     DocumentWgsUbam(
-      upsertId = ClioUUIDGenerator.getUUID(),
+      upsertId = UpsertIdGenerator.nextId(),
       entityId = s"$flowcellBarcode.$lane.$libraryName.${location.entryName}",
       flowcellBarcode = flowcellBarcode,
       lane = lane,
@@ -48,7 +48,7 @@ trait RecoveryTests extends ForAllTestContainer {
     val sampleAlias = s"sample$randomId"
     val version = Random.nextInt()
     DocumentGvcf(
-      upsertId = ClioUUIDGenerator.getUUID(),
+      upsertId = UpsertIdGenerator.nextId(),
       entityId = s"${location.entryName}.$project.$sampleAlias.$version",
       location = location,
       project = project,

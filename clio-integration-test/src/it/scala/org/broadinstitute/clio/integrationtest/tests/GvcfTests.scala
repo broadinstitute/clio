@@ -20,13 +20,12 @@ import io.circe.Json
 
 import scala.concurrent.Future
 import java.nio.file.Files
-import java.util.UUID
 
 /** Tests of Clio's gvcf functionality. */
 trait GvcfTests { self: BaseIntegrationSpec =>
 
   def runUpsertGvcf(key: TransferGvcfV1Key,
-                    metadata: TransferGvcfV1Metadata): Future[UUID] = {
+                    metadata: TransferGvcfV1Metadata): Future[String] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addGvcfName,
@@ -40,7 +39,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       key.version.toString,
       "--metadata-location",
       tmpMetadata.toString
-    ).flatMap(Unmarshal(_).to[UUID])
+    ).flatMap(Unmarshal(_).to[String])
   }
 
   it should "create the expected gvcf mapping in elasticsearch" in {
@@ -148,9 +147,9 @@ trait GvcfTests { self: BaseIntegrationSpec =>
           upsertKey,
           TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf2.gvcf"))
         )
-        .flatMap(Unmarshal(_).to[UUID])
+        .flatMap(Unmarshal(_).to[String])
     } yield {
-      upsertId2.compareTo(upsertId1) should be(1)
+      upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
         getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId1)
@@ -181,7 +180,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertGvcf(upsertKey, upsertData)
       upsertId2 <- runUpsertGvcf(upsertKey, upsertData)
     } yield {
-      upsertId2.compareTo(upsertId1) should be(1)
+      upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
         getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId1)

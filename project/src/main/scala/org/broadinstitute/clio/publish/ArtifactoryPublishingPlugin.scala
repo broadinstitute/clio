@@ -20,11 +20,8 @@ object ArtifactoryPublishingPlugin extends AutoPlugin {
   private val artifactoryUsernameVar = "ARTIFACTORY_USERNAME"
   private val artifactoryPasswordVar = "ARTIFACTORY_PASSWORD"
 
-  private lazy val artifactoryCredentials
-    : Def.Initialize[Task[Option[Credentials]]] =
-    Def.task {
-      val log = streams.value.log
-
+  private lazy val artifactoryCredentials: Def.Initialize[Option[Credentials]] =
+    Def.setting {
       val cred = for {
         username <- sys.env.get(artifactoryUsernameVar)
         password <- sys.env.get(artifactoryPasswordVar)
@@ -33,8 +30,9 @@ object ArtifactoryPublishingPlugin extends AutoPlugin {
       }
 
       cred.orElse {
-        log.warn(
-          s"$artifactoryUsernameVar or $artifactoryPasswordVar not set, publishing will fail!"
+        // SBT's logging comes from a task, and tasks can't be used inside settings, so we have to roll our own warning...
+        println(
+          s"[${scala.Console.YELLOW}warn${scala.Console.RESET}] $artifactoryUsernameVar or $artifactoryPasswordVar not set, publishing will fail!"
         )
         None
       }

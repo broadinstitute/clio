@@ -21,13 +21,12 @@ import io.circe.Json
 import scala.concurrent.Future
 
 import java.nio.file.Files
-import java.util.UUID
 
 /** Tests of Clio's wgs-ubam functionality. */
 trait WgsUbamTests { self: BaseIntegrationSpec =>
 
   def runUpsertWgsUbam(key: TransferWgsUbamV1Key,
-                       metadata: TransferWgsUbamV1Metadata): Future[UUID] = {
+                       metadata: TransferWgsUbamV1Metadata): Future[String] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addWgsUbamName,
@@ -41,7 +40,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       key.location.entryName,
       "--metadata-location",
       tmpMetadata.toString
-    ).flatMap(Unmarshal(_).to[UUID])
+    ).flatMap(Unmarshal(_).to[String])
   }
 
   it should "create the expected wgs-ubam mapping in elasticsearch" in {
@@ -150,7 +149,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         TransferWgsUbamV1Metadata(project = Some("testProject2"))
       )
     } yield {
-      upsertId2.compareTo(upsertId1) should be(1)
+      upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
         getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId1)
@@ -179,7 +178,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertWgsUbam(upsertKey, metadata)
       upsertId2 <- runUpsertWgsUbam(upsertKey, metadata)
     } yield {
-      upsertId2.compareTo(upsertId1) should be(1)
+      upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
         getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId1)
@@ -189,7 +188,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "handle querying wgs-ubams by sample and project" in {
+  it should "handle querying wgs-ubams by sample, project, and research-project-id" in {
     val flowcellBarcode = "barcode2"
     val lane = 2
     val location = Location.GCP
@@ -200,15 +199,17 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       val sameId = "testSample" + randomId
       Seq(sameId, sameId, "testSample" + randomId)
     }
+    val researchProjectIds = Seq.fill(3)("rpId" + randomId)
 
     val upserts = Future.sequence {
-      libraries.zip(samples).map {
-        case (library, sample) =>
+      Seq(libraries, samples, researchProjectIds).transpose.map {
+        case Seq(library, sample, researchProjectId) =>
           val key =
             TransferWgsUbamV1Key(location, flowcellBarcode, lane, library)
           val metadata = TransferWgsUbamV1Metadata(
             project = Some(project),
-            sampleAlias = Some(sample)
+            sampleAlias = Some(sample),
+            researchProjectId = Some(researchProjectId)
           )
           runUpsertWgsUbam(key, metadata)
       }
@@ -230,6 +231,13 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       )
       sampleResults <- Unmarshal(sampleResponse)
         .to[Seq[TransferWgsUbamV1QueryOutput]]
+      rpIdResponse <- runClient(
+        ClioCommand.queryWgsUbamName,
+        "--research-project-id",
+        researchProjectIds.last
+      )
+      rpIdResults <- Unmarshal(rpIdResponse)
+        .to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
@@ -239,6 +247,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       sampleResults.foldLeft(succeed) { (_, result) =>
         result.sampleAlias should be(Some(samples.head))
       }
+      rpIdResults should have length 1
+      rpIdResults.headOption.flatMap(_.researchProjectId) should be(
+        researchProjectIds.lastOption
+      )
     }
   }
 

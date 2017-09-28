@@ -1,11 +1,10 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import java.time.OffsetDateTime
-import java.util.UUID
 
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
-case class DocumentGvcf(upsertId: UUID,
+case class DocumentGvcf(upsertId: String,
                         entityId: String,
                         location: Location,
                         project: String,

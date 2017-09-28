@@ -16,7 +16,6 @@ import org.broadinstitute.clio.transfer.model.{
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.DocumentStatus
 import org.scalatest.{FlatSpec, Matchers}
-import java.util.UUID
 
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.WgsUbamService
@@ -124,7 +123,7 @@ class WgsUbamWebServiceSpec
         }
         .asInstanceOf[DocumentWgsUbam]
 
-      firstUpdate.upsertId should be(responseAs[UUID])
+      firstUpdate.upsertId should be(responseAs[String])
       firstUpdate.project should be(Some("G123"))
       firstUpdate.sampleAlias should be(Some("sample1"))
       firstUpdate.ubamPath should be(Some("gs://path/ubam.bam"))

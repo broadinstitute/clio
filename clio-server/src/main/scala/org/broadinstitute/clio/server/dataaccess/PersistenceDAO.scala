@@ -1,7 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess
 
 import java.nio.file.{Files, Path}
-import java.util.UUID
 
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
@@ -122,7 +121,7 @@ trait PersistenceDAO extends LazyLogging {
     * @tparam D is a ClioDocument type with a JSON Decoder
     * @return a Future Seq of ClioDocument
     */
-  def getAllSince[D <: ClioDocument: Decoder](upsertId: Option[UUID],
+  def getAllSince[D <: ClioDocument: Decoder](upsertId: Option[String],
                                               index: ElasticsearchIndex[D])(
     implicit ec: ExecutionContext,
     materializer: Materializer

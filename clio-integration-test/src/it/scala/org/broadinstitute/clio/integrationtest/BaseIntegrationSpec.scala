@@ -245,12 +245,12 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   def getJsonFrom[Document <: ClioDocument: Decoder](
     index: ElasticsearchIndex[Document],
-    upsertId: UUID
+    upsertId: String
   ): Document = {
     val expectedPath =
-      rootPersistenceDir.resolve(
-        s"${index.currentPersistenceDir}/$upsertId.json"
-      )
+      rootPersistenceDir
+        .resolve(index.currentPersistenceDir)
+        .resolve(s"$upsertId.json")
 
     Files.exists(expectedPath) should be(true)
     val document = parse(new String(Files.readAllBytes(expectedPath)))

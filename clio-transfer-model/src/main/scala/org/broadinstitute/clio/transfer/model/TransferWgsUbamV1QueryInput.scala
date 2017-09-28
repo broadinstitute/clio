@@ -11,6 +11,7 @@ case class TransferWgsUbamV1QueryInput(
   location: Option[Location] = None,
   lcSet: Option[String] = None,
   project: Option[String] = None,
+  researchProjectId: Option[String] = None,
   runDateEnd: Option[OffsetDateTime] = None,
   runDateStart: Option[OffsetDateTime] = None,
   sampleAlias: Option[String] = None,

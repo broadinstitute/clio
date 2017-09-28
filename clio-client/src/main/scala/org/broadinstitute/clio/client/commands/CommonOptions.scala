@@ -1,7 +1,8 @@
 package org.broadinstitute.clio.client.commands
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import caseapp.core.{Messages, Parser}
+import caseapp.core.help.Help
+import caseapp.core.parser.Parser
 
 /**
   * Common options required for running any Clio CLP.
@@ -24,6 +25,6 @@ object CommonOptions extends ClioParsers {
     * Common-options-related messages to show when a user
     * asks for help or usage.
     */
-  val messages: Messages[CommonOptions] =
-    Messages[CommonOptions]
+  val help: Help[CommonOptions] =
+    Help[CommonOptions]
 }

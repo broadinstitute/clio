@@ -1,7 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import java.util.UUID
-
 import com.sksamuel.elastic4s.Indexable
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -39,7 +37,7 @@ class PersistenceService private (persistenceDAO: PersistenceDAO,
     transferMetadata: TM,
     index: ElasticsearchIndex[D],
     documentMapper: ElasticsearchDocumentMapper[TK, TM, D]
-  )(implicit ec: ExecutionContext): Future[UUID] = {
+  )(implicit ec: ExecutionContext): Future[String] = {
     val empty = documentMapper.empty(transferKey)
     val document = documentMapper.withMetadata(empty, transferMetadata)
 
