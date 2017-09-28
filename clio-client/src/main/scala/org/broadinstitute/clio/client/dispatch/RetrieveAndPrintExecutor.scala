@@ -2,7 +2,7 @@ package org.broadinstitute.clio.client.dispatch
 
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.HttpCredentials
-import io.circe.{Encoder, Json}
+import io.circe.Json
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -19,16 +19,26 @@ class RetrieveAndPrintExecutor(command: ClioCommand) extends Executor {
     credentials: HttpCredentials
   ): Future[HttpResponse] = {
     val responseFut = command match {
-      case GetServerHealth           => webClient.getClioServerHealth
-      case GetServerVersion          => webClient.getClioServerVersion
-      case command: GetSchemaCommand => webClient.getSchema(command.index)
-      case command: QueryCommand => {
-        val index = command.index
-        implicit val encoder: Encoder[index.QueryInputType] =
-          index.queryInputEncoder
+      case GetServerHealth              => webClient.getClioServerHealth
+      case GetServerVersion             => webClient.getClioServerVersion
+      case command: GetSchemaCommand[_] => webClient.getSchema(command.index)
+      case command: QueryCommand[_] => {
+        /*
+         * NOTE: Because of how path-dependent types work in Scala, this *has*
+         * to be `command.index.queryInputEncoder` (pulling `command.index`
+         * into a different variable will break everything).
+         *
+         * I think this is because if you say `val index = command.index` and
+         * `implicit val encoder = index.queryInputEncoder`, then you'll have an
+         * `Encoder[index.QueryInputType]`, but the type of `command.queryInput`
+         * is `command.index.QueryInputType`, and the typechecker doesn't know
+         * that `index` is the same as `command.index`, so it says the types don't
+         * match and everything explodes.
+         */
+        implicit val encoder = command.index.queryInputEncoder
         webClient.query(
           command.index,
-          command.queryInput.asInstanceOf[index.QueryInputType],
+          command.queryInput,
           command.includeDeleted
         )
       }

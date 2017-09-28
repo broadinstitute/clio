@@ -7,10 +7,12 @@ import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands.{AddCommand, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.transfer.model.TransferIndex
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AddExecutor(addCommand: AddCommand) extends Executor {
+class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
+    extends Executor {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     credentials: HttpCredentials
