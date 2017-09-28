@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.client.util
+package org.broadinstitute.clio.util
 
 object ClassUtil {
   def formatFields(key: Object): String = {

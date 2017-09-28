@@ -19,8 +19,8 @@ class AddExecutor(addCommand: AddCommand) extends Executor {
     val location = addCommand.metadataLocation
     val index = addCommand.index
 
-    implicit val decoder: Decoder[index.metadataType] = index.metadataDecoder
-    implicit val encoder: Encoder[index.metadataType] = index.metadataEncoder
+    implicit val decoder: Decoder[index.MetadataType] = index.metadataDecoder
+    implicit val encoder: Encoder[index.MetadataType] = index.metadataEncoder
 
     val parsedOrError = parse(IoUtil.readMetadata(location)).left.map { err =>
       new RuntimeException(
@@ -30,7 +30,7 @@ class AddExecutor(addCommand: AddCommand) extends Executor {
     }
 
     val decodedOrError = parsedOrError
-      .flatMap(_.as[index.metadataType])
+      .flatMap(_.as[index.MetadataType])
       .left
       .map { err =>
         new RuntimeException(

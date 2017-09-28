@@ -13,74 +13,74 @@ sealed trait TransferIndex extends ModelAutoDerivation {
     *
     * @return the url path representation of this index
     */
-  def urlSegment: String
+  val urlSegment: String
 
-  def jsonSchema: Json
+  val jsonSchema: Json
 
-  def name: String
+  val name: String
 
-  def commandName: String
+  val commandName: String
 
-  type metadataType
+  type MetadataType
 
-  type queryInputType
+  type QueryInputType
 
-  type outputType
+  type OutputType
 
-  def metadataDecoder: Decoder[metadataType]
+  val metadataDecoder: Decoder[MetadataType]
 
-  def metadataEncoder: Encoder[metadataType]
+  val metadataEncoder: Encoder[MetadataType]
 
-  def queryInputEncoder: Encoder[queryInputType]
+  val queryInputEncoder: Encoder[QueryInputType]
 }
 
 case object GvcfIndex extends TransferIndex {
 
-  override def urlSegment: String = "gvcf"
+  override val urlSegment: String = "gvcf"
 
-  override def jsonSchema: Json = JsonSchemas.Gvcf
+  override val jsonSchema: Json = JsonSchemas.Gvcf
 
-  override def name: String = "Gvcf"
+  override val name: String = "Gvcf"
 
-  override def commandName: String = "gvcf"
+  override val commandName: String = "gvcf"
 
-  override type metadataType = TransferGvcfV1Metadata
+  override type MetadataType = TransferGvcfV1Metadata
 
-  override type queryInputType = TransferGvcfV1QueryInput
+  override type QueryInputType = TransferGvcfV1QueryInput
 
-  override type outputType = TransferGvcfV1QueryOutput
+  override type OutputType = TransferGvcfV1QueryOutput
 
-  override def metadataDecoder: Decoder[metadataType] =
-    Decoder[metadataType]
+  override val metadataDecoder: Decoder[MetadataType] =
+    Decoder[MetadataType]
 
-  override def metadataEncoder: Encoder[metadataType] =
-    Encoder[metadataType]
+  override val metadataEncoder: Encoder[MetadataType] =
+    Encoder[MetadataType]
 
-  override def queryInputEncoder: Encoder[queryInputType] =
-    Encoder[queryInputType]
+  override val queryInputEncoder: Encoder[QueryInputType] =
+    Encoder[QueryInputType]
 }
 
 case object WgsUbamIndex extends TransferIndex {
-  override def urlSegment: String = "wgsubam"
+  override val urlSegment: String = "wgsubam"
 
-  override def jsonSchema: Json = JsonSchemas.WgsUbam
+  override val jsonSchema: Json = JsonSchemas.WgsUbam
 
-  override def name: String = "WgsUbam"
+  override val name: String = "WgsUbam"
 
-  override def commandName: String = "wgs-ubam"
+  override val commandName: String = "wgs-ubam"
 
-  override type metadataType = TransferWgsUbamV1Metadata
+  override type MetadataType = TransferWgsUbamV1Metadata
 
-  override type queryInputType = TransferWgsUbamV1QueryInput
+  override type QueryInputType = TransferWgsUbamV1QueryInput
 
-  override type outputType = TransferWgsUbamV1QueryOutput
+  override type OutputType = TransferWgsUbamV1QueryOutput
 
-  override def metadataDecoder: Decoder[metadataType] =
-    Decoder[metadataType]
+  override val metadataDecoder: Decoder[MetadataType] =
+    Decoder[MetadataType]
 
-  override def metadataEncoder: Encoder[metadataType] =
-    Encoder[metadataType]
+  override val metadataEncoder: Encoder[MetadataType] =
+    Encoder[MetadataType]
 
-  override def queryInputEncoder: Encoder[queryInputType] =
-    Encoder[queryInputType]
+  override val queryInputEncoder: Encoder[QueryInputType] =
+    Encoder[QueryInputType]
 }

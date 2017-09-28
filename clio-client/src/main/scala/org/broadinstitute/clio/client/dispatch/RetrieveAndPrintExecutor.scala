@@ -24,11 +24,11 @@ class RetrieveAndPrintExecutor(command: ClioCommand) extends Executor {
       case command: GetSchemaCommand => webClient.getSchema(command.index)
       case command: QueryCommand => {
         val index = command.index
-        implicit val encoder: Encoder[index.queryInputType] =
+        implicit val encoder: Encoder[index.QueryInputType] =
           index.queryInputEncoder
         webClient.query(
           command.index,
-          command.queryInput.asInstanceOf[index.queryInputType],
+          command.queryInput.asInstanceOf[index.QueryInputType],
           command.includeDeleted
         )
       }

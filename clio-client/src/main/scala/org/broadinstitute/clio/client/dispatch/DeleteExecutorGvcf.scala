@@ -3,9 +3,10 @@ package org.broadinstitute.clio.client.dispatch
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.commands.DeleteGvcf
-import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.collection.immutable.Seq

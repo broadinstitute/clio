@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveGvcf}
-import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   GvcfIndex,
@@ -12,6 +12,7 @@ import org.broadinstitute.clio.transfer.model.{
   TransferGvcfV1QueryInput,
   TransferGvcfV1QueryOutput
 }
+import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.{ExecutionContext, Future}

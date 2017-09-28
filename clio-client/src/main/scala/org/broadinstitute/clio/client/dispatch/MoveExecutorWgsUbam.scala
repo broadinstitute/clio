@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveWgsUbam}
-import org.broadinstitute.clio.client.util.{ClassUtil, IoUtil}
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Metadata,
@@ -12,6 +12,7 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1QueryOutput,
   WgsUbamIndex
 }
+import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.{ExecutionContext, Future}
