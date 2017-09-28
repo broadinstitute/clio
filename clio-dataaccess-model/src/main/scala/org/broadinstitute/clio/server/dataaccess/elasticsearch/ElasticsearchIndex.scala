@@ -18,22 +18,22 @@ abstract class ElasticsearchIndex[Document] {
   /** The name of the index. */
   def indexName: String
 
-  /** The root directory to use when persisting updates of this index to storage. */
-  lazy val rootDir: String = indexName.replaceAll("_", "-")
-
   /**
-    * Format the directory path for the indexed meta-data files.
+    * The root directory to use when persisting updates of this index to storage.
+    *
+    * NOTE: It's required that this end with '/'. On local disk it's a meaningless
+    * addition, but in GCS's filesystem adapter it's the only indication that this
+    * should be treated as a directory, not a file.
     */
-  lazy val dateTimeFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy/MM/dd")
+  lazy val rootDir: String = indexName.replaceAll("_", "-") + "/"
 
   /**
     * The source-of-truth directory in which updates to this index
     * should be persisted now.
     */
   def currentPersistenceDir: String = {
-    val now = OffsetDateTime.now().format(dateTimeFormatter)
-    s"$rootDir/$now"
+    val now = OffsetDateTime.now().format(ElasticsearchIndex.dateTimeFormatter)
+    s"$rootDir$now/"
   }
 
   /**
@@ -52,6 +52,12 @@ object ElasticsearchIndex {
 
   val Gvcf: ElasticsearchIndex[DocumentGvcf] =
     indexDocument[DocumentGvcf]
+
+  /**
+    * Format the directory path for the indexed meta-data files.
+    */
+  lazy val dateTimeFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
   /**
     * Creates an index using shapeless and reflection.

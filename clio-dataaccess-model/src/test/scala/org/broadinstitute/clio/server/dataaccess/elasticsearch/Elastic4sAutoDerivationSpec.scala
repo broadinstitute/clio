@@ -1,8 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
-
 import io.circe.syntax._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
 import org.scalatest.{FlatSpec, Matchers}
 
 class Elastic4sAutoDerivationSpec extends FlatSpec with Matchers {

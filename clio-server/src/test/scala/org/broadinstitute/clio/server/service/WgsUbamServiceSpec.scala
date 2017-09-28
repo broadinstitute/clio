@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.MockClioApp
+import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
   MemoryPersistenceDAO,
@@ -10,9 +10,7 @@ import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
-import org.scalatest.{AsyncFlatSpec, Matchers}
-
-class WgsUbamServiceSpec extends AsyncFlatSpec with Matchers {
+class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
   behavior of "WgsUbamService"
 
   it should "upsertMetadata" in {

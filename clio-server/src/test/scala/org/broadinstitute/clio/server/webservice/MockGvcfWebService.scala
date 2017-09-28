@@ -1,9 +1,9 @@
 package org.broadinstitute.clio.server.webservice
 
 import org.broadinstitute.clio.server.service.{
+  GvcfService,
   PersistenceService,
-  SearchService,
-  GvcfService
+  SearchService
 }
 import org.broadinstitute.clio.server.{ClioApp, MockClioApp}
 

@@ -1,8 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
-
 import io.circe.{Json, Printer}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 /** Automatic JSON encoding and decoding for the Elasticsearch DAO. */
 object Elastic4sAutoDerivation extends ModelAutoDerivation {

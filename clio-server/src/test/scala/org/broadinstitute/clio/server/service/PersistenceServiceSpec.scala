@@ -1,24 +1,23 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.MockClioApp
+import com.sksamuel.elastic4s.circe._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import Elastic4sAutoDerivation._
 import org.broadinstitute.clio.server.dataaccess.{
   FailingPersistenceDAO,
   MemoryPersistenceDAO,
   MemorySearchDAO
 }
+import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata
 }
 import org.broadinstitute.clio.util.model.Location
 
-import com.sksamuel.elastic4s.circe._
-import org.scalatest.{AsyncFlatSpec, Matchers}
-
-class PersistenceServiceSpec extends AsyncFlatSpec with Matchers {
+class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
   behavior of "PersistenceService"
+
+  import Elastic4sAutoDerivation._
 
   val mockKey = TransferWgsUbamV1Key(Location.OnPrem, "barcode", 1, "library")
   val mockMetadata = TransferWgsUbamV1Metadata()

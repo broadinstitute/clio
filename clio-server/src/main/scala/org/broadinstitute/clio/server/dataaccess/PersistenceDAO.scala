@@ -1,23 +1,23 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.server.ClioServerConfig
-import org.broadinstitute.clio.server.ClioServerConfig.Persistence
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
-import com.sksamuel.elastic4s.Indexable
-import com.typesafe.scalalogging.LazyLogging
-
-import scala.concurrent.{ExecutionContext, Future}
 import java.nio.file.{Files, Path}
 import java.util.UUID
 
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.Sink
+import com.sksamuel.elastic4s.Indexable
+import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder
 import io.circe.parser._
+import org.broadinstitute.clio.server.ClioServerConfig
+import org.broadinstitute.clio.server.ClioServerConfig.Persistence
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
+  ElasticsearchIndex
+}
+
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Persists metadata updates to a source of truth, allowing
@@ -85,29 +85,29 @@ trait PersistenceDAO extends LazyLogging {
     }
 
   /**
-    * Return the `ClioDocument`s under `rootdir` upserted no earlier
+    * Return the `ClioDocument`s under `rootdir` upserted later
     * than `withId`.
     *
     * @param rootDir is path to a bucket of "params files"
-    * @param withId is the path of earliest "params file" to return
+    * @param shouldRestore is a predicate which should return true for
+    *                      all documents that should be restored
     * @param ec is an `ExecutionContext`
     * @tparam D is the type of `ClioDocument` expected under `rootDir`
     * @return the `ClioDocument` at `withId` and all later ones
     */
-  def sinceId[D <: ClioDocument: Decoder](rootDir: Path, withId: Path)(
-    implicit ec: ExecutionContext,
-    materializer: Materializer
-  ): Future[Seq[D]] = {
-    val before = (p: Path) => p.compareTo(withId) < 0
+  private def getAllMatching[D <: ClioDocument: Decoder](
+    rootDir: Path,
+    shouldRestore: Path => Boolean
+  )(implicit ec: ExecutionContext, materializer: Materializer): Future[Seq[D]] = {
     val document = (p: Path) => {
       decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
     }
     Directory
       .walk(rootDir)
-      .filter(!before(_))
+      .filter(shouldRestore(_))
+      .map(p => document(p))
       .runWith(Sink.seq)
-      .map(_.sortBy(before))
-      .map(_.map(p => document(p)))
+      .map(_.sortBy(_.upsertId))
   }
 
   /**
@@ -115,35 +115,45 @@ trait PersistenceDAO extends LazyLogging {
     * after `upsertId`.  Decode the files from JSON as `ClioDocument`s
     * sorted by `upsertId`.
     *
-    * @param upsertId of the last known upserted document
+    * @param upsertId of the last known upserted document, `None` if
+    *                 all documents should be restored
     * @param index  to query against.
     * @param ec is the implicit ExecutionContext
     * @tparam D is a ClioDocument type with a JSON Decoder
     * @return a Future Seq of ClioDocument
     */
-  def getAllSince[D <: ClioDocument: Decoder](upsertId: UUID,
+  def getAllSince[D <: ClioDocument: Decoder](upsertId: Option[UUID],
                                               index: ElasticsearchIndex[D])(
     implicit ec: ExecutionContext,
     materializer: Materializer
   ): Future[Seq[D]] = {
     val rootDir = rootPath.resolve(index.rootDir)
-    val suffix = s"/${upsertId}.json"
-    val filesWithId = Directory
-      .walk(rootDir)
-      .filter(_.toString.endsWith(suffix))
-      .runWith(Sink.seq)
-    filesWithId
-      .map(paths => {
-        val count = paths.size
-        if (count == 1) {
-          sinceId[D](rootDir, paths.head)
-        } else {
-          throw new RuntimeException(
-            s"${count} files end with ${suffix} in ${rootDir.toString}"
+    val isJson = (p: Path) => p.toString.endsWith(".json")
+
+    upsertId.fold(
+      // If Elasticsearch contained no documents, load every JSON file in storage.
+      getAllMatching[D](rootDir, isJson)
+    ) { uuid =>
+      logger.debug(s"Recovering all upserts since $uuid")
+
+      val suffix = s"/$uuid.json"
+      val filesWithId = Directory
+        .walk(rootDir)
+        .filter(_.toString.endsWith(suffix))
+        .runWith(Sink.seq)
+      filesWithId.map {
+        case Seq(path) => {
+          getAllMatching[D](
+            rootDir,
+            (p: Path) => isJson(p) && p.compareTo(path) > 0
           )
         }
-      })
-      .flatten
+        case paths =>
+          throw new RuntimeException(
+            s"${paths.size} files end with $suffix in ${rootDir.toUri}"
+          )
+      }.flatten
+    }
   }
 }
 
