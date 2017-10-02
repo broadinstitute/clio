@@ -52,7 +52,7 @@ object UpsertIdGenerator {
   /**
     * Return a random index into `Encoding`.
     */
-  private val next7bitIndex = (_: Int) => source.nextInt(Encoding.length)
+  private val next6bitIndex = (_: Int) => source.nextInt(Encoding.length)
 
   /**
     * Return with new values for was, timestamp, and randomCharacters.
@@ -67,7 +67,7 @@ object UpsertIdGenerator {
       .reverse
       .mkString
     randomCharacters =
-      Stream.iterate(next7bitIndex(0), RandomCount)(next7bitIndex(_)).toArray
+      Stream.iterate(next6bitIndex(0), RandomCount)(next6bitIndex(_)).toArray
   }
 
   /**
