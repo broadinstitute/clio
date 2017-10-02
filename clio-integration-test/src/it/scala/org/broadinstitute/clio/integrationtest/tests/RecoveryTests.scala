@@ -82,7 +82,7 @@ trait RecoveryTests extends ForAllTestContainer {
         )
 
         val _ = Files.write(
-          writeDir.resolve(s"${doc.upsertId}.json"),
+          writeDir.resolve(s"${doc.persistenceFilename}"),
           indexable.json(doc).getBytes
         )
       }

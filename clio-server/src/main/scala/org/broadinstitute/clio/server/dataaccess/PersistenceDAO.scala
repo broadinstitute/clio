@@ -15,6 +15,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -77,7 +78,7 @@ trait PersistenceDAO extends LazyLogging {
       val writePath =
         Files.createDirectories(rootPath.resolve(index.currentPersistenceDir))
       val written = Files.write(
-        writePath.resolve(s"${document.upsertId}.json"),
+        writePath.resolve(s"${document.persistenceFilename}"),
         indexable.json(document).getBytes
       )
       logger.debug(s"Wrote document $document to ${written.toUri}")
@@ -121,7 +122,7 @@ trait PersistenceDAO extends LazyLogging {
     * @tparam D is a ClioDocument type with a JSON Decoder
     * @return a Future Seq of ClioDocument
     */
-  def getAllSince[D <: ClioDocument: Decoder](upsertId: Option[String],
+  def getAllSince[D <: ClioDocument: Decoder](upsertId: Option[UpsertId],
                                               index: ElasticsearchIndex[D])(
     implicit ec: ExecutionContext,
     materializer: Materializer
@@ -132,10 +133,10 @@ trait PersistenceDAO extends LazyLogging {
     upsertId.fold(
       // If Elasticsearch contained no documents, load every JSON file in storage.
       getAllMatching[D](rootDir, isJson)
-    ) { uuid =>
-      logger.debug(s"Recovering all upserts since $uuid")
+    ) { upsertId =>
+      logger.debug(s"Recovering all upserts since $upsertId")
 
-      val suffix = s"/$uuid.json"
+      val suffix = s"/${ClioDocument.persistenceFilename(upsertId)}"
       val filesWithId = Directory
         .walk(rootDir)
         .filter(_.toString.endsWith(suffix))

@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.util
 
+import org.broadinstitute.clio.util.model.UpsertId
+
 import scala.util.Random
 
 /**
@@ -90,9 +92,9 @@ object UpsertIdGenerator {
   /**
     * Return the next unique ID.
     *
-    * @return a 20-character unique ID string
+    * @return a 20-character unique ID
     */
-  val nextId: () => String = () =>
+  val nextId: () => UpsertId = () =>
     synchronized {
       val now = System.currentTimeMillis()
       if (now == was) {
@@ -100,6 +102,6 @@ object UpsertIdGenerator {
       } else {
         refreshRandomState(now)
       }
-      timestamp + randomCharacters.map(Encoding(_)).mkString
+      UpsertId(timestamp + randomCharacters.map(Encoding(_)).mkString)
   }
 }

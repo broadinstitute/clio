@@ -4,8 +4,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import Elastic4sAutoDerivation._
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.json.JsonSchemas
-import org.broadinstitute.clio.util.model.DocumentStatus
-
+import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import com.sksamuel.elastic4s.circe._
 import io.circe.Json
 
@@ -23,7 +22,7 @@ class WgsUbamService(
   def upsertMetadata(
     transferKey: TransferWgsUbamV1Key,
     transferMetadata: TransferWgsUbamV1Metadata
-  ): Future[String] = {
+  ): Future[UpsertId] = {
     val updatedTransferMetadata = transferMetadata.copy(
       documentStatus =
         transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))

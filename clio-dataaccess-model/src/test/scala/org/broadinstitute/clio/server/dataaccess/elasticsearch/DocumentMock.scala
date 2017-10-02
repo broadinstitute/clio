@@ -1,10 +1,11 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
-
 import java.time.OffsetDateTime
 
-case class DocumentMock(upsertId: String,
+import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
+import org.broadinstitute.clio.util.model.UpsertId
+
+case class DocumentMock(upsertId: UpsertId,
                         entityId: String,
                         mockKeyLong: Long,
                         mockKeyString: String,

@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
+import org.broadinstitute.clio.util.model.UpsertId
+
 /**
   * Common trait for all document types Clio will store, used to force the inclusion of
   * bookkeeping fields in their type definitions.
@@ -12,7 +14,7 @@ trait ClioDocument {
     * Clio's source of truth, so disaster recovery can determine the order in which
     * updates should be re-applied.
     */
-  val upsertId: String
+  val upsertId: UpsertId
 
   /**
     * The unique key for an entity referred to by a document, used for tracking updates
@@ -23,6 +25,13 @@ trait ClioDocument {
     * during recovery without needing to use a document mapper.
     */
   val entityId: String
+
+  /**
+    * The filename used for persisting a document's upsert data.
+    *
+    * @return the filename where this document's upsert data is stored
+    */
+  def persistenceFilename: String = ClioDocument.persistenceFilename(upsertId)
 }
 
 object ClioDocument {
@@ -51,4 +60,13 @@ object ClioDocument {
     * auto-query-mapper to strips the IDs from returned query outputs.
     */
   val EntityIdFieldName: String = "entityId"
+
+  /**
+    * The filename used for persisting a document's upsert data.
+    *
+    * @param upsertId the docuemnt's upsert ID
+    * @return the filename where this document's upsert data is stored
+    */
+  def persistenceFilename(upsertId: UpsertId): String =
+    s"${upsertId.id}.json"
 }

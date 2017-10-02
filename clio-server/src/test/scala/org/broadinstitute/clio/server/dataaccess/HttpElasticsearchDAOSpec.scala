@@ -17,6 +17,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
+import org.broadinstitute.clio.util.model.UpsertId
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.ResponseException
 import org.scalatest._
@@ -241,5 +242,5 @@ class HttpElasticsearchDAOSpec
 }
 
 object HttpElasticsearchDAOSpec {
-  case class Document(upsertId: String, entityId: String) extends ClioDocument
+  case class Document(upsertId: UpsertId, entityId: String) extends ClioDocument
 }

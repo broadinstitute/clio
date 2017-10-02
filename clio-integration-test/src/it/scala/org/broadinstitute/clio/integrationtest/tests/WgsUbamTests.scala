@@ -12,21 +12,21 @@ import org.broadinstitute.clio.transfer.model.{
   TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.json.JsonSchemas
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
-
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 
 import scala.concurrent.Future
-
 import java.nio.file.Files
 
 /** Tests of Clio's wgs-ubam functionality. */
 trait WgsUbamTests { self: BaseIntegrationSpec =>
 
-  def runUpsertWgsUbam(key: TransferWgsUbamV1Key,
-                       metadata: TransferWgsUbamV1Metadata): Future[String] = {
+  def runUpsertWgsUbam(
+    key: TransferWgsUbamV1Key,
+    metadata: TransferWgsUbamV1Metadata
+  ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addWgsUbamName,
@@ -40,7 +40,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       key.location.entryName,
       "--metadata-location",
       tmpMetadata.toString
-    ).flatMap(Unmarshal(_).to[String])
+    ).flatMap(Unmarshal(_).to[UpsertId])
   }
 
   it should "create the expected wgs-ubam mapping in elasticsearch" in {

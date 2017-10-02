@@ -8,6 +8,7 @@ import enumeratum._
 import io.circe.generic.extras.{AutoDerivation, Configuration}
 import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
 import org.broadinstitute.clio.util.generic.CompanionCache
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
@@ -53,12 +54,23 @@ trait ModelAutoDerivation extends AutoDerivation {
       offsetDateTime.toString
     }
   }
+
   implicit val decodeOffsetDateTime: Decoder[OffsetDateTime] = {
     Decoder.decodeString emap { string =>
       Either
         .catchNonFatal(OffsetDateTime.parse(string))
         .leftMap(_ => "OffsetDateTime")
     }
+  }
+
+  implicit val encodeUpsertId: Encoder[UpsertId] =
+    Encoder.encodeString contramap [UpsertId] { _.id }
+
+  implicit val decodeUpsertId: Decoder[UpsertId] = (c: HCursor) =>
+    for {
+      upsertId <- c.as[String]
+    } yield {
+      UpsertId(upsertId)
   }
 
   // Caches for enum encoders and decoders.

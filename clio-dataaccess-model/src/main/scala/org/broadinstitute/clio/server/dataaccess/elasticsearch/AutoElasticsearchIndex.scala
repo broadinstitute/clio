@@ -7,6 +7,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import enumeratum.EnumEntry
 import org.broadinstitute.clio.util.generic.FieldMapper
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.reflect.runtime.universe.Type
 
@@ -46,6 +47,7 @@ object AutoElasticsearchIndex {
       case tpe if tpe <:< typeOf[EnumEntry]         => keywordField _
       case tpe if tpe =:= typeOf[OffsetDateTime]    => dateField _
       case tpe if tpe =:= typeOf[UUID]              => keywordField _
+      case tpe if tpe =:= typeOf[UpsertId]          => keywordField _
       case tpe if tpe =:= typeOf[Option[Boolean]]   => booleanField _
       case tpe if tpe =:= typeOf[Option[Int]]       => intField _
       case tpe if tpe =:= typeOf[Option[Long]]      => longField _
