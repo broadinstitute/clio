@@ -84,7 +84,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
           documents
             .map(document => dao.writeUpdate(document, index))
       )
-      .flatMap(_ => dao.getAllSince(expected.headOption.map(_.upsertId), index))
+      .flatMap(_ => dao.getAllSince(expected.headOption, index))
     result.flatMap(_.toVector should be(expected.tail))
   }
 
@@ -133,7 +133,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
         )
       }
       x <- recoverToExceptionIf[RuntimeException] {
-        dao.getAllSince(Some(document.upsertId), index)
+        dao.getAllSince(Some(document), index)
       }
     } yield {
       x.getMessage should include(

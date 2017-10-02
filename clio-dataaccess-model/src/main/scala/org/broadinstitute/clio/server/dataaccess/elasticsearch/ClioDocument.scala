@@ -31,7 +31,7 @@ trait ClioDocument {
     *
     * @return the filename where this document's upsert data is stored
     */
-  def persistenceFilename: String = ClioDocument.persistenceFilename(upsertId)
+  def persistenceFilename: String = s"${upsertId.id}.json"
 }
 
 object ClioDocument {
@@ -60,13 +60,4 @@ object ClioDocument {
     * auto-query-mapper to strips the IDs from returned query outputs.
     */
   val EntityIdFieldName: String = "entityId"
-
-  /**
-    * The filename used for persisting a document's upsert data.
-    *
-    * @param upsertId the docuemnt's upsert ID
-    * @return the filename where this document's upsert data is stored
-    */
-  def persistenceFilename(upsertId: UpsertId): String =
-    s"${upsertId.id}.json"
 }

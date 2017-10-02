@@ -15,7 +15,6 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -112,17 +111,17 @@ trait PersistenceDAO extends LazyLogging {
 
   /**
     * Return the GCS bucket metadata files for `index` upserted on or
-    * after `upsertId`.  Decode the files from JSON as `ClioDocument`s
+    * after `document`.  Decode the files from JSON as `ClioDocument`s
     * sorted by `upsertId`.
     *
-    * @param upsertId of the last known upserted document, `None` if
+    * @param document the last known upserted document, `None` if
     *                 all documents should be restored
     * @param index  to query against.
     * @param ec is the implicit ExecutionContext
     * @tparam D is a ClioDocument type with a JSON Decoder
     * @return a Future Seq of ClioDocument
     */
-  def getAllSince[D <: ClioDocument: Decoder](upsertId: Option[UpsertId],
+  def getAllSince[D <: ClioDocument: Decoder](document: Option[ClioDocument],
                                               index: ElasticsearchIndex[D])(
     implicit ec: ExecutionContext,
     materializer: Materializer
@@ -130,13 +129,13 @@ trait PersistenceDAO extends LazyLogging {
     val rootDir = rootPath.resolve(index.rootDir)
     val isJson = (p: Path) => p.toString.endsWith(".json")
 
-    upsertId.fold(
+    document.fold(
       // If Elasticsearch contained no documents, load every JSON file in storage.
       getAllMatching[D](rootDir, isJson)
-    ) { upsertId =>
-      logger.debug(s"Recovering all upserts since $upsertId")
+    ) { document: ClioDocument =>
+      logger.debug(s"Recovering all upserts since ${document.upsertId}")
 
-      val suffix = s"/${ClioDocument.persistenceFilename(upsertId)}"
+      val suffix = s"/${document.persistenceFilename}"
       val filesWithId = Directory
         .walk(rootDir)
         .filter(_.toString.endsWith(suffix))
