@@ -33,12 +33,12 @@ case class TransferGvcfV1Metadata(analysisDate: Option[OffsetDateTime] = None,
   override def setSinglePath(destination: String): TransferGvcfV1Metadata = {
     assert(pathsToMove.length == 1)
 
-    // Since we know only one path is defined, we can flatMap-assign all of the possible
+    // Since we know only one path is defined, we can map-assign all of the possible
     // paths to the destination, knowing only one change will actually happen.
     this.copy(
-      gvcfPath = gvcfPath.flatMap(_ => Some(destination)),
-      gvcfIndexPath = gvcfIndexPath.flatMap(_ => Some(destination)),
-      gvcfMetricsPath = gvcfMetricsPath.flatMap(_ => Some(destination))
+      gvcfPath = gvcfPath.map(_ => destination),
+      gvcfIndexPath = gvcfIndexPath.map(_ => destination),
+      gvcfMetricsPath = gvcfMetricsPath.map(_ => destination)
     )
   }
 }
