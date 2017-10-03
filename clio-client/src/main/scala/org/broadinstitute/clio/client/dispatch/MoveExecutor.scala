@@ -31,10 +31,9 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   ): Future[HttpResponse] = {
     for {
       _ <- Future(verifyCloudPaths(ioUtil))
-        .logErrorMsg("clio-client can only handle cloud operations right now.")
       existingMetadata <- queryForKey(webClient)
         .logErrorMsg(s"Could not query the $name. No files have been moved.")
-      _ <- Future(checkDestinationVsExistingPaths(existingMetadata))
+      _ <- Future(checkDestinationVsExistingPaths(ioUtil, existingMetadata))
       upsertResponse <- moveFiles(webClient, ioUtil, existingMetadata)
     } yield {
       upsertResponse
@@ -43,9 +42,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
 
   private def verifyCloudPaths(ioUtil: IoUtil): Unit = {
     if (moveCommand.key.location != Location.GCP) {
-      throw new Exception(
-        s"Only GCP unmapped ${name}s are supported at this time."
-      )
+      throw new Exception(s"Only cloud ${name}s are supported at this time.")
     }
 
     if (!ioUtil.isGoogleObject(destination)) {
@@ -101,20 +98,27 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   }
 
   private def checkDestinationVsExistingPaths(
+    ioUtil: IoUtil,
     metadata: moveCommand.index.MetadataType
   ): Unit = {
     val pathsToMove = metadata.pathsToMove
 
-    pathsToMove.length match {
-      case 0 =>
+    pathsToMove.toList match {
+      case Nil =>
         throw new Exception(
           s"The $name for $prettyKey has no registered paths, and can't be moved."
         )
-      case 1 => ()
-      case n => {
-        if (!destination.endsWith("/")) {
+      case path :: Nil => {
+        if (!ioUtil.isGoogleObject(path)) {
           throw new Exception(
-            s"""The $name for $prettyKey is associated with $n files, so the move destination must be a directory.
+            s"Inconsistent state detected: non-cloud path '$path' is registered to the $name for $prettyKey."
+          )
+        }
+      }
+      case _ => {
+        if (!ioUtil.isGoogleDirectory(destination)) {
+          throw new Exception(
+            s"""The $name for $prettyKey is associated with ${pathsToMove.length} files, so the move destination must be a directory.
                |Signal that you're OK with this by ending the destination argument with '/'""".stripMargin
           )
         }
@@ -135,7 +139,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
       Future(copyGoogleObject(p, destination, ioUtil))
     }
 
-    // VERY IMPORTANT that this is lazy; we shouldn't try to delete
+    // VERY IMPORTANT that this is lazy; we cannot delete anything
     // until Clio has been updated successfully.
     lazy val googleDeletes = existingMetadata.pathsToMove.map { p =>
       Future(deleteGoogleObject(p, ioUtil))
@@ -150,7 +154,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
              |which copy commands failed, and why, then try re-running this command. If this
              |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.""".stripMargin
         )
-      upsertResponse <- updateAndUpsert(client, existingMetadata)
+      upsertResponse <- updateAndUpsert(client, ioUtil, existingMetadata)
         .logErrorMsg(
           s"""An error occurred while updating the $name record in Clio. All files associated
              |with $name exist at both the old and new locations, but Clio only knows about the
@@ -160,9 +164,9 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
       _ <- Future
         .sequence(googleDeletes)
         .logErrorMsg(
-          s"""The old files associated with the $name was not able to be deleted.
-           |Please manually delete the old files for $name at: $sourcesAsString.
-           |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
+          s"""The old files associated with $prettyKey were not able to be deleted.
+             |Please manually delete the old files at: $sourcesAsString.
+             |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
         )
     } yield {
       logger.info(s"Successfully moved $sourcesAsString to '$destination'")
@@ -195,12 +199,13 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   }
 
   private def updateAndUpsert(client: ClioWebClient,
+                              ioUtil: IoUtil,
                               existingMetadata: moveCommand.index.MetadataType)(
     implicit credentials: HttpCredentials,
     ec: ExecutionContext
   ): Future[HttpResponse] = {
-    val newMetadata = if (destination.endsWith("/")) {
-      existingMetadata.rebaseOnto(destination)
+    val newMetadata = if (ioUtil.isGoogleDirectory(destination)) {
+      existingMetadata.moveAllInto(destination)
     } else {
       existingMetadata.setSinglePath(destination)
     }

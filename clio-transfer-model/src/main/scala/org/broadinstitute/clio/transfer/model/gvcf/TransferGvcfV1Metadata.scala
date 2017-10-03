@@ -20,18 +20,24 @@ case class TransferGvcfV1Metadata(analysisDate: Option[OffsetDateTime] = None,
   override def pathsToMove: Seq[String] =
     Seq.concat(gvcfPath, gvcfIndexPath, gvcfMetricsPath)
 
-  override def rebaseOnto(destination: String): TransferGvcfV1Metadata = {
-    assert(destination.endsWith("/"))
+  override def moveAllInto(destination: String): TransferGvcfV1Metadata = {
+    if (!destination.endsWith("/")) {
+      throw new Exception("Arguments to `moveAllInto` must end with '/'")
+    }
 
     this.copy(
-      gvcfPath = gvcfPath.map(rebaseOnto(_, destination)),
-      gvcfIndexPath = gvcfIndexPath.map(rebaseOnto(_, destination)),
-      gvcfMetricsPath = gvcfMetricsPath.map(rebaseOnto(_, destination))
+      gvcfPath = gvcfPath.map(moveInto(_, destination)),
+      gvcfIndexPath = gvcfIndexPath.map(moveInto(_, destination)),
+      gvcfMetricsPath = gvcfMetricsPath.map(moveInto(_, destination))
     )
   }
 
   override def setSinglePath(destination: String): TransferGvcfV1Metadata = {
-    assert(pathsToMove.length == 1)
+    if (pathsToMove.length != 1) {
+      throw new Exception(
+        "`setSinglePath` called on metadata with more than one registered path"
+      )
+    }
 
     // Since we know only one path is defined, we can map-assign all of the possible
     // paths to the destination, knowing only one change will actually happen.

@@ -43,14 +43,20 @@ case class TransferWgsUbamV1Metadata(
 
   override def pathsToMove: Seq[String] = ubamPath.toSeq
 
-  override def rebaseOnto(destination: String): TransferWgsUbamV1Metadata = {
-    assert(destination.endsWith("/"))
+  override def moveAllInto(destination: String): TransferWgsUbamV1Metadata = {
+    if (!destination.endsWith("/")) {
+      throw new Exception("Arguments to `moveAllInto` must end with '/'")
+    }
 
-    this.copy(ubamPath = ubamPath.map(rebaseOnto(_, destination)))
+    this.copy(ubamPath = ubamPath.map(moveInto(_, destination)))
   }
 
   override def setSinglePath(destination: String): TransferWgsUbamV1Metadata = {
-    assert(pathsToMove.length == 1)
+    if (pathsToMove.length != 1) {
+      throw new Exception(
+        "`setSinglePath` called on metadata with more than one registered path"
+      )
+    }
 
     this.copy(ubamPath = Some(destination))
   }
