@@ -1,10 +1,8 @@
 package org.broadinstitute.clio.util.json
 
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1QueryOutput,
-  TransferGvcfV1QueryOutput
-}
 import io.circe.Json
+import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
+import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1QueryOutput
 
 object JsonSchemas {
   val WgsUbam: Json = JsonSchema[TransferWgsUbamV1QueryOutput].toJson

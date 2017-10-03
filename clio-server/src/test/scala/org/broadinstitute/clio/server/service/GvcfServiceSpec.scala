@@ -6,7 +6,11 @@ import org.broadinstitute.clio.server.dataaccess.{
   MemoryPersistenceDAO,
   MemorySearchDAO
 }
-import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  TransferGvcfV1Key,
+  TransferGvcfV1Metadata,
+  TransferGvcfV1QueryInput
+}
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 

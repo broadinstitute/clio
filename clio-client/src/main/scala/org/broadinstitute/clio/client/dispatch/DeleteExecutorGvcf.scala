@@ -5,7 +5,12 @@ import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.commands.DeleteGvcf
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.transfer.model.GvcfIndex
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  TransferGvcfV1Key,
+  TransferGvcfV1Metadata,
+  TransferGvcfV1QueryOutput
+}
 import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -27,13 +32,7 @@ class DeleteExecutorGvcf(deleteGvcf: DeleteGvcf) extends Executor {
         queryResponses <- webClient
           .query(
             GvcfIndex,
-            TransferGvcfV1QueryInput(
-              documentStatus = Some(DocumentStatus.Normal),
-              location = Some(deleteGvcf.transferGvcfV1Key.location),
-              project = Some(deleteGvcf.transferGvcfV1Key.project),
-              sampleAlias = Some(deleteGvcf.transferGvcfV1Key.sampleAlias),
-              version = Some(deleteGvcf.transferGvcfV1Key.version)
-            ),
+            deleteGvcf.transferGvcfV1Key,
             includeDeleted = false
           )
           .map(webClient.ensureOkResponse) logErrorMsg "There was a problem querying the Clio server for gvcfs."

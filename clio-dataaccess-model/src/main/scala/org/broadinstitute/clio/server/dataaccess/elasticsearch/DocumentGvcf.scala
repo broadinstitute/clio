@@ -16,6 +16,7 @@ case class DocumentGvcf(upsertId: UpsertId,
                         gvcfMd5: Option[String] = None,
                         gvcfPath: Option[String] = None,
                         gvcfSize: Option[Long] = None,
+                        gvcfIndexPath: Option[String] = None,
                         gvcfMetricsPath: Option[String] = None,
                         pipelineVersion: Option[Long] = None,
                         notes: Option[String] = None)

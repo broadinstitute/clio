@@ -1,10 +1,17 @@
 package org.broadinstitute.clio.client.commands
 
 import org.broadinstitute.clio.transfer.model._
-
 import caseapp.{CommandName, Recurse}
 import caseapp.core.help.CommandsHelp
 import caseapp.core.commandparser.CommandParser
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  TransferGvcfV1Key,
+  TransferGvcfV1QueryInput
+}
+import org.broadinstitute.clio.transfer.model.wgsubam.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1QueryInput
+}
 
 /**
   * A specific operation to perform against Clio.
@@ -31,6 +38,12 @@ sealed abstract class QueryCommand[TI <: TransferIndex](val index: TI)
   def includeDeleted: Boolean
 }
 
+sealed abstract class MoveCommand[TI <: TransferIndex](val index: TI)
+    extends ClioCommand {
+  def key: index.KeyType
+  def destination: String
+}
+
 // Generic commands.
 
 @CommandName(ClioCommand.getServerHealthName)
@@ -55,10 +68,9 @@ final case class QueryWgsUbam(@Recurse queryInput: TransferWgsUbamV1QueryInput,
     extends QueryCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.moveWgsUbamName)
-final case class MoveWgsUbam(
-  @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key,
-  destination: String
-) extends ClioCommand
+final case class MoveWgsUbam(@Recurse key: TransferWgsUbamV1Key,
+                             destination: String)
+    extends MoveCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.deleteWgsUbamName)
 final case class DeleteWgsUbam(
@@ -82,9 +94,8 @@ final case class QueryGvcf(@Recurse queryInput: TransferGvcfV1QueryInput,
     extends QueryCommand(GvcfIndex)
 
 @CommandName(ClioCommand.moveGvcfName)
-final case class MoveGvcf(@Recurse transferGvcfV1Key: TransferGvcfV1Key,
-                          destination: String)
-    extends ClioCommand
+final case class MoveGvcf(@Recurse key: TransferGvcfV1Key, destination: String)
+    extends MoveCommand(GvcfIndex)
 
 @CommandName(ClioCommand.deleteGvcfName)
 final case class DeleteGvcf(@Recurse transferGvcfV1Key: TransferGvcfV1Key,

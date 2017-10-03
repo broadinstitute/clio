@@ -1,24 +1,25 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import java.nio.file.Files
+
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import com.sksamuel.elastic4s.IndexAndType
+import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentWgsUbam,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.transfer.model.{
+import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.sksamuel.elastic4s.IndexAndType
-import io.circe.Json
 
 import scala.concurrent.Future
-import java.nio.file.Files
 
 /** Tests of Clio's wgs-ubam functionality. */
 trait WgsUbamTests { self: BaseIntegrationSpec =>

@@ -1,14 +1,11 @@
-package org.broadinstitute.clio.transfer.model
-
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+package org.broadinstitute.clio.transfer.model.wgsubam
 
 import java.time.OffsetDateTime
 
-case class TransferWgsUbamV1QueryOutput(
-  flowcellBarcode: String,
-  lane: Int,
-  libraryName: String,
-  location: Location,
+import org.broadinstitute.clio.transfer.model.TransferMetadata
+import org.broadinstitute.clio.util.model.DocumentStatus
+
+case class TransferWgsUbamV1Metadata(
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
   dataType: Option[String] = None,
@@ -42,4 +39,19 @@ case class TransferWgsUbamV1QueryOutput(
   ubamPath: Option[String] = None,
   ubamSize: Option[Long] = None,
   documentStatus: Option[DocumentStatus] = None
-)
+) extends TransferMetadata[TransferWgsUbamV1Metadata] {
+
+  override def pathsToMove: Seq[String] = ubamPath.toSeq
+
+  override def rebaseOnto(destination: String): TransferWgsUbamV1Metadata = {
+    assert(destination.endsWith("/"))
+
+    this.copy(ubamPath = ubamPath.map(rebaseOnto(_, destination)))
+  }
+
+  override def setSinglePath(destination: String): TransferWgsUbamV1Metadata = {
+    assert(pathsToMove.length == 1)
+
+    this.copy(ubamPath = Some(destination))
+  }
+}

@@ -11,7 +11,8 @@ import io.circe.Encoder
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import org.broadinstitute.clio.transfer.model.{TransferGvcfV1QueryOutput, TransferWgsUbamV1QueryOutput}
+import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
+import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1QueryOutput
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import org.scalatest.{Args, Status}
 

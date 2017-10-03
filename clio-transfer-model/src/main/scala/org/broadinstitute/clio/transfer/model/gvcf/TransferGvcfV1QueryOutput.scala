@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.transfer.model
+package org.broadinstitute.clio.transfer.model.gvcf
 
 import java.time.OffsetDateTime
 
@@ -15,6 +15,7 @@ case class TransferGvcfV1QueryOutput(
   gvcfMd5: Option[String] = None,
   gvcfPath: Option[String] = None,
   gvcfSize: Option[Long] = None,
+  gvcfIndexPath: Option[String] = None,
   gvcfMetricsPath: Option[String] = None,
   pipelineVersion: Option[String] = None,
   notes: Option[String] = None

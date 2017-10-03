@@ -65,10 +65,12 @@ class ClioWebClient(
     )
   }
 
-  def upsert[T](transferIndex: TransferIndex, key: TransferKey, metadata: T)(
-    implicit credentials: HttpCredentials,
-    encoder: Encoder[T]
-  ): Future[HttpResponse] = {
+  def upsert[M <: TransferMetadata[M]](
+    transferIndex: TransferIndex,
+    key: TransferKey,
+    metadata: M
+  )(implicit credentials: HttpCredentials,
+    encoder: Encoder[M]): Future[HttpResponse] = {
     val entity = HttpEntity(
       ContentTypes.`application/json`,
       metadata.asJson.pretty(implicitly[Printer])

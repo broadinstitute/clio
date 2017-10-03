@@ -123,3 +123,5 @@ trait ModelAutoDerivation extends AutoDerivation {
     }
   }
 }
+
+object ModelAutoDerivation extends ModelAutoDerivation
