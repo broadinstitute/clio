@@ -66,11 +66,15 @@ trait ModelAutoDerivation extends AutoDerivation {
   implicit val encodeUpsertId: Encoder[UpsertId] =
     Encoder.encodeString contramap [UpsertId] { _.id }
 
-  implicit val decodeUpsertId: Decoder[UpsertId] = (c: HCursor) =>
-    for {
-      upsertId <- c.as[String]
-    } yield {
-      UpsertId(upsertId)
+  implicit val decodeUpsertId: Decoder[UpsertId] = {
+    Decoder.decodeString emap { string =>
+      Either
+        .fromOption(
+          UpsertId.fromString(string),
+          DecodingFailure(s"$string is not a valid upsert ID", List())
+        )
+        .leftMap(_ => "UpsertId")
+    }
   }
 
   // Caches for enum encoders and decoders.

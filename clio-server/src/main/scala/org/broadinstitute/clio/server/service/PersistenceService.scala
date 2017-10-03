@@ -31,7 +31,7 @@ class PersistenceService private (persistenceDAO: PersistenceDAO,
     * @tparam TK The type of the Transfer Key DTO.
     * @tparam TM The type of the Transfer Metadata DTO.
     * @tparam D  The type of the Document.
-    * @return A future result of the ID for this upsert.
+    * @return the ID for this upsert
     */
   def upsertMetadata[TK, TM, D <: ClioDocument: Indexable](
     transferKey: TK,

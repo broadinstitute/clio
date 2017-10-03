@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -55,6 +54,6 @@ object AutoElasticsearchDocumentMapper {
             ModelMetadata: ClassTag,
             Document <: ClioDocument: ClassTag]
     : ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] = {
-    new AutoElasticsearchDocumentMapper(UpsertIdGenerator.nextId)
+    new AutoElasticsearchDocumentMapper(UpsertId.nextId)
   }
 }

@@ -16,7 +16,6 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
 import org.broadinstitute.clio.util.model.UpsertId
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.ResponseException
@@ -123,7 +122,7 @@ class HttpElasticsearchDAOSpec
     val documents =
       (1 to 4)
         .map("document-" + _)
-        .map(Document(UpsertIdGenerator.nextId(), _))
+        .map(Document(UpsertId.nextId(), _))
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)

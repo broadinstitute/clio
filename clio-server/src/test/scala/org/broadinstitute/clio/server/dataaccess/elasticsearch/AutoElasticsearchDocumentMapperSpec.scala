@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
 import org.broadinstitute.clio.server.model.{ModelMockKey, ModelMockMetadata}
 import org.broadinstitute.clio.util.model.UpsertId
 import org.scalatest.{FlatSpec, Matchers}
@@ -8,7 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
   behavior of "AutoElasticsearchDocumentMapper"
 
-  val expectedId: UpsertId = UpsertIdGenerator.nextId()
+  val expectedId: UpsertId = UpsertId.nextId()
   val mapper = new AutoElasticsearchDocumentMapper[
     ModelMockKey,
     ModelMockMetadata,
