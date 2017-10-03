@@ -11,12 +11,8 @@ import io.circe.Encoder
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
-import org.broadinstitute.clio.transfer.model.{
-  TransferGvcfV1QueryOutput,
-  TransferWgsUbamV1QueryOutput
-}
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.transfer.model.{TransferGvcfV1QueryOutput, TransferWgsUbamV1QueryOutput}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import org.scalatest.{Args, Status}
 
 import scala.util.Random
@@ -33,7 +29,7 @@ trait RecoveryTests extends ForAllTestContainer {
     val lane = Random.nextInt()
     val libraryName = s"library$randomId"
     DocumentWgsUbam(
-      upsertId = UpsertIdGenerator.nextId(),
+      upsertId = UpsertId.nextId(),
       entityId = s"$flowcellBarcode.$lane.$libraryName.${location.entryName}",
       flowcellBarcode = flowcellBarcode,
       lane = lane,
@@ -48,7 +44,7 @@ trait RecoveryTests extends ForAllTestContainer {
     val sampleAlias = s"sample$randomId"
     val version = Random.nextInt()
     DocumentGvcf(
-      upsertId = UpsertIdGenerator.nextId(),
+      upsertId = UpsertId.nextId(),
       entityId = s"${location.entryName}.$project.$sampleAlias.$version",
       location = location,
       project = project,
@@ -82,7 +78,7 @@ trait RecoveryTests extends ForAllTestContainer {
         )
 
         val _ = Files.write(
-          writeDir.resolve(s"${doc.upsertId}.json"),
+          writeDir.resolve(s"${doc.persistenceFilename}"),
           indexable.json(doc).getBytes
         )
       }

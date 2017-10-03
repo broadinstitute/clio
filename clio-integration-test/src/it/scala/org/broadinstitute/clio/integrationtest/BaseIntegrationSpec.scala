@@ -8,8 +8,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.ServiceAccount
-
+import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
@@ -35,7 +34,6 @@ import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
 import java.nio.file.{FileSystem, Files, Path, Paths}
 import java.util.UUID
 
@@ -245,20 +243,22 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   def getJsonFrom[Document <: ClioDocument: Decoder](
     index: ElasticsearchIndex[Document],
-    upsertId: String
+    expectedId: UpsertId
   ): Document = {
     val expectedPath =
       rootPersistenceDir
         .resolve(index.currentPersistenceDir)
-        .resolve(s"$upsertId.json")
-
+        .resolve(new ClioDocument {
+          override val entityId: String = ""
+          override val upsertId: UpsertId = expectedId
+        }.persistenceFilename)
     Files.exists(expectedPath) should be(true)
     val document = parse(new String(Files.readAllBytes(expectedPath)))
       .flatMap(_.as[Document])
       .toTry
       .get
 
-    document.upsertId should be(upsertId)
+    document.upsertId should be(expectedId)
     document
   }
 

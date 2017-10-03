@@ -1,11 +1,12 @@
-package org.broadinstitute.clio.server.dataaccess.util
+package org.broadinstitute.clio.util.model
 
 import org.scalatest.{FlatSpec, Matchers}
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class UpsertIdGeneratorSpec extends FlatSpec with Matchers {
-  behavior of "UpsertIdGenerator"
+class UpsertIdSpec extends FlatSpec with Matchers {
+  behavior of "UpsertId"
 
   /**
     * Generate this many IDs.
@@ -17,15 +18,17 @@ class UpsertIdGeneratorSpec extends FlatSpec with Matchers {
     *
     * @return a future sequence of IDs
     */
-  def generateIds(): Future[Seq[String]] = Future.sequence {
+  def generateIds(): Future[Seq[UpsertId]] = Future.sequence {
     Seq.fill(Count) {
-      Future(UpsertIdGenerator.nextId())
+      Future(UpsertId.nextId())
     }
   }
 
-  it should "generate unique 20-character IDs" in {
+  it should s"generate unique ${UpsertId.IdLength}-character IDs" in {
     generateIds().map { ids =>
-      ids.filter(id => id.length == 20).distinct should have length Count.toLong
+      ids
+        .filter(id => id.id.length == UpsertId.IdLength)
+        .distinct should have length Count.toLong
     }
   }
 

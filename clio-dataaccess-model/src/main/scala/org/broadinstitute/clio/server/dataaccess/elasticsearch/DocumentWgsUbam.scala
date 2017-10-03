@@ -1,10 +1,9 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
-
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import java.time.OffsetDateTime
 
-case class DocumentWgsUbam(upsertId: String,
+case class DocumentWgsUbam(upsertId: UpsertId,
                            entityId: String,
                            flowcellBarcode: String,
                            lane: Int,

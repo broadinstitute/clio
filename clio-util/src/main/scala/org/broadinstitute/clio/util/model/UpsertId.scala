@@ -1,6 +1,21 @@
-package org.broadinstitute.clio.server.dataaccess.util
+package org.broadinstitute.clio.util.model
 
 import scala.util.Random
+
+/**
+  * A unique identifier for each operation that modifies the database.
+  */
+final class UpsertId private (val id: String) extends Ordered[UpsertId] {
+  override def compare(that: UpsertId): Int = id.compareTo(that.id)
+  override def equals(obj: scala.Any): Boolean = {
+    obj match {
+      case that: UpsertId => id.equals(that.id)
+      case _              => false
+    }
+  }
+  override def hashCode(): Int = id.hashCode
+  override def toString: String = id
+}
 
 /**
   * Generate a lexically-ordered, unique ID based on the Firebase Push ID.
@@ -12,7 +27,7 @@ import scala.util.Random
   *
   * @see [[https://firebase.googleblog.com/2015/02/the-2120-ways-to-ensure-unique_68.html]]
   */
-object UpsertIdGenerator {
+object UpsertId {
 
   private val source = new Random()
 
@@ -31,6 +46,11 @@ object UpsertIdGenerator {
     * There are this many characters of randomized data.
     */
   private val RandomCount = 12
+
+  /**
+    * The length of a valid upsert ID.
+    */
+  val IdLength: Int = TimestampCount + RandomCount
 
   /**
     * The latest time used to construct an ID.
@@ -88,11 +108,31 @@ object UpsertIdGenerator {
   }
 
   /**
+    * Check if `idText` is a valid upsert ID.
+    *
+    * @param idText the text to validate
+    * @return true if `idText` is a valid ID
+    */
+  def isValidId(idText: String): Boolean = {
+    idText.length == IdLength && idText.forall(Encoding.contains(_))
+  }
+
+  /**
+    * Create an ID from `idText`. The text must be a valid ID.
+    *
+    * @param idText the text to construct an ID from
+    * @return the created ID or `None`
+    */
+  def fromString(idText: String): Option[UpsertId] = {
+    List(idText).filter(isValidId).map(new UpsertId(_)).headOption
+  }
+
+  /**
     * Return the next unique ID.
     *
-    * @return a 20-character unique ID string
+    * @return a 20-character unique ID
     */
-  val nextId: () => String = () =>
+  val nextId: () => UpsertId = () =>
     synchronized {
       val now = System.currentTimeMillis()
       if (now == was) {
@@ -100,6 +140,6 @@ object UpsertIdGenerator {
       } else {
         refreshRandomState(now)
       }
-      timestamp + randomCharacters.map(Encoding(_)).mkString
+      new UpsertId(timestamp + randomCharacters.map(Encoding(_)).mkString)
   }
 }

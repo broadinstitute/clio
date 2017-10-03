@@ -48,7 +48,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
       Seq(document, document2).foreach { doc =>
         val expectedPath =
           dao.rootPath.resolve(
-            s"${index.currentPersistenceDir}/${doc.upsertId}.json"
+            s"${index.currentPersistenceDir}/${doc.persistenceFilename}"
           )
 
         Files.exists(expectedPath) should be(true)
@@ -84,7 +84,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
           documents
             .map(document => dao.writeUpdate(document, index))
       )
-      .flatMap(_ => dao.getAllSince(expected.headOption.map(_.upsertId), index))
+      .flatMap(_ => dao.getAllSince(expected.headOption, index))
     result.flatMap(_.toVector should be(expected.tail))
   }
 
@@ -113,12 +113,10 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
 
   it should "fail if upsertId is found more than once" in {
     val document = DocumentMock.default
-    val upsertId = document.upsertId
     val dao = new MemoryPersistenceDAO()
 
     val now = OffsetDateTime.now()
     val yesterday = now.minusDays(1L)
-    val filename = s"${document.upsertId}.json"
     val indexable = implicitly[Indexable[DocumentMock]]
 
     for {
@@ -129,13 +127,18 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
             s"${index.rootDir}/${dt.format(ElasticsearchIndex.dateTimeFormatter)}"
           )
         )
-        Files.write(dir.resolve(filename), indexable.json(document).getBytes)
+        Files.write(
+          dir.resolve(document.persistenceFilename),
+          indexable.json(document).getBytes
+        )
       }
       x <- recoverToExceptionIf[RuntimeException] {
-        dao.getAllSince(Some(upsertId), index)
+        dao.getAllSince(Some(document), index)
       }
     } yield {
-      x.getMessage should include(s" files end with /$upsertId.json in ")
+      x.getMessage should include(
+        s" files end with /${document.persistenceFilename} in "
+      )
     }
   }
 

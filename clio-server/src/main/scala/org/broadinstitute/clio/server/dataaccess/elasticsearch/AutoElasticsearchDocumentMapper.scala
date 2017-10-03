@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.dataaccess.util.UpsertIdGenerator
 import org.broadinstitute.clio.util.generic.CaseClassMapper
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.reflect.ClassTag
 
@@ -21,7 +21,7 @@ import scala.reflect.ClassTag
 class AutoElasticsearchDocumentMapper[
   ModelKey <: Product: ClassTag, ModelMetadata: ClassTag,
   Document <: ClioDocument: ClassTag
-] private[elasticsearch] (genId: () => String)
+] private[elasticsearch] (genId: () => UpsertId)
     extends ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] {
 
   private val modelKeyMapper = new CaseClassMapper[ModelKey]
@@ -54,6 +54,6 @@ object AutoElasticsearchDocumentMapper {
             ModelMetadata: ClassTag,
             Document <: ClioDocument: ClassTag]
     : ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] = {
-    new AutoElasticsearchDocumentMapper(UpsertIdGenerator.nextId)
+    new AutoElasticsearchDocumentMapper(UpsertId.nextId)
   }
 }

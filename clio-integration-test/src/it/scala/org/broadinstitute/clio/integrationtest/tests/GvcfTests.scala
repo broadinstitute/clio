@@ -13,7 +13,7 @@ import org.broadinstitute.clio.transfer.model.{
   TransferGvcfV1QueryOutput
 }
 import org.broadinstitute.clio.util.json.JsonSchemas
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
@@ -25,7 +25,7 @@ import java.nio.file.Files
 trait GvcfTests { self: BaseIntegrationSpec =>
 
   def runUpsertGvcf(key: TransferGvcfV1Key,
-                    metadata: TransferGvcfV1Metadata): Future[String] = {
+                    metadata: TransferGvcfV1Metadata): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addGvcfName,
@@ -39,7 +39,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       key.version.toString,
       "--metadata-location",
       tmpMetadata.toString
-    ).flatMap(Unmarshal(_).to[String])
+    ).flatMap(Unmarshal(_).to[UpsertId])
   }
 
   it should "create the expected gvcf mapping in elasticsearch" in {
@@ -147,7 +147,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
           upsertKey,
           TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf2.gvcf"))
         )
-        .flatMap(Unmarshal(_).to[String])
+        .flatMap(Unmarshal(_).to[UpsertId])
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 

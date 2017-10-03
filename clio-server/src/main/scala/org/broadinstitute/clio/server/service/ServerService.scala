@@ -56,11 +56,8 @@ class ServerService private (
     D <: ClioDocument: Indexable: HitReader: Decoder
   ](index: ElasticsearchIndex[D]): Future[Int] = {
     for {
-      maybeLastDocument <- searchDAO.getMostRecentDocument(index)
-      documents <- persistenceDAO.getAllSince(
-        maybeLastDocument.map(_.upsertId),
-        index
-      )
+      mostRecentDocument <- searchDAO.getMostRecentDocument(index)
+      documents <- persistenceDAO.getAllSince(mostRecentDocument, index)
       _ <- documents.foldLeft(Future.successful(())) {
         case (accFuture, document) => {
           for {
