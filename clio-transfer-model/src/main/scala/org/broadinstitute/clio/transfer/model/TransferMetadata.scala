@@ -37,6 +37,6 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
     */
   protected def moveInto(source: String, destination: String): String = {
     // TODO: Rewrite this using a Path-based API.
-    destination + source.splitAt(source.lastIndexOf('/'))
+    destination + source.drop(source.lastIndexOf('/') + 1)
   }
 }

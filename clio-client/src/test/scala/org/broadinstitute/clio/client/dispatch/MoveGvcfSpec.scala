@@ -35,14 +35,15 @@ class MoveGvcfSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw an exception if Clio returns an error" in {
+  it should "throw an exception if the source and destination paths are the same" in {
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     recoverToSucceededIf[Exception] {
-      val command =
-        MoveGvcf(
-          key = testGvcfTransferV1Key,
-          destination = testGvcfCloudSourcePath
-        )
-      failingDispatcher.dispatch(command)
+      val command = MoveGvcf(
+        key = testGvcfTransferV1Key,
+        destination = testGvcfCloudSourcePath
+      )
+      succeedingReturningDispatcherGvcf(mockIoUtil).dispatch(command)
     }
   }
 

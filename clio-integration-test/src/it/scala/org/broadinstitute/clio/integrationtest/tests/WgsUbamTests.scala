@@ -439,6 +439,49 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "not delete wgs-ubams when moving and source == destination" in {
+    val barcode = s"barcode$randomId"
+    val lane = 3
+    val library = s"lib$randomId"
+
+    val fileContents = s"$randomId --- I am a dummy ubam --- $randomId"
+    val cloudPath = rootTestStorageDir.resolve(
+      s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
+    )
+
+    val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
+    val metadata =
+      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri.toString))
+
+    // Clio needs the metadata to be added before it can be moved.
+    val _ = Files.write(cloudPath, fileContents.getBytes)
+    val result = for {
+      _ <- runUpsertWgsUbam(key, metadata)
+      _ <- runClient(
+        ClioCommand.moveWgsUbamName,
+        "--flowcell-barcode",
+        barcode,
+        "--lane",
+        lane.toString,
+        "--library-name",
+        library,
+        "--location",
+        Location.GCP.entryName,
+        "--destination",
+        cloudPath.toUri.toString
+      )
+    } yield {
+      Files.exists(cloudPath) should be(true)
+      new String(Files.readAllBytes(cloudPath)) should be(fileContents)
+    }
+
+    result.andThen[Unit] {
+      case _ => {
+        val _ = Files.deleteIfExists(cloudPath)
+      }
+    }
+  }
+
   it should "not move wgs-ubams without a destination" in {
     recoverToExceptionIf[Exception] {
       runClient(

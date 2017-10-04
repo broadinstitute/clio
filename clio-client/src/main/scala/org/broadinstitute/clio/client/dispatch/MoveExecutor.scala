@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.client.dispatch
 
-import akka.http.scaladsl.model.HttpResponse
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveCommand}
@@ -22,8 +22,8 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   import moveCommand.index.implicits._
 
   private val prettyKey = ClassUtil.formatFields(moveCommand.key)
-  val destination: String = moveCommand.destination
-  val name: String = moveCommand.index.name
+  private val destination: String = moveCommand.destination
+  private val name: String = moveCommand.index.name
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
@@ -132,45 +132,64 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     implicit credentials: HttpCredentials,
     ec: ExecutionContext
   ): Future[HttpResponse] = {
-    val sourcesAsString =
-      existingMetadata.pathsToMove.mkString("'", "', '", "'")
 
-    val googleCopies = existingMetadata.pathsToMove.map { p =>
-      Future(copyGoogleObject(p, destination, ioUtil))
+    val preMovePaths = existingMetadata.pathsToMove
+    val newMetadata = if (ioUtil.isGoogleDirectory(destination)) {
+      existingMetadata.moveAllInto(destination)
+    } else {
+      existingMetadata.setSinglePath(destination)
     }
+    val postMovePaths = newMetadata.pathsToMove
 
-    // VERY IMPORTANT that this is lazy; we cannot delete anything
-    // until Clio has been updated successfully.
-    lazy val googleDeletes = existingMetadata.pathsToMove.map { p =>
-      Future(deleteGoogleObject(p, ioUtil))
-    }
+    val pathsToMove =
+      preMovePaths.filterNot(path => postMovePaths.contains(path))
 
-    for {
-      _ <- Future
-        .sequence(googleCopies)
-        .logErrorMsg(
-          s"""An error occurred while copying files in the cloud. Clio hasn't been updated,
-             |but some files for the $name may exist in two locations. Check the logs to see
-             |which copy commands failed, and why, then try re-running this command. If this
-             |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.""".stripMargin
-        )
-      upsertResponse <- updateAndUpsert(client, ioUtil, existingMetadata)
-        .logErrorMsg(
-          s"""An error occurred while updating the $name record in Clio. All files associated
-             |with $name exist at both the old and new locations, but Clio only knows about the
-             |old location. Try removing the files at $destination and re-running this command.
-             |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
-        )
-      _ <- Future
-        .sequence(googleDeletes)
-        .logErrorMsg(
-          s"""The old files associated with $prettyKey were not able to be deleted.
-             |Please manually delete the old files at: $sourcesAsString.
-             |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
-        )
-    } yield {
-      logger.info(s"Successfully moved $sourcesAsString to '$destination'")
-      upsertResponse
+    if (pathsToMove.isEmpty) {
+      logger.warn("Nothing to move.")
+      Future.successful(HttpResponse(StatusCodes.OK))
+    } else {
+      val sourcesAsString =
+        pathsToMove.mkString("'", "', '", "'")
+
+      val googleCopies = pathsToMove.map { p =>
+        Future(copyGoogleObject(p, destination, ioUtil))
+      }
+
+      // VERY IMPORTANT that this is lazy; we cannot delete anything
+      // until Clio has been updated successfully.
+      lazy val googleDeletes = pathsToMove.map { p =>
+        Future(deleteGoogleObject(p, ioUtil))
+      }
+
+      for {
+        _ <- Future
+          .sequence(googleCopies)
+          .logErrorMsg(
+            s"""An error occurred while copying files in the cloud. Clio hasn't been updated,
+               |but some files for $prettyKey may exist in two locations. Check the logs to see
+               |which copy commands failed, and why, then try re-running this command. If this
+               |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.""".stripMargin
+          )
+        upsertResponse <- client
+          .upsert(moveCommand.index, moveCommand.key, newMetadata)
+          .map(client.ensureOkResponse)
+          .logErrorMsg(
+            s"""An error occurred while updating the $name record in Clio. All files associated with
+               |$prettyKey exist at both the old and new locations, but Clio only knows about the old
+               |location. Try removing the file(s) at $destination and re-running this command.
+               |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
+          )
+        _ <- Future
+          .sequence(googleDeletes)
+          .logErrorMsg(
+            s"""The old files associated with $prettyKey were not able to be deleted.
+               |Please manually delete the old files at: $sourcesAsString.
+               |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
+          )
+      } yield {
+        logger.info(s"Successfully moved $sourcesAsString to '$destination'")
+        upsertResponse
+      }
     }
   }
 
@@ -196,22 +215,5 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
           new Exception(s"Deleting file in the cloud failed for path '$path'")
         )
     }
-  }
-
-  private def updateAndUpsert(client: ClioWebClient,
-                              ioUtil: IoUtil,
-                              existingMetadata: moveCommand.index.MetadataType)(
-    implicit credentials: HttpCredentials,
-    ec: ExecutionContext
-  ): Future[HttpResponse] = {
-    val newMetadata = if (ioUtil.isGoogleDirectory(destination)) {
-      existingMetadata.moveAllInto(destination)
-    } else {
-      existingMetadata.setSinglePath(destination)
-    }
-
-    client
-      .upsert(moveCommand.index, moveCommand.key, newMetadata)
-      .map(client.ensureOkResponse)
   }
 }

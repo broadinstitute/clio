@@ -503,6 +503,158 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "not delete gvcf files when moving and source == destination" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val gvcfContents = s"$randomId --- I am a dummy gvcf --- $randomId"
+    val indexContents = s"$randomId --- I am a dummy index --- $randomId"
+    val metricsContents = s"$randomId --- I am dummy metrics --- $randomId"
+
+    val gvcfName = s"$randomId.gvcf"
+    val indexName = s"$randomId.index"
+    val metricsName = s"$randomId.metrics"
+
+    val rootSource =
+      rootTestStorageDir.resolve(s"gvcf/$project/$sample/v$version/")
+    val gvcfSource = rootSource.resolve(gvcfName)
+    val indexSource = rootSource.resolve(indexName)
+    val metricsSource = rootSource.resolve(metricsName)
+
+    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
+    val metadata = TransferGvcfV1Metadata(
+      gvcfPath = Some(gvcfSource.toUri.toString),
+      gvcfIndexPath = Some(indexSource.toUri.toString),
+      gvcfMetricsPath = Some(metricsSource.toUri.toString)
+    )
+
+    val _ = Seq(
+      (gvcfSource, gvcfContents),
+      (indexSource, indexContents),
+      (metricsSource, metricsContents)
+    ).map {
+      case (source, contents) => Files.write(source, contents.getBytes)
+    }
+    val result = for {
+      _ <- runUpsertGvcf(key, metadata)
+      _ <- runClient(
+        ClioCommand.moveGvcfName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--destination",
+        rootSource.toUri.toString
+      )
+    } yield {
+      Seq(gvcfSource, indexSource, metricsSource).foreach(
+        Files.exists(_) should be(true)
+      )
+      Seq(
+        (gvcfSource, gvcfContents),
+        (indexSource, indexContents),
+        (metricsSource, metricsContents)
+      ).foreach {
+        case (destination, contents) =>
+          new String(Files.readAllBytes(destination)) should be(contents)
+      }
+      succeed
+    }
+
+    result.andThen {
+      case _ => {
+        val _ =
+          Seq(gvcfSource, indexSource, metricsSource).map(Files.deleteIfExists)
+      }
+    }
+  }
+
+  it should "move gvcf files when one file is already in the source directory" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val gvcfContents = s"$randomId --- I am a dummy gvcf --- $randomId"
+    val indexContents = s"$randomId --- I am a dummy index --- $randomId"
+    val metricsContents = s"$randomId --- I am dummy metrics --- $randomId"
+
+    val gvcfName = s"$randomId.gvcf"
+    val indexName = s"$randomId.index"
+    val metricsName = s"$randomId.metrics"
+
+    val rootSource =
+      rootTestStorageDir.resolve(s"gvcf/$project/$sample/v$version/")
+    val gvcfSource = rootSource.resolve(gvcfName)
+    val indexSource = rootSource.resolve(indexName)
+
+    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
+    val gvcfDestination = rootDestination.resolve(gvcfName)
+    val indexDestination = rootDestination.resolve(indexName)
+    val metricsDestination = rootDestination.resolve(metricsName)
+
+    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
+    val metadata = TransferGvcfV1Metadata(
+      gvcfPath = Some(gvcfSource.toUri.toString),
+      gvcfIndexPath = Some(indexSource.toUri.toString),
+      gvcfMetricsPath = Some(metricsDestination.toUri.toString)
+    )
+
+    val _ = Seq(
+      (gvcfSource, gvcfContents),
+      (indexSource, indexContents),
+      (metricsDestination, metricsContents)
+    ).map {
+      case (source, contents) => Files.write(source, contents.getBytes)
+    }
+    val result = for {
+      _ <- runUpsertGvcf(key, metadata)
+      _ <- runClient(
+        ClioCommand.moveGvcfName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--destination",
+        rootDestination.toUri.toString
+      )
+    } yield {
+      Seq(gvcfSource, indexSource).foreach(Files.exists(_) should be(false))
+      Seq(gvcfDestination, indexDestination, metricsDestination).foreach(
+        Files.exists(_) should be(true)
+      )
+      Seq(
+        (gvcfDestination, gvcfContents),
+        (indexDestination, indexContents),
+        (metricsDestination, metricsContents)
+      ).foreach {
+        case (destination, contents) =>
+          new String(Files.readAllBytes(destination)) should be(contents)
+      }
+      succeed
+    }
+
+    result.andThen {
+      case _ => {
+        val _ = Seq(
+          gvcfSource,
+          gvcfDestination,
+          indexSource,
+          indexDestination,
+          metricsDestination
+        ).map(Files.deleteIfExists)
+      }
+    }
+  }
+
   it should "not move gvcfs without a destination" in {
     recoverToExceptionIf[Exception] {
       runClient(

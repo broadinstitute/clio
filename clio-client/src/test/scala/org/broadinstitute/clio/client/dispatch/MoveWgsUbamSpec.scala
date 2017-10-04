@@ -66,7 +66,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw and exception if given a non-GCP unmapped bam" in {
+  it should "throw an exception if given a non-GCP unmapped bam" in {
     recoverToSucceededIf[Exception] {
       val command = MoveWgsUbam(
         key = TransferWgsUbamV1Key(
@@ -81,7 +81,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw and exception if the destination path is not in GCP" in {
+  it should "throw an exception if the destination path is not in GCP" in {
     recoverToSucceededIf[Exception] {
       val command = MoveWgsUbam(
         key = testTransferV1Key,
