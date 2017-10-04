@@ -20,6 +20,9 @@ case class TransferGvcfV1Metadata(analysisDate: Option[OffsetDateTime] = None,
   override def pathsToMove: Seq[String] =
     Seq.concat(gvcfPath, gvcfIndexPath, gvcfMetricsPath)
 
+  override def pathsToDelete: Seq[String] =
+    Seq.concat(gvcfPath, gvcfIndexPath)
+
   override def moveAllInto(destination: String): TransferGvcfV1Metadata = {
     if (!destination.endsWith("/")) {
       throw new Exception("Arguments to `moveAllInto` must end with '/'")
@@ -47,4 +50,10 @@ case class TransferGvcfV1Metadata(analysisDate: Option[OffsetDateTime] = None,
       gvcfMetricsPath = gvcfMetricsPath.map(_ => destination)
     )
   }
+
+  override def markDeleted(deletionNote: String): TransferGvcfV1Metadata =
+    this.copy(
+      documentStatus = Some(DocumentStatus.Deleted),
+      notes = appendNote(deletionNote)
+    )
 }
