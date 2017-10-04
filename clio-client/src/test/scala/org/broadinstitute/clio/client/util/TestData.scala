@@ -72,6 +72,8 @@ trait TestData {
     "gs://testProject/testSample/ubamPath2.unmapped.bam"
   val testGvcfCloudSourcePath: String =
     "gs://testProject/testSample/gvcfPath1.gvcf"
+  val testGvcfMetricsCloudSourcePath: String =
+    "gs://path/gvcfMetrics1.gvcf"
   val testGvcfCloudDestinationDirectoryPath: String =
     "gs://testProject/testSample/moved/"
   val testGvcfCloudDestinationPath: String =

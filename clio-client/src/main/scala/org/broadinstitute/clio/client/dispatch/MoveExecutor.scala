@@ -195,25 +195,17 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
 
   private def copyGoogleObject(source: String,
                                destination: String,
-                               ioUtil: IoUtil): Future[Unit] = {
-    ioUtil.copyGoogleObject(source, destination) match {
-      case 0 => Future.successful(())
-      case _ =>
-        Future.failed(
-          new Exception(
-            s"Copy files in the cloud failed from '$source' to '$destination'"
-          )
-        )
+                               ioUtil: IoUtil): Unit = {
+    if (ioUtil.copyGoogleObject(source, destination) != 0) {
+      throw new Exception(
+        s"Copy files in the cloud failed from '$source' to '$destination'"
+      )
     }
   }
 
-  private def deleteGoogleObject(path: String, ioUtil: IoUtil): Future[Unit] = {
-    ioUtil.deleteGoogleObject(path) match {
-      case 0 => Future.successful(())
-      case _ =>
-        Future.failed(
-          new Exception(s"Deleting file in the cloud failed for path '$path'")
-        )
+  private def deleteGoogleObject(path: String, ioUtil: IoUtil): Unit = {
+    if (ioUtil.deleteGoogleObject(path) != 0) {
+      throw new Exception(s"Deleting file in the cloud failed for path '$path'")
     }
   }
 }

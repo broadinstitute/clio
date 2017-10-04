@@ -1,28 +1,47 @@
 package org.broadinstitute.clio.client.util
 
-class MockIoUtil extends IoUtil {
+import com.typesafe.scalalogging.LazyLogging
 
-  var filesInCloud: Seq[String] = Seq()
+import scala.collection.mutable
+
+class MockIoUtil extends IoUtil with LazyLogging {
+
+  private val filesInCloud = mutable.ArrayBuffer.empty[String]
 
   override def copyGoogleObject(from: String, to: String): Int = {
-    if (from.startsWith("gs://not_a_valid_path") ||
-        to.startsWith("gs://not_a_valid_path")) return 1
-    if (from equals to) return 1
-    if (!filesInCloud.contains(from)) return 1
-    putFileInCloud(to)
-    0
+    if (from.startsWith(MockIoUtil.InvalidPath) || to.startsWith(
+          MockIoUtil.InvalidPath
+        )) {
+      logger.info("Failing on invalid path")
+      1
+    } else if (!filesInCloud.contains(from)) {
+      logger.info(s"Failing on file $from not in mock cloud")
+      1
+    } else {
+      putFileInCloud(to)
+      0
+    }
   }
 
   override def deleteGoogleObject(path: String): Int = {
-    if (path.startsWith("error://")) return 1
-    filesInCloud = filesInCloud.filterNot(_ equals path)
-    0
+    if (path.startsWith(MockIoUtil.InvalidPath)) {
+      logger.info("Failing on invalid path")
+      1
+    } else
+      this.synchronized {
+        filesInCloud -= path
+        0
+      }
   }
 
   override def googleObjectExists(path: String): Boolean =
     filesInCloud.contains(path)
 
-  def putFileInCloud(path: String) = filesInCloud = filesInCloud :+ path
+  def putFileInCloud(path: String) = this.synchronized {
+    filesInCloud += path
+  }
+}
 
-  def resetMockState() = filesInCloud = Seq()
+object MockIoUtil {
+  val InvalidPath = "gs://not_a_valid_path"
 }

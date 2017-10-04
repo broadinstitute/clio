@@ -9,7 +9,7 @@
       "gvcf_md5" : "gvcfMd5",
       "gvcf_path" : "gs://testProject/testSample/gvcfPath1.gvcf",
       "gvcf_size" : 1,
-      "gvcf_metrics_path": "gs://path/gvcfmetrics1.gvcf",
+      "gvcf_metrics_path": "gs://path/gvcfMetrics1.gvcf",
       "pipeline_version": "versionHash",
       "notes": "some note"
   }
