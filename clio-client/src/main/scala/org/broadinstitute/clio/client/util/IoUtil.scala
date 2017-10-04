@@ -13,6 +13,9 @@ trait IoUtil {
   def isGoogleObject(location: String): Boolean =
     location.startsWith(googleCloudStorageScheme)
 
+  def isGoogleDirectory(location: String): Boolean =
+    isGoogleObject(location) && location.endsWith("/")
+
   def readMetadata(location: String): String = {
     if (isGoogleObject(location)) {
       readGoogleObjectData(location)

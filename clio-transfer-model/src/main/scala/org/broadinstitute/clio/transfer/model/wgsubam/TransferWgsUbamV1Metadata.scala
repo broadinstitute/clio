@@ -1,8 +1,9 @@
-package org.broadinstitute.clio.transfer.model
-
-import org.broadinstitute.clio.util.model.DocumentStatus
+package org.broadinstitute.clio.transfer.model.wgsubam
 
 import java.time.OffsetDateTime
+
+import org.broadinstitute.clio.transfer.model.TransferMetadata
+import org.broadinstitute.clio.util.model.DocumentStatus
 
 case class TransferWgsUbamV1Metadata(
   analysisType: Option[String] = None,
@@ -38,4 +39,25 @@ case class TransferWgsUbamV1Metadata(
   ubamPath: Option[String] = None,
   ubamSize: Option[Long] = None,
   documentStatus: Option[DocumentStatus] = None
-)
+) extends TransferMetadata[TransferWgsUbamV1Metadata] {
+
+  override def pathsToMove: Seq[String] = ubamPath.toSeq
+
+  override def moveAllInto(destination: String): TransferWgsUbamV1Metadata = {
+    if (!destination.endsWith("/")) {
+      throw new Exception("Arguments to `moveAllInto` must end with '/'")
+    }
+
+    this.copy(ubamPath = ubamPath.map(moveInto(_, destination)))
+  }
+
+  override def setSinglePath(destination: String): TransferWgsUbamV1Metadata = {
+    if (pathsToMove.length != 1) {
+      throw new Exception(
+        "`setSinglePath` called on metadata with more than one registered path"
+      )
+    }
+
+    this.copy(ubamPath = Some(destination))
+  }
+}

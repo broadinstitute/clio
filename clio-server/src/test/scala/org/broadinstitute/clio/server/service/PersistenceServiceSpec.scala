@@ -8,7 +8,7 @@ import org.broadinstitute.clio.server.dataaccess.{
   MemorySearchDAO
 }
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
-import org.broadinstitute.clio.transfer.model.{
+import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata
 }

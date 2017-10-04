@@ -1,8 +1,8 @@
-package org.broadinstitute.clio.transfer.model
-
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+package org.broadinstitute.clio.transfer.model.wgsubam
 
 import java.time.OffsetDateTime
+
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 case class TransferWgsUbamV1QueryOutput(
   flowcellBarcode: String,

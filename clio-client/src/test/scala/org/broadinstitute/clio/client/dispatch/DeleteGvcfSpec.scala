@@ -6,7 +6,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeleteGvcf
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.TransferGvcfV1Key
+import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1Key
 import org.broadinstitute.clio.util.model.Location
 
 class DeleteGvcfSpec extends BaseClientSpec {
@@ -78,7 +78,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
   it should "delete multiple gvcfs in Clio and the cloud" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
-    mockIoUtil.putFileInCloud(testGvcfCloudDestinationPath)
+    mockIoUtil.putFileInCloud(testGvcfCloudDestinationDirectoryPath)
 
     new CommandDispatch(MockClioWebClient.returningTwoGvcfs, mockIoUtil)
       .dispatch(goodGvcfDeleteCommand)

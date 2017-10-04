@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.transfer.model
+package org.broadinstitute.clio.transfer.model.gvcf
 
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 

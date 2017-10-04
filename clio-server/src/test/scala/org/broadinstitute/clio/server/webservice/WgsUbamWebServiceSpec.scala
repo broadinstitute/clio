@@ -9,15 +9,15 @@ import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsUbam
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
-import org.broadinstitute.clio.transfer.model.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1QueryInput
-}
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import org.scalatest.{FlatSpec, Matchers}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.WgsUbamService
+import org.broadinstitute.clio.transfer.model.wgsubam.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1QueryInput
+}
 import org.broadinstitute.clio.util.model.Location.{GCP, OnPrem}
 
 class WgsUbamWebServiceSpec

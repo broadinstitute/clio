@@ -2,7 +2,6 @@ package org.broadinstitute.clio.client.dispatch
 
 import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.HttpCredentials
-import io.circe.{Decoder, Encoder}
 import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands.{AddCommand, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
@@ -18,11 +17,11 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
     credentials: HttpCredentials
   ): Future[HttpResponse] = {
 
-    val location = addCommand.metadataLocation
-    val index = addCommand.index
+    import addCommand.index.implicits._
 
-    implicit val decoder: Decoder[index.MetadataType] = index.metadataDecoder
-    implicit val encoder: Encoder[index.MetadataType] = index.metadataEncoder
+    val location = addCommand.metadataLocation
+    val commandName = addCommand.index.commandName
+    val name = addCommand.index.name
 
     val parsedOrError = parse(IoUtil.readMetadata(location)).left.map { err =>
       new RuntimeException(
@@ -32,11 +31,11 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
     }
 
     val decodedOrError = parsedOrError
-      .flatMap(_.as[index.MetadataType])
+      .flatMap(_.as[addCommand.index.MetadataType])
       .left
       .map { err =>
         new RuntimeException(
-          s"Invalid metadata given at $location. Run the '${ClioCommand.getSchemaPrefix}${index.commandName}' command to see the expected JSON format for ${index.name}s.",
+          s"Invalid metadata given at $location. Run the '${ClioCommand.getSchemaPrefix}$commandName' command to see the expected JSON format for ${name}s.",
           err
         )
       }
@@ -45,7 +44,7 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
       Future
         .failed(_) logErrorMsg s"Metadata at $location cannot be added to Clio", {
         decoded =>
-          webClient.upsert(index, addCommand.key, decoded)
+          webClient.upsert(addCommand.index, addCommand.key, decoded)
       }
     )
   }

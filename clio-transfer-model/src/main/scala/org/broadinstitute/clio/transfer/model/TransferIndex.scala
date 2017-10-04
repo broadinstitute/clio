@@ -1,12 +1,13 @@
 package org.broadinstitute.clio.transfer.model
 
 import io.circe.{Decoder, Encoder, Json}
-import org.broadinstitute.clio.util.json.{JsonSchemas, ModelAutoDerivation}
+
+import scala.reflect.ClassTag
 
 /**
   * This models an index in our database. An index is a table (schema) within our database.
   */
-sealed trait TransferIndex extends ModelAutoDerivation {
+trait TransferIndex {
 
   /**
     * Encode the index as a url segment for making web service API calls
@@ -23,70 +24,44 @@ sealed trait TransferIndex extends ModelAutoDerivation {
 
   type KeyType <: TransferKey
 
-  type MetadataType
+  type MetadataType <: TransferMetadata[MetadataType]
 
   type QueryInputType
 
-  type OutputType
+  type QueryOutputType
+
+  val keyTag: ClassTag[KeyType]
+
+  val metadataTag: ClassTag[MetadataType]
+
+  val queryInputTag: ClassTag[QueryInputType]
+
+  val queryOutputTag: ClassTag[QueryOutputType]
 
   val metadataDecoder: Decoder[MetadataType]
 
   val metadataEncoder: Encoder[MetadataType]
 
   val queryInputEncoder: Encoder[QueryInputType]
-}
 
-case object GvcfIndex extends TransferIndex {
+  val queryOutputDecoder: Decoder[QueryOutputType]
 
-  override val urlSegment: String = "gvcf"
-
-  override val jsonSchema: Json = JsonSchemas.Gvcf
-
-  override val name: String = "Gvcf"
-
-  override val commandName: String = "gvcf"
-
-  override type KeyType = TransferGvcfV1Key
-
-  override type MetadataType = TransferGvcfV1Metadata
-
-  override type QueryInputType = TransferGvcfV1QueryInput
-
-  override type OutputType = TransferGvcfV1QueryOutput
-
-  override val metadataDecoder: Decoder[MetadataType] =
-    Decoder[MetadataType]
-
-  override val metadataEncoder: Encoder[MetadataType] =
-    Encoder[MetadataType]
-
-  override val queryInputEncoder: Encoder[QueryInputType] =
-    Encoder[QueryInputType]
-}
-
-case object WgsUbamIndex extends TransferIndex {
-  override val urlSegment: String = "wgsubam"
-
-  override val jsonSchema: Json = JsonSchemas.WgsUbam
-
-  override val name: String = "WgsUbam"
-
-  override val commandName: String = "wgs-ubam"
-
-  override type KeyType = TransferWgsUbamV1Key
-
-  override type MetadataType = TransferWgsUbamV1Metadata
-
-  override type QueryInputType = TransferWgsUbamV1QueryInput
-
-  override type OutputType = TransferWgsUbamV1QueryOutput
-
-  override val metadataDecoder: Decoder[MetadataType] =
-    Decoder[MetadataType]
-
-  override val metadataEncoder: Encoder[MetadataType] =
-    Encoder[MetadataType]
-
-  override val queryInputEncoder: Encoder[QueryInputType] =
-    Encoder[QueryInputType]
+  /**
+    * Container for all index parameters that are typically
+    * used as implicit arguments.
+    *
+    * Enables using `import index.implicits._` in other code
+    * to pull in the context needed for generically working
+    * with a specific index.
+    */
+  object implicits {
+    implicit val kt: ClassTag[KeyType] = keyTag
+    implicit val mt: ClassTag[MetadataType] = metadataTag
+    implicit val qit: ClassTag[QueryInputType] = queryInputTag
+    implicit val qot: ClassTag[QueryOutputType] = queryOutputTag
+    implicit val md: Decoder[MetadataType] = metadataDecoder
+    implicit val me: Encoder[MetadataType] = metadataEncoder
+    implicit val qie: Encoder[QueryInputType] = queryInputEncoder
+    implicit val qod: Decoder[QueryOutputType] = queryOutputDecoder
+  }
 }

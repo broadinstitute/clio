@@ -4,11 +4,10 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeleteWgsUbam
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.TransferWgsUbamV1Key
 import org.broadinstitute.clio.util.model.Location
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1Key
 
 class DeleteWgsUbamSpec extends BaseClientSpec {
   behavior of "DeleteWgsUbam"

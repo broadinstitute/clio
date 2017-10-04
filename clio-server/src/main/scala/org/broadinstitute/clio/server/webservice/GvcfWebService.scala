@@ -5,7 +5,11 @@ import akka.http.scaladsl.server._
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport._
 import org.broadinstitute.clio.server.service.GvcfService
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
-import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  TransferGvcfV1Key,
+  TransferGvcfV1Metadata,
+  TransferGvcfV1QueryInput
+}
 import org.broadinstitute.clio.util.model.Location
 
 trait GvcfWebService {

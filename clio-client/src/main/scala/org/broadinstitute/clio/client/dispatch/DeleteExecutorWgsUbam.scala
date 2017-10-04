@@ -5,7 +5,12 @@ import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.commands.DeleteWgsUbam
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.transfer.model.{TransferKey, WgsUbamIndex}
+import org.broadinstitute.clio.transfer.model.wgsubam.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryOutput
+}
 import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -14,8 +19,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
-
-  private val index = WgsUbamIndex
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
@@ -28,7 +31,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
       for {
         queryResponses <- webClient
           .query(
-            index,
+            WgsUbamIndex,
             deleteWgsUbam.transferWgsUbamV1Key,
             includeDeleted = false
           )
@@ -130,7 +133,7 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
                 s"Failed to delete the wgs-ubam $prettyKey in Clio. " +
                   s"The file has been deleted in the cloud. " +
                   s"Clio now has a 'dangling pointer' to ${wgsUbam.ubamPath.getOrElse("")}. " +
-                  s"Please try updating Clio by manually adding the ${index.name} and setting the documentStatus to Deleted and making the ubamPath an empty String."
+                  s"Please try updating Clio by manually adding the wgs-ubam and setting the documentStatus to Deleted and making the ubamPath an empty String."
               )
           } else {
             Future.failed(
@@ -176,9 +179,9 @@ class DeleteExecutorWgsUbam(deleteWgsUbam: DeleteWgsUbam) extends Executor {
     logger.info(s"Deleting wgs-ubam for $prettyKey in Clio.")
     webClient
       .upsert(
-        index,
+        WgsUbamIndex,
         key,
-        new index.MetadataType(
+        TransferWgsUbamV1Metadata(
           documentStatus = Some(DocumentStatus.Deleted),
           notes = Some(notes)
         )

@@ -9,12 +9,12 @@ import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentGvcf
 import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
-import org.broadinstitute.clio.transfer.model.TransferGvcfV1QueryInput
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import org.scalatest.{FlatSpec, Matchers}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.GvcfService
+import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryInput
 
 class GvcfWebServiceSpec
     extends FlatSpec

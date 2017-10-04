@@ -4,6 +4,7 @@
     "gvcf_md5" : "gvcfMd5",
     "gvcf_path" : "gvcfPath",
     "gvcf_size" : 1,
+    "gvcf_index_path": "gvcfIndexPath",
     "gvcf_metrics_path": "gvcfMetricsPath",
     "pipeline_version": "versionHash",
     "notes": "some note"

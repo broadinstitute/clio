@@ -1,14 +1,20 @@
 package org.broadinstitute.clio.client.util
 
-import org.broadinstitute.clio.client.commands._
-import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.clio.client.commands._
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  TransferGvcfV1Key,
+  TransferGvcfV1QueryInput
+}
+import org.broadinstitute.clio.transfer.model.wgsubam.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1QueryInput
+}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.duration._
-
-import java.time.OffsetDateTime
 
 trait TestData {
 
@@ -31,6 +37,10 @@ trait TestData {
 
   val testGvcfLocation = Some(
     "clio-client/src/test/resources/testdata/testGvcf"
+  )
+
+  val testGvcfMetadataOnlyMetricsLocation = Some(
+    "clio-client/src/test/resources/testdata/testGvcfMetadataOnlyMetrics"
   )
 
   val testTwoGvcfsLocation = Some(
@@ -62,8 +72,10 @@ trait TestData {
     "gs://testProject/testSample/ubamPath2.unmapped.bam"
   val testGvcfCloudSourcePath: String =
     "gs://testProject/testSample/gvcfPath1.gvcf"
+  val testGvcfCloudDestinationDirectoryPath: String =
+    "gs://testProject/testSample/moved/"
   val testGvcfCloudDestinationPath: String =
-    "gs://testProject/testSample/gvcfPath2.gvcf"
+    testGvcfCloudDestinationDirectoryPath + "gvcfPath2.gvcf"
 
   val testCommon = CommonOptions(bearerToken = Some(testBearer))
   val testCommonNoToken = CommonOptions()
@@ -88,7 +100,7 @@ trait TestData {
     AddWgsUbam(metadataLocation = metadataFileLocation, key = testTransferV1Key)
 
   val goodMoveCommand = MoveWgsUbam(
-    transferWgsUbamV1Key = testTransferV1Key,
+    key = testTransferV1Key,
     destination = testUbamCloudDestinationPath
   )
 
@@ -105,8 +117,8 @@ trait TestData {
   )
 
   val goodGvcfMoveCommand = MoveGvcf(
-    transferGvcfV1Key = testGvcfTransferV1Key,
-    destination = testGvcfCloudDestinationPath
+    key = testGvcfTransferV1Key,
+    destination = testGvcfCloudDestinationDirectoryPath
   )
 
   val goodGvcfDeleteCommand = DeleteGvcf(

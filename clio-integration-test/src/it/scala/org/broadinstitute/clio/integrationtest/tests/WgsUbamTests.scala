@@ -1,24 +1,25 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import java.nio.file.Files
+
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import com.sksamuel.elastic4s.IndexAndType
+import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentWgsUbam,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.transfer.model.{
+import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.sksamuel.elastic4s.IndexAndType
-import io.circe.Json
 
 import scala.concurrent.Future
-import java.nio.file.Files
 
 /** Tests of Clio's wgs-ubam functionality. */
 trait WgsUbamTests { self: BaseIntegrationSpec =>
@@ -434,6 +435,49 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       case _ => {
         // Without `val _ =`, the compiler complains about discarded non-Unit value.
         val _ = Seq(cloudPath, cloudPath2).map(Files.deleteIfExists)
+      }
+    }
+  }
+
+  it should "not delete wgs-ubams when moving and source == destination" in {
+    val barcode = s"barcode$randomId"
+    val lane = 3
+    val library = s"lib$randomId"
+
+    val fileContents = s"$randomId --- I am a dummy ubam --- $randomId"
+    val cloudPath = rootTestStorageDir.resolve(
+      s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
+    )
+
+    val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
+    val metadata =
+      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri.toString))
+
+    // Clio needs the metadata to be added before it can be moved.
+    val _ = Files.write(cloudPath, fileContents.getBytes)
+    val result = for {
+      _ <- runUpsertWgsUbam(key, metadata)
+      _ <- runClient(
+        ClioCommand.moveWgsUbamName,
+        "--flowcell-barcode",
+        barcode,
+        "--lane",
+        lane.toString,
+        "--library-name",
+        library,
+        "--location",
+        Location.GCP.entryName,
+        "--destination",
+        cloudPath.toUri.toString
+      )
+    } yield {
+      Files.exists(cloudPath) should be(true)
+      new String(Files.readAllBytes(cloudPath)) should be(fileContents)
+    }
+
+    result.andThen[Unit] {
+      case _ => {
+        val _ = Files.deleteIfExists(cloudPath)
       }
     }
   }

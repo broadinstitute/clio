@@ -123,3 +123,9 @@ trait ModelAutoDerivation extends AutoDerivation {
     }
   }
 }
+
+/**
+  * Companion object so we can `import ModelAutoDerivation._` to get the implicits within when
+  * that is more convenient than extending the trait.
+  */
+object ModelAutoDerivation extends ModelAutoDerivation

@@ -2,11 +2,16 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import Elastic4sAutoDerivation._
-import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.json.JsonSchemas
-import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import com.sksamuel.elastic4s.circe._
 import io.circe.Json
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  TransferGvcfV1Key,
+  TransferGvcfV1Metadata,
+  TransferGvcfV1QueryInput,
+  TransferGvcfV1QueryOutput
+}
+import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 

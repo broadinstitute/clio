@@ -148,6 +148,15 @@ object MockClioWebClient extends TestData {
     new MockClioWebClient(status = StatusCodes.OK, testGvcfLocation)
   }
 
+  def returningGvcfOnlyMetadata(
+    implicit system: ActorSystem
+  ): MockClioWebClient = {
+    new MockClioWebClient(
+      status = StatusCodes.OK,
+      testGvcfMetadataOnlyMetricsLocation
+    )
+  }
+
   def returningTwoGvcfs(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, testTwoGvcfsLocation)
   }
