@@ -10,7 +10,8 @@ import org.broadinstitute.clio.server.service._
 import org.broadinstitute.clio.server.webservice._
 
 object ClioServer
-    extends StatusWebService
+    extends JsonWebService
+    with StatusWebService
     with WgsUbamWebService
     with GvcfWebService
     with AuditDirectives

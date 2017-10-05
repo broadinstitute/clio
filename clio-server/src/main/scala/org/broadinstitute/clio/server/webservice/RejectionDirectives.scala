@@ -5,10 +5,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import io.circe.syntax._
 import org.broadinstitute.clio.server.model.RejectionResult
-import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 
 /** Rejection translation into json. */
-trait RejectionDirectives {
+trait RejectionDirectives { self: JsonWebService =>
   lazy val mapRejectionsToJson: Directive0 = {
     handleRejections(mapRejectionsToJsonHandler)
   }

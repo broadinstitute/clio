@@ -2,9 +2,7 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport._
 import org.broadinstitute.clio.server.service.WgsUbamService
-import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
@@ -12,7 +10,7 @@ import org.broadinstitute.clio.transfer.model.wgsubam.{
 }
 import org.broadinstitute.clio.util.model.Location
 
-trait WgsUbamWebService {
+trait WgsUbamWebService { self: JsonWebService =>
 
   def wgsUbamService: WgsUbamService
 

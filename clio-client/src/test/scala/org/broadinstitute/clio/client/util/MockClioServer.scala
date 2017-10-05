@@ -1,12 +1,10 @@
 package org.broadinstitute.clio.client.util
 
-import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 import org.broadinstitute.clio.status.model.{
   ServerStatusInfo,
   StatusInfo,
   SystemStatusInfo
 }
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
@@ -14,7 +12,8 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import akka.pattern.after
 import akka.stream.ActorMaterializer
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
+import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -22,7 +21,10 @@ import scala.concurrent.duration._
 /**
   * Bare-bones server to simulate parts of the clio-server needed for testing the webclient.
   */
-class MockClioServer(implicit system: ActorSystem) extends TestData {
+class MockClioServer(implicit system: ActorSystem)
+    extends TestData
+    with ModelAutoDerivation
+    with FailFastCirceSupport {
   implicit val mat: ActorMaterializer = ActorMaterializer()
   import system.dispatcher
 

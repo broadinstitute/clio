@@ -1,24 +1,16 @@
 package org.broadinstitute.clio.server.webservice
 
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import org.broadinstitute.clio.server.dataaccess.{
   MockHttpServerDAO,
   MockServerStatusDAO
 }
-import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.broadinstitute.clio.status.model.{
   StatusInfo,
   SystemStatusInfo,
   VersionInfo
 }
 
-import org.scalatest.{FlatSpec, Matchers}
-
-class StatusWebServiceSpec
-    extends FlatSpec
-    with Matchers
-    with ScalatestRouteTest {
+class StatusWebServiceSpec extends BaseWebserviceSpec {
   behavior of "StatusWebService"
 
   it should "versionRoute" in {

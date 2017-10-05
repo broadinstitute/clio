@@ -1,3 +1,3 @@
 package org.broadinstitute.clio.server.webservice
 
-object MockExceptionDirectives extends ExceptionDirectives
+object MockExceptionDirectives extends JsonWebService with ExceptionDirectives

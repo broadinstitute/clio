@@ -1,11 +1,10 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import io.circe.{Json, Printer}
+import io.circe.Json
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 /** Automatic JSON encoding and decoding for the Elasticsearch DAO. */
 object Elastic4sAutoDerivation extends ModelAutoDerivation {
-  private val elastic4sPrinter = Printer.noSpaces.copy(dropNullKeys = true)
 
   import scala.language.implicitConversions
 
@@ -18,5 +17,5 @@ object Elastic4sAutoDerivation extends ModelAutoDerivation {
     * https://github.com/sksamuel/elastic4s/blob/v5.4.5/elastic4s-circe/src/main/scala/com/sksamuel/elastic4s/circe/package.scala#L41
     */
   implicit def implicitEncoder(json: Json): String =
-    elastic4sPrinter.pretty(json)
+    defaultPrinter.pretty(json)
 }

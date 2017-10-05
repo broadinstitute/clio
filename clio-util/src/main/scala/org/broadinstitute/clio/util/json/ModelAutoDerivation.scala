@@ -6,7 +6,7 @@ import java.time.OffsetDateTime
 import cats.syntax.either._
 import enumeratum._
 import io.circe.generic.extras.{AutoDerivation, Configuration}
-import io.circe.{Decoder, DecodingFailure, Encoder, HCursor}
+import io.circe._
 import org.broadinstitute.clio.util.generic.CompanionCache
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -37,6 +37,12 @@ trait ModelAutoDerivation extends AutoDerivation {
     */
   implicit val jsonConfig: Configuration =
     Configuration.default.withSnakeCaseKeys
+
+  /**
+    * By default, compact JSON as much as possible by removing spaces and keys with null / None values.
+    */
+  implicit val defaultPrinter: Printer =
+    Printer.noSpaces.copy(dropNullKeys = true)
 
   /**
     * When decoding, don't allow extra fields.

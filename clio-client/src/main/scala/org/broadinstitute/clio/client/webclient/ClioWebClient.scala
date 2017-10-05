@@ -12,6 +12,7 @@ import io.circe.{Encoder, Printer}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.util.FutureWithErrorMessage
 import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
@@ -23,10 +24,9 @@ class ClioWebClient(
   useHttps: Boolean,
   requestTimeout: FiniteDuration
 )(implicit system: ActorSystem)
-    extends FailFastCirceSupport
+    extends ModelAutoDerivation
+    with FailFastCirceSupport
     with FutureWithErrorMessage {
-
-  import ClientAutoDerivation._
 
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()

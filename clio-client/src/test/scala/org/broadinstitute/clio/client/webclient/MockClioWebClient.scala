@@ -7,7 +7,6 @@ import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Encoder, Json, Printer}
 import org.broadinstitute.clio.client.util.{IoUtil, TestData}
-import org.broadinstitute.clio.client.webclient.ClientAutoDerivation._
 import org.broadinstitute.clio.status.model.{
   ServerStatusInfo,
   StatusInfo,
@@ -15,6 +14,7 @@ import org.broadinstitute.clio.status.model.{
   VersionInfo
 }
 import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
 
@@ -28,7 +28,8 @@ class MockClioWebClient(
       false,
       MockClioWebClient.testRequestTimeout
     )
-    with TestData {
+    with TestData
+    with ModelAutoDerivation {
 
   val health = StatusInfo(ServerStatusInfo.Started, SystemStatusInfo.OK)
   val version = VersionInfo("0.0.1")

@@ -2,9 +2,7 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport._
 import org.broadinstitute.clio.server.service.GvcfService
-import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
@@ -12,7 +10,7 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
 }
 import org.broadinstitute.clio.util.model.Location
 
-trait GvcfWebService {
+trait GvcfWebService { self: JsonWebService =>
 
   def gvcfService: GvcfService
 

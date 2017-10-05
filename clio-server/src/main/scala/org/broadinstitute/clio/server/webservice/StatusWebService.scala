@@ -3,11 +3,9 @@ package org.broadinstitute.clio.server.webservice
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import org.broadinstitute.clio.server.service.StatusService
-import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 
-trait StatusWebService {
+trait StatusWebService { self: JsonWebService =>
   lazy val statusRoutes: Route =
     concat(versionRoute, healthRoute, slashRedirectRoute)
 
