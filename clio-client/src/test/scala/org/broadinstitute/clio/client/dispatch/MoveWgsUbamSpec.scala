@@ -18,7 +18,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     recoverToSucceededIf[Exception] {
       val command = MoveWgsUbam(
         key = testTransferV1Key,
-        destination = "gs://not_a_valid_path"
+        destination = MockIoUtil.InvalidPath
       )
       succeedingDispatcher.dispatch(command)
     }

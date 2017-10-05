@@ -500,6 +500,64 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "not move wgs-ubams when the source file doesn't exist" in {
+    val barcode = s"barcode$randomId"
+    val lane = 3
+    val library = s"lib$randomId"
+
+    val cloudPath = rootTestStorageDir.resolve(
+      s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
+    )
+    val cloudPath2 =
+      cloudPath.getParent.resolve(s"moved/$randomId.unmapped.bam")
+
+    val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
+    val metadata =
+      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri.toString))
+
+    val result = for {
+      _ <- runUpsertWgsUbam(key, metadata)
+      _ <- recoverToSucceededIf[Exception] {
+        runClient(
+          ClioCommand.moveWgsUbamName,
+          "--flowcell-barcode",
+          barcode,
+          "--lane",
+          lane.toString,
+          "--library-name",
+          library,
+          "--location",
+          Location.GCP.entryName,
+          "--destination",
+          cloudPath2.toUri.toString
+        )
+      }
+      queryResponse <- runClient(
+        ClioCommand.queryWgsUbamName,
+        "--flowcell-barcode",
+        barcode,
+        "--lane",
+        lane.toString,
+        "--library-name",
+        library,
+        "--location",
+        Location.GCP.entryName
+      )
+      queryOutputs <- Unmarshal(queryResponse)
+        .to[Seq[TransferWgsUbamV1QueryOutput]]
+    } yield {
+      Files.exists(cloudPath2) should be(false)
+      queryOutputs should have length 1
+      queryOutputs.head.ubamPath should be(Some(cloudPath.toUri.toString))
+    }
+
+    result.andThen[Unit] {
+      case _ => {
+        val _ = Files.deleteIfExists(cloudPath2)
+      }
+    }
+  }
+
   def addAndDeleteWgsUbam(
     deleteNote: String,
     existingNote: Option[String]
