@@ -15,6 +15,7 @@ trait Executor
     with FailFastCirceSupport
     with ModelAutoDerivation
     with FutureWithErrorMessage {
+
   def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     credentials: HttpCredentials

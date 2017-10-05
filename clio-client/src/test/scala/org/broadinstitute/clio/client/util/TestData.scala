@@ -106,10 +106,8 @@ trait TestData {
     destination = testUbamCloudDestinationPath
   )
 
-  val goodDeleteCommand = DeleteWgsUbam(
-    transferWgsUbamV1Key = testTransferV1Key,
-    note = "Good delete for test"
-  )
+  val goodDeleteCommand =
+    DeleteWgsUbam(key = testTransferV1Key, note = "Good delete for test")
 
   val goodGvcfQueryCommand = QueryGvcf(queryInput = TransferGvcfV1QueryInput())
 
@@ -123,10 +121,8 @@ trait TestData {
     destination = testGvcfCloudDestinationDirectoryPath
   )
 
-  val goodGvcfDeleteCommand = DeleteGvcf(
-    transferGvcfV1Key = testGvcfTransferV1Key,
-    note = "Good delete for test"
-  )
+  val goodGvcfDeleteCommand =
+    DeleteGvcf(key = testGvcfTransferV1Key, note = "Good delete for test")
 
   val testServerPort: Int = 8080
   val testRequestTimeout: FiniteDuration = 3.seconds

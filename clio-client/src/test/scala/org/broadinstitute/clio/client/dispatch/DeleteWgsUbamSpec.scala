@@ -17,7 +17,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   it should "throw an exception if the location is not GCP" in {
     recoverToSucceededIf[Exception] {
       val command = DeleteWgsUbam(
-        transferWgsUbamV1Key = TransferWgsUbamV1Key(
+        key = TransferWgsUbamV1Key(
           flowcellBarcode = testFlowcell,
           lane = testLane,
           libraryName = testLibName,
@@ -35,9 +35,17 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw an exception if Clio doesn't return a Ubam" in {
+  it should "throw an exception if Clio doesn't return a WgsUbam" in {
     recoverToSucceededIf[Exception] {
       succeedingDispatcher.dispatch(goodDeleteCommand)
+    }
+  }
+
+  it should "throw an exception if Clio returns multiple records for a WgsUbam" in {
+    val mockIoUtil = new MockIoUtil
+    recoverToSucceededIf[Exception] {
+      new CommandDispatch(MockClioWebClient.returningTwoWgsUbams, mockIoUtil)
+        .dispatch(goodDeleteCommand)
     }
   }
 
@@ -71,16 +79,6 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     succeedingReturningDispatcherWgsUbam(mockIoUtil)
-      .dispatch(goodDeleteCommand)
-      .map(_.status should be(StatusCodes.OK))
-  }
-
-  it should "delete multiple WgsUbams in Clio and the cloud" in {
-    val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
-    mockIoUtil.putFileInCloud(testUbamCloudDestinationPath)
-
-    new CommandDispatch(MockClioWebClient.returningTwoWgsUbams, mockIoUtil)
       .dispatch(goodDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }

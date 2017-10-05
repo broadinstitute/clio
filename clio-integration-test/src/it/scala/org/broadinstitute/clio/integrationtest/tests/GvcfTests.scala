@@ -683,7 +683,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val fileContents = s"$randomId --- I am fated to die --- $randomId"
     val cloudPath = rootTestStorageDir.resolve(
-      s"gvcf/$project/$sample/v$version/$randomId.vcf.gz"
+      s"gvcf/$project/$sample/v$version/$randomId.gvcf"
     )
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
@@ -758,6 +758,88 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     deletedWithExistingNote.map { output =>
       output.notes should be(Some(s"$existingNote\n$deleteNote"))
       output.documentStatus should be(Some(DocumentStatus.Deleted))
+    }
+  }
+
+  it should "delete gvcf indexes, but not metrics" in {
+    val deleteNote =
+      s"$randomId --- Deleted by the integration tests --- $randomId"
+
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val gvcfContents = s"$randomId --- I am a gvcf fated to die --- $randomId"
+    val indexContents =
+      s"$randomId --- I am an index fated to die --- $randomId"
+    val metricsContents =
+      s"$randomId --- I am an immortal metrics file --- $randomId"
+
+    val storageDir =
+      rootTestStorageDir.resolve(s"gvcf/$project/$sample/v$version/")
+    val gvcfPath = storageDir.resolve(s"$randomId.gvcf")
+    val indexPath = storageDir.resolve(s"$randomId.index")
+    val metricsPath = storageDir.resolve(s"$randomId.metrics")
+
+    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
+    val metadata =
+      TransferGvcfV1Metadata(
+        gvcfPath = Some(gvcfPath.toUri.toString),
+        gvcfIndexPath = Some(indexPath.toUri.toString),
+        gvcfMetricsPath = Some(metricsPath.toUri.toString)
+      )
+
+    val _ = Seq(
+      (gvcfPath, gvcfContents),
+      (indexPath, indexContents),
+      (metricsPath, metricsContents)
+    ).map {
+      case (path, contents) => Files.write(path, contents.getBytes)
+    }
+    val result = for {
+      _ <- runUpsertGvcf(key, metadata)
+      _ <- runClient(
+        ClioCommand.deleteGvcfName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--note",
+        deleteNote
+      )
+      response <- runClient(
+        ClioCommand.queryGvcfName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--include-deleted"
+      )
+      outputs <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
+    } yield {
+      Files.exists(gvcfPath) should be(false)
+      Files.exists(indexPath) should be(false)
+      Files.exists(metricsPath) should be(true)
+      new String(Files.readAllBytes(metricsPath)) should be(metricsContents)
+
+      outputs should have length 1
+      outputs.head.notes should be(Some(deleteNote))
+      outputs.head.documentStatus should be(Some(DocumentStatus.Deleted))
+    }
+
+    result.andThen[Unit] {
+      case _ => {
+        // Without `val _ =`, the compiler complains about discarded non-Unit value.
+        val _ = Seq(gvcfPath, indexPath, metricsPath).map(Files.deleteIfExists)
+      }
     }
   }
 

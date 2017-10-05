@@ -43,6 +43,8 @@ case class TransferWgsUbamV1Metadata(
 
   override def pathsToMove: Seq[String] = ubamPath.toSeq
 
+  override def pathsToDelete: Seq[String] = ubamPath.toSeq
+
   override def moveAllInto(destination: String): TransferWgsUbamV1Metadata = {
     if (!destination.endsWith("/")) {
       throw new Exception("Arguments to `moveAllInto` must end with '/'")
@@ -60,4 +62,10 @@ case class TransferWgsUbamV1Metadata(
 
     this.copy(ubamPath = Some(destination))
   }
+
+  override def markDeleted(deletionNote: String): TransferWgsUbamV1Metadata =
+    this.copy(
+      documentStatus = Some(DocumentStatus.Deleted),
+      notes = appendNote(deletionNote)
+    )
 }

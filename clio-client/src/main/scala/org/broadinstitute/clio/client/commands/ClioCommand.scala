@@ -44,6 +44,12 @@ sealed abstract class MoveCommand[TI <: TransferIndex](val index: TI)
   def destination: String
 }
 
+sealed abstract class DeleteCommand[TI <: TransferIndex](val index: TI)
+    extends ClioCommand {
+  def key: index.KeyType
+  def note: String
+}
+
 // Generic commands.
 
 @CommandName(ClioCommand.getServerHealthName)
@@ -73,10 +79,8 @@ final case class MoveWgsUbam(@Recurse key: TransferWgsUbamV1Key,
     extends MoveCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.deleteWgsUbamName)
-final case class DeleteWgsUbam(
-  @Recurse transferWgsUbamV1Key: TransferWgsUbamV1Key,
-  note: String
-) extends ClioCommand
+final case class DeleteWgsUbam(@Recurse key: TransferWgsUbamV1Key, note: String)
+    extends DeleteCommand(WgsUbamIndex)
 
 // GVCF commands.
 
@@ -98,9 +102,8 @@ final case class MoveGvcf(@Recurse key: TransferGvcfV1Key, destination: String)
     extends MoveCommand(GvcfIndex)
 
 @CommandName(ClioCommand.deleteGvcfName)
-final case class DeleteGvcf(@Recurse transferGvcfV1Key: TransferGvcfV1Key,
-                            note: String)
-    extends ClioCommand
+final case class DeleteGvcf(@Recurse key: TransferGvcfV1Key, note: String)
+    extends DeleteCommand(GvcfIndex)
 
 object ClioCommand extends ClioParsers {
 

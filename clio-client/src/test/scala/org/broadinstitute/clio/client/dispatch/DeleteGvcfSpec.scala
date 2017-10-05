@@ -17,7 +17,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
   it should "throw an exception if the location is not GCP" in {
     recoverToSucceededIf[Exception] {
       val command = DeleteGvcf(
-        transferGvcfV1Key = TransferGvcfV1Key(
+        key = TransferGvcfV1Key(
           location = Location.OnPrem,
           project = testProject,
           sampleAlias = testSampleAlias,
@@ -38,6 +38,14 @@ class DeleteGvcfSpec extends BaseClientSpec {
   it should "throw an exception if Clio doesn't return a gvcf" in {
     recoverToSucceededIf[Exception] {
       succeedingDispatcher.dispatch(goodGvcfDeleteCommand)
+    }
+  }
+
+  it should "throw an exception if Clio returns multiple records for a gvcf" in {
+    val mockIoUtil = new MockIoUtil
+    recoverToSucceededIf[Exception] {
+      new CommandDispatch(MockClioWebClient.returningTwoGvcfs, mockIoUtil)
+        .dispatch(goodGvcfDeleteCommand)
     }
   }
 
@@ -71,16 +79,6 @@ class DeleteGvcfSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     succeedingReturningDispatcherGvcf(mockIoUtil)
-      .dispatch(goodGvcfDeleteCommand)
-      .map(_.status should be(StatusCodes.OK))
-  }
-
-  it should "delete multiple gvcfs in Clio and the cloud" in {
-    val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
-    mockIoUtil.putFileInCloud(testGvcfCloudDestinationDirectoryPath)
-
-    new CommandDispatch(MockClioWebClient.returningTwoGvcfs, mockIoUtil)
       .dispatch(goodGvcfDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }
