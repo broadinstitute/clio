@@ -12,7 +12,8 @@ import scala.concurrent.ExecutionContext
 class MockWgsUbamWebService(
   app: ClioApp = MockClioApp()
 )(implicit executionContext: ExecutionContext)
-    extends WgsUbamWebService {
+    extends WgsUbamWebService
+    with JsonWebService {
   private val persistence = PersistenceService(app)
   private val search = SearchService(app)
   override lazy val wgsUbamService: WgsUbamService =

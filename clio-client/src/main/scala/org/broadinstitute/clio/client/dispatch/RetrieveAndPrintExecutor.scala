@@ -41,7 +41,8 @@ class RetrieveAndPrintExecutor(command: ClioCommand) extends Executor {
       response <- responseFut
       resultsAsJson <- webClient.unmarshal[Json](response)
     } yield {
-      println(resultsAsJson)
+      // Pretty-print the JSON, using 2 spaces for indentation.
+      println(resultsAsJson.spaces2)
       response
     }
   }

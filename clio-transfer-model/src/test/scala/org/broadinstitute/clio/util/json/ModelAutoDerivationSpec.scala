@@ -3,7 +3,6 @@ package org.broadinstitute.clio.util.json
 import java.time.OffsetDateTime
 
 import enumeratum._
-import io.circe.Printer
 import io.circe.parser._
 import io.circe.syntax._
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -15,14 +14,9 @@ class ModelAutoDerivationSpec
     extends FlatSpec
     with Matchers
     with TableDrivenPropertyChecks
-    with EitherValues {
+    with EitherValues
+    with ModelAutoDerivation {
   behavior of "ModelAutoDerivation"
-
-  object TestModelAutoDerivation extends ModelAutoDerivation
-
-  import TestModelAutoDerivation._
-
-  private val noNullPrinter = Printer.noSpaces.copy(dropNullKeys = true)
 
   it should "encode with snake case" in {
     case class TestClass(fieldA: Option[String], fieldB: Int)
@@ -38,7 +32,7 @@ class ModelAutoDerivationSpec
       )
 
     forAll(jsonValues) { (input, expected) =>
-      input.asJson.pretty(noNullPrinter) should be(expected)
+      input.asJson.pretty(defaultPrinter) should be(expected)
     }
 
   }
@@ -88,7 +82,7 @@ class ModelAutoDerivationSpec
     case class TestClass(date: OffsetDateTime)
 
     val test = TestClass(OffsetDateTime.parse("1970-01-01T12:34:56.789+05:00"))
-    test.asJson.pretty(noNullPrinter) should be(
+    test.asJson.pretty(defaultPrinter) should be(
       """{"date":"1970-01-01T12:34:56.789+05:00"}"""
     )
   }
@@ -107,7 +101,7 @@ class ModelAutoDerivationSpec
     case class TestClass(enum: TestEnum)
 
     val test = TestClass(TestEnum.TestValue1)
-    test.asJson.pretty(noNullPrinter) should be("""{"enum":"TestValue1"}""")
+    test.asJson.pretty(defaultPrinter) should be("""{"enum":"TestValue1"}""")
   }
 
   it should "decode an enum" in {

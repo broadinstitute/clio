@@ -1,16 +1,9 @@
 package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server.Directives._
-import akka.http.scaladsl.testkit.ScalatestRouteTest
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import org.broadinstitute.clio.server.model.{ErrorResult, MockResult}
-import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
-import org.scalatest.{FlatSpec, Matchers}
 
-class ExceptionDirectivesSpec
-    extends FlatSpec
-    with Matchers
-    with ScalatestRouteTest {
+class ExceptionDirectivesSpec extends BaseWebserviceSpec {
   behavior of "ExceptionDirectives"
 
   it should "complete with json on internal error" in {

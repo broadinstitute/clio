@@ -55,12 +55,6 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   implicit val m: ActorMaterializer = ActorMaterializer()
 
   /**
-    * Printer to override Circe's default marshalling behavior
-    * for None from 'None -> null' to omitting Nones entirely.
-    */
-  implicit val p: Printer = Printer.noSpaces.copy(dropNullKeys = true)
-
-  /**
     * Timeout to use for all client requests.
     *
     * Use the client's default to make sure it's sane.

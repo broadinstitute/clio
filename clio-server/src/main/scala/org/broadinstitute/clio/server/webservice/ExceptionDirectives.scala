@@ -5,9 +5,8 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import io.circe.syntax._
 import org.broadinstitute.clio.server.model.ErrorResult
-import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
 
-trait ExceptionDirectives {
+trait ExceptionDirectives { self: JsonWebService =>
   lazy val completeWithInternalErrorJson: Directive0 = {
     handleExceptions(completeWithInternalErrorJsonHandler)
   }
