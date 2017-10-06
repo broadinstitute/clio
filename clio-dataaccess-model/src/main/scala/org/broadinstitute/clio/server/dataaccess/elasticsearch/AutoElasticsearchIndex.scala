@@ -57,6 +57,7 @@ object AutoElasticsearchIndex {
       case tpe if tpe <:< typeOf[Option[EnumEntry]] => keywordField _
       case tpe if tpe =:= typeOf[Option[OffsetDateTime]] =>
         dateField _
+      case tpe if tpe <:< typeOf[Option[Seq[String]]] => keywordField _
       case _ =>
         throw new IllegalArgumentException(
           s"No support for $fieldName: $fieldType"

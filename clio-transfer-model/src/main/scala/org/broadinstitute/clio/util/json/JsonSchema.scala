@@ -96,6 +96,7 @@ object JsonSchema {
   def makeProperty(fieldName: String, fieldType: Type): (Boolean, Json) = {
     val aBoolean = Json.obj(aType("boolean"))
     val aString = Json.obj(aType("string"))
+    val aStringArray = Json.obj(aType("string"), aFormat("array"))
     val aInt = Json.obj(aType("integer"), aFormat("int32"))
     val aLong = Json.obj(aType("integer"), aFormat("int64"))
     val aTime = Json.obj(aType("string"), aFormat("date-time"))
@@ -116,6 +117,7 @@ object JsonSchema {
       case t if t <:< typeOf[Option[EnumEntry]]      => (false, aString)
       case t if t =:= typeOf[Option[OffsetDateTime]] => (false, aTime)
       case t if t =:= typeOf[Option[UUID]]           => (false, aString)
+      case t if t <:< typeOf[Option[Seq[String]]]    => (false, aStringArray)
       case _ =>
         throw new IllegalArgumentException(
           s"No JsonSchema support for $fieldName: $fieldType yet"
