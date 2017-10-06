@@ -67,3 +67,16 @@ case object WgsUbamIndex
   override val name: String = "WgsUbam"
   override val commandName: String = "wgs-ubam"
 }
+
+case object WgsCramIndex
+    extends SemiAutoTransferIndex[
+      TransferWgsUbamV1Key,
+      TransferWgsUbamV1Metadata,
+      TransferWgsUbamV1QueryInput,
+      TransferWgsUbamV1QueryOutput
+    ] {
+  override val urlSegment: String = "wgscram"
+  override val jsonSchema: Json = JsonSchemas.WgsCram
+  override val name: String = "WgsUbam"
+  override val commandName: String = "wgs-ubam"
+}
