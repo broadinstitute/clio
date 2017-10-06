@@ -27,6 +27,7 @@ case class DocumentWgsCram(
   optionsJsonPath: Option[String] = None,
   wdlPath: Option[String] = None,
   readgroupMd5: Option[String] = None,
+  workspaceName: Option[String] = None,
   notes: Option[String] = None,
   preAdapterSummaryMetricsPath: Option[String] = None,
   preAdapterDetailMetricsPath: Option[String] = None,

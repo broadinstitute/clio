@@ -22,6 +22,7 @@ case class TransferWgsCramV1Metadata(
   optionsJsonPath: Option[String] = None,
   wdlPath: Option[String] = None,
   readgroupMd5: Option[String] = None,
+  workspaceName: Option[String] = None,
   notes: Option[String] = None,
   /* These fields were originally meant to be part of the cram metrics index. */
   preAdapterSummaryMetricsPath: Option[String] = None,
