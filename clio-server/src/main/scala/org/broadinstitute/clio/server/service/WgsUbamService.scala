@@ -1,10 +1,9 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import Elastic4sAutoDerivation._
-import org.broadinstitute.clio.util.json.JsonSchemas
 import com.sksamuel.elastic4s.circe._
 import io.circe.Json
+import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
@@ -23,6 +22,8 @@ class WgsUbamService(
   persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext) {
+
+  import Elastic4sAutoDerivation._
 
   def upsertMetadata(
     transferKey: TransferWgsUbamV1Key,
@@ -60,7 +61,7 @@ class WgsUbamService(
     )
   }
 
-  def querySchema(): Future[Json] = Future(JsonSchemas.WgsUbam)
+  def querySchema(): Future[Json] = Future(WgsUbamIndex.jsonSchema)
 }
 
 object WgsUbamService {

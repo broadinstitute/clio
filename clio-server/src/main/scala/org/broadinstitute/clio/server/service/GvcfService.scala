@@ -1,10 +1,9 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import Elastic4sAutoDerivation._
-import org.broadinstitute.clio.util.json.JsonSchemas
 import com.sksamuel.elastic4s.circe._
 import io.circe.Json
+import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
@@ -15,10 +14,16 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+  * Service responsible for performing all gvcf-specific logic
+  * before handing off to the generic search / persistence services.
+  */
 class GvcfService(
   persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext) {
+
+  import Elastic4sAutoDerivation._
 
   def upsertMetadata(
     transferKey: TransferGvcfV1Key,
@@ -56,7 +61,7 @@ class GvcfService(
     )
   }
 
-  def querySchema(): Future[Json] = Future(JsonSchemas.Gvcf)
+  def querySchema(): Future[Json] = Future(GvcfIndex.jsonSchema)
 }
 
 object GvcfService {

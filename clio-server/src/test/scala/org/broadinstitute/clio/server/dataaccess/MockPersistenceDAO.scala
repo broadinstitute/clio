@@ -14,7 +14,7 @@ class MockPersistenceDAO extends PersistenceDAO {
   override def rootPath: Path = Paths.get("/")
 
   override def initialize(
-    indexes: ElasticsearchIndex[_]*
+    indexes: Seq[ElasticsearchIndex[_]]
   )(implicit ec: ExecutionContext): Future[Unit] =
     Future.successful(())
 

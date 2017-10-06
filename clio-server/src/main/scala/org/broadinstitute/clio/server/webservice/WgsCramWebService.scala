@@ -2,25 +2,28 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport._
 import org.broadinstitute.clio.server.service.WgsCramService
-import org.broadinstitute.clio.server.webservice.WebServiceAutoDerivation._
-import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1Key, TransferWgsCramV1Metadata, TransferWgsCramV1QueryInput}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1Metadata,
+  TransferWgsCramV1QueryInput
+}
 import org.broadinstitute.clio.util.model.Location
 
-trait WgsCramWebService {
+trait WgsCramWebService { self: JsonWebService =>
 
   def wgsCramService: WgsCramService
 
   lazy val wgsCramRoutes: Route = {
     pathPrefix("v1") {
       pathPrefix("wgscram") {
-        concat(getSchema, postMetadata, query, queryall)
+        concat(cramGetSchema, cramPostMetadata, cramQuery, cramQueryall)
       }
     }
   }
 
-  private[webservice] val pathPrefixKey: Directive1[TransferWgsCramV1Key] = {
+  private[webservice] val cramPathPrefixKey
+    : Directive1[TransferWgsCramV1Key] = {
     for {
       location <- pathPrefix(Location.pathMatcher)
       project <- pathPrefix(Segment)
@@ -29,9 +32,9 @@ trait WgsCramWebService {
     } yield TransferWgsCramV1Key(location, project, sampleAlias, versoion)
   }
 
-  private[webservice] val postMetadata: Route = {
+  private[webservice] val cramPostMetadata: Route = {
     pathPrefix("metadata") {
-      pathPrefixKey { key =>
+      cramPathPrefixKey { key =>
         post {
           entity(as[TransferWgsCramV1Metadata]) { metadata =>
             complete(wgsCramService.upsertMetadata(key, metadata))
@@ -41,7 +44,7 @@ trait WgsCramWebService {
     }
   }
 
-  private[webservice] val query: Route = {
+  private[webservice] val cramQuery: Route = {
     path("query") {
       post {
         entity(as[TransferWgsCramV1QueryInput]) { input =>
@@ -51,7 +54,7 @@ trait WgsCramWebService {
     }
   }
 
-  private[webservice] val queryall: Route = {
+  private[webservice] val cramQueryall: Route = {
     path("queryall") {
       post {
         entity(as[TransferWgsCramV1QueryInput]) { input =>
@@ -61,7 +64,7 @@ trait WgsCramWebService {
     }
   }
 
-  private[webservice] val getSchema: Route = {
+  private[webservice] val cramGetSchema: Route = {
     path("schema") {
       get {
         complete(wgsCramService.querySchema())

@@ -11,12 +11,12 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentWgsUbam,
   ElasticsearchIndex
 }
+import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryOutput
 }
-import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 
 import scala.concurrent.Future
@@ -61,7 +61,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
   it should "report the expected JSON schema for wgs-ubams" in {
     runClient(ClioCommand.getWgsUbamSchemaName)
       .flatMap(Unmarshal(_).to[Json])
-      .map(_ should be(JsonSchemas.WgsUbam))
+      .map(_ should be(WgsUbamIndex.jsonSchema))
   }
 
   // Generate a test for every possible Location value.

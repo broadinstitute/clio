@@ -1,12 +1,11 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.{HitReader, Indexable}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
-
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 
 import scala.collection.mutable
 import scala.concurrent.Future

@@ -101,7 +101,7 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
     val initSearchDocuments = initStoredDocuments.take(initInSearch)
 
     for {
-      _ <- persistenceDAO.initialize(DocumentMock.index)
+      _ <- persistenceDAO.initialize(Seq(DocumentMock.index))
       _ <- Future.sequence(
         initStoredDocuments
           .map(persistenceDAO.writeUpdate(_, DocumentMock.index))

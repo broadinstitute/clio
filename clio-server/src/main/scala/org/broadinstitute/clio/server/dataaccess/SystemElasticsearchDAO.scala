@@ -4,6 +4,7 @@ import akka.pattern.after
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
@@ -25,13 +26,12 @@ trait SystemElasticsearchDAO extends SearchDAO { this: HttpElasticsearchDAO =>
     }
   }
 
-  override def initialize(): Future[Unit] = {
-    for {
-      _ <- waitForSearchReady()
-      _ <- createOrUpdateIndex(ElasticsearchIndex.WgsUbam)
-      _ <- createOrUpdateIndex(ElasticsearchIndex.Gvcf)
-
-    } yield ()
+  override def initialize(
+    indexes: immutable.Seq[ElasticsearchIndex[_]]
+  ): Future[Unit] = {
+    waitForSearchReady().flatMap { _ =>
+      Future.foldLeft(indexes.map(createOrUpdateIndex))(())((_, _) => ())
+    }
   }
 
   override def close(): Future[Unit] = {

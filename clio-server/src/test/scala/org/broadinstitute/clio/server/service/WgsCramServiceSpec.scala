@@ -1,20 +1,20 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
   MemoryPersistenceDAO,
   MemorySearchDAO
 }
-import org.broadinstitute.clio.transfer.model.wgsubam.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput
+import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1Metadata,
+  TransferWgsCramV1QueryInput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
-class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
-  behavior of "WgsUbamService"
+class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
+  behavior of "WgsCramService"
 
   it should "upsertMetadata" in {
     upsertMetadataTest(None, Option(DocumentStatus.Normal))
@@ -39,17 +39,17 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val searchService = SearchService(app)
     val persistenceService = PersistenceService(app)
-    val wgsUbamService = new WgsUbamService(persistenceService, searchService)
+    val cramService = new WgsCramService(persistenceService, searchService)
 
     val transferInput =
-      TransferWgsUbamV1QueryInput(project = Some("testProject"))
+      TransferWgsCramV1QueryInput(project = Some("testProject"))
     for {
-      _ <- wgsUbamService.queryMetadata(transferInput)
+      _ <- cramService.queryMetadata(transferInput)
     } yield {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(
         Seq(
-          WgsUbamService.v1QueryConverter.buildQuery(
+          WgsCramService.v1QueryConverter.buildQuery(
             transferInput.copy(documentStatus = Some(DocumentStatus.Normal))
           )
         )
@@ -69,34 +69,34 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
     )
     val searchService = SearchService(app)
     val persistenceService = PersistenceService(app)
-    val wgsUbamService = new WgsUbamService(persistenceService, searchService)
+    val cramService = new WgsCramService(persistenceService, searchService)
 
     val transferKey =
-      TransferWgsUbamV1Key(Location.GCP, "barcode1", 2, "library3")
+      TransferWgsCramV1Key(Location.GCP, "project1", "sample1", 1)
     val transferMetadata =
-      TransferWgsUbamV1Metadata(
-        project = Some("testProject"),
+      TransferWgsCramV1Metadata(
+        cramPath = Some("gs://path/cramPath.cram"),
         notes = Some("notable update"),
         documentStatus = documentStatus
       )
     for {
-      returnedUpsertId <- wgsUbamService.upsertMetadata(
+      returnedUpsertId <- cramService.upsertMetadata(
         transferKey,
         transferMetadata
       )
     } yield {
-      val expectedDocument = WgsUbamService.v1DocumentConverter
+      val expectedDocument = WgsCramService.v1DocumentConverter
         .withMetadata(
-          WgsUbamService.v1DocumentConverter.empty(transferKey),
+          WgsCramService.v1DocumentConverter.empty(transferKey),
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
         .copy(upsertId = returnedUpsertId)
 
       memoryPersistenceDAO.writeCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
+        Seq((expectedDocument, ElasticsearchIndex.WgsCram))
       )
       memorySearchDAO.updateCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
+        Seq((expectedDocument, ElasticsearchIndex.WgsCram))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

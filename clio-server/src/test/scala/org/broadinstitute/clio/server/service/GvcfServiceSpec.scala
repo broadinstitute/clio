@@ -11,7 +11,6 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryInput
 }
-import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
@@ -42,10 +41,8 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
     val persistenceService = PersistenceService(app)
     val gvcfService = new GvcfService(persistenceService, searchService)
 
-    val transferInputMapper =
-      new CaseClassMapper[TransferGvcfV1QueryInput]
     val transferInput =
-      transferInputMapper.newInstance(Map("project" -> Option("testProject")))
+      TransferGvcfV1QueryInput(project = Some("testProject"))
     for {
       _ <- gvcfService.queryMetadata(transferInput)
     } yield {
@@ -76,15 +73,11 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
 
     val transferKey =
       TransferGvcfV1Key(Location.GCP, "project1", "sample1", 1)
-    val transferMetadataMapper =
-      new CaseClassMapper[TransferGvcfV1Metadata]
     val transferMetadata =
-      transferMetadataMapper.newInstance(
-        Map(
-          "gvcfPath" -> Option("gs://path/gvcfPath.gvcf"),
-          "notes" -> Option("notable update"),
-          "documentStatus" -> documentStatus
-        )
+      TransferGvcfV1Metadata(
+        gvcfPath = Some("gs://path/gvcfPath.gvcf"),
+        notes = Some("notable update"),
+        documentStatus = documentStatus
       )
     for {
       returnedUpsertId <- gvcfService.upsertMetadata(

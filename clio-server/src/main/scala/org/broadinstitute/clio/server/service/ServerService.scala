@@ -19,6 +19,7 @@ import org.broadinstitute.clio.server.dataaccess.{
 }
 import org.broadinstitute.clio.status.model.ServerStatusInfo
 
+import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
 class ServerService private (
@@ -106,22 +107,29 @@ class ServerService private (
 
   private[service] def startup(): Future[Unit] = {
     import Elastic4sAutoDerivation._
+
+    val indexes = immutable.Seq(
+      ElasticsearchIndex.WgsUbam,
+      ElasticsearchIndex.Gvcf,
+      ElasticsearchIndex.WgsCram
+    )
+
     for {
       _ <- serverStatusDAO.setStatus(ServerStatusInfo.Starting)
-      _ <- persistenceDAO.initialize(
-        ElasticsearchIndex.WgsUbam,
-        ElasticsearchIndex.Gvcf
-      )
-      _ <- searchDAO.initialize()
+      _ <- persistenceDAO.initialize(indexes)
+      _ <- searchDAO.initialize(indexes)
       _ = logger.info("Recovering metadata from storage...")
-      Seq(recoveredUbamCount, recoveredGvcfCount) <- Future.sequence(
-        Seq(
-          recoverMetadata(ElasticsearchIndex.WgsUbam),
-          recoverMetadata(ElasticsearchIndex.Gvcf)
+      Seq(recoveredUbamCount, recoveredGvcfCount, recoveredCramCount) <- Future
+        .sequence(
+          Seq(
+            recoverMetadata(ElasticsearchIndex.WgsUbam),
+            recoverMetadata(ElasticsearchIndex.Gvcf),
+            recoverMetadata(ElasticsearchIndex.WgsCram)
+          )
         )
-      )
       _ = logger.info(s"Recovered $recoveredUbamCount wgs-ubams from storage")
       _ = logger.info(s"Recovered $recoveredGvcfCount gvcfs from storage")
+      _ = logger.info(s"Recovered $recoveredCramCount wgs-crams from storage")
       _ <- httpServerDAO.startup()
       _ <- serverStatusDAO.setStatus(ServerStatusInfo.Started)
       _ = logger.info("Server started")

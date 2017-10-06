@@ -6,10 +6,10 @@ import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentGvcf
-import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.GvcfService
+import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryInput
 
 class GvcfWebServiceSpec extends BaseWebserviceSpec {
@@ -194,7 +194,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
   it should "return a JSON schema" in {
     val webService = new MockGvcfWebService()
     Get("/schema") ~> webService.gvcfGetSchema ~> check {
-      responseAs[Json] should be(JsonSchemas.Gvcf)
+      responseAs[Json] should be(GvcfIndex.jsonSchema)
     }
   }
 }
