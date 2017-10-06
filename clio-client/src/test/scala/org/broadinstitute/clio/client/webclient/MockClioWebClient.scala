@@ -161,4 +161,8 @@ object MockClioWebClient extends TestData {
   def returningTwoGvcfs(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, testTwoGvcfsLocation)
   }
+
+  def returningWgsCram(implicit system: ActorSystem): MockClioWebClient = {
+    new MockClioWebClient(status = StatusCodes.OK, testWgsCramLocation)
+  }
 }

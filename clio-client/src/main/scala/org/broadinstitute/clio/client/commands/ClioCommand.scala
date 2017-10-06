@@ -8,6 +8,10 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Key,
   TransferGvcfV1QueryInput
 }
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1QueryInput
+}
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1QueryInput
@@ -105,6 +109,30 @@ final case class MoveGvcf(@Recurse key: TransferGvcfV1Key, destination: String)
 final case class DeleteGvcf(@Recurse key: TransferGvcfV1Key, note: String)
     extends DeleteCommand(GvcfIndex)
 
+// WGS-cram commands.
+
+@CommandName(ClioCommand.getWgsCramSchemaName)
+case object GetSchemaWgsCram extends GetSchemaCommand(WgsCramIndex)
+
+@CommandName(ClioCommand.addWgsCramName)
+final case class AddWgsCram(metadataLocation: String,
+                            @Recurse key: TransferWgsCramV1Key)
+    extends AddCommand(WgsCramIndex)
+
+@CommandName(ClioCommand.queryWgsCramName)
+final case class QueryWgsCram(@Recurse queryInput: TransferWgsCramV1QueryInput,
+                              includeDeleted: Boolean = false)
+    extends QueryCommand(WgsCramIndex)
+
+@CommandName(ClioCommand.moveWgsCramName)
+final case class MoveWgsCram(@Recurse key: TransferWgsCramV1Key,
+                             destination: String)
+    extends MoveCommand(WgsCramIndex)
+
+@CommandName(ClioCommand.deleteWgsCramName)
+final case class DeleteWgsCram(@Recurse key: TransferWgsCramV1Key, note: String)
+    extends DeleteCommand(WgsCramIndex)
+
 object ClioCommand extends ClioParsers {
 
   // Names for generic commands.
@@ -130,6 +158,13 @@ object ClioCommand extends ClioParsers {
   val queryGvcfName: String = queryPrefix + GvcfIndex.commandName
   val moveGvcfName: String = movePrefix + GvcfIndex.commandName
   val deleteGvcfName: String = deletePrefix + GvcfIndex.commandName
+
+  // Names for WGS cram commands.
+  val getWgsCramSchemaName: String = getSchemaPrefix + WgsCramIndex.commandName
+  val addWgsCramName: String = addPrefix + WgsCramIndex.commandName
+  val queryWgsCramName: String = queryPrefix + WgsCramIndex.commandName
+  val moveWgsCramName: String = movePrefix + WgsCramIndex.commandName
+  val deleteWgsCramName: String = deletePrefix + WgsCramIndex.commandName
 
   /** The caseapp parser to use for all Clio sub-commands. */
   val parser: CommandParser[ClioCommand] =

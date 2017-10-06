@@ -76,7 +76,7 @@ class MoveGvcfSpec extends BaseClientSpec {
           sampleAlias = testSampleAlias,
           version = testVersion
         ),
-        destination = testGvcfCloudDestinationDirectoryPath
+        destination = testCloudDestinationDirectoryPath
       )
       succeedingDispatcher.dispatch(command)
     }
