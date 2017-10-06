@@ -49,10 +49,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val getRequest =
       getMapping(IndexAndType(expected.indexName, expected.indexType))
 
-    elasticsearchClient.execute(getRequest).map { mappings =>
-      mappings should have length 1
-      val gvcfMapping = mappings.head
-      gvcfMapping should be(indexToMapping(expected))
+    elasticsearchClient.execute(getRequest).map {
+      _ should be(Seq(indexToMapping(expected)))
     }
   }
 

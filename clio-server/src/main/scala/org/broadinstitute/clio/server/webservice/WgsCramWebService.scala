@@ -28,8 +28,8 @@ trait WgsCramWebService { self: JsonWebService =>
       location <- pathPrefix(Location.pathMatcher)
       project <- pathPrefix(Segment)
       sampleAlias <- pathPrefix(Segment)
-      versoion <- pathPrefix(IntNumber)
-    } yield TransferWgsCramV1Key(location, project, sampleAlias, versoion)
+      version <- pathPrefix(IntNumber)
+    } yield TransferWgsCramV1Key(location, project, sampleAlias, version)
   }
 
   private[webservice] val cramPostMetadata: Route = {

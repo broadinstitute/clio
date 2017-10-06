@@ -24,7 +24,6 @@ case class TransferWgsCramV1Metadata(
   readgroupMd5: Option[String] = None,
   notes: Option[String] = None,
   /* These fields were originally meant to be part of the cram metrics index. */
-
   preAdapterSummaryMetricsPath: Option[String] = None,
   preAdapterDetailMetricsPath: Option[String] = None,
   alignmentSummaryMetricsPath: Option[String] = None,

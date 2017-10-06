@@ -51,10 +51,8 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val getRequest =
       getMapping(IndexAndType(expected.indexName, expected.indexType))
 
-    elasticsearchClient.execute(getRequest).map { mappings =>
-      mappings should have length 1
-      val wgsUbamMapping = mappings.head
-      wgsUbamMapping should be(indexToMapping(expected))
+    elasticsearchClient.execute(getRequest).map {
+      _ should be(Seq(indexToMapping(expected)))
     }
   }
 

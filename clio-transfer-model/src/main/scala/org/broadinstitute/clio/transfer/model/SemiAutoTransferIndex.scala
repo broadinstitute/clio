@@ -7,6 +7,12 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1QueryInput,
   TransferGvcfV1QueryOutput
 }
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1Metadata,
+  TransferWgsCramV1QueryInput,
+  TransferWgsCramV1QueryOutput
+}
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
@@ -72,12 +78,12 @@ case object WgsUbamIndex
 
 case object WgsCramIndex
     extends SemiAutoTransferIndex[
-      TransferWgsUbamV1Key,
-      TransferWgsUbamV1Metadata,
-      TransferWgsUbamV1QueryInput,
-      TransferWgsUbamV1QueryOutput
+      TransferWgsCramV1Key,
+      TransferWgsCramV1Metadata,
+      TransferWgsCramV1QueryInput,
+      TransferWgsCramV1QueryOutput
     ] {
   override val urlSegment: String = "wgscram"
-  override val name: String = "WgsUbam"
-  override val commandName: String = "wgs-ubam"
+  override val name: String = "WgsCram"
+  override val commandName: String = "wgs-cram"
 }
