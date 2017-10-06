@@ -135,14 +135,14 @@ class ClioClient(webClient: ClioWebClient,
 
   /** Names of all valid sub-commands. */
   private val commands: Seq[String] =
-    ClioCommand.help.messagesMap.keys.toSeq
+    ClioCommand.help.messagesMap.keys.toSeq.sorted
 
   /** Top-level help message to display on --help. */
   private val helpMessage: String =
     s"""
        |${beforeCommandHelp.help}
        |Available commands:
-       |${commands.map(commandHelp).mkString("\n")}
+       |${commands.map(commandHelp).mkString("\n\n")}
      """.stripMargin
 
   /**
@@ -161,6 +161,7 @@ class ClioClient(webClient: ClioWebClient,
     ClioCommand.help
       .messagesMap(command)
       .helpMessage(s"${beforeCommandHelp.progName} [options]", command)
+      .trim()
   }
 
   /** Usage message for a specific command. */

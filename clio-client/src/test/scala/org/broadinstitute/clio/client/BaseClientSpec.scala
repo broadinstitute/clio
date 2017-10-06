@@ -15,14 +15,14 @@ abstract class BaseClientSpec
     with TestData
     with Matchers {
 
-  val succeedingDispatcherCamel =
-    new CommandDispatch(MockClioWebClient.returningOk, new MockIoUtil)
   val succeedingDispatcher =
     new CommandDispatch(MockClioWebClient.returningOk, new MockIoUtil)
   def succeedingReturningDispatcherWgsUbam(mockIoUtil: MockIoUtil) =
     new CommandDispatch(MockClioWebClient.returningWgsUbam, mockIoUtil)
   def succeedingReturningDispatcherGvcf(mockIoUtil: MockIoUtil) =
     new CommandDispatch(MockClioWebClient.returningGvcf, mockIoUtil)
+  def succeedingReturningDispatcherWgsCram(mockIoUtil: MockIoUtil) =
+    new CommandDispatch(MockClioWebClient.returningWgsCram, mockIoUtil)
   val failingDispatcher =
     new CommandDispatch(
       MockClioWebClient.returningInternalError,

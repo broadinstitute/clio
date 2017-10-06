@@ -2,7 +2,6 @@ package org.broadinstitute.clio.client.dispatch
 
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.util.MockIoUtil
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 
@@ -12,7 +11,7 @@ class CommandDispatchSpec extends BaseClientSpec {
   implicit val bearerToken: OAuth2BearerToken = testBearer
 
   it should "return true when we dispatch a valid queryWgsUbam command" in {
-    succeedingDispatcherCamel
+    succeedingDispatcher
       .dispatch(goodQueryCommand)
       .map(_.status should be(StatusCodes.OK))
   }
@@ -41,7 +40,7 @@ class CommandDispatchSpec extends BaseClientSpec {
   }
 
   it should "return true when we dispatch a valid queryGvcf command" in {
-    succeedingDispatcherCamel
+    succeedingDispatcher
       .dispatch(goodGvcfQueryCommand)
       .map(_.status should be(StatusCodes.OK))
   }
@@ -67,6 +66,38 @@ class CommandDispatchSpec extends BaseClientSpec {
 
     succeedingReturningDispatcherGvcf(mockIoUtil)
       .dispatch(goodGvcfDeleteCommand)
+      .map(_.status should be(StatusCodes.OK))
+  }
+
+  it should "return true when we dispatch a valid queryWgsCram command" in {
+    succeedingDispatcher
+      .dispatch(goodCramQueryCommand)
+      .map(_.status should be(StatusCodes.OK))
+  }
+
+  it should "return true when we dispatch a valid addWgsCram command" in {
+    succeedingDispatcher
+      .dispatch(goodCramAddCommand)
+      .map(_.status should be(StatusCodes.OK))
+  }
+
+  it should "return true when we dispatch a valid moveWgsCram command" in {
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testCramCloudSourcePath)
+    mockIoUtil.putFileInCloud(testCraiCloudSourcePath)
+    mockIoUtil.putFileInCloud(testWgsMetricsCloudSourcePath)
+    succeedingReturningDispatcherWgsCram(mockIoUtil)
+      .dispatch(goodCramMoveCommand)
+      .map(_.status should be(StatusCodes.OK))
+  }
+
+  it should "return true when we dispatch a valid deleteWgsCram command" in {
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testCramCloudSourcePath)
+    mockIoUtil.putFileInCloud(testCraiCloudSourcePath)
+
+    succeedingReturningDispatcherWgsCram(mockIoUtil)
+      .dispatch(goodCramDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }
 }
