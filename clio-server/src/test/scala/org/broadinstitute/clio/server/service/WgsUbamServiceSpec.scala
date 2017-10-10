@@ -42,7 +42,7 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
     val wgsUbamService = new WgsUbamService(persistenceService, searchService)
 
     val transferInput =
-      TransferWgsUbamV1QueryInput(project = Some("testProject"))
+      TransferWgsUbamV1QueryInput(project = Option("testProject"))
     for {
       _ <- wgsUbamService.queryMetadata(transferInput)
     } yield {
@@ -50,7 +50,7 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
       memorySearchDAO.queryCalls should be(
         Seq(
           WgsUbamService.v1QueryConverter.buildQuery(
-            transferInput.copy(documentStatus = Some(DocumentStatus.Normal))
+            transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
           )
         )
       )
@@ -75,8 +75,8 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
       TransferWgsUbamV1Key(Location.GCP, "barcode1", 2, "library3")
     val transferMetadata =
       TransferWgsUbamV1Metadata(
-        project = Some("testProject"),
-        notes = Some("notable update"),
+        project = Option("testProject"),
+        notes = Option("notable update"),
         documentStatus = documentStatus
       )
     for {

@@ -42,7 +42,7 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
     val gvcfService = new GvcfService(persistenceService, searchService)
 
     val transferInput =
-      TransferGvcfV1QueryInput(project = Some("testProject"))
+      TransferGvcfV1QueryInput(project = Option("testProject"))
     for {
       _ <- gvcfService.queryMetadata(transferInput)
     } yield {
@@ -50,7 +50,7 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
       memorySearchDAO.queryCalls should be(
         Seq(
           GvcfService.v1QueryConverter.buildQuery(
-            transferInput.copy(documentStatus = Some(DocumentStatus.Normal))
+            transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
           )
         )
       )
@@ -75,8 +75,8 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
       TransferGvcfV1Key(Location.GCP, "project1", "sample1", 1)
     val transferMetadata =
       TransferGvcfV1Metadata(
-        gvcfPath = Some("gs://path/gvcfPath.gvcf"),
-        notes = Some("notable update"),
+        gvcfPath = Option("gs://path/gvcfPath.gvcf"),
+        notes = Option("notable update"),
         documentStatus = documentStatus
       )
     for {

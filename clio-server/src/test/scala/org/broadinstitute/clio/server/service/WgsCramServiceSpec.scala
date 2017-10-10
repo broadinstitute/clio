@@ -42,7 +42,7 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
     val cramService = new WgsCramService(persistenceService, searchService)
 
     val transferInput =
-      TransferWgsCramV1QueryInput(project = Some("testProject"))
+      TransferWgsCramV1QueryInput(project = Option("testProject"))
     for {
       _ <- cramService.queryMetadata(transferInput)
     } yield {
@@ -50,7 +50,7 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
       memorySearchDAO.queryCalls should be(
         Seq(
           WgsCramService.v1QueryConverter.buildQuery(
-            transferInput.copy(documentStatus = Some(DocumentStatus.Normal))
+            transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
           )
         )
       )
@@ -75,8 +75,8 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
       TransferWgsCramV1Key(Location.GCP, "project1", "sample1", 1)
     val transferMetadata =
       TransferWgsCramV1Metadata(
-        cramPath = Some("gs://path/cramPath.cram"),
-        notes = Some("notable update"),
+        cramPath = Option("gs://path/cramPath.cram"),
+        notes = Option("notable update"),
         documentStatus = documentStatus
       )
     for {
