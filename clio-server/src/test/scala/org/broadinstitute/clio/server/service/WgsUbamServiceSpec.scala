@@ -11,7 +11,6 @@ import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput
 }
-import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
@@ -42,10 +41,8 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
     val persistenceService = PersistenceService(app)
     val wgsUbamService = new WgsUbamService(persistenceService, searchService)
 
-    val transferInputMapper =
-      new CaseClassMapper[TransferWgsUbamV1QueryInput]
     val transferInput =
-      transferInputMapper.newInstance(Map("project" -> Option("testProject")))
+      TransferWgsUbamV1QueryInput(project = Option("testProject"))
     for {
       _ <- wgsUbamService.queryMetadata(transferInput)
     } yield {
@@ -53,7 +50,7 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
       memorySearchDAO.queryCalls should be(
         Seq(
           WgsUbamService.v1QueryConverter.buildQuery(
-            transferInput.copy(documentStatus = Some(DocumentStatus.Normal))
+            transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
           )
         )
       )
@@ -76,15 +73,11 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
 
     val transferKey =
       TransferWgsUbamV1Key(Location.GCP, "barcode1", 2, "library3")
-    val transferMetadataMapper =
-      new CaseClassMapper[TransferWgsUbamV1Metadata]
     val transferMetadata =
-      transferMetadataMapper.newInstance(
-        Map(
-          "project" -> Option("testProject"),
-          "notes" -> Option("notable update"),
-          "documentStatus" -> documentStatus
-        )
+      TransferWgsUbamV1Metadata(
+        project = Option("testProject"),
+        notes = Option("notable update"),
+        documentStatus = documentStatus
       )
     for {
       returnedUpsertId <- wgsUbamService.upsertMetadata(

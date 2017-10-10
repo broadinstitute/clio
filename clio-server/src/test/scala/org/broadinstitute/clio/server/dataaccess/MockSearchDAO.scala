@@ -1,13 +1,13 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.{HitReader, Indexable}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
 
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-
+import scala.collection.immutable
 import scala.concurrent.Future
 
 class MockSearchDAO extends SearchDAO {
@@ -15,7 +15,9 @@ class MockSearchDAO extends SearchDAO {
     Future.successful(())
   }
 
-  override def initialize(): Future[Unit] = {
+  override def initialize(
+    indexes: immutable.Seq[ElasticsearchIndex[_]]
+  ): Future[Unit] = {
     Future.successful(())
   }
 

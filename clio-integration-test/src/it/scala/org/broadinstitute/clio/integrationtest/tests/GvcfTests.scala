@@ -1,25 +1,25 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import java.nio.file.Files
+
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import com.sksamuel.elastic4s.IndexAndType
+import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentGvcf,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.util.json.JsonSchemas
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import com.sksamuel.elastic4s.IndexAndType
-import io.circe.Json
-
-import scala.concurrent.Future
-import java.nio.file.Files
-
+import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryOutput
 }
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+
+import scala.concurrent.Future
 
 /** Tests of Clio's gvcf functionality. */
 trait GvcfTests { self: BaseIntegrationSpec =>
@@ -49,17 +49,15 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val getRequest =
       getMapping(IndexAndType(expected.indexName, expected.indexType))
 
-    elasticsearchClient.execute(getRequest).map { mappings =>
-      mappings should have length 1
-      val gvcfMapping = mappings.head
-      gvcfMapping should be(indexToMapping(expected))
+    elasticsearchClient.execute(getRequest).map {
+      _ should be(Seq(indexToMapping(expected)))
     }
   }
 
   it should "report the expected JSON schema for gvcf" in {
     runClient(ClioCommand.getGvcfSchemaName)
       .flatMap(Unmarshal(_).to[Json])
-      .map(_ should be(JsonSchemas.Gvcf))
+      .map(_ should be(GvcfIndex.jsonSchema))
   }
 
   // Generate a test for every possible Location value.

@@ -14,6 +14,7 @@ object ClioServer
     with StatusWebService
     with WgsUbamWebService
     with GvcfWebService
+    with WgsCramWebService
     with AuditDirectives
     with ExceptionDirectives
     with RejectionDirectives
@@ -40,7 +41,7 @@ object ClioServer
   }
   private val innerRoutes: Route =
     concat(swaggerRoutes, statusRoutes, pathPrefix("api") {
-      concat(wgsUbamRoutes, gvcfRoutes)
+      concat(wgsUbamRoutes, gvcfRoutes, wgsCramRoutes)
     })
   private val routes = wrapperDirectives(innerRoutes)
 
@@ -71,6 +72,8 @@ object ClioServer
     new WgsUbamService(persistenceService, searchService)
   override val gvcfService =
     new GvcfService(persistenceService, searchService)
+  override val wgsCramService =
+    new WgsCramService(persistenceService, searchService)
 
   def beginStartup(): Unit = serverService.beginStartup()
 

@@ -36,7 +36,7 @@ trait PersistenceDAO extends LazyLogging {
     * Initialize the root storage directories for Clio documents.
     */
   def initialize(
-    indexes: ElasticsearchIndex[_]*
+    indexes: Seq[ElasticsearchIndex[_]]
   )(implicit ec: ExecutionContext): Future[Unit] = Future {
     // Make sure the rootPath can actually be used.
     val versionPath = rootPath.resolve(PersistenceDAO.versionFileName)

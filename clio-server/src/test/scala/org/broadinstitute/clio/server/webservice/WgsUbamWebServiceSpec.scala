@@ -6,10 +6,10 @@ import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsUbam
-import org.broadinstitute.clio.util.json.JsonSchemas
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.WgsUbamService
+import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1QueryInput
@@ -211,7 +211,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
   it should "return a JSON schema" in {
     val webService = new MockWgsUbamWebService()
     Get("/schema") ~> webService.getSchema ~> check {
-      responseAs[Json] should be(JsonSchemas.WgsUbam)
+      responseAs[Json] should be(WgsUbamIndex.jsonSchema)
     }
   }
 }

@@ -7,13 +7,19 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1QueryInput,
   TransferGvcfV1QueryOutput
 }
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1Metadata,
+  TransferWgsCramV1QueryInput,
+  TransferWgsCramV1QueryOutput
+}
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryInput,
   TransferWgsUbamV1QueryOutput
 }
-import org.broadinstitute.clio.util.json.JsonSchemas
+import org.broadinstitute.clio.util.json.JsonSchema
 import org.broadinstitute.clio.util.json.ModelAutoDerivation._
 
 import scala.reflect.ClassTag
@@ -26,7 +32,9 @@ sealed abstract class SemiAutoTransferIndex[KT <: TransferKey,
                                             MT <: TransferMetadata[MT],
                                             QI,
                                             QO](
-  implicit override val keyTag: ClassTag[KT],
+  implicit
+  schema: JsonSchema[QO],
+  override val keyTag: ClassTag[KT],
   override val metadataTag: ClassTag[MT],
   override val queryInputTag: ClassTag[QI],
   override val queryOutputTag: ClassTag[QO],
@@ -40,6 +48,8 @@ sealed abstract class SemiAutoTransferIndex[KT <: TransferKey,
   override type MetadataType = MT
   override type QueryInputType = QI
   override type QueryOutputType = QO
+
+  override val jsonSchema: Json = schema.toJson
 }
 
 case object GvcfIndex
@@ -50,7 +60,6 @@ case object GvcfIndex
       TransferGvcfV1QueryOutput
     ] {
   override val urlSegment: String = "gvcf"
-  override val jsonSchema: Json = JsonSchemas.Gvcf
   override val name: String = "Gvcf"
   override val commandName: String = "gvcf"
 }
@@ -63,7 +72,18 @@ case object WgsUbamIndex
       TransferWgsUbamV1QueryOutput
     ] {
   override val urlSegment: String = "wgsubam"
-  override val jsonSchema: Json = JsonSchemas.WgsUbam
   override val name: String = "WgsUbam"
   override val commandName: String = "wgs-ubam"
+}
+
+case object WgsCramIndex
+    extends SemiAutoTransferIndex[
+      TransferWgsCramV1Key,
+      TransferWgsCramV1Metadata,
+      TransferWgsCramV1QueryInput,
+      TransferWgsCramV1QueryOutput
+    ] {
+  override val urlSegment: String = "wgscram"
+  override val name: String = "WgsCram"
+  override val commandName: String = "wgs-cram"
 }

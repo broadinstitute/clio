@@ -57,6 +57,11 @@ object AutoElasticsearchIndex {
       case tpe if tpe <:< typeOf[Option[EnumEntry]] => keywordField _
       case tpe if tpe =:= typeOf[Option[OffsetDateTime]] =>
         dateField _
+      /*
+       * Elasticsearch has no notion of an array field; instead, any
+       * field can hold 1+ values of the same type.
+       */
+      case tpe if tpe <:< typeOf[Option[Seq[String]]] => keywordField _
       case _ =>
         throw new IllegalArgumentException(
           s"No support for $fieldName: $fieldType"

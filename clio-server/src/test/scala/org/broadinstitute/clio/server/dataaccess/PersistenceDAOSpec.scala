@@ -27,7 +27,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
     Files.isDirectory(wgsPath) should be(false)
 
     for {
-      _ <- dao.initialize(index)
+      _ <- dao.initialize(Seq(index))
     } yield {
       Files.exists(wgsPath) should be(true)
       Files.isDirectory(wgsPath) should be(true)
@@ -41,7 +41,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
     val document2 = DocumentMock.default.copy(mockFieldDouble = Some(0.9876))
 
     for {
-      _ <- dao.initialize(index)
+      _ <- dao.initialize(Seq(index))
       _ <- dao.writeUpdate(document, index)
       _ <- dao.writeUpdate(document2, index)
     } yield {
@@ -78,7 +78,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
     documents.map(_.upsertId).toSet.size should be(documents.size)
     val expected = documents.drop(half)
     val result = dao
-      .initialize(index)
+      .initialize(Seq(index))
       .map(
         _ =>
           documents
@@ -101,7 +101,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
     documents.map(_.upsertId).toSet.size should be(documents.size)
     val expected = documents
     val result = dao
-      .initialize(index)
+      .initialize(Seq(index))
       .map(
         _ =>
           documents
@@ -120,7 +120,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
     val indexable = implicitly[Indexable[DocumentMock]]
 
     for {
-      _ <- dao.initialize(index)
+      _ <- dao.initialize(Seq(index))
       _ = Seq(yesterday, now).map { dt =>
         val dir = Files.createDirectories(
           dao.rootPath.resolve(

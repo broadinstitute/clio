@@ -53,6 +53,9 @@ object ElasticsearchIndex {
   val Gvcf: ElasticsearchIndex[DocumentGvcf] =
     indexDocument[DocumentGvcf]
 
+  val WgsCram: ElasticsearchIndex[DocumentWgsCram] =
+    indexDocument[DocumentWgsCram]
+
   /**
     * Format the directory path for the indexed meta-data files.
     */

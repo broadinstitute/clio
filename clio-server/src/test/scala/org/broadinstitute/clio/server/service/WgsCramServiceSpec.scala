@@ -1,20 +1,20 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
   MemoryPersistenceDAO,
   MemorySearchDAO
 }
-import org.broadinstitute.clio.transfer.model.gvcf.{
-  TransferGvcfV1Key,
-  TransferGvcfV1Metadata,
-  TransferGvcfV1QueryInput
+import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1Metadata,
+  TransferWgsCramV1QueryInput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
-class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
-  behavior of "GvcfService"
+class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
+  behavior of "WgsCramService"
 
   it should "upsertMetadata" in {
     upsertMetadataTest(None, Option(DocumentStatus.Normal))
@@ -39,17 +39,17 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val searchService = SearchService(app)
     val persistenceService = PersistenceService(app)
-    val gvcfService = new GvcfService(persistenceService, searchService)
+    val cramService = new WgsCramService(persistenceService, searchService)
 
     val transferInput =
-      TransferGvcfV1QueryInput(project = Option("testProject"))
+      TransferWgsCramV1QueryInput(project = Option("testProject"))
     for {
-      _ <- gvcfService.queryMetadata(transferInput)
+      _ <- cramService.queryMetadata(transferInput)
     } yield {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(
         Seq(
-          GvcfService.v1QueryConverter.buildQuery(
+          WgsCramService.v1QueryConverter.buildQuery(
             transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
           )
         )
@@ -69,34 +69,34 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
     )
     val searchService = SearchService(app)
     val persistenceService = PersistenceService(app)
-    val gvcfService = new GvcfService(persistenceService, searchService)
+    val cramService = new WgsCramService(persistenceService, searchService)
 
     val transferKey =
-      TransferGvcfV1Key(Location.GCP, "project1", "sample1", 1)
+      TransferWgsCramV1Key(Location.GCP, "project1", "sample1", 1)
     val transferMetadata =
-      TransferGvcfV1Metadata(
-        gvcfPath = Option("gs://path/gvcfPath.gvcf"),
+      TransferWgsCramV1Metadata(
+        cramPath = Option("gs://path/cramPath.cram"),
         notes = Option("notable update"),
         documentStatus = documentStatus
       )
     for {
-      returnedUpsertId <- gvcfService.upsertMetadata(
+      returnedUpsertId <- cramService.upsertMetadata(
         transferKey,
         transferMetadata
       )
     } yield {
-      val expectedDocument = GvcfService.v1DocumentConverter
+      val expectedDocument = WgsCramService.v1DocumentConverter
         .withMetadata(
-          GvcfService.v1DocumentConverter.empty(transferKey),
+          WgsCramService.v1DocumentConverter.empty(transferKey),
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
         .copy(upsertId = returnedUpsertId)
 
       memoryPersistenceDAO.writeCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.Gvcf))
+        Seq((expectedDocument, ElasticsearchIndex.WgsCram))
       )
       memorySearchDAO.updateCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.Gvcf))
+        Seq((expectedDocument, ElasticsearchIndex.WgsCram))
       )
       memorySearchDAO.queryCalls should be(empty)
     }
