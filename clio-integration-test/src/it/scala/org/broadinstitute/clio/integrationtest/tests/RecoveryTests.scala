@@ -12,6 +12,7 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
+import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1QueryOutput
 import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1QueryOutput
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import org.scalatest.{Args, Status}
@@ -52,6 +53,21 @@ trait RecoveryTests extends ForAllTestContainer {
       sampleAlias = sampleAlias,
       version = version,
       gvcfPath = Some(s"gs://$randomId/$randomId/$randomId"),
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+  }
+  val storedWgsCrams = Seq.fill(documentCount) {
+    val project = s"project$randomId"
+    val sampleAlias = s"sample$randomId"
+    val version = Random.nextInt()
+    DocumentWgsCram(
+      upsertId = UpsertId.nextId(),
+      entityId = s"${location.entryName}.$project.$sampleAlias.$version",
+      location = location,
+      project = project,
+      sampleAlias = sampleAlias,
+      version = version,
+      cramPath = Some(s"gs://$randomId/$randomId/$randomId"),
       documentStatus = Some(DocumentStatus.Normal)
     )
   }
@@ -102,6 +118,7 @@ trait RecoveryTests extends ForAllTestContainer {
     logger.info("Writing documents to local persistence directory")
     writeDocuments(storedUbams, ElasticsearchIndex.WgsUbam)
     writeDocuments(storedGvcfs, ElasticsearchIndex.Gvcf)
+    writeDocuments(storedWgsCrams, ElasticsearchIndex.WgsCram)
 
     super.run(testName, args)
   }
@@ -134,6 +151,22 @@ trait RecoveryTests extends ForAllTestContainer {
       gvcfs should have length documentCount.toLong
       gvcfs.map(_.gvcfPath) should contain theSameElementsAs gvcfs.map(
         _.gvcfPath
+      )
+    }
+  }
+
+  it should "recover wgs-cram metadata on startup" in {
+    for {
+      cramQuery <- runClient(
+        ClioCommand.queryWgsCramName,
+        "--location",
+        location.entryName
+      )
+      crams <- Unmarshal(cramQuery).to[Seq[TransferWgsCramV1QueryOutput]]
+    } yield {
+      crams should have length documentCount.toLong
+      crams.map(_.cramPath) should contain theSameElementsAs crams.map(
+        _.cramPath
       )
     }
   }

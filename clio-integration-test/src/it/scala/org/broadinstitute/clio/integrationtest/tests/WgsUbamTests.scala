@@ -353,7 +353,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     for {
       _ <- upserts
       _ <- checkQuery(expectedLength = 3)
-      deleteResponse <- runUpsertWgsUbam(
+      _ <- runUpsertWgsUbam(
         deleteKey,
         deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
       )

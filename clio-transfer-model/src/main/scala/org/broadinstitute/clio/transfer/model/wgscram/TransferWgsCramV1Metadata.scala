@@ -146,7 +146,51 @@ case class TransferWgsCramV1Metadata(
   }
 
   override def setSinglePath(destination: String): TransferWgsCramV1Metadata = {
-    throw new Exception(s"`setSinglePath` not implemented for $getClass")
+    if (pathsToMove.length != 1) {
+      throw new Exception(
+        s"`setSinglePath` called on metadata with more than one registered path"
+      )
+    }
+
+    this.copy(
+      cramPath = cramPath.map(_ => destination),
+      craiPath = craiPath.map(_ => destination),
+      cramMd5Path = cramMd5Path.map(_ => destination),
+      preAdapterSummaryMetricsPath =
+        preAdapterSummaryMetricsPath.map(_ => destination),
+      preAdapterDetailMetricsPath =
+        preAdapterDetailMetricsPath.map(_ => destination),
+      alignmentSummaryMetricsPath =
+        alignmentSummaryMetricsPath.map(_ => destination),
+      preBqsrDepthSMPath = preBqsrDepthSMPath.map(_ => destination),
+      preBqsrSelfSMPath = preBqsrSelfSMPath.map(_ => destination),
+      cramValidationReportPath = cramValidationReportPath.map(_ => destination),
+      crosscheckPath = crosscheckPath.map(_ => destination),
+      duplicateMetricsPath = duplicateMetricsPath.map(_ => destination),
+      gcBiasPdfPath = gcBiasPdfPath.map(_ => destination),
+      gcBiasSummaryMetricsPath = gcBiasSummaryMetricsPath.map(_ => destination),
+      gcBiasDetailMetricsPath = gcBiasDetailMetricsPath.map(_ => destination),
+      insertSizeHistogramPath = insertSizeHistogramPath.map(_ => destination),
+      insertSizeMetricsPath = insertSizeMetricsPath.map(_ => destination),
+      qualityDistributionPdfPath =
+        qualityDistributionPdfPath.map(_ => destination),
+      qualityDistributionMetricsPath =
+        qualityDistributionMetricsPath.map(_ => destination),
+      rawWgsMetricsPath = rawWgsMetricsPath.map(_ => destination),
+      readgroupAlignmentSummaryMetricsPath =
+        readgroupAlignmentSummaryMetricsPath.map(_ => destination),
+      readgroupGcBiasPdfPath = readgroupGcBiasPdfPath.map(_ => destination),
+      readgroupGcBiasSummaryMetricsPath =
+        readgroupGcBiasSummaryMetricsPath.map(_ => destination),
+      readgroupGcBiasDetailMetricsPath =
+        readgroupGcBiasDetailMetricsPath.map(_ => destination),
+      recalDataPath = recalDataPath.map(_ => destination),
+      baitBiasSummaryMetricsPath =
+        baitBiasSummaryMetricsPath.map(_ => destination),
+      baitBiasDetailMetricsPath =
+        baitBiasDetailMetricsPath.map(_ => destination),
+      wgsMetricsPath = wgsMetricsPath.map(_ => destination)
+    )
   }
 
   override def markDeleted(deletionNote: String): TransferWgsCramV1Metadata =
