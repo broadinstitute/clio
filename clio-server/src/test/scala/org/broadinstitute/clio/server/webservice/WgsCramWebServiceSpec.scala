@@ -18,14 +18,14 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
   it should "postMetadata with OnPrem location" in {
     val webService = new MockWgsCramWebService()
     Post("/metadata/OnPrem/proj0/sample_alias0/1", Map("notes" -> "some note")) ~> webService.cramPostMetadata ~> check {
-      responseAs[String] should not be empty
+      UpsertId.isValidId(responseAs[String]) should be(true)
     }
   }
 
   it should "postMetadata with GCP location" in {
     val webService = new MockWgsCramWebService()
     Post("/metadata/GCP/proj0/sample_alias0/1", Map("notes" -> "some note")) ~> webService.cramPostMetadata ~> check {
-      responseAs[String] should not be empty
+      UpsertId.isValidId(responseAs[String]) should be(true)
     }
   }
 

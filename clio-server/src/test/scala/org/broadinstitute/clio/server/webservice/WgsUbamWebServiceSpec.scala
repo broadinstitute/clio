@@ -30,7 +30,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
       ).getUrlPath,
       Map("project" -> "testOnPremLocation")
     ) ~> webService.postMetadata ~> check {
-      responseAs[String] should not be empty
+      UpsertId.isValidId(responseAs[String]) should be(true)
     }
   }
 
@@ -40,7 +40,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
       "/metadata/" + TransferWgsUbamV1Key(GCP, "barcodeGCP", 4, "libraryGCP").getUrlPath,
       Map("project" -> "testGCPlocation")
     ) ~> webService.postMetadata ~> check {
-      responseAs[String] should not be empty
+      UpsertId.isValidId(responseAs[String]) should be(true)
     }
   }
 

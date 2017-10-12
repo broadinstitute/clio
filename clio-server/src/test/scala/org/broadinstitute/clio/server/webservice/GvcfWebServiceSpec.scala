@@ -18,14 +18,14 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
   it should "postMetadata with OnPrem location" in {
     val webService = new MockGvcfWebService()
     Post("/metadata/OnPrem/proj0/sample_alias0/1", Map("notes" -> "some note")) ~> webService.gvcfPostMetadata ~> check {
-      responseAs[String] should not be empty
+      UpsertId.isValidId(responseAs[String]) should be(true)
     }
   }
 
   it should "postMetadata with GCP location" in {
     val webService = new MockGvcfWebService()
     Post("/metadata/GCP/proj0/sample_alias0/1", Map("notes" -> "some note")) ~> webService.gvcfPostMetadata ~> check {
-      responseAs[String] should not be empty
+      UpsertId.isValidId(responseAs[String]) should be(true)
     }
   }
 
