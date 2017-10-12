@@ -8,6 +8,10 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Key,
   TransferGvcfV1QueryInput
 }
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1QueryInput
+}
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1QueryInput
@@ -47,6 +51,13 @@ trait TestData {
     "clio-client/src/test/resources/testdata/testGvcfs"
   )
 
+  val cramMetadataFileLocation =
+    "clio-client/src/test/resources/testdata/cramMetadata"
+
+  val testWgsCramLocation = Some(
+    "clio-client/src/test/resources/testdata/testWgsCram"
+  )
+
   val gvcfMetadataPlusExtraFieldsFileLocation =
     "clio-client/src/test/resources/testdata/gvcfMetadataplusextrafields"
 
@@ -68,16 +79,30 @@ trait TestData {
 
   val testUbamCloudSourcePath: String =
     "gs://testProject/testSample/ubamPath1.unmapped.bam"
+
   val testUbamCloudDestinationPath: String =
     "gs://testProject/testSample/ubamPath2.unmapped.bam"
+
   val testGvcfCloudSourcePath: String =
     "gs://testProject/testSample/gvcfPath1.gvcf"
+
   val testGvcfMetricsCloudSourcePath: String =
     "gs://path/gvcfMetrics1.gvcf"
-  val testGvcfCloudDestinationDirectoryPath: String =
+
+  val testCloudDestinationDirectoryPath: String =
     "gs://testProject/testSample/moved/"
+
   val testGvcfCloudDestinationPath: String =
-    testGvcfCloudDestinationDirectoryPath + "gvcfPath2.gvcf"
+    testCloudDestinationDirectoryPath + "gvcfPath2.gvcf"
+
+  val testCramCloudSourcePath: String =
+    "gs://testProject/testSample/cramPath1.cram"
+
+  val testCraiCloudSourcePath: String =
+    "gs://testProject/testSample/craiPath1.crai"
+
+  val testWgsMetricsCloudSourcePath: String =
+    "gs://testProject/testSample/metrics.wgs_metrics"
 
   val testCommon = CommonOptions(bearerToken = Some(testBearer))
   val testCommonNoToken = CommonOptions()
@@ -88,6 +113,12 @@ trait TestData {
     location = Location.pathMatcher(testLocation)
   )
   val testGvcfTransferV1Key = TransferGvcfV1Key(
+    location = Location.pathMatcher(testLocation),
+    project = testProject,
+    sampleAlias = testSampleAlias,
+    version = testVersion
+  )
+  val testCramTransferV1Key = TransferWgsCramV1Key(
     location = Location.pathMatcher(testLocation),
     project = testProject,
     sampleAlias = testSampleAlias,
@@ -118,11 +149,28 @@ trait TestData {
 
   val goodGvcfMoveCommand = MoveGvcf(
     key = testGvcfTransferV1Key,
-    destination = testGvcfCloudDestinationDirectoryPath
+    destination = testCloudDestinationDirectoryPath
   )
 
   val goodGvcfDeleteCommand =
     DeleteGvcf(key = testGvcfTransferV1Key, note = "Good delete for test")
+
+  val goodCramQueryCommand = QueryWgsCram(
+    queryInput = TransferWgsCramV1QueryInput()
+  )
+
+  val goodCramAddCommand = AddWgsCram(
+    key = testCramTransferV1Key,
+    metadataLocation = cramMetadataFileLocation
+  )
+
+  val goodCramMoveCommand = MoveWgsCram(
+    key = testCramTransferV1Key,
+    destination = testCloudDestinationDirectoryPath
+  )
+
+  val goodCramDeleteCommand =
+    DeleteWgsCram(key = testCramTransferV1Key, note = "Good delete for test")
 
   val testServerPort: Int = 8080
   val testRequestTimeout: FiniteDuration = 3.seconds
