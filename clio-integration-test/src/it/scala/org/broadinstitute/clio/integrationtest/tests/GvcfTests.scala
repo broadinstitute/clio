@@ -333,7 +333,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     for {
       _ <- upserts
       _ <- checkQuery(expectedLength = 3)
-      deleteResponse <- runUpsertGvcf(
+      _ <- runUpsertGvcf(
         deleteKey,
         deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
       )
