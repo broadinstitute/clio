@@ -134,11 +134,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   ): Future[HttpResponse] = {
 
     val preMovePaths = existingMetadata.pathsToMove
-    val newMetadata = if (ioUtil.isGoogleDirectory(destination)) {
-      existingMetadata.moveAllInto(destination)
-    } else {
-      existingMetadata.setSinglePath(destination)
-    }
+    val newMetadata = existingMetadata.moveInto(destination)
     val postMovePaths = newMetadata.pathsToMove
 
     val pathsToMove =

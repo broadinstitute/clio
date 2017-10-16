@@ -29,6 +29,7 @@ case class DocumentWgsCram(
   readgroupMd5: Option[String] = None,
   workspaceName: Option[String] = None,
   notes: Option[String] = None,
+  analysisFilesTxtPath: Option[String] = None,
   preAdapterSummaryMetricsPath: Option[String] = None,
   preAdapterDetailMetricsPath: Option[String] = None,
   alignmentSummaryMetricsPath: Option[String] = None,
