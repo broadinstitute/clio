@@ -17,7 +17,7 @@ case class TransferWgsCramV1Metadata(
   cramMd5Path: Option[String] = None,
   logPath: Option[String] = None,
   fingerprintPath: Option[String] = None,
-  cromwellIdPath: Option[String] = None,
+  cromwellId: Option[String] = None,
   workflowJsonPath: Option[String] = None,
   optionsJsonPath: Option[String] = None,
   wdlPath: Option[String] = None,
