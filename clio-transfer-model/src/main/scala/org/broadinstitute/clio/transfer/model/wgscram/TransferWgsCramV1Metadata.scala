@@ -7,7 +7,7 @@ import org.broadinstitute.clio.util.model.DocumentStatus
 
 case class TransferWgsCramV1Metadata(
   documentStatus: Option[DocumentStatus] = None,
-  pipelineVersion: Option[Long] = None,
+  pipelineVersion: Option[String] = None,
   workflowStartDate: Option[OffsetDateTime] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
   cramMd5: Option[String] = None,

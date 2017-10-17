@@ -10,7 +10,7 @@ case class TransferWgsCramV1QueryInput(
   project: Option[String] = None,
   sampleAlias: Option[String] = None,
   version: Option[Int] = None,
-  pipelineVersion: Option[Long] = None,
+  pipelineVersion: Option[String] = None,
   workflowStartDate: Option[OffsetDateTime] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
   cramMd5: Option[String] = None,

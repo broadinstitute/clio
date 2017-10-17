@@ -12,7 +12,7 @@ case class DocumentWgsCram(
   sampleAlias: String,
   version: Int,
   documentStatus: Option[DocumentStatus] = None,
-  pipelineVersion: Option[Long] = None,
+  pipelineVersion: Option[String] = None,
   workflowStartDate: Option[OffsetDateTime] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
   cramMd5: Option[String] = None,
