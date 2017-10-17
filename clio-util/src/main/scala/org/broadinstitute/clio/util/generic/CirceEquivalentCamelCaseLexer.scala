@@ -8,12 +8,12 @@ import s_mach.string.{LexResult, Lexer, RegexCharTransitionLexer}
   *
   * By default, s_mach only breaks camel-case through a single type of "boundary" detection:
   *
-  *   ([a-z])([A-Z]) -> $1_$2
+  *   ([a-z])([A-Z]) -> \$1_\$2
   *
   * Circe, on the other hand, breaks camel case at two types of boundaries:
   *
-  *   ([A-Z]+)([A-Z][a-z]) -> $1_$2
-  *   ([a-z\\d])([A-Z]) -> $1_$2
+  *   ([A-Z]+)([A-Z][a-z]) -> \$1_\$2
+  *   ([a-z\\d])([A-Z]) -> \$1_\$2
   *
   * In practice, this difference caused discrepancies between how circe serialized certain
   * field names and how s_mach built the fields' corresponding elasticsearch mappings:
