@@ -93,43 +93,43 @@ case class TransferWgsCramV1Metadata(
     Seq.concat(cramPath, craiPath, cramMd5Path)
 
   override def mapMove(
-    pathMapper: String => String
+    pathMapper: Option[String] => Option[String]
   ): TransferWgsCramV1Metadata = {
     this.copy(
-      cramPath = cramPath.map(pathMapper),
-      craiPath = craiPath.map(pathMapper),
-      cramMd5Path = cramMd5Path.map(pathMapper),
-      preAdapterSummaryMetricsPath =
-        preAdapterSummaryMetricsPath.map(pathMapper),
-      preAdapterDetailMetricsPath = preAdapterDetailMetricsPath.map(pathMapper),
-      alignmentSummaryMetricsPath = alignmentSummaryMetricsPath.map(pathMapper),
-      preBqsrDepthSMPath = preBqsrDepthSMPath.map(pathMapper),
-      preBqsrSelfSMPath = preBqsrSelfSMPath.map(pathMapper),
-      cramValidationReportPath = cramValidationReportPath.map(pathMapper),
-      crosscheckPath = crosscheckPath.map(pathMapper),
-      duplicateMetricsPath = duplicateMetricsPath.map(pathMapper),
-      gcBiasPdfPath = gcBiasPdfPath.map(pathMapper),
-      gcBiasSummaryMetricsPath = gcBiasSummaryMetricsPath.map(pathMapper),
-      gcBiasDetailMetricsPath = gcBiasDetailMetricsPath.map(pathMapper),
-      insertSizeHistogramPath = insertSizeHistogramPath.map(pathMapper),
-      insertSizeMetricsPath = insertSizeMetricsPath.map(pathMapper),
-      qualityDistributionPdfPath = qualityDistributionPdfPath.map(pathMapper),
+      cramPath = pathMapper(cramPath),
+      craiPath = pathMapper(craiPath),
+      cramMd5Path = pathMapper(cramMd5Path),
+      preAdapterSummaryMetricsPath = pathMapper(preAdapterSummaryMetricsPath),
+      preAdapterDetailMetricsPath = pathMapper(preAdapterDetailMetricsPath),
+      alignmentSummaryMetricsPath = pathMapper(alignmentSummaryMetricsPath),
+      preBqsrDepthSMPath = pathMapper(preBqsrDepthSMPath),
+      preBqsrSelfSMPath = pathMapper(preBqsrSelfSMPath),
+      cramValidationReportPath = pathMapper(cramValidationReportPath),
+      crosscheckPath = pathMapper(crosscheckPath),
+      duplicateMetricsPath = pathMapper(duplicateMetricsPath),
+      gcBiasPdfPath = pathMapper(gcBiasPdfPath),
+      gcBiasSummaryMetricsPath = pathMapper(gcBiasSummaryMetricsPath),
+      gcBiasDetailMetricsPath = pathMapper(gcBiasDetailMetricsPath),
+      insertSizeHistogramPath = pathMapper(insertSizeHistogramPath),
+      insertSizeMetricsPath = pathMapper(insertSizeMetricsPath),
+      qualityDistributionPdfPath = pathMapper(qualityDistributionPdfPath),
       qualityDistributionMetricsPath =
-        qualityDistributionMetricsPath.map(pathMapper),
-      rawWgsMetricsPath = rawWgsMetricsPath.map(pathMapper),
+        pathMapper(qualityDistributionMetricsPath),
+      rawWgsMetricsPath = pathMapper(rawWgsMetricsPath),
       readgroupAlignmentSummaryMetricsPath =
-        readgroupAlignmentSummaryMetricsPath.map(pathMapper),
-      readgroupGcBiasPdfPath = readgroupGcBiasPdfPath.map(pathMapper),
+        pathMapper(readgroupAlignmentSummaryMetricsPath),
+      readgroupGcBiasPdfPath = pathMapper(readgroupGcBiasPdfPath),
       readgroupGcBiasSummaryMetricsPath =
-        readgroupGcBiasSummaryMetricsPath.map(pathMapper),
+        pathMapper(readgroupGcBiasSummaryMetricsPath),
       readgroupGcBiasDetailMetricsPath =
-        readgroupGcBiasDetailMetricsPath.map(pathMapper),
-      recalDataPath = recalDataPath.map(pathMapper),
-      baitBiasSummaryMetricsPath = baitBiasSummaryMetricsPath.map(pathMapper),
-      baitBiasDetailMetricsPath = baitBiasDetailMetricsPath.map(pathMapper),
-      wgsMetricsPath = wgsMetricsPath.map(pathMapper),
-      readgroupLevelMetricsFiles =
-        readgroupLevelMetricsFiles.map(_.map(pathMapper))
+        pathMapper(readgroupGcBiasDetailMetricsPath),
+      recalDataPath = pathMapper(recalDataPath),
+      baitBiasSummaryMetricsPath = pathMapper(baitBiasSummaryMetricsPath),
+      baitBiasDetailMetricsPath = pathMapper(baitBiasDetailMetricsPath),
+      wgsMetricsPath = pathMapper(wgsMetricsPath),
+      readgroupLevelMetricsFiles = readgroupLevelMetricsFiles.map(
+        _.flatMap(path => pathMapper(Some(path)))
+      )
     )
   }
 

@@ -46,9 +46,9 @@ case class TransferWgsUbamV1Metadata(
   override def pathsToDelete: Seq[String] = ubamPath.toSeq
 
   override def mapMove(
-    pathMapper: String => String
+    pathMapper: Option[String] => Option[String]
   ): TransferWgsUbamV1Metadata = {
-    this.copy(ubamPath = ubamPath.map(pathMapper))
+    this.copy(ubamPath = pathMapper(ubamPath))
   }
 
   override def markDeleted(deletionNote: String): TransferWgsUbamV1Metadata =

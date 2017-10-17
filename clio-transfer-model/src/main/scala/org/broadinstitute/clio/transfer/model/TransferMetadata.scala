@@ -37,17 +37,16 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
     * If `pathsToMove` contains > 1 element, `destination` must end with '/'.
     */
   def moveInto(destination: String): M = {
-    val pathMapper = if (destination.endsWith("/")) {
-      moveIntoDirectory(_: String, destination)
-    } else {
-      if (pathsToMove.length > 1) {
+    val pathMapper =
+      if (destination.endsWith("/")) { (opt: Option[String]) =>
+        opt.map(path => moveIntoDirectory(path, destination))
+      } else if (pathsToMove.length > 1) {
         sys.error(
           "Non-directory destination given for metadata with > 1 path to move"
         )
+      } else { (opt: Option[String]) =>
+        opt.map(_ => destination)
       }
-      (_: String) =>
-        destination
-    }
     mapMove(pathMapper)
   }
 
@@ -61,7 +60,7 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
     * Return a copy of this object in which all files in `pathsToMove`
     * have been transformed by applying `pathMapper`.
     */
-  protected def mapMove(pathMapper: String => String): M
+  protected def mapMove(pathMapper: Option[String] => Option[String]): M
 
   /**
     * Move the file at `source` into the directory `destination`.

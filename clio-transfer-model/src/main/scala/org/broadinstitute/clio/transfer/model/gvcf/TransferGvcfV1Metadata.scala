@@ -23,11 +23,13 @@ case class TransferGvcfV1Metadata(analysisDate: Option[OffsetDateTime] = None,
   override def pathsToDelete: Seq[String] =
     Seq.concat(gvcfPath, gvcfIndexPath)
 
-  override def mapMove(pathMapper: String => String): TransferGvcfV1Metadata = {
+  override def mapMove(
+    pathMapper: Option[String] => Option[String]
+  ): TransferGvcfV1Metadata = {
     this.copy(
-      gvcfPath = gvcfPath.map(pathMapper),
-      gvcfIndexPath = gvcfIndexPath.map(pathMapper),
-      gvcfMetricsPath = gvcfMetricsPath.map(pathMapper)
+      gvcfPath = pathMapper(gvcfPath),
+      gvcfIndexPath = pathMapper(gvcfIndexPath),
+      gvcfMetricsPath = pathMapper(gvcfMetricsPath)
     )
   }
 
