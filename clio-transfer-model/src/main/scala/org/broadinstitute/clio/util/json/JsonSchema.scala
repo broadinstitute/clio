@@ -9,6 +9,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import enumeratum.EnumEntry
+import org.broadinstitute.clio.util.generic.CirceEquivalentCamelCaseLexer
 
 /**
   * Generate JSON schema from case classes such as the QueryOutputs.
@@ -140,7 +141,8 @@ object JsonSchema {
     tail: JsonSchema[Tail]
   ): JsonSchema[FieldType[Key, Head] :: Tail] = {
     import s_mach.string._
-    val fieldName = witness.value.name.toSnakeCase(Lexer.CamelCase)
+    val fieldName =
+      witness.value.name.toSnakeCase(CirceEquivalentCamelCaseLexer)
     val property = makeProperty(fieldName, typeTag[Head].tpe)
     val head = property match {
       case (true, json)  => (Set(fieldName), Map(fieldName -> json))

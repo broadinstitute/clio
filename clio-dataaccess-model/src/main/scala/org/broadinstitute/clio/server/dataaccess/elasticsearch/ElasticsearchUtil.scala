@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
+import org.broadinstitute.clio.util.generic.CirceEquivalentCamelCaseLexer
 import s_mach.string._
 
 object ElasticsearchUtil {
@@ -12,5 +13,5 @@ object ElasticsearchUtil {
     * @return the name as an elastic search name
     */
   def toElasticsearchName(scalaName: String): String =
-    scalaName.toSnakeCase(Lexer.CamelCase)
+    scalaName.toSnakeCase(CirceEquivalentCamelCaseLexer)
 }

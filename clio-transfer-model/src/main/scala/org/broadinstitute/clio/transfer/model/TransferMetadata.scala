@@ -32,19 +32,23 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
 
   /**
     * Return a copy of this object in which all files in `pathsToMove`
-    * have been moved into a destination directory.
+    * have been moved to the given destination.
     *
-    * Fails if `destination` doesn't end with '/'.
+    * If `pathsToMove` contains > 1 element, `destination` must end with '/'.
     */
-  def moveAllInto(destination: String): M
-
-  /**
-    * Returns copy of this object in which a singular file-path has
-    * been sent to a new destination.
-    *
-    * Fails if `pathsToMove` contains more than one element.
-    */
-  def setSinglePath(destination: String): M
+  def moveInto(destination: String): M = {
+    val pathMapper =
+      if (destination.endsWith("/")) { (opt: Option[String]) =>
+        opt.map(path => moveIntoDirectory(path, destination))
+      } else if (pathsToMove.length > 1) {
+        sys.error(
+          "Non-directory destination given for metadata with > 1 path to move"
+        )
+      } else { (opt: Option[String]) =>
+        opt.map(_ => destination)
+      }
+    mapMove(pathMapper)
+  }
 
   /**
     * Return a copy of this object which has been marked as deleted,
@@ -53,9 +57,15 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
   def markDeleted(deletionNote: String): M
 
   /**
-    * Rebase the path `source` onto the directory path `destination`.
+    * Return a copy of this object in which all files in `pathsToMove`
+    * have been transformed by applying `pathMapper`.
     */
-  protected def moveInto(source: String, destination: String): String = {
+  protected def mapMove(pathMapper: Option[String] => Option[String]): M
+
+  /**
+    * Move the file at `source` into the directory `destination`.
+    */
+  protected def moveIntoDirectory(source: String, destination: String): String = {
     // TODO: Rewrite this using a Path-based API.
     destination + source.drop(source.lastIndexOf('/') + 1)
   }

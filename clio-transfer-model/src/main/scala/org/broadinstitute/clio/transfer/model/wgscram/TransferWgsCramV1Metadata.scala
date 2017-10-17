@@ -7,7 +7,7 @@ import org.broadinstitute.clio.util.model.DocumentStatus
 
 case class TransferWgsCramV1Metadata(
   documentStatus: Option[DocumentStatus] = None,
-  pipelineVersion: Option[Long] = None,
+  pipelineVersion: Option[String] = None,
   workflowStartDate: Option[OffsetDateTime] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
   cramMd5: Option[String] = None,
@@ -17,20 +17,21 @@ case class TransferWgsCramV1Metadata(
   cramMd5Path: Option[String] = None,
   logPath: Option[String] = None,
   fingerprintPath: Option[String] = None,
-  cromwellIdPath: Option[String] = None,
+  cromwellId: Option[String] = None,
   workflowJsonPath: Option[String] = None,
   optionsJsonPath: Option[String] = None,
   wdlPath: Option[String] = None,
   readgroupMd5: Option[String] = None,
   workspaceName: Option[String] = None,
   notes: Option[String] = None,
+  analysisFilesTxtPath: Option[String] = None,
   /* These fields were originally meant to be part of the cram metrics index. */
   preAdapterSummaryMetricsPath: Option[String] = None,
   preAdapterDetailMetricsPath: Option[String] = None,
   alignmentSummaryMetricsPath: Option[String] = None,
   bamValidationReportPath: Option[String] = None,
-  preBqsrDepthSMPath: Option[String] = None,
-  preBqsrSelfSMPath: Option[String] = None,
+  preBqsrDepthSmPath: Option[String] = None,
+  preBqsrSelfSmPath: Option[String] = None,
   preBqsrLogPath: Option[String] = None,
   cramValidationReportPath: Option[String] = None,
   crosscheckPath: Option[String] = None,
@@ -65,8 +66,8 @@ case class TransferWgsCramV1Metadata(
       preAdapterSummaryMetricsPath,
       preAdapterDetailMetricsPath,
       alignmentSummaryMetricsPath,
-      preBqsrDepthSMPath,
-      preBqsrSelfSMPath,
+      preBqsrDepthSmPath,
+      preBqsrSelfSmPath,
       cramValidationReportPath,
       crosscheckPath,
       duplicateMetricsPath,
@@ -91,105 +92,44 @@ case class TransferWgsCramV1Metadata(
   override def pathsToDelete: Seq[String] =
     Seq.concat(cramPath, craiPath, cramMd5Path)
 
-  override def moveAllInto(destination: String): TransferWgsCramV1Metadata = {
-    if (!destination.endsWith("/")) {
-      throw new Exception("Arguments to `moveAllInto` must end with '/'")
-    }
-
+  override def mapMove(
+    pathMapper: Option[String] => Option[String]
+  ): TransferWgsCramV1Metadata = {
     this.copy(
-      cramPath = cramPath.map(moveInto(_, destination)),
-      craiPath = craiPath.map(moveInto(_, destination)),
-      cramMd5Path = cramMd5Path.map(moveInto(_, destination)),
-      preAdapterSummaryMetricsPath =
-        preAdapterSummaryMetricsPath.map(moveInto(_, destination)),
-      preAdapterDetailMetricsPath =
-        preAdapterDetailMetricsPath.map(moveInto(_, destination)),
-      alignmentSummaryMetricsPath =
-        alignmentSummaryMetricsPath.map(moveInto(_, destination)),
-      preBqsrDepthSMPath = preBqsrDepthSMPath.map(moveInto(_, destination)),
-      preBqsrSelfSMPath = preBqsrSelfSMPath.map(moveInto(_, destination)),
-      cramValidationReportPath =
-        cramValidationReportPath.map(moveInto(_, destination)),
-      crosscheckPath = crosscheckPath.map(moveInto(_, destination)),
-      duplicateMetricsPath = duplicateMetricsPath.map(moveInto(_, destination)),
-      gcBiasPdfPath = gcBiasPdfPath.map(moveInto(_, destination)),
-      gcBiasSummaryMetricsPath =
-        gcBiasSummaryMetricsPath.map(moveInto(_, destination)),
-      gcBiasDetailMetricsPath =
-        gcBiasDetailMetricsPath.map(moveInto(_, destination)),
-      insertSizeHistogramPath =
-        insertSizeHistogramPath.map(moveInto(_, destination)),
-      insertSizeMetricsPath =
-        insertSizeMetricsPath.map(moveInto(_, destination)),
-      qualityDistributionPdfPath =
-        qualityDistributionPdfPath.map(moveInto(_, destination)),
+      cramPath = pathMapper(cramPath),
+      craiPath = pathMapper(craiPath),
+      cramMd5Path = pathMapper(cramMd5Path),
+      preAdapterSummaryMetricsPath = pathMapper(preAdapterSummaryMetricsPath),
+      preAdapterDetailMetricsPath = pathMapper(preAdapterDetailMetricsPath),
+      alignmentSummaryMetricsPath = pathMapper(alignmentSummaryMetricsPath),
+      preBqsrDepthSmPath = pathMapper(preBqsrDepthSmPath),
+      preBqsrSelfSmPath = pathMapper(preBqsrSelfSmPath),
+      cramValidationReportPath = pathMapper(cramValidationReportPath),
+      crosscheckPath = pathMapper(crosscheckPath),
+      duplicateMetricsPath = pathMapper(duplicateMetricsPath),
+      gcBiasPdfPath = pathMapper(gcBiasPdfPath),
+      gcBiasSummaryMetricsPath = pathMapper(gcBiasSummaryMetricsPath),
+      gcBiasDetailMetricsPath = pathMapper(gcBiasDetailMetricsPath),
+      insertSizeHistogramPath = pathMapper(insertSizeHistogramPath),
+      insertSizeMetricsPath = pathMapper(insertSizeMetricsPath),
+      qualityDistributionPdfPath = pathMapper(qualityDistributionPdfPath),
       qualityDistributionMetricsPath =
-        qualityDistributionMetricsPath.map(moveInto(_, destination)),
-      rawWgsMetricsPath = rawWgsMetricsPath.map(moveInto(_, destination)),
+        pathMapper(qualityDistributionMetricsPath),
+      rawWgsMetricsPath = pathMapper(rawWgsMetricsPath),
       readgroupAlignmentSummaryMetricsPath =
-        readgroupAlignmentSummaryMetricsPath.map(moveInto(_, destination)),
-      readgroupGcBiasPdfPath =
-        readgroupGcBiasPdfPath.map(moveInto(_, destination)),
+        pathMapper(readgroupAlignmentSummaryMetricsPath),
+      readgroupGcBiasPdfPath = pathMapper(readgroupGcBiasPdfPath),
       readgroupGcBiasSummaryMetricsPath =
-        readgroupGcBiasSummaryMetricsPath.map(moveInto(_, destination)),
+        pathMapper(readgroupGcBiasSummaryMetricsPath),
       readgroupGcBiasDetailMetricsPath =
-        readgroupGcBiasDetailMetricsPath.map(moveInto(_, destination)),
-      recalDataPath = recalDataPath.map(moveInto(_, destination)),
-      baitBiasSummaryMetricsPath =
-        baitBiasSummaryMetricsPath.map(moveInto(_, destination)),
-      baitBiasDetailMetricsPath =
-        baitBiasDetailMetricsPath.map(moveInto(_, destination)),
-      wgsMetricsPath = wgsMetricsPath.map(moveInto(_, destination)),
-      readgroupLevelMetricsFiles =
-        readgroupLevelMetricsFiles.map(_.map(moveInto(_, destination)))
-    )
-  }
-
-  override def setSinglePath(destination: String): TransferWgsCramV1Metadata = {
-    if (pathsToMove.length != 1) {
-      throw new Exception(
-        s"`setSinglePath` called on metadata with more than one registered path"
+        pathMapper(readgroupGcBiasDetailMetricsPath),
+      recalDataPath = pathMapper(recalDataPath),
+      baitBiasSummaryMetricsPath = pathMapper(baitBiasSummaryMetricsPath),
+      baitBiasDetailMetricsPath = pathMapper(baitBiasDetailMetricsPath),
+      wgsMetricsPath = pathMapper(wgsMetricsPath),
+      readgroupLevelMetricsFiles = readgroupLevelMetricsFiles.map(
+        _.flatMap(path => pathMapper(Some(path)))
       )
-    }
-
-    this.copy(
-      cramPath = cramPath.map(_ => destination),
-      craiPath = craiPath.map(_ => destination),
-      cramMd5Path = cramMd5Path.map(_ => destination),
-      preAdapterSummaryMetricsPath =
-        preAdapterSummaryMetricsPath.map(_ => destination),
-      preAdapterDetailMetricsPath =
-        preAdapterDetailMetricsPath.map(_ => destination),
-      alignmentSummaryMetricsPath =
-        alignmentSummaryMetricsPath.map(_ => destination),
-      preBqsrDepthSMPath = preBqsrDepthSMPath.map(_ => destination),
-      preBqsrSelfSMPath = preBqsrSelfSMPath.map(_ => destination),
-      cramValidationReportPath = cramValidationReportPath.map(_ => destination),
-      crosscheckPath = crosscheckPath.map(_ => destination),
-      duplicateMetricsPath = duplicateMetricsPath.map(_ => destination),
-      gcBiasPdfPath = gcBiasPdfPath.map(_ => destination),
-      gcBiasSummaryMetricsPath = gcBiasSummaryMetricsPath.map(_ => destination),
-      gcBiasDetailMetricsPath = gcBiasDetailMetricsPath.map(_ => destination),
-      insertSizeHistogramPath = insertSizeHistogramPath.map(_ => destination),
-      insertSizeMetricsPath = insertSizeMetricsPath.map(_ => destination),
-      qualityDistributionPdfPath =
-        qualityDistributionPdfPath.map(_ => destination),
-      qualityDistributionMetricsPath =
-        qualityDistributionMetricsPath.map(_ => destination),
-      rawWgsMetricsPath = rawWgsMetricsPath.map(_ => destination),
-      readgroupAlignmentSummaryMetricsPath =
-        readgroupAlignmentSummaryMetricsPath.map(_ => destination),
-      readgroupGcBiasPdfPath = readgroupGcBiasPdfPath.map(_ => destination),
-      readgroupGcBiasSummaryMetricsPath =
-        readgroupGcBiasSummaryMetricsPath.map(_ => destination),
-      readgroupGcBiasDetailMetricsPath =
-        readgroupGcBiasDetailMetricsPath.map(_ => destination),
-      recalDataPath = recalDataPath.map(_ => destination),
-      baitBiasSummaryMetricsPath =
-        baitBiasSummaryMetricsPath.map(_ => destination),
-      baitBiasDetailMetricsPath =
-        baitBiasDetailMetricsPath.map(_ => destination),
-      wgsMetricsPath = wgsMetricsPath.map(_ => destination)
     )
   }
 

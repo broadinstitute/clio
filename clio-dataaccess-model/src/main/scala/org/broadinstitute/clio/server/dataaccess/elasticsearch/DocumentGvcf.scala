@@ -18,6 +18,6 @@ case class DocumentGvcf(upsertId: UpsertId,
                         gvcfSize: Option[Long] = None,
                         gvcfIndexPath: Option[String] = None,
                         gvcfMetricsPath: Option[String] = None,
-                        pipelineVersion: Option[Long] = None,
+                        pipelineVersion: Option[String] = None,
                         notes: Option[String] = None)
     extends ClioDocument
