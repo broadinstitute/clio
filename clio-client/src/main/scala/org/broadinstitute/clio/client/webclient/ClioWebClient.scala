@@ -5,8 +5,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials}
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream._
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.{Encoder, Printer}
 import io.circe.syntax._
@@ -15,13 +15,16 @@ import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
+import scala.util.{Failure, Success}
 
 class ClioWebClient(
   clioHost: String,
   clioPort: Int,
   useHttps: Boolean,
+  maxQueuedRequests: Int,
+  maxConcurrentRequests: Int,
   requestTimeout: FiniteDuration
 )(implicit system: ActorSystem)
     extends ModelAutoDerivation
@@ -31,6 +34,10 @@ class ClioWebClient(
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
+  /**
+    * Reusable stream component ingesting `HttpRequest`s and emitting
+    * `HttpResponse`s by communicating with the Clio server.
+    */
   private val connectionFlow = {
     if (useHttps) {
       Http().outgoingConnectionHttps(clioHost, clioPort)
@@ -39,13 +46,75 @@ class ClioWebClient(
     }
   }
 
+  /**
+    * Long-running HTTP request stream handling communications with the Clio server.
+    *
+    * Calls to the client will result in new HTTP requests being pushed onto this queue,
+    * paired with the Promise that should be completed with the corresponding HTTP response.
+    *
+    * As downstream resources are made available, requests will be pulled off the
+    * queue and sent to the Clio server. When a response is returned, the Promise will
+    * be completed with a corresponding Success / Failure.
+    *
+    * Based on the example at:
+    * https://doc.akka.io/docs/akka-http/current/scala/http/client-side/host-level.html#using-the-host-level-api-with-a-queue
+    */
+  private val requestStream = Source
+    .queue[(HttpRequest, Promise[HttpResponse])](
+      maxQueuedRequests,
+      OverflowStrategy.dropNew
+    )
+    .mapAsyncUnordered(maxConcurrentRequests) {
+      case (request, promise) => {
+        /*
+         * Stream-within-a-sream is weird, but Akka HTTP doesn't currently
+         * support a proper client-side request timeout when using their
+         * higher-level cached APIs.
+         */
+        val response = Source
+          .single(request)
+          .via(connectionFlow)
+          .completionTimeout(requestTimeout)
+          .runWith(Sink.head)
+
+        response.transformWith {
+          case Success(r)  => Future.successful(Success(r) -> promise)
+          case Failure(ex) => Future.successful(Failure(ex) -> promise)
+        }
+      }
+    }
+    .toMat(Sink.foreach {
+      case (Success(response), promise) => promise.success(response)
+      case (Failure(ex), promise)       => promise.failure(ex)
+    })(Keep.left)
+    .run()
+
   def dispatchRequest(request: HttpRequest): Future[HttpResponse] = {
-    Source
-      .single(request)
-      .via(connectionFlow)
-      .completionTimeout(requestTimeout)
-      .runWith(Sink.head)
-      .logErrorMsg("Failed to send HTTP request to Clio server")
+    val responsePromise = Promise[HttpResponse]()
+    requestStream.offer(request -> responsePromise).flatMap { queueResult =>
+      queueResult match {
+        case QueueOfferResult.Enqueued => ()
+        case QueueOfferResult.Dropped => {
+          responsePromise.failure {
+            new RuntimeException(
+              s"Client queue was too full to add the request: $request"
+            )
+          }
+        }
+        case QueueOfferResult.Failure(ex) =>
+          responsePromise.failure(ex)
+        case QueueOfferResult.QueueClosed =>
+          responsePromise.failure {
+            new RuntimeException(
+              s"Client queue was closed while adding the request: $request"
+            )
+          }
+      }
+
+      responsePromise.future
+        .logErrorMsg("Failed to send HTTP request to Clio server")
+        .flatMap(ensureOkResponse)
+    }
   }
 
   def getClioServerVersion: Future[HttpResponse] = {
@@ -113,13 +182,20 @@ class ClioWebClient(
       )
   }
 
-  def ensureOkResponse(httpResponse: HttpResponse): HttpResponse = {
+  def ensureOkResponse(httpResponse: HttpResponse): Future[HttpResponse] = {
     if (httpResponse.status.isSuccess()) {
-      httpResponse
+      Future.successful(httpResponse)
     } else {
-      throw new Exception(
-        s"Got an error from the Clio server. Status code: ${httpResponse.status}"
-      )
+      httpResponse.entity.toStrict(requestTimeout).map { entity =>
+        throw ClioWebClient.FailedResponse(httpResponse.status, entity)
+      }
     }
   }
+}
+
+object ClioWebClient {
+  case class FailedResponse(statusCode: StatusCode, entity: HttpEntity.Strict)
+      extends RuntimeException(
+        s"Got an error from the Clio server. Status code: $statusCode. Entity: $entity"
+      )
 }

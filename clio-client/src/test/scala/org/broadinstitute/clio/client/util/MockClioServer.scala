@@ -1,10 +1,5 @@
 package org.broadinstitute.clio.client.util
 
-import org.broadinstitute.clio.status.model.{
-  ServerStatusInfo,
-  StatusInfo,
-  SystemStatusInfo
-}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
@@ -13,6 +8,12 @@ import akka.http.scaladsl.server.Route
 import akka.pattern.after
 import akka.stream.ActorMaterializer
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import org.broadinstitute.clio.status.model.{
+  ServerStatusInfo,
+  StatusInfo,
+  SystemStatusInfo,
+  VersionInfo
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
@@ -44,7 +45,20 @@ class MockClioServer(implicit system: ActorSystem)
           }
         complete(slowResult)
       }
-    }
+    } ~
+      path("version") {
+        get {
+          /*
+           * Purposefully set up this endpoint to take awhile, so we can build up a
+           * bunch of requests and assert they don't all fire off at once.
+           */
+          val slowResult =
+            after(testRequestTimeout - 1.second, system.scheduler) {
+              Future.successful(VersionInfo("0.0.0-TEST"))
+            }
+          complete(slowResult)
+        }
+      }
 
   var binding: ServerBinding = _
 

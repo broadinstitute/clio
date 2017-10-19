@@ -11,9 +11,9 @@ import org.broadinstitute.clio.status.model.{
   SystemStatusInfo,
   VersionInfo
 }
-
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, StatusCodes}
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import org.broadinstitute.clio.client.webclient.ClioWebClient
 
 /** Tests of Clio /health and /version endpoints, as well as rejection behaviors. */
 trait BasicTests { self: BaseIntegrationSpec =>
@@ -36,14 +36,21 @@ trait BasicTests { self: BaseIntegrationSpec =>
   }
 
   it should "reject requests to invalid routes" in {
-    clioWebClient
-      .dispatchRequest(HttpRequest(uri = "/badpath"))
-      .map(_.status should be(StatusCodes.NotFound))
+    recoverToExceptionIf[ClioWebClient.FailedResponse] {
+      clioWebClient.dispatchRequest(HttpRequest(uri = "/badpath"))
+    }.map {
+      _.statusCode should be(StatusCodes.NotFound)
+    }
   }
 
   it should "reject bad HTTP methods to valid routes" in {
-    clioWebClient
-      .dispatchRequest(HttpRequest(uri = "/health", method = HttpMethods.POST))
-      .map(_.status should be(StatusCodes.MethodNotAllowed))
+    recoverToExceptionIf[ClioWebClient.FailedResponse] {
+      clioWebClient
+        .dispatchRequest(
+          HttpRequest(uri = "/health", method = HttpMethods.POST)
+        )
+    }.map {
+      _.statusCode should be(StatusCodes.MethodNotAllowed)
+    }
   }
 }

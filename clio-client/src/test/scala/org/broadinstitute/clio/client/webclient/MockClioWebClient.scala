@@ -26,6 +26,8 @@ class MockClioWebClient(
       "localhost",
       MockClioWebClient.testServerPort,
       false,
+      MockClioWebClient.testMaxQueued,
+      MockClioWebClient.testMaxConcurrent,
       MockClioWebClient.testRequestTimeout
     )
     with TestData

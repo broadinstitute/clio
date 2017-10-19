@@ -27,6 +27,8 @@ abstract class EnvIntegrationSpec(env: String)
     s"clio101.gotc-$env.broadinstitute.org",
     443,
     useHttps = true,
+    maxQueuedRequests,
+    maxConcurrentRequests,
     clientTimeout
   )
 

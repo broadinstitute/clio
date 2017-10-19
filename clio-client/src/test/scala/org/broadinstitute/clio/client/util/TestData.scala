@@ -173,5 +173,7 @@ trait TestData {
     DeleteWgsCram(key = testCramTransferV1Key, note = "Good delete for test")
 
   val testServerPort: Int = 8080
+  val testMaxQueued: Int = 4
+  val testMaxConcurrent: Int = 1
   val testRequestTimeout: FiniteDuration = 3.seconds
 }

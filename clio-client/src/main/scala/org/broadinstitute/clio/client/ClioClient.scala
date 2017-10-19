@@ -56,6 +56,8 @@ object ClioClient extends LazyLogging {
       ClioClientConfig.ClioServer.clioServerHostName,
       ClioClientConfig.ClioServer.clioServerPort,
       ClioClientConfig.ClioServer.clioServerUseHttps,
+      ClioClientConfig.maxQueuedRequests,
+      ClioClientConfig.maxConcurrentRequests,
       ClioClientConfig.responseTimeout
     )
     val client: ClioClient = new ClioClient(webClient, IoUtil)

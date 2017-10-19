@@ -70,7 +70,6 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
       .logErrorMsg(s"There was a problem querying the Clio server for ${name}s")
 
     val queryOutputs = queryResponse
-      .map(client.ensureOkResponse)
       .flatMap(client.unmarshal[Seq[deleteCommand.index.QueryOutputType]])
 
     queryOutputs.map { outputs =>
@@ -146,7 +145,6 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
         )
       upsertResponse <- client
         .upsert(deleteCommand.index, deleteCommand.key, markedAsDeleted)
-        .map(client.ensureOkResponse)
         .logErrorMsg(
           s"""Failed to delete the $name record for $prettyKey in Clio.
              |The associated files have been deleted in the cloud, but Clio doesn't know.
