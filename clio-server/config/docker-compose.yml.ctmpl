@@ -31,7 +31,6 @@ services:
       - {{$app_dir}}/server.key:/etc/ssl/private/server.key:ro
       - {{$app_dir}}/ca-bundle.crt:/etc/ssl/certs/ca-bundle.crt:ro
       - {{$app_dir}}/site.conf:/etc/apache2/sites-enabled/site.conf
-      - {{$app_dir}}/mpm_event.conf:/etc/apache2/conf-enabled/mpm_event.conf:ro
     volumes_from:
       - logger
     restart: always
