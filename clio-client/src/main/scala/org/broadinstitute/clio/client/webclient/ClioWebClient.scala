@@ -67,7 +67,7 @@ class ClioWebClient(
     .mapAsyncUnordered(maxConcurrentRequests) {
       case (request, promise) => {
         /*
-         * Stream-within-a-sream is weird, but Akka HTTP doesn't currently
+         * Stream-within-a-stream is weird, but Akka HTTP doesn't currently
          * support a proper client-side request timeout when using their
          * higher-level cached APIs.
          */
