@@ -77,7 +77,6 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
       .logErrorMsg("There was an error contacting the Clio server.")
 
     val queryOutputs = queryResponse
-      .map(client.ensureOkResponse)
       .flatMap(client.unmarshal[Seq[moveCommand.index.QueryOutputType]])
 
     queryOutputs.map { outputs =>
@@ -168,7 +167,6 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
           )
         upsertResponse <- client
           .upsert(moveCommand.index, moveCommand.key, newMetadata)
-          .map(client.ensureOkResponse)
           .logErrorMsg(
             s"""An error occurred while updating the $name record in Clio. All files associated with
                |$prettyKey exist at both the old and new locations, but Clio only knows about the old

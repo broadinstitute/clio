@@ -55,6 +55,20 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   implicit val m: ActorMaterializer = ActorMaterializer()
 
   /**
+    * Max number of requests that can be queued within the client at a time.
+    *
+    * Use the client's default to make sure it's sane.
+    */
+  val maxQueuedRequests: Int = ClioClientConfig.maxQueuedRequests
+
+  /**
+    * Max number of requests that the client can have in-flight at one time.
+    *
+    * Use the client's default to make sure it's sane.
+    */
+  val maxConcurrentRequests: Int = ClioClientConfig.maxConcurrentRequests
+
+  /**
     * Timeout to use for all client requests.
     *
     * Use the client's default to make sure it's sane.

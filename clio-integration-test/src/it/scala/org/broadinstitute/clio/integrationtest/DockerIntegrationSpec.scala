@@ -52,6 +52,8 @@ abstract class DockerIntegrationSpec
       container.getServiceHost(clioFullName),
       container.getServicePort(clioFullName),
       useHttps = false,
+      maxQueuedRequests,
+      maxConcurrentRequests,
       clientTimeout
     )
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)

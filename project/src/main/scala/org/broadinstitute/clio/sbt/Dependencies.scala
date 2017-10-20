@@ -8,7 +8,7 @@ import sbt._
 object Dependencies {
   // The version numbers of each main and test dependency.
   private val AkkaHttpCirceVersion = "1.17.0"
-  private val AkkaHttpVersion = "10.0.9"
+  private val AkkaHttpVersion = "10.0.10"
   private val AlpakkaVersion = "0.12"
   private val CaseAppVersion = "2.0.0-M1"
   private val CirceVersion = "0.8.0"
