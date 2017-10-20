@@ -54,7 +54,8 @@ class CommandDispatchSpec extends BaseClientSpec {
   it should "return true when we dispatch a valid moveGvcf command" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
-    mockIoUtil.putFileInCloud(testGvcfMetricsCloudSourcePath)
+    mockIoUtil.putFileInCloud(testGvcfSummaryMetricsCloudSourcePath)
+    mockIoUtil.putFileInCloud(testGvcfDetailMetricsCloudSourcePath)
     succeedingReturningDispatcherGvcf(mockIoUtil)
       .dispatch(goodGvcfMoveCommand)
       .map(_.status should be(StatusCodes.OK))

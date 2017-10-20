@@ -9,7 +9,8 @@
       "gvcf_md5" : "gvcfMd5",
       "gvcf_path" : "gs://testProject/testSample/gvcfPath1.gvcf",
       "gvcf_size" : 1,
-      "gvcf_metrics_path": "gs://path/gvcfmetrics1.gvcf",
+      "gvcf_summary_metrics_path": "gs://path/gvcfsummarymetrics1.gvcf",
+      "gvcf_detail_metrics_path": "gs://path/gvcfdetailmetrics1.gvcf",
       "pipeline_version": "versionHash",
       "notes": "some note"
   },
@@ -23,7 +24,8 @@
       "gvcf_md5" : "gvcfMd5",
       "gvcf_path" : "gs://testProject/testSample/gvcfPath2.gvcf",
       "gvcf_size" : 1,
-      "gvcf_metrics_path": "gs://path/gvcfmetrics2.gvcf",
+      "gvcf_summary_metrics_path": "gs://path/gvcfsummarymetrics2.gvcf",
+      "gvcf_detail_metrics_path": "gs://path/gvcfdetailmetrics2.gvcf",
       "pipeline_version": "versionHash",
       "notes": "some note"
   }

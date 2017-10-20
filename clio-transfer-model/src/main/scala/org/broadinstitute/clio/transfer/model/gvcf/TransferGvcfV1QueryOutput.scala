@@ -16,7 +16,8 @@ case class TransferGvcfV1QueryOutput(
   gvcfPath: Option[String] = None,
   gvcfSize: Option[Long] = None,
   gvcfIndexPath: Option[String] = None,
-  gvcfMetricsPath: Option[String] = None,
+  gvcfSummaryMetricsPath: Option[String] = None,
+  gvcfDetailMetricsPath: Option[String] = None,
   pipelineVersion: Option[String] = None,
   notes: Option[String] = None
 )

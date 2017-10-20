@@ -105,7 +105,8 @@ class MoveGvcfSpec extends BaseClientSpec {
   it should "move clio gvcfs if no errors are encountered" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
-    mockIoUtil.putFileInCloud(testGvcfMetricsCloudSourcePath)
+    mockIoUtil.putFileInCloud(testGvcfSummaryMetricsCloudSourcePath)
+    mockIoUtil.putFileInCloud(testGvcfDetailMetricsCloudSourcePath)
     succeedingReturningDispatcherGvcf(mockIoUtil)
       .dispatch(goodGvcfMoveCommand)
       .map(_.status should be(StatusCodes.OK))
@@ -114,10 +115,11 @@ class MoveGvcfSpec extends BaseClientSpec {
   it should "move to a non-directory destination if only one file is associated with a gvcf key" in {
     val mockIoUtil = new MockIoUtil
     val dispatcher = new CommandDispatch(
-      MockClioWebClient.returningGvcfOnlyMetrics,
+      MockClioWebClient.returningGvcfOnlyOneMetric,
       mockIoUtil
     )
-    mockIoUtil.putFileInCloud(testGvcfMetricsCloudSourcePath)
+    mockIoUtil.putFileInCloud(testGvcfSummaryMetricsCloudSourcePath)
+//    mockIoUtil.putFileInCloud(testGvcfDetailMetricsCloudSourcePath)
     dispatcher
       .dispatch(
         MoveGvcf(

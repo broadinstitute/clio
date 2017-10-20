@@ -9,7 +9,6 @@
       "gvcf_md5" : "gvcfMd5",
       "gvcf_size" : 1,
       "gvcf_summary_metrics_path": "gs://path/gvcfSummaryMetrics1.gvcf",
-      "gvcf_detail_metrics_path": "gs://path/gvcfDetailMetrics1.gvcf",
       "pipeline_version": "versionHash",
       "notes": "some note"
   }
