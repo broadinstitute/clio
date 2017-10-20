@@ -12,13 +12,19 @@ case class TransferGvcfV1Metadata(analysisDate: Option[OffsetDateTime] = None,
                                   gvcfPath: Option[String] = None,
                                   gvcfSize: Option[Long] = None,
                                   gvcfIndexPath: Option[String] = None,
-                                  gvcfMetricsPath: Option[String] = None,
+                                  gvcfSummaryMetricsPath: Option[String] = None,
+                                  gvcfDetailMetricsPath: Option[String] = None,
                                   pipelineVersion: Option[String] = None,
                                   notes: Option[String] = None)
     extends TransferMetadata[TransferGvcfV1Metadata] {
 
   override def pathsToMove: Seq[String] =
-    Seq.concat(gvcfPath, gvcfIndexPath, gvcfMetricsPath)
+    Seq.concat(
+      gvcfPath,
+      gvcfIndexPath,
+      gvcfSummaryMetricsPath,
+      gvcfDetailMetricsPath
+    )
 
   override def pathsToDelete: Seq[String] =
     Seq.concat(gvcfPath, gvcfIndexPath)
@@ -29,7 +35,8 @@ case class TransferGvcfV1Metadata(analysisDate: Option[OffsetDateTime] = None,
     this.copy(
       gvcfPath = pathMapper(gvcfPath),
       gvcfIndexPath = pathMapper(gvcfIndexPath),
-      gvcfMetricsPath = pathMapper(gvcfMetricsPath)
+      gvcfSummaryMetricsPath = pathMapper(gvcfSummaryMetricsPath),
+      gvcfDetailMetricsPath = pathMapper(gvcfDetailMetricsPath)
     )
   }
 

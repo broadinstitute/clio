@@ -47,6 +47,10 @@ trait TestData {
     "clio-client/src/test/resources/testdata/testGvcfMetadataOnlyMetrics"
   )
 
+  val testGvcfMetadataOnlyOneMetricLocation = Some(
+    "clio-client/src/test/resources/testdata/testGvcfMetadataOnlyOneMetric"
+  )
+
   val testTwoGvcfsLocation = Some(
     "clio-client/src/test/resources/testdata/testGvcfs"
   )
@@ -86,8 +90,11 @@ trait TestData {
   val testGvcfCloudSourcePath: String =
     "gs://testProject/testSample/gvcfPath1.gvcf"
 
-  val testGvcfMetricsCloudSourcePath: String =
-    "gs://path/gvcfMetrics1.gvcf"
+  val testGvcfSummaryMetricsCloudSourcePath: String =
+    "gs://path/gvcfSummaryMetrics1.gvcf"
+
+  val testGvcfDetailMetricsCloudSourcePath: String =
+    "gs://path/gvcfDetailMetrics1.gvcf"
 
   val testCloudDestinationDirectoryPath: String =
     "gs://testProject/testSample/moved/"

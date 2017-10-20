@@ -5,7 +5,8 @@
     "gvcf_path" : "gvcfPath",
     "gvcf_size" : 1,
     "gvcf_index_path": "gvcfIndexPath",
-    "gvcf_metrics_path": "gvcfMetricsPath",
+    "gvcf_summary_metrics_path": "gvcfSummaryMetricsPath",
+    "gvcf_detail_metrics_path": "gvcfDetailMetricsPath",
     "pipeline_version": "versionHash",
     "notes": "some note"
 }

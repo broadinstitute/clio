@@ -423,34 +423,42 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val gvcfContents = s"$randomId --- I am a dummy gvcf --- $randomId"
     val indexContents = s"$randomId --- I am a dummy index --- $randomId"
-    val metricsContents = s"$randomId --- I am dummy metrics --- $randomId"
+    val summaryMetricsContents =
+      s"$randomId --- I am dummy summary metrics --- $randomId"
+    val detailMetricsContents =
+      s"$randomId --- I am dummy detail metrics --- $randomId"
 
     val gvcfName = s"$randomId.gvcf"
     val indexName = s"$randomId.index"
-    val metricsName = s"$randomId.metrics"
+    val summaryMetricsName = s"$randomId.summary.metrics"
+    val detailMetricsName = s"$randomId.detail.metrics"
 
     val rootSource =
       rootTestStorageDir.resolve(s"gvcf/$project/$sample/v$version/")
     val gvcfSource = rootSource.resolve(gvcfName)
     val indexSource = rootSource.resolve(indexName)
-    val metricsSource = rootSource.resolve(metricsName)
+    val summaryMetricsSource = rootSource.resolve(summaryMetricsName)
+    val detailMetricsSource = rootSource.resolve(detailMetricsName)
 
     val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
     val gvcfDestination = rootDestination.resolve(gvcfName)
     val indexDestination = rootDestination.resolve(indexName)
-    val metricsDestination = rootDestination.resolve(metricsName)
+    val summaryMetricsDestination = rootDestination.resolve(summaryMetricsName)
+    val detailMetricsDestination = rootDestination.resolve(detailMetricsName)
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata = TransferGvcfV1Metadata(
       gvcfPath = Some(gvcfSource.toUri.toString),
       gvcfIndexPath = Some(indexSource.toUri.toString),
-      gvcfMetricsPath = Some(metricsSource.toUri.toString)
+      gvcfSummaryMetricsPath = Some(summaryMetricsSource.toUri.toString),
+      gvcfDetailMetricsPath = Some(detailMetricsSource.toUri.toString)
     )
 
     val _ = Seq(
       (gvcfSource, gvcfContents),
       (indexSource, indexContents),
-      (metricsSource, metricsContents)
+      (summaryMetricsSource, summaryMetricsContents),
+      (detailMetricsSource, detailMetricsContents)
     ).map {
       case (source, contents) => Files.write(source, contents.getBytes)
     }
@@ -470,16 +478,19 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         rootDestination.toUri.toString
       )
     } yield {
-      Seq(gvcfSource, indexSource, metricsSource).foreach(
-        Files.exists(_) should be(false)
-      )
-      Seq(gvcfDestination, indexDestination, metricsDestination).foreach(
-        Files.exists(_) should be(true)
-      )
+      Seq(gvcfSource, indexSource, summaryMetricsSource, detailMetricsSource)
+        .foreach(Files.exists(_) should be(false))
+      Seq(
+        gvcfDestination,
+        indexDestination,
+        summaryMetricsDestination,
+        detailMetricsDestination
+      ).foreach(Files.exists(_) should be(true))
       Seq(
         (gvcfDestination, gvcfContents),
         (indexDestination, indexContents),
-        (metricsDestination, metricsContents)
+        (summaryMetricsDestination, summaryMetricsContents),
+        (detailMetricsDestination, detailMetricsContents)
       ).foreach {
         case (destination, contents) =>
           new String(Files.readAllBytes(destination)) should be(contents)
@@ -494,8 +505,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
           gvcfDestination,
           indexSource,
           indexDestination,
-          metricsSource,
-          metricsDestination
+          summaryMetricsSource,
+          summaryMetricsDestination,
+          detailMetricsSource,
+          detailMetricsDestination
         ).map(Files.deleteIfExists)
       }
     }
@@ -508,29 +521,36 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val gvcfContents = s"$randomId --- I am a dummy gvcf --- $randomId"
     val indexContents = s"$randomId --- I am a dummy index --- $randomId"
-    val metricsContents = s"$randomId --- I am dummy metrics --- $randomId"
+    val summaryMetricsContents =
+      s"$randomId --- I am dummy summary metrics --- $randomId"
+    val detailMetricsContents =
+      s"$randomId --- I am dummy detail metrics --- $randomId"
 
     val gvcfName = s"$randomId.gvcf"
     val indexName = s"$randomId.index"
-    val metricsName = s"$randomId.metrics"
+    val summaryMetricsName = s"$randomId.summary.metrics"
+    val detailMetricsName = s"$randomId.detail.metrics"
 
     val rootSource =
       rootTestStorageDir.resolve(s"gvcf/$project/$sample/v$version/")
     val gvcfSource = rootSource.resolve(gvcfName)
     val indexSource = rootSource.resolve(indexName)
-    val metricsSource = rootSource.resolve(metricsName)
+    val summaryMetricsSource = rootSource.resolve(summaryMetricsName)
+    val detailMetricsSource = rootSource.resolve(detailMetricsName)
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata = TransferGvcfV1Metadata(
       gvcfPath = Some(gvcfSource.toUri.toString),
       gvcfIndexPath = Some(indexSource.toUri.toString),
-      gvcfMetricsPath = Some(metricsSource.toUri.toString)
+      gvcfSummaryMetricsPath = Some(summaryMetricsSource.toUri.toString),
+      gvcfDetailMetricsPath = Some(detailMetricsSource.toUri.toString)
     )
 
     val _ = Seq(
       (gvcfSource, gvcfContents),
       (indexSource, indexContents),
-      (metricsSource, metricsContents)
+      (summaryMetricsSource, summaryMetricsContents),
+      (detailMetricsSource, detailMetricsContents)
     ).map {
       case (source, contents) => Files.write(source, contents.getBytes)
     }
@@ -550,13 +570,13 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         rootSource.toUri.toString
       )
     } yield {
-      Seq(gvcfSource, indexSource, metricsSource).foreach(
-        Files.exists(_) should be(true)
-      )
+      Seq(gvcfSource, indexSource, summaryMetricsSource, detailMetricsSource)
+        .foreach(Files.exists(_) should be(true))
       Seq(
         (gvcfSource, gvcfContents),
         (indexSource, indexContents),
-        (metricsSource, metricsContents)
+        (summaryMetricsSource, summaryMetricsContents),
+        (detailMetricsSource, detailMetricsContents)
       ).foreach {
         case (destination, contents) =>
           new String(Files.readAllBytes(destination)) should be(contents)
@@ -567,7 +587,12 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     result.andThen {
       case _ => {
         val _ =
-          Seq(gvcfSource, indexSource, metricsSource).map(Files.deleteIfExists)
+          Seq(
+            gvcfSource,
+            indexSource,
+            summaryMetricsSource,
+            detailMetricsSource
+          ).map(Files.deleteIfExists)
       }
     }
   }
@@ -579,11 +604,15 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val gvcfContents = s"$randomId --- I am a dummy gvcf --- $randomId"
     val indexContents = s"$randomId --- I am a dummy index --- $randomId"
-    val metricsContents = s"$randomId --- I am dummy metrics --- $randomId"
+    val summaryMetricsContents =
+      s"$randomId --- I am dummy summary metrics --- $randomId"
+    val detailMetricsContents =
+      s"$randomId --- I am dummy detail metrics --- $randomId"
 
     val gvcfName = s"$randomId.gvcf"
     val indexName = s"$randomId.index"
-    val metricsName = s"$randomId.metrics"
+    val summaryMetricsName = s"$randomId.summary.metrics"
+    val detailMetricsName = s"$randomId.detail.metrics"
 
     val rootSource =
       rootTestStorageDir.resolve(s"gvcf/$project/$sample/v$version/")
@@ -593,19 +622,22 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
     val gvcfDestination = rootDestination.resolve(gvcfName)
     val indexDestination = rootDestination.resolve(indexName)
-    val metricsDestination = rootDestination.resolve(metricsName)
+    val summaryMetricsDestination = rootDestination.resolve(summaryMetricsName)
+    val detailMetricsDestination = rootDestination.resolve(detailMetricsName)
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata = TransferGvcfV1Metadata(
       gvcfPath = Some(gvcfSource.toUri.toString),
       gvcfIndexPath = Some(indexSource.toUri.toString),
-      gvcfMetricsPath = Some(metricsDestination.toUri.toString)
+      gvcfSummaryMetricsPath = Some(summaryMetricsDestination.toUri.toString),
+      gvcfDetailMetricsPath = Some(detailMetricsDestination.toUri.toString)
     )
 
     val _ = Seq(
       (gvcfSource, gvcfContents),
       (indexSource, indexContents),
-      (metricsDestination, metricsContents)
+      (summaryMetricsDestination, summaryMetricsContents),
+      (detailMetricsDestination, detailMetricsContents)
     ).map {
       case (source, contents) => Files.write(source, contents.getBytes)
     }
@@ -626,13 +658,17 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       )
     } yield {
       Seq(gvcfSource, indexSource).foreach(Files.exists(_) should be(false))
-      Seq(gvcfDestination, indexDestination, metricsDestination).foreach(
-        Files.exists(_) should be(true)
-      )
+      Seq(
+        gvcfDestination,
+        indexDestination,
+        summaryMetricsDestination,
+        detailMetricsDestination
+      ).foreach(Files.exists(_) should be(true))
       Seq(
         (gvcfDestination, gvcfContents),
         (indexDestination, indexContents),
-        (metricsDestination, metricsContents)
+        (summaryMetricsDestination, summaryMetricsContents),
+        (detailMetricsDestination, detailMetricsContents)
       ).foreach {
         case (destination, contents) =>
           new String(Files.readAllBytes(destination)) should be(contents)
@@ -647,7 +683,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
           gvcfDestination,
           indexSource,
           indexDestination,
-          metricsDestination
+          summaryMetricsDestination,
+          detailMetricsDestination
         ).map(Files.deleteIfExists)
       }
     }
@@ -770,27 +807,32 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val gvcfContents = s"$randomId --- I am a gvcf fated to die --- $randomId"
     val indexContents =
       s"$randomId --- I am an index fated to die --- $randomId"
-    val metricsContents =
-      s"$randomId --- I am an immortal metrics file --- $randomId"
+    val summaryMetricsContents =
+      s"$randomId --- I am an immortal summary metrics file --- $randomId"
+    val detailMetricsContents =
+      s"$randomId --- I am an immortal detail metrics file --- $randomId"
 
     val storageDir =
       rootTestStorageDir.resolve(s"gvcf/$project/$sample/v$version/")
     val gvcfPath = storageDir.resolve(s"$randomId.gvcf")
     val indexPath = storageDir.resolve(s"$randomId.index")
-    val metricsPath = storageDir.resolve(s"$randomId.metrics")
+    val summaryMetricsPath = storageDir.resolve(s"$randomId.summary.metrics")
+    val detailMetricsPath = storageDir.resolve(s"$randomId.detail.metrics")
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata =
       TransferGvcfV1Metadata(
         gvcfPath = Some(gvcfPath.toUri.toString),
         gvcfIndexPath = Some(indexPath.toUri.toString),
-        gvcfMetricsPath = Some(metricsPath.toUri.toString)
+        gvcfSummaryMetricsPath = Some(summaryMetricsPath.toUri.toString),
+        gvcfDetailMetricsPath = Some(detailMetricsPath.toUri.toString)
       )
 
     val _ = Seq(
       (gvcfPath, gvcfContents),
       (indexPath, indexContents),
-      (metricsPath, metricsContents)
+      (summaryMetricsPath, summaryMetricsContents),
+      (detailMetricsPath, detailMetricsContents)
     ).map {
       case (path, contents) => Files.write(path, contents.getBytes)
     }
@@ -825,8 +867,14 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     } yield {
       Files.exists(gvcfPath) should be(false)
       Files.exists(indexPath) should be(false)
-      Files.exists(metricsPath) should be(true)
-      new String(Files.readAllBytes(metricsPath)) should be(metricsContents)
+      Files.exists(summaryMetricsPath) should be(true)
+      Files.exists(detailMetricsPath) should be(true)
+      new String(Files.readAllBytes(summaryMetricsPath)) should be(
+        summaryMetricsContents
+      )
+      new String(Files.readAllBytes(detailMetricsPath)) should be(
+        detailMetricsContents
+      )
 
       outputs should have length 1
       outputs.head.notes should be(Some(deleteNote))
@@ -836,7 +884,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     result.andThen[Unit] {
       case _ => {
         // Without `val _ =`, the compiler complains about discarded non-Unit value.
-        val _ = Seq(gvcfPath, indexPath, metricsPath).map(Files.deleteIfExists)
+        val _ = Seq(gvcfPath, indexPath, summaryMetricsPath, detailMetricsPath)
+          .map(Files.deleteIfExists)
       }
     }
   }
