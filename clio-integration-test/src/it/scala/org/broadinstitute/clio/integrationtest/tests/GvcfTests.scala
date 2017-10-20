@@ -870,7 +870,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       Files.exists(summaryMetricsPath) should be(true)
       Files.exists(detailMetricsPath) should be(true)
       new String(Files.readAllBytes(summaryMetricsPath)) should be(
-        detailMetricsContents
+        summaryMetricsContents
       )
       new String(Files.readAllBytes(detailMetricsPath)) should be(
         detailMetricsContents
