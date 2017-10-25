@@ -56,11 +56,11 @@ trait IoUtil {
     gs.exists(path) == 0
   }
 
-  def getMd5HashOfGoogleObject(path: String) = {
+  def getMd5HashOfGoogleObject(path: String): String = {
     new GsUtil(None).md5Hash(path)
   }
 
-  def getSizeOfGoogleObject(path: String) = {
+  def getSizeOfGoogleObject(path: String): Long = {
     new GsUtil(None).du(path).head.split(" +").head.toLong
   }
 
