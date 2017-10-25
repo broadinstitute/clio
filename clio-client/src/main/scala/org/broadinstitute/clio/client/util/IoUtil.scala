@@ -56,11 +56,32 @@ trait IoUtil {
     gs.exists(path) == 0
   }
 
+  def getMd5HashOfGoogleObject(path: String): String = {
+    new GsUtil(None).md5Hash(path)
+  }
+
+  def getSizeOfGoogleObject(path: String): Long = {
+    new GsUtil(None).du(path).head.split(" +").head.toLong
+  }
+
+  def listGoogleObjects(path: String): Seq[String] = {
+    new GsUtil(None).ls(path)
+  }
+
+
 }
 object IoUtil extends IoUtil {}
 
 //we should consider moving this to api usage instead of gsutil
 class GsUtil(stateDir: Option[Path]) {
+
+  def ls(path: String): Seq[String] = {
+    runGsUtilAndGetStdout(Seq("ls", path)).split("\n")
+  }
+
+  def du(path: String): Seq[String] = {
+    runGsUtilAndGetStdout(Seq("du", path)).split("\n")
+  }
 
   def cp(from: String, to: String): Int = {
     runGsUtilAndGetExitCode(Seq("cp", from, to))
@@ -80,6 +101,11 @@ class GsUtil(stateDir: Option[Path]) {
 
   def exists(path: String): Int = {
     runGsUtilAndGetExitCode(Seq("-q", "stat", path))
+  }
+
+  def md5Hash(path: String): String = {
+    val output = runGsUtilAndGetStdout(Seq("hash", "-m", "-h", path))
+    output.lines.filter(_.contains("md5")).next.split(":")(1).trim
   }
 
   def runGsUtilAndGetStdout(gsUtilArgs: Seq[String]): String = {
