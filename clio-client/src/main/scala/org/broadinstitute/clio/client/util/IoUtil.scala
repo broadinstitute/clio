@@ -56,6 +56,11 @@ trait IoUtil {
     gs.exists(path) == 0
   }
 
+  def getMd5HashOfGoogleObject(path: String) = {
+    new GsUtil(None).md5Hash(path)
+  }
+
+
 }
 object IoUtil extends IoUtil {}
 
@@ -80,6 +85,11 @@ class GsUtil(stateDir: Option[Path]) {
 
   def exists(path: String): Int = {
     runGsUtilAndGetExitCode(Seq("-q", "stat", path))
+  }
+
+  def md5Hash(path: String): String = {
+    val output = runGsUtilAndGetStdout(Seq("hash", "-m", "-h", path))
+    output.lines.filter(_.contains("md5")).next.split(":")(1).trim
   }
 
   def runGsUtilAndGetStdout(gsUtilArgs: Seq[String]): String = {
