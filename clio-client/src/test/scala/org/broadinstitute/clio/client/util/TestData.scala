@@ -108,6 +108,9 @@ trait TestData {
   val testCraiCloudSourcePath: String =
     "gs://testProject/testSample/craiPath1.crai"
 
+  val testCramMd5CloudSourcePath: String =
+    "gs://testProject/testSample/cramPath1.cram.md5"
+
   val testWgsMetricsCloudSourcePath: String =
     "gs://testProject/testSample/metrics.wgs_metrics"
 
