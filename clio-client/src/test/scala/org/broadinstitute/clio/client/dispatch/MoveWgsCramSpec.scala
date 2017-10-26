@@ -100,6 +100,7 @@ class MoveWgsCramSpec extends BaseClientSpec {
     mockIoUtil.putFileInCloud(testCramCloudSourcePath)
     mockIoUtil.putFileInCloud(testCraiCloudSourcePath)
     mockIoUtil.putFileInCloud(testCramMd5CloudSourcePath)
+    mockIoUtil.putFileInCloud(testWgsMetricsCloudSourcePath)
 
     succeedingReturningDispatcherWgsCram(mockIoUtil)
       .dispatch(goodCramMoveCommand)
@@ -108,6 +109,8 @@ class MoveWgsCramSpec extends BaseClientSpec {
         mockIoUtil.googleObjectExists(s"${testCloudDestinationDirectoryPath}cramPath1.cram") should be(true)
         mockIoUtil.googleObjectExists(s"${testCloudDestinationDirectoryPath}craiPath1.crai") should be(true)
         mockIoUtil.googleObjectExists(s"${testCloudDestinationDirectoryPath}cramPath1.cram.md5") should be(true)
+        mockIoUtil.googleObjectExists(s"${testCloudDestinationDirectoryPath}metrics.wgs_metrics") should be(false)
+
     }
 
 
