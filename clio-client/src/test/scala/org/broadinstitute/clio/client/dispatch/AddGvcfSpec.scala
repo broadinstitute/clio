@@ -16,7 +16,7 @@ class AddGvcfSpec extends BaseClientSpec {
         AddGvcf(
           metadataLocation = badMetadataFileLocation,
           key = testGvcfTransferV1Key
-        ),
+        )
       )
     }
   }

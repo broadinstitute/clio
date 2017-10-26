@@ -60,10 +60,7 @@ case class TransferWgsCramV1Metadata(
 
   // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
   override def pathsToMove: Seq[String] =
-    Seq.concat(
-      cramPath,
-      craiPath,
-      cramMd5Path)
+    Seq.concat(cramPath, craiPath, cramMd5Path)
 
   override def pathsToDelete: Seq[String] =
     Seq.concat(cramPath, craiPath, cramMd5Path)
