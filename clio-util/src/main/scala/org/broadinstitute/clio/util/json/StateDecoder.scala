@@ -1,13 +1,10 @@
 package org.broadinstitute.clio.util.json
 
-import java.util.UUID
-
 import cats.data.StateT
 import cats.instances.either._
-import com.fasterxml.uuid.impl.UUIDUtil
 import io.circe.Decoder.Result
 import io.circe.generic.extras.Configuration
-import io.circe.{ACursor, Decoder, HCursor}
+import io.circe.{ACursor, Decoder}
 import shapeless._
 import shapeless.labelled._
 
@@ -88,13 +85,6 @@ object StateDecoder extends LowPriorityStateDecoder {
         // A decoding error occurred.
         case l @ Left(_) => l.asInstanceOf[Result[(ACursor, Option[A])]]
       }
-  }
-
-  implicit val decodeUUID: Decoder[UUID] = (c: HCursor) =>
-    for {
-      uuidV1 <- c.as[String]
-    } yield {
-      UUIDUtil.uuid(uuidV1)
   }
 
   /**

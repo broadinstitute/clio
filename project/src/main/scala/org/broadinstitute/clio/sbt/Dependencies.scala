@@ -28,7 +28,6 @@ object Dependencies {
   private val SwaggerUi = "3.1.5"
   private val TestContainersScalaVersion = "0.7.0"
   private val TypesafeConfigVersion = "1.3.2"
-  private val UUIDVersion = "3.1.3"
   private val VaultJavaDriverVersion = "3.0.0"
 
   /** Version of Scala to build Clio with. */
@@ -108,7 +107,6 @@ object Dependencies {
     "com.beachape" %% "enumeratum" % EnumeratumVersion,
     "com.beachape" %% "enumeratum-circe" % EnumeratumCirceVersion,
     "com.chuusai" %% "shapeless" % ShapelessVersion,
-    "com.fasterxml.uuid" % "java-uuid-generator" % UUIDVersion,
     "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.typesafe" % "config" % TypesafeConfigVersion,
@@ -142,7 +140,6 @@ object Dependencies {
     : Seq[ModuleID] = TransferModelMainDependencies ++ TransferModelTestDependencies
 
   val DataaccessModelMainDependencies: Seq[ModuleID] = Seq(
-    "com.fasterxml.uuid" % "java-uuid-generator" % UUIDVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion
   )
@@ -157,7 +154,6 @@ object Dependencies {
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
     "com.bettercloud" % "vault-java-driver" % VaultJavaDriverVersion,
     "com.dimafeng" %% "testcontainers-scala" % TestContainersScalaVersion,
-    "com.fasterxml.uuid" % "java-uuid-generator" % UUIDVersion,
     "com.google.cloud" % "google-cloud-nio" % GoogleCloudNioVersion,
     "com.lightbend.akka" %% "akka-stream-alpakka-file" % AlpakkaVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,

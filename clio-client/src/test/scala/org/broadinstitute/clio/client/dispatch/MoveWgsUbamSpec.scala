@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
+import java.net.URI
+
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.MoveWgsUbam
 import org.broadinstitute.clio.client.util.MockIoUtil
@@ -85,7 +87,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     recoverToSucceededIf[Exception] {
       val command = MoveWgsUbam(
         key = testTransferV1Key,
-        destination = "/this/is/a/local/path"
+        destination = URI.create("/this/is/a/local/path")
       )
       succeedingDispatcher.dispatch(command)
     }

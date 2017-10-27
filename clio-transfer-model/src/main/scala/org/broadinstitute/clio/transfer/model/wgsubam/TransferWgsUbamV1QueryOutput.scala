@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.transfer.model.wgsubam
 
+import java.net.URI
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
@@ -38,8 +39,8 @@ case class TransferWgsUbamV1QueryOutput(
   sampleType: Option[String] = None,
   targetIntervals: Option[String] = None,
   notes: Option[String] = None,
-  ubamMd5: Option[String] = None,
-  ubamPath: Option[String] = None,
+  ubamMd5: Option[Symbol] = None,
+  ubamPath: Option[URI] = None,
   ubamSize: Option[Long] = None,
   documentStatus: Option[DocumentStatus] = None
 )

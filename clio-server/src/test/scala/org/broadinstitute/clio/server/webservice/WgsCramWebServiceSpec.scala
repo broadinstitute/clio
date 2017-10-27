@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.webservice
 
+import java.net.URI
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
@@ -101,9 +103,9 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
         .asInstanceOf[DocumentWgsCram]
 
       firstUpdate.upsertId should be(responseAs[UpsertId])
-      firstUpdate.cramMd5 should be(Some("abcgithashdef"))
+      firstUpdate.cramMd5 should be(Some('abcgithashdef))
       firstUpdate.notes should be(Some("some note"))
-      firstUpdate.cramPath should be(Some("gs://path/cram.cram"))
+      firstUpdate.cramPath should be(Some(URI.create("gs://path/cram.cram")))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
@@ -135,10 +137,10 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
         .map(_._1)
         .apply(1)
         .asInstanceOf[DocumentWgsCram]
-      secondUpdate.cramMd5 should be(Some("abcgithashdef"))
+      secondUpdate.cramMd5 should be(Some('abcgithashdef))
       secondUpdate.notes should be(Some("some note"))
       secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))
-      secondUpdate.cramPath should be(Some(""))
+      secondUpdate.cramPath should be(Some(URI.create("")))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement

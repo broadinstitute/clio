@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import java.net.URI
 import java.nio.file.Files
 
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -77,7 +78,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       sampleAlias = s"someAlias$randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
-      gvcfPath = Some("gs://path/gvcf.gvcf")
+      gvcfPath = Some(URI.create("gs://path/gvcf.gvcf"))
     )
 
     /*
@@ -92,7 +93,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         expected.sampleAlias,
         expected.version
       ),
-      TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf.gvcf"))
+      TransferGvcfV1Metadata(gvcfPath = Some(URI.create("gs://path/gvcf.gvcf")))
     )
 
     if (location == Location.Unknown) {
@@ -137,26 +138,34 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertGvcf(
         upsertKey,
-        TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf1.gvcf"))
+        TransferGvcfV1Metadata(
+          gvcfPath = Some(URI.create("gs://path/gvcf1.gvcf"))
+        )
       )
       upsertId2 <- runUpsertGvcf(
         upsertKey,
-        TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf2.gvcf"))
+        TransferGvcfV1Metadata(
+          gvcfPath = Some(URI.create("gs://path/gvcf2.gvcf"))
+        )
       )
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
         getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId1)
-      storedDocument1.gvcfPath should be(Some("gs://path/gvcf1.gvcf"))
+      storedDocument1.gvcfPath should be(
+        Some(URI.create("gs://path/gvcf1.gvcf"))
+      )
 
       val storedDocument2 =
         getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId2)
-      storedDocument2.gvcfPath should be(Some("gs://path/gvcf2.gvcf"))
+      storedDocument2.gvcfPath should be(
+        Some(URI.create("gs://path/gvcf2.gvcf"))
+      )
 
       storedDocument1.copy(
         upsertId = upsertId2,
-        gvcfPath = Some("gs://path/gvcf2.gvcf")
+        gvcfPath = Some(URI.create("gs://path/gvcf2.gvcf"))
       ) should be(storedDocument2)
     }
   }
@@ -169,7 +178,9 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       version = 1
     )
     val upsertData =
-      TransferGvcfV1Metadata(gvcfPath = Some("gs://path/gvcf1.gvcf"))
+      TransferGvcfV1Metadata(
+        gvcfPath = Some(URI.create("gs://path/gvcf1.gvcf"))
+      )
 
     for {
       upsertId1 <- runUpsertGvcf(upsertKey, upsertData)
@@ -199,7 +210,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         case (sample, version) =>
           val key = TransferGvcfV1Key(location, project, sample, version)
           val data = TransferGvcfV1Metadata(
-            gvcfPath = Some("gs://path/gvcf.gvcf"),
+            gvcfPath = Some(URI.create("gs://path/gvcf.gvcf")),
             contamination = Some(.65f)
           )
           runUpsertGvcf(key, data)
@@ -238,7 +249,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val project = s"testProject$randomId"
     val key =
       TransferGvcfV1Key(Location.GCP, project, s"testSample$randomId", 1)
-    val gvcfPath = "gs://path/gvcf.gvcf"
+    val gvcfPath = URI.create("gs://path/gvcf.gvcf")
     val metadata = TransferGvcfV1Metadata(
       gvcfPath = Some(gvcfPath),
       contamination = Some(.75f),
@@ -297,7 +308,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         version = version
       )
       val upsertMetadata = TransferGvcfV1Metadata(
-        gvcfPath = Some(s"gs://gvcf/$sampleAlias.$version")
+        gvcfPath = Some(URI.create(s"gs://gvcf/$sampleAlias.$version"))
       )
       (upsertKey, upsertMetadata)
     }
@@ -383,7 +394,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata =
-      TransferGvcfV1Metadata(gvcfPath = Some(cloudPath.toUri.toString))
+      TransferGvcfV1Metadata(gvcfPath = Some(cloudPath.toUri))
 
     // Clio needs the metadata to be added before it can be moved.
     val _ = Files.write(cloudPath, fileContents.getBytes)
@@ -448,10 +459,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata = TransferGvcfV1Metadata(
-      gvcfPath = Some(gvcfSource.toUri.toString),
-      gvcfIndexPath = Some(indexSource.toUri.toString),
-      gvcfSummaryMetricsPath = Some(summaryMetricsSource.toUri.toString),
-      gvcfDetailMetricsPath = Some(detailMetricsSource.toUri.toString)
+      gvcfPath = Some(gvcfSource.toUri),
+      gvcfIndexPath = Some(indexSource.toUri),
+      gvcfSummaryMetricsPath = Some(summaryMetricsSource.toUri),
+      gvcfDetailMetricsPath = Some(detailMetricsSource.toUri)
     )
 
     val _ = Seq(
@@ -540,10 +551,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata = TransferGvcfV1Metadata(
-      gvcfPath = Some(gvcfSource.toUri.toString),
-      gvcfIndexPath = Some(indexSource.toUri.toString),
-      gvcfSummaryMetricsPath = Some(summaryMetricsSource.toUri.toString),
-      gvcfDetailMetricsPath = Some(detailMetricsSource.toUri.toString)
+      gvcfPath = Some(gvcfSource.toUri),
+      gvcfIndexPath = Some(indexSource.toUri),
+      gvcfSummaryMetricsPath = Some(summaryMetricsSource.toUri),
+      gvcfDetailMetricsPath = Some(detailMetricsSource.toUri)
     )
 
     val _ = Seq(
@@ -627,10 +638,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata = TransferGvcfV1Metadata(
-      gvcfPath = Some(gvcfSource.toUri.toString),
-      gvcfIndexPath = Some(indexSource.toUri.toString),
-      gvcfSummaryMetricsPath = Some(summaryMetricsDestination.toUri.toString),
-      gvcfDetailMetricsPath = Some(detailMetricsDestination.toUri.toString)
+      gvcfPath = Some(gvcfSource.toUri),
+      gvcfIndexPath = Some(indexSource.toUri),
+      gvcfSummaryMetricsPath = Some(summaryMetricsDestination.toUri),
+      gvcfDetailMetricsPath = Some(detailMetricsDestination.toUri)
     )
 
     val _ = Seq(
@@ -724,7 +735,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata =
       TransferGvcfV1Metadata(
-        gvcfPath = Some(cloudPath.toUri.toString),
+        gvcfPath = Some(cloudPath.toUri),
         notes = existingNote
       )
 
@@ -822,10 +833,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata =
       TransferGvcfV1Metadata(
-        gvcfPath = Some(gvcfPath.toUri.toString),
-        gvcfIndexPath = Some(indexPath.toUri.toString),
-        gvcfSummaryMetricsPath = Some(summaryMetricsPath.toUri.toString),
-        gvcfDetailMetricsPath = Some(detailMetricsPath.toUri.toString)
+        gvcfPath = Some(gvcfPath.toUri),
+        gvcfIndexPath = Some(indexPath.toUri),
+        gvcfSummaryMetricsPath = Some(summaryMetricsPath.toUri),
+        gvcfDetailMetricsPath = Some(detailMetricsPath.toUri)
       )
 
     val _ = Seq(

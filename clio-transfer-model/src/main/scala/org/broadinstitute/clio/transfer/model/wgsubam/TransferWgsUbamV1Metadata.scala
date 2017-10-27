@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.transfer.model.wgsubam
 
+import java.net.URI
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.transfer.model.TransferMetadata
@@ -35,18 +36,18 @@ case class TransferWgsUbamV1Metadata(
   sampleType: Option[String] = None,
   targetIntervals: Option[String] = None,
   notes: Option[String] = None,
-  ubamMd5: Option[String] = None,
-  ubamPath: Option[String] = None,
+  ubamMd5: Option[Symbol] = None,
+  ubamPath: Option[URI] = None,
   ubamSize: Option[Long] = None,
   documentStatus: Option[DocumentStatus] = None
 ) extends TransferMetadata[TransferWgsUbamV1Metadata] {
 
-  override def pathsToMove: Seq[String] = ubamPath.toSeq
+  override def pathsToMove: Seq[URI] = ubamPath.toSeq
 
-  override def pathsToDelete: Seq[String] = ubamPath.toSeq
+  override def pathsToDelete: Seq[URI] = ubamPath.toSeq
 
   override def mapMove(
-    pathMapper: Option[String] => Option[String]
+    pathMapper: Option[URI] => Option[URI]
   ): TransferWgsUbamV1Metadata = {
     this.copy(ubamPath = pathMapper(ubamPath))
   }
