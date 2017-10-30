@@ -234,7 +234,18 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   def indexToMapping(index: ElasticsearchIndex[_]): IndexMappings = {
     val fields = index.fields
       .map { field =>
-        field.name -> Map("type" -> field.`type`)
+        field.name -> {
+          val fType = field.`type`
+          if (fType == "text") {
+            // Text fields also have a keyword sub-field.
+            Map(
+              "type" -> fType,
+              "fields" -> Map("exact" -> Map("type" -> "keyword"))
+            )
+          } else {
+            Map("type" -> fType)
+          }
+        }
       }
       .toMap[String, Any]
 
@@ -257,7 +268,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
       rootPersistenceDir
         .resolve(index.currentPersistenceDir)
         .resolve(new ClioDocument {
-          override val entityId: String = ""
+          override val entityId: Symbol = Symbol("")
           override val upsertId: UpsertId = expectedId
         }.persistenceFilename)
     Files.exists(expectedPath) should be(true)

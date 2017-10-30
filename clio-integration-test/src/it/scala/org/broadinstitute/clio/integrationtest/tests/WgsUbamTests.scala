@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import java.net.URI
 import java.nio.file.Files
 
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -317,7 +318,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       val upsertMetadata = TransferWgsUbamV1Metadata(
         project = Some(project),
         sampleAlias = Some(sample),
-        ubamPath = Some(s"gs://ubam/$sample.$lane")
+        ubamPath = Some(URI.create(s"gs://ubam/$sample.$lane"))
       )
       (upsertKey, upsertMetadata)
     }
@@ -404,7 +405,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
     val metadata =
-      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri.toString))
+      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri))
 
     // Clio needs the metadata to be added before it can be moved.
     val _ = Files.write(cloudPath, fileContents.getBytes)
@@ -449,7 +450,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
     val metadata =
-      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri.toString))
+      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri))
 
     // Clio needs the metadata to be added before it can be moved.
     val _ = Files.write(cloudPath, fileContents.getBytes)
@@ -511,7 +512,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
     val metadata =
-      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri.toString))
+      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri))
 
     val result = for {
       _ <- runUpsertWgsUbam(key, metadata)
@@ -546,7 +547,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     } yield {
       Files.exists(cloudPath2) should be(false)
       queryOutputs should have length 1
-      queryOutputs.head.ubamPath should be(Some(cloudPath.toUri.toString))
+      queryOutputs.head.ubamPath should be(Some(cloudPath.toUri))
     }
 
     result.andThen[Unit] {
@@ -571,7 +572,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
     val metadata = TransferWgsUbamV1Metadata(
-      ubamPath = Some(cloudPath.toUri.toString),
+      ubamPath = Some(cloudPath.toUri),
       notes = existingNote
     )
 

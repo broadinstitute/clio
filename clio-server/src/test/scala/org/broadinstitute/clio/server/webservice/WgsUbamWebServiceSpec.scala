@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.webservice
 
+import java.net.URI
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import io.circe.Json
@@ -118,7 +120,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
       firstUpdate.upsertId should be(responseAs[UpsertId])
       firstUpdate.project should be(Some("G123"))
       firstUpdate.sampleAlias should be(Some("sample1"))
-      firstUpdate.ubamPath should be(Some("gs://path/ubam.bam"))
+      firstUpdate.ubamPath should be(Some(URI.create("gs://path/ubam.bam")))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
@@ -153,7 +155,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
       secondUpdate.project should be(Some("G123"))
       secondUpdate.sampleAlias should be(Some("sample1"))
       secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))
-      secondUpdate.ubamPath should be(Some(""))
+      secondUpdate.ubamPath should be(Some(URI.create("")))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement

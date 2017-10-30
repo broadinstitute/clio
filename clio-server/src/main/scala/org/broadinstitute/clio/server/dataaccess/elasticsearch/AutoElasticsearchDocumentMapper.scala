@@ -32,7 +32,9 @@ class AutoElasticsearchDocumentMapper[
     val keyVals = modelKeyMapper.vals(key)
     val bookkeeping = Map(
       ClioDocument.UpsertIdFieldName -> genId(),
-      ClioDocument.EntityIdFieldName -> key.productIterator.mkString(".")
+      ClioDocument.EntityIdFieldName -> Symbol(
+        key.productIterator.mkString(".")
+      )
     )
     val document = documentMapper.newInstance(keyVals ++ bookkeeping)
     document

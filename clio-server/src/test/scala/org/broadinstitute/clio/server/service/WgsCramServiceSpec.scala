@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.service
 
+import java.net.URI
+
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
   MemoryPersistenceDAO,
@@ -75,7 +77,7 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
       TransferWgsCramV1Key(Location.GCP, "project1", "sample1", 1)
     val transferMetadata =
       TransferWgsCramV1Metadata(
-        cramPath = Option("gs://path/cramPath.cram"),
+        cramPath = Option(URI.create("gs://path/cramPath.cram")),
         notes = Option("notable update"),
         documentStatus = documentStatus
       )

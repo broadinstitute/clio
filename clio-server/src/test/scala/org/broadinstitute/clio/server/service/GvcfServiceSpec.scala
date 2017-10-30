@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.service
 
+import java.net.URI
+
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
@@ -75,7 +77,7 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
       TransferGvcfV1Key(Location.GCP, "project1", "sample1", 1)
     val transferMetadata =
       TransferGvcfV1Metadata(
-        gvcfPath = Option("gs://path/gvcfPath.gvcf"),
+        gvcfPath = Option(URI.create("gs://path/gvcfPath.gvcf")),
         notes = Option("notable update"),
         documentStatus = documentStatus
       )

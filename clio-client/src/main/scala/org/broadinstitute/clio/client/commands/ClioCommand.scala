@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.client.commands
 
+import java.net.URI
+
 import org.broadinstitute.clio.transfer.model._
 import caseapp.{CommandName, Recurse}
 import caseapp.core.help.CommandsHelp
@@ -33,7 +35,7 @@ sealed abstract class GetSchemaCommand[TI <: TransferIndex](val index: TI)
 sealed abstract class AddCommand[TI <: TransferIndex](val index: TI)
     extends ClioCommand {
   def key: index.KeyType
-  def metadataLocation: String
+  def metadataLocation: URI
 }
 
 sealed abstract class QueryCommand[TI <: TransferIndex](val index: TI)
@@ -45,7 +47,7 @@ sealed abstract class QueryCommand[TI <: TransferIndex](val index: TI)
 sealed abstract class MoveCommand[TI <: TransferIndex](val index: TI)
     extends ClioCommand {
   def key: index.KeyType
-  def destination: String
+  def destination: URI
 }
 
 sealed abstract class DeleteCommand[TI <: TransferIndex](val index: TI)
@@ -68,8 +70,8 @@ case object GetServerVersion extends ClioCommand
 case object GetSchemaWgsUbam extends GetSchemaCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.addWgsUbamName)
-final case class AddWgsUbam(metadataLocation: String,
-                            @Recurse key: TransferWgsUbamV1Key)
+final case class AddWgsUbam(@Recurse key: TransferWgsUbamV1Key,
+                            metadataLocation: URI)
     extends AddCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.queryWgsUbamName)
@@ -79,7 +81,7 @@ final case class QueryWgsUbam(@Recurse queryInput: TransferWgsUbamV1QueryInput,
 
 @CommandName(ClioCommand.moveWgsUbamName)
 final case class MoveWgsUbam(@Recurse key: TransferWgsUbamV1Key,
-                             destination: String)
+                             destination: URI)
     extends MoveCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.deleteWgsUbamName)
@@ -92,8 +94,7 @@ final case class DeleteWgsUbam(@Recurse key: TransferWgsUbamV1Key, note: String)
 case object GetSchemaGvcf extends GetSchemaCommand(GvcfIndex)
 
 @CommandName(ClioCommand.addGvcfName)
-final case class AddGvcf(metadataLocation: String,
-                         @Recurse key: TransferGvcfV1Key)
+final case class AddGvcf(@Recurse key: TransferGvcfV1Key, metadataLocation: URI)
     extends AddCommand(GvcfIndex)
 
 @CommandName(ClioCommand.queryGvcfName)
@@ -102,7 +103,7 @@ final case class QueryGvcf(@Recurse queryInput: TransferGvcfV1QueryInput,
     extends QueryCommand(GvcfIndex)
 
 @CommandName(ClioCommand.moveGvcfName)
-final case class MoveGvcf(@Recurse key: TransferGvcfV1Key, destination: String)
+final case class MoveGvcf(@Recurse key: TransferGvcfV1Key, destination: URI)
     extends MoveCommand(GvcfIndex)
 
 @CommandName(ClioCommand.deleteGvcfName)
@@ -115,8 +116,8 @@ final case class DeleteGvcf(@Recurse key: TransferGvcfV1Key, note: String)
 case object GetSchemaWgsCram extends GetSchemaCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.addWgsCramName)
-final case class AddWgsCram(metadataLocation: String,
-                            @Recurse key: TransferWgsCramV1Key)
+final case class AddWgsCram(@Recurse key: TransferWgsCramV1Key,
+                            metadataLocation: URI)
     extends AddCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.queryWgsCramName)
@@ -126,7 +127,7 @@ final case class QueryWgsCram(@Recurse queryInput: TransferWgsCramV1QueryInput,
 
 @CommandName(ClioCommand.moveWgsCramName)
 final case class MoveWgsCram(@Recurse key: TransferWgsCramV1Key,
-                             destination: String)
+                             destination: URI)
     extends MoveCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.deleteWgsCramName)

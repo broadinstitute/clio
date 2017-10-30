@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
+import java.net.URI
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
@@ -51,8 +53,8 @@ class DeleteGvcfSpec extends BaseClientSpec {
 
   it should "throw an exception if Clio can't delete the cloud file" in {
     class FailingDeleteMockIoUtil extends MockIoUtil {
-      override def deleteGoogleObject(path: String): Int = 1
-      override def googleObjectExists(path: String): Boolean = true
+      override def deleteGoogleObject(path: URI): Int = 1
+      override def googleObjectExists(path: URI): Boolean = true
     }
     recoverToSucceededIf[Exception] {
       succeedingReturningDispatcherGvcf(new FailingDeleteMockIoUtil)

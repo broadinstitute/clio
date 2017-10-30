@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.server.model
 
+import java.net.URI
 import java.time.OffsetDateTime
 
 case class ModelMockKey(mockKeyLong: Long, mockKeyString: String)
@@ -20,6 +21,6 @@ case class ModelMockQueryOutput(mockKeyLong: Long,
                                 mockFieldDouble: Option[Double],
                                 mockFieldInt: Option[Int],
                                 mockFieldDate: Option[OffsetDateTime],
-                                mockFileMd5: Option[String],
-                                mockFilePath: Option[String],
+                                mockFileMd5: Option[Symbol],
+                                mockFilePath: Option[URI],
                                 mockFileSize: Option[Long])

@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.transfer.model.gvcf
 
+import java.net.URI
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.transfer.model.TransferMetadata
@@ -8,17 +9,17 @@ import org.broadinstitute.clio.util.model.DocumentStatus
 case class TransferGvcfV1Metadata(analysisDate: Option[OffsetDateTime] = None,
                                   contamination: Option[Float] = None,
                                   documentStatus: Option[DocumentStatus] = None,
-                                  gvcfMd5: Option[String] = None,
-                                  gvcfPath: Option[String] = None,
+                                  gvcfMd5: Option[Symbol] = None,
+                                  gvcfPath: Option[URI] = None,
                                   gvcfSize: Option[Long] = None,
-                                  gvcfIndexPath: Option[String] = None,
-                                  gvcfSummaryMetricsPath: Option[String] = None,
-                                  gvcfDetailMetricsPath: Option[String] = None,
-                                  pipelineVersion: Option[String] = None,
+                                  gvcfIndexPath: Option[URI] = None,
+                                  gvcfSummaryMetricsPath: Option[URI] = None,
+                                  gvcfDetailMetricsPath: Option[URI] = None,
+                                  pipelineVersion: Option[Symbol] = None,
                                   notes: Option[String] = None)
     extends TransferMetadata[TransferGvcfV1Metadata] {
 
-  override def pathsToMove: Seq[String] =
+  override def pathsToMove: Seq[URI] =
     Seq.concat(
       gvcfPath,
       gvcfIndexPath,
@@ -26,11 +27,11 @@ case class TransferGvcfV1Metadata(analysisDate: Option[OffsetDateTime] = None,
       gvcfDetailMetricsPath
     )
 
-  override def pathsToDelete: Seq[String] =
+  override def pathsToDelete: Seq[URI] =
     Seq.concat(gvcfPath, gvcfIndexPath)
 
   override def mapMove(
-    pathMapper: Option[String] => Option[String]
+    pathMapper: Option[URI] => Option[URI]
   ): TransferGvcfV1Metadata = {
     this.copy(
       gvcfPath = pathMapper(gvcfPath),
