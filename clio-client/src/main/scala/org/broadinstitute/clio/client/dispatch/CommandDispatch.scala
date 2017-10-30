@@ -22,6 +22,7 @@ class CommandDispatch(val webClient: ClioWebClient, val ioUtil: IoUtil)
       case addCommand: AddCommand[_]       => new AddExecutor(addCommand)
       case moveCommand: MoveCommand[_]     => new MoveExecutor(moveCommand)
       case deleteCommand: DeleteCommand[_] => new DeleteExecutor(deleteCommand)
+      case deliverCommand: DeliverWgsCram  => new DeliverExecutor(deliverCommand)
       case other =>
         new RetrieveAndPrintExecutor(other)
     }).execute(webClient, ioUtil)

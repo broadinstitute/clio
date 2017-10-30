@@ -134,6 +134,12 @@ final case class MoveWgsCram(@Recurse key: TransferWgsCramV1Key,
 final case class DeleteWgsCram(@Recurse key: TransferWgsCramV1Key, note: String)
     extends DeleteCommand(WgsCramIndex)
 
+@CommandName(ClioCommand.deliverWgsCramName)
+final case class DeliverWgsCram(@Recurse key: TransferWgsCramV1Key,
+                                workspaceName: String,
+                                workspacePath: URI)
+    extends ClioCommand
+
 object ClioCommand extends ClioParsers {
 
   // Names for generic commands.
@@ -145,6 +151,7 @@ object ClioCommand extends ClioParsers {
   val queryPrefix = "query-"
   val movePrefix = "move-"
   val deletePrefix = "delete-"
+  val deliverPrefix = "deliver-"
 
   // Names for WGS uBAM commands.
   val getWgsUbamSchemaName: String = getSchemaPrefix + WgsUbamIndex.commandName
@@ -166,6 +173,7 @@ object ClioCommand extends ClioParsers {
   val queryWgsCramName: String = queryPrefix + WgsCramIndex.commandName
   val moveWgsCramName: String = movePrefix + WgsCramIndex.commandName
   val deleteWgsCramName: String = deletePrefix + WgsCramIndex.commandName
+  val deliverWgsCramName: String = deliverPrefix + WgsCramIndex.commandName
 
   /** The caseapp parser to use for all Clio sub-commands. */
   val parser: CommandParser[ClioCommand] =
