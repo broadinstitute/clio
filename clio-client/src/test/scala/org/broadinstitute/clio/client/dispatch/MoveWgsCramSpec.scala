@@ -106,15 +106,26 @@ class MoveWgsCramSpec extends BaseClientSpec {
 
     succeedingReturningDispatcherWgsCram(mockIoUtil)
       .dispatch(goodCramMoveCommand)
-      .map(_.status should be(StatusCodes.OK)).andThen {
-      case _  =>
-        mockIoUtil.googleObjectExists(URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram")) should be(true)
-        mockIoUtil.googleObjectExists(URI.create(s"${testCloudDestinationDirectoryPath}craiPath1.crai")) should be(true)
-        mockIoUtil.googleObjectExists(URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram.md5")) should be(true)
-        mockIoUtil.googleObjectExists(URI.create(s"${testCloudDestinationDirectoryPath}metrics.wgs_metrics")) should be(false)
+      .map(_.status should be(StatusCodes.OK))
+      .andThen {
+        case _ =>
+          mockIoUtil.googleObjectExists(
+            URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram")
+          ) should be(true)
+          mockIoUtil.googleObjectExists(
+            URI.create(s"${testCloudDestinationDirectoryPath}craiPath1.crai")
+          ) should be(true)
+          mockIoUtil.googleObjectExists(
+            URI
+              .create(s"${testCloudDestinationDirectoryPath}cramPath1.cram.md5")
+          ) should be(true)
+          mockIoUtil.googleObjectExists(
+            URI.create(
+              s"${testCloudDestinationDirectoryPath}metrics.wgs_metrics"
+            )
+          ) should be(false)
 
-    }
-
+      }
 
   }
 }

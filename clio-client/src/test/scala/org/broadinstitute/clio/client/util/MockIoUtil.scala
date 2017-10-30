@@ -20,9 +20,13 @@ class MockIoUtil extends IoUtil with LazyLogging {
     } else {
       val fromString = from.toString
       if (to.toString.endsWith("/")) {
-        putFileInCloud(URI.create(to.toString + fromString.substring(fromString.lastIndexOf('/') + 1, fromString.length)))
-      }
-      else {
+        putFileInCloud(
+          URI.create(
+            to.toString + fromString
+              .substring(fromString.lastIndexOf('/') + 1, fromString.length)
+          )
+        )
+      } else {
         putFileInCloud(to)
       }
       0
