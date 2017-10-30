@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
+import java.net.URI
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
@@ -79,7 +81,7 @@ class MoveWgsCramSpec extends BaseClientSpec {
     recoverToSucceededIf[Exception] {
       val command = MoveWgsCram(
         key = testCramTransferV1Key,
-        destination = "/this/is/a/local/path"
+        destination = URI.create("/this/is/a/local/path")
       )
       succeedingDispatcher.dispatch(command)
     }
@@ -106,10 +108,10 @@ class MoveWgsCramSpec extends BaseClientSpec {
       .dispatch(goodCramMoveCommand)
       .map(_.status should be(StatusCodes.OK)).andThen {
       case _  =>
-        mockIoUtil.googleObjectExists(s"${testCloudDestinationDirectoryPath}cramPath1.cram") should be(true)
-        mockIoUtil.googleObjectExists(s"${testCloudDestinationDirectoryPath}craiPath1.crai") should be(true)
-        mockIoUtil.googleObjectExists(s"${testCloudDestinationDirectoryPath}cramPath1.cram.md5") should be(true)
-        mockIoUtil.googleObjectExists(s"${testCloudDestinationDirectoryPath}metrics.wgs_metrics") should be(false)
+        mockIoUtil.googleObjectExists(URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram")) should be(true)
+        mockIoUtil.googleObjectExists(URI.create(s"${testCloudDestinationDirectoryPath}craiPath1.crai")) should be(true)
+        mockIoUtil.googleObjectExists(URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram.md5")) should be(true)
+        mockIoUtil.googleObjectExists(URI.create(s"${testCloudDestinationDirectoryPath}metrics.wgs_metrics")) should be(false)
 
     }
 
