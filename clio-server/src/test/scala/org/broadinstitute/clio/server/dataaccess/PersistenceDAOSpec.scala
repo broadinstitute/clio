@@ -1,16 +1,16 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import java.net.URI
+
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentMock,
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
-
 import com.sksamuel.elastic4s.Indexable
 import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
-
 import java.nio.file.Files
 import java.time.OffsetDateTime
 
@@ -37,7 +37,9 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
   it should "write metadata updates to storage using the upsertId" in {
     val dao = new MemoryPersistenceDAO()
     val document =
-      DocumentMock.default.copy(mockFilePath = Some("gs://the-file"))
+      DocumentMock.default.copy(
+        mockFilePath = Some(URI.create("gs://the-file"))
+      )
     val document2 = DocumentMock.default.copy(mockFieldDouble = Some(0.9876))
 
     for {
@@ -71,7 +73,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
       n =>
         DocumentMock.default.copy(
           mockKeyLong = n,
-          mockFilePath = Some(s"gs://document-mock-key-$n")
+          mockFilePath = Some(URI.create(s"gs://document-mock-key-$n"))
       )
     )
     documents.toSet.size should be(documents.size)
@@ -94,7 +96,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
       n =>
         DocumentMock.default.copy(
           mockKeyLong = n,
-          mockFilePath = Some(s"gs://document-mock-key-$n")
+          mockFilePath = Some(URI.create(s"gs://document-mock-key-$n"))
       )
     )
     documents.toSet.size should be(documents.size)

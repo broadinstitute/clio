@@ -24,7 +24,7 @@ trait ClioDocument {
     * can be read from the source of truth and directly upserted into Elasticsearch
     * during recovery without needing to use a document mapper.
     */
-  val entityId: String
+  val entityId: Symbol
 
   /**
     * The filename used for persisting a document's upsert data.

@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.webservice
 
+import java.net.URI
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Route
 import io.circe.Json
@@ -101,9 +103,9 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
         .asInstanceOf[DocumentGvcf]
 
       firstUpdate.upsertId should be(responseAs[UpsertId])
-      firstUpdate.gvcfMd5 should be(Some("abcgithashdef"))
+      firstUpdate.gvcfMd5 should be(Some('abcgithashdef))
       firstUpdate.notes should be(Some("some note"))
-      firstUpdate.gvcfPath should be(Some("gs://path/gvcf.gvcf"))
+      firstUpdate.gvcfPath should be(Some(URI.create("gs://path/gvcf.gvcf")))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
@@ -135,10 +137,10 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
         .map(_._1)
         .apply(1)
         .asInstanceOf[DocumentGvcf]
-      secondUpdate.gvcfMd5 should be(Some("abcgithashdef"))
+      secondUpdate.gvcfMd5 should be(Some('abcgithashdef))
       secondUpdate.notes should be(Some("some note"))
       secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))
-      secondUpdate.gvcfPath should be(Some(""))
+      secondUpdate.gvcfPath should be(Some(URI.create("")))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement

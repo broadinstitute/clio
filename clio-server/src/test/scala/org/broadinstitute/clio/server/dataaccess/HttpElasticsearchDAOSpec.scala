@@ -39,9 +39,9 @@ class HttpElasticsearchDAOSpec
     case class IndexVersion2(foo: Long, bar: String)
 
     val indexVersion1: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion1]("test_index_update_type")
+      new AutoElasticsearchIndex[IndexVersion1]("test_index_update_type", 1)
     val indexVersion2: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion2]("test_index_update_type")
+      new AutoElasticsearchIndex[IndexVersion2]("test_index_update_type", 1)
 
     for {
       _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
@@ -59,9 +59,9 @@ class HttpElasticsearchDAOSpec
     case class IndexVersion2(foo: Long, bar: String)
 
     val indexVersion1: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion1]("test_index_fail_recreate")
+      new AutoElasticsearchIndex[IndexVersion1]("test_index_fail_recreate", 1)
     val indexVersion2: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion2]("test_index_fail_recreate")
+      new AutoElasticsearchIndex[IndexVersion2]("test_index_fail_recreate", 1)
 
     for {
       _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
@@ -86,9 +86,15 @@ class HttpElasticsearchDAOSpec
     case class IndexVersion2(foo: Long)
 
     val indexVersion1: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion1]("test_index_fail_change_types")
+      new AutoElasticsearchIndex[IndexVersion1](
+        "test_index_fail_change_types",
+        1
+      )
     val indexVersion2: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion2]("test_index_fail_change_types")
+      new AutoElasticsearchIndex[IndexVersion2](
+        "test_index_fail_change_types",
+        1
+      )
     for {
       _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
       _ <- httpElasticsearchDAO.updateFieldDefinitions(indexVersion1)
@@ -117,12 +123,12 @@ class HttpElasticsearchDAOSpec
     import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 
     val index =
-      new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID())
+      new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID(), 1)
 
     val documents =
       (1 to 4)
         .map("document-" + _)
-        .map(Document(UpsertId.nextId(), _))
+        .map(s => Document(UpsertId.nextId(), Symbol(s)))
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
@@ -140,7 +146,7 @@ class HttpElasticsearchDAOSpec
     import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 
     val index =
-      new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID())
+      new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID(), 1)
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
@@ -241,5 +247,5 @@ class HttpElasticsearchDAOSpec
 }
 
 object HttpElasticsearchDAOSpec {
-  case class Document(upsertId: UpsertId, entityId: String) extends ClioDocument
+  case class Document(upsertId: UpsertId, entityId: Symbol) extends ClioDocument
 }

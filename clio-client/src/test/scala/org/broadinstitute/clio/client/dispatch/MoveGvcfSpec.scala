@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
+import java.net.URI
+
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
@@ -86,7 +88,7 @@ class MoveGvcfSpec extends BaseClientSpec {
     recoverToSucceededIf[Exception] {
       val command = MoveGvcf(
         key = testGvcfTransferV1Key,
-        destination = "/this/is/a/local/path"
+        destination = URI.create("/this/is/a/local/path")
       )
       succeedingDispatcher.dispatch(command)
     }

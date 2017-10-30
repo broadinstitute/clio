@@ -1,10 +1,12 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
+import java.net.URI
+
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import java.time.OffsetDateTime
 
 case class DocumentWgsUbam(upsertId: UpsertId,
-                           entityId: String,
+                           entityId: Symbol,
                            flowcellBarcode: String,
                            lane: Int,
                            libraryName: String,
@@ -38,8 +40,8 @@ case class DocumentWgsUbam(upsertId: UpsertId,
                            sampleType: Option[String] = None,
                            targetIntervals: Option[String] = None,
                            notes: Option[String] = None,
-                           ubamMd5: Option[String] = None,
-                           ubamPath: Option[String] = None,
+                           ubamMd5: Option[Symbol] = None,
+                           ubamPath: Option[URI] = None,
                            ubamSize: Option[Long] = None,
                            documentStatus: Option[DocumentStatus] = None)
     extends ClioDocument

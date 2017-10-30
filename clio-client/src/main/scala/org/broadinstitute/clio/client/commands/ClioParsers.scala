@@ -1,13 +1,14 @@
 package org.broadinstitute.clio.client.commands
 
+import java.net.URI
+
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp.core.Error
 import caseapp.core.argparser.{ArgParser, SimpleArgParser}
+import cats.syntax.either._
 import enumeratum.{Enum, EnumEntry}
 
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
-
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -39,30 +40,24 @@ trait ClioParsers {
     }
   }
 
-  implicit val oauthBearerTokenParser: ArgParser[OAuth2BearerToken] = {
-    SimpleArgParser.from[OAuth2BearerToken]("token") { token =>
-      //no need for left since this should never fail
-      Right(OAuth2BearerToken(token))
+  private def parseWith[A](label: String, f: String => A): ArgParser[A] = {
+    SimpleArgParser.from[A](label) { str =>
+      Either
+        .catchNonFatal(f(str))
+        .leftMap(ex => Error.MalformedValue(label, ex.getMessage))
     }
   }
 
-  implicit val uuidParser: ArgParser[UUID] = {
-    SimpleArgParser.from[UUID]("uuid") { uuid =>
-      Try(UUID.fromString(uuid)) match {
-        case Success(value) => Right(value)
-        case Failure(exception) =>
-          Left(Error.UnrecognizedValue(exception.getMessage))
-      }
-    }
-  }
+  implicit val oauthBearerTokenParser: ArgParser[OAuth2BearerToken] =
+    parseWith("token", OAuth2BearerToken.apply)
 
-  implicit val offsetDateTimeParser: ArgParser[OffsetDateTime] = {
-    SimpleArgParser.from[OffsetDateTime]("date") { offsetDateAndTime =>
-      Try(OffsetDateTime.parse(offsetDateAndTime)) match {
-        case Success(value) => Right(value)
-        case Failure(exception) =>
-          Left(Error.UnrecognizedValue(exception.getMessage))
-      }
-    }
-  }
+  implicit val offsetDateTimeParser: ArgParser[OffsetDateTime] =
+    parseWith("date", OffsetDateTime.parse)
+
+  implicit val symbolParser: ArgParser[Symbol] =
+    parseWith("string", Symbol.apply)
+
+  implicit val uriParser: ArgParser[URI] = parseWith("uri", URI.create)
+
+  implicit val uuidParser: ArgParser[UUID] = parseWith("uuid", UUID.fromString)
 }

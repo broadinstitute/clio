@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.client.webclient
 
+import java.net.URI
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpCredentials
@@ -18,11 +20,9 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
 
-class MockClioWebClient(
-  status: StatusCode,
-  metadataLocationOption: Option[String]
-)(implicit system: ActorSystem)
-    extends ClioWebClient(
+class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])(
+  implicit system: ActorSystem
+) extends ClioWebClient(
       "localhost",
       MockClioWebClient.testServerPort,
       false,

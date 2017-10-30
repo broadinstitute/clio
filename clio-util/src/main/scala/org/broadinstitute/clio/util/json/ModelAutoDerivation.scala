@@ -11,7 +11,6 @@ import org.broadinstitute.clio.util.generic.CompanionCache
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.reflect.ClassTag
-import scala.util.{Failure, Success, Try}
 
 /**
   * Extends circe's _extra_ auto derivation with additional derivations needed for clio.
@@ -115,19 +114,22 @@ trait ModelAutoDerivation extends AutoDerivation {
     enumDecoderCache.cached[T, Enum[T], Decoder[T]](Circe.decoder)
   }
 
-  /**
-    * Provides a decoder for Java URIs.
-    */
-  implicit val decodeUri: Decoder[URI] = (c: HCursor) => {
-    val stringDecoder = implicitly[Decoder[String]]
-    stringDecoder(c).flatMap { s =>
-      Try(new URI(s)) match {
-        case Success(uri) => Right(uri)
-        case Failure(err) =>
-          Left(DecodingFailure.fromThrowable(err, List.empty))
-      }
+  implicit val encodeUri: Encoder[URI] =
+    Encoder.encodeString.contramap(_.toString)
+
+  implicit val decodeUri: Decoder[URI] = {
+    Decoder.decodeString.emap { string =>
+      Either
+        .catchNonFatal(URI.create(string))
+        .leftMap(_ => "URI")
     }
   }
+
+  implicit val encodeSymbol: Encoder[Symbol] =
+    Encoder.encodeString.contramap(_.name)
+
+  implicit val decodeSymbol: Decoder[Symbol] =
+    Decoder.decodeString.map(Symbol.apply)
 }
 
 /**

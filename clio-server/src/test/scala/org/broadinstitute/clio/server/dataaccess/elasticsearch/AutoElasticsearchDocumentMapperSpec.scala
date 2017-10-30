@@ -16,7 +16,7 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
 
   val keyLong = 12345L
   val keyString = "key"
-  val expectedEntityId = s"$keyLong.$keyString"
+  val expectedEntityId = Symbol(s"$keyLong.$keyString")
 
   it should "empty" in {
     mapper.empty(ModelMockKey(keyLong, keyString)) should be(

@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import java.net.URI
 import java.nio.file.Files
 
 import akka.http.scaladsl.unmarshalling.Unmarshal
@@ -73,7 +74,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       sampleAlias = s"someAlias$randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
-      cramPath = Some("gs://path/cram.cram")
+      cramPath = Some(URI.create("gs://path/cram.cram"))
     )
 
     /*
@@ -136,26 +137,34 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertCram(
         upsertKey,
-        TransferWgsCramV1Metadata(cramPath = Some("gs://path/cram1.cram"))
+        TransferWgsCramV1Metadata(
+          cramPath = Some(URI.create("gs://path/cram1.cram"))
+        )
       )
       upsertId2 <- runUpsertCram(
         upsertKey,
-        TransferWgsCramV1Metadata(cramPath = Some("gs://path/cram2.cram"))
+        TransferWgsCramV1Metadata(
+          cramPath = Some(URI.create("gs://path/cram2.cram"))
+        )
       )
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
         getJsonFrom[DocumentWgsCram](ElasticsearchIndex.WgsCram, upsertId1)
-      storedDocument1.cramPath should be(Some("gs://path/cram1.cram"))
+      storedDocument1.cramPath should be(
+        Some(URI.create("gs://path/cram1.cram"))
+      )
 
       val storedDocument2 =
         getJsonFrom[DocumentWgsCram](ElasticsearchIndex.WgsCram, upsertId2)
-      storedDocument2.cramPath should be(Some("gs://path/cram2.cram"))
+      storedDocument2.cramPath should be(
+        Some(URI.create("gs://path/cram2.cram"))
+      )
 
       storedDocument1.copy(
         upsertId = upsertId2,
-        cramPath = Some("gs://path/cram2.cram")
+        cramPath = Some(URI.create("gs://path/cram2.cram"))
       ) should be(storedDocument2)
     }
   }
@@ -168,7 +177,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       version = 1
     )
     val upsertData =
-      TransferWgsCramV1Metadata(cramPath = Some("gs://path/cram1.cram"))
+      TransferWgsCramV1Metadata(
+        cramPath = Some(URI.create("gs://path/cram1.cram"))
+      )
 
     for {
       upsertId1 <- runUpsertCram(upsertKey, upsertData)
@@ -198,7 +209,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         case (sample, version) =>
           val key = TransferWgsCramV1Key(location, project, sample, version)
           val data = TransferWgsCramV1Metadata(
-            cramPath = Some("gs://path/cram.cram"),
+            cramPath = Some(URI.create("gs://path/cram.cram")),
             cramSize = Some(1000L)
           )
           runUpsertCram(key, data)
@@ -237,7 +248,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val project = s"testProject$randomId"
     val key =
       TransferWgsCramV1Key(Location.GCP, project, s"testSample$randomId", 1)
-    val cramPath = "gs://path/cram.cram"
+    val cramPath = URI.create("gs://path/cram.cram")
     val metadata = TransferWgsCramV1Metadata(
       cramPath = Some(cramPath),
       cramSize = Some(1000L),
@@ -300,7 +311,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         version = version
       )
       val upsertMetadata = TransferWgsCramV1Metadata(
-        cramPath = Some(s"gs://cram/$sampleAlias.$version")
+        cramPath = Some(URI.create(s"gs://cram/$sampleAlias.$version"))
       )
       (upsertKey, upsertMetadata)
     }
@@ -386,7 +397,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata =
-      TransferWgsCramV1Metadata(cramPath = Some(cloudPath.toUri.toString))
+      TransferWgsCramV1Metadata(cramPath = Some(cloudPath.toUri))
 
     // Clio needs the metadata to be added before it can be moved.
     val _ = Files.write(cloudPath, fileContents.getBytes)
@@ -453,11 +464,10 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata = TransferWgsCramV1Metadata(
-      cramPath = Some(cramSource.toUri.toString),
-      craiPath = Some(craiSource.toUri.toString),
-      alignmentSummaryMetricsPath = Some(alignmentMetricsSource.toUri.toString),
-      fingerprintingSummaryMetricsPath =
-        Some(fingerprintMetricsSource.toUri.toString)
+      cramPath = Some(cramSource.toUri),
+      craiPath = Some(craiSource.toUri),
+      alignmentSummaryMetricsPath = Some(alignmentMetricsSource.toUri),
+      fingerprintingSummaryMetricsPath = Some(fingerprintMetricsSource.toUri)
     )
 
     val _ = Seq(
@@ -557,7 +567,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata =
       TransferWgsCramV1Metadata(
-        cramPath = Some(cloudPath.toUri.toString),
+        cramPath = Some(cloudPath.toUri),
         notes = existingNote
       )
 
@@ -655,10 +665,10 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata =
       TransferWgsCramV1Metadata(
-        cramPath = Some(cramPath.toUri.toString),
-        craiPath = Some(craiPath.toUri.toString),
-        alignmentSummaryMetricsPath = Some(metrics1Path.toUri.toString),
-        fingerprintingSummaryMetricsPath = Some(metrics1Path.toUri.toString)
+        cramPath = Some(cramPath.toUri),
+        craiPath = Some(craiPath.toUri),
+        alignmentSummaryMetricsPath = Some(metrics1Path.toUri),
+        fingerprintingSummaryMetricsPath = Some(metrics1Path.toUri)
       )
 
     val _ = Seq(
