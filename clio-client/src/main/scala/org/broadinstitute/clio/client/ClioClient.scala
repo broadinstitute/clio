@@ -115,9 +115,9 @@ object ClioClient extends LazyLogging {
   * @param ec        the execution context to use when scheduling
   *                  asynchronous events
   */
-class ClioClient(webClient: ClioWebClient,
-                 ioUtil: IoUtil)(implicit ec: ExecutionContext)
-    extends LazyLogging {
+class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
+  implicit ec: ExecutionContext
+) extends LazyLogging {
   import ClioClient.{AuthError, EarlyReturn, ParsingError, UsageOrHelpAsked}
 
   /**

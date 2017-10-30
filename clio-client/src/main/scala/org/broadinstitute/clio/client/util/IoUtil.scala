@@ -68,7 +68,6 @@ trait IoUtil {
     new GsUtil(None).ls(path)
   }
 
-
 }
 object IoUtil extends IoUtil {}
 

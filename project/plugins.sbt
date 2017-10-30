@@ -1,14 +1,14 @@
 // For more info on these plugins, see https://broadinstitute.atlassian.net/wiki/pages/viewpage.action?pageId=114531509
 
-val SbtAssemblyVersion = "0.14.4"
+val SbtAssemblyVersion = "0.14.5"
 val SbtBuildInfoVersion = "0.7.0"
 val SbtGitVersion = "0.9.3"
 val SbtDockerVersion = "1.4.1"
-val SbtScalafmtVersion = "1.11"
+val SbtScalafmtVersion = "1.14"
 val SbtScoverageVersion = "1.5.0"
-val ScalafmtVersion = "1.1.0"
+val ScalafmtVersion = "1.3.0"
 val Slf4jVersion = "1.7.25"
-val TypesafeConfigVersion = "1.3.1"
+val TypesafeConfigVersion = "1.3.2"
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % SbtAssemblyVersion)
 addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % SbtBuildInfoVersion)

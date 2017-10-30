@@ -82,7 +82,8 @@ object ElasticsearchQueryMapper {
     * @param value The exact field value.
     * @return The query definition.
     */
-  private[dataaccess] def queryVal(name: String, value: Any): QueryDefinition = {
+  private[dataaccess] def queryVal(name: String,
+                                   value: Any): QueryDefinition = {
     queryStringQuery(s""""$value"""").defaultField(name)
   }
 }
