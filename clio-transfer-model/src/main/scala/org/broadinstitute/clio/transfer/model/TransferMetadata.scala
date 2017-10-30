@@ -65,7 +65,8 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
   /**
     * Move the file at `source` into the directory `destination`.
     */
-  protected def moveIntoDirectory(source: String, destination: String): String = {
+  protected def moveIntoDirectory(source: String,
+                                  destination: String): String = {
     // TODO: Rewrite this using a Path-based API.
     destination + source.drop(source.lastIndexOf('/') + 1)
   }

@@ -16,7 +16,8 @@ class AuditService private (auditDAO: AuditDAO) {
     auditDAO.auditResponse(request, response)
   }
 
-  def auditException(request: ClioRequest, exception: Exception): Future[Unit] = {
+  def auditException(request: ClioRequest,
+                     exception: Exception): Future[Unit] = {
     auditDAO.auditException(request, exception)
   }
 }
