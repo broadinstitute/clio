@@ -117,6 +117,9 @@ trait TestData {
   val testCraiCloudSourcePath: URI =
     URI.create("gs://testProject/testSample/craiPath1.crai")
 
+  val testCramMd5CloudSourcePath: URI =
+    URI.create("gs://testProject/testSample/cramPath1.cram.md5")
+
   val testWgsMetricsCloudSourcePath: URI =
     URI.create("gs://testProject/testSample/metrics.wgs_metrics")
 
