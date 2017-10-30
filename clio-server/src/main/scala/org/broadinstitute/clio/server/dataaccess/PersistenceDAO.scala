@@ -97,7 +97,8 @@ trait PersistenceDAO extends LazyLogging {
   private def getAllMatching[D <: ClioDocument: Decoder](
     rootDir: Path,
     shouldRestore: Path => Boolean
-  )(implicit ec: ExecutionContext, materializer: Materializer): Future[Seq[D]] = {
+  )(implicit ec: ExecutionContext,
+    materializer: Materializer): Future[Seq[D]] = {
     val document = (p: Path) => {
       decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
     }

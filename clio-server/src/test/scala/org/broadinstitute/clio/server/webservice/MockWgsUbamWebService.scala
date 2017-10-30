@@ -9,10 +9,9 @@ import org.broadinstitute.clio.server.{ClioApp, MockClioApp}
 
 import scala.concurrent.ExecutionContext
 
-class MockWgsUbamWebService(
-  app: ClioApp = MockClioApp()
-)(implicit executionContext: ExecutionContext)
-    extends WgsUbamWebService
+class MockWgsUbamWebService(app: ClioApp = MockClioApp())(
+  implicit executionContext: ExecutionContext
+) extends WgsUbamWebService
     with JsonWebService {
   private val persistence = PersistenceService(app)
   private val search = SearchService(app)

@@ -48,7 +48,9 @@ object FieldMapper {
     * @tparam A The type to retrieve fields.
     * @return Mapper instance with the passed fields.
     */
-  private def createMapper[A](mapperFields: Map[String, Type]): FieldMapper[A] = {
+  private def createMapper[A](
+    mapperFields: Map[String, Type]
+  ): FieldMapper[A] = {
     new FieldMapper[A] {
       override val fields: Map[String, Type] = mapperFields
     }
