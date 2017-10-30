@@ -89,13 +89,8 @@ case class TransferWgsCramV1Metadata(
       wgsMetricsPath
     ) ++ readgroupLevelMetricsFiles.getOrElse(Nil)
 
-<<<<<<< HEAD
   override def pathsToDelete: Seq[String] =
     Seq.concat(cramPath, craiPath)
-=======
-  override def pathsToDelete: Seq[URI] =
-    Seq.concat(cramPath, craiPath, cramMd5Path)
->>>>>>> develop
 
   override def mapMove(
     pathMapper: Option[URI] => Option[URI]
