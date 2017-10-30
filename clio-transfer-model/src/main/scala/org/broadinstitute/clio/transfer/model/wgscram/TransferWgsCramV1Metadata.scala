@@ -14,7 +14,6 @@ case class TransferWgsCramV1Metadata(
   cramSize: Option[Long] = None,
   cramPath: Option[String] = None,
   craiPath: Option[String] = None,
-  cramMd5Path: Option[String] = None,
   logPath: Option[String] = None,
   fingerprintPath: Option[String] = None,
   cromwellId: Option[String] = None,
@@ -62,7 +61,6 @@ case class TransferWgsCramV1Metadata(
     Seq.concat(
       cramPath,
       craiPath,
-      cramMd5Path,
       preAdapterSummaryMetricsPath,
       preAdapterDetailMetricsPath,
       alignmentSummaryMetricsPath,
@@ -90,7 +88,7 @@ case class TransferWgsCramV1Metadata(
     ) ++ readgroupLevelMetricsFiles.getOrElse(Nil)
 
   override def pathsToDelete: Seq[String] =
-    Seq.concat(cramPath, craiPath, cramMd5Path)
+    Seq.concat(cramPath, craiPath)
 
   override def mapMove(
     pathMapper: Option[String] => Option[String]
@@ -98,7 +96,6 @@ case class TransferWgsCramV1Metadata(
     this.copy(
       cramPath = pathMapper(cramPath),
       craiPath = pathMapper(craiPath),
-      cramMd5Path = pathMapper(cramMd5Path),
       preAdapterSummaryMetricsPath = pathMapper(preAdapterSummaryMetricsPath),
       preAdapterDetailMetricsPath = pathMapper(preAdapterDetailMetricsPath),
       alignmentSummaryMetricsPath = pathMapper(alignmentSummaryMetricsPath),

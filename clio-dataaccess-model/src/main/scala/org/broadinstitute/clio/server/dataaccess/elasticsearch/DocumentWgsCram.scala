@@ -19,7 +19,6 @@ case class DocumentWgsCram(
   cramSize: Option[Long] = None,
   cramPath: Option[String] = None,
   craiPath: Option[String] = None,
-  cramMd5Path: Option[String] = None,
   logPath: Option[String] = None,
   fingerprintPath: Option[String] = None,
   cromwellId: Option[String] = None,
