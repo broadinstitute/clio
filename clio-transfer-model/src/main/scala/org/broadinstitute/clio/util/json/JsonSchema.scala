@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.util.json
 
+import java.net.URI
+
 import io.circe.Json
 import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness}
 import shapeless.labelled.FieldType
@@ -102,6 +104,8 @@ object JsonSchema {
     val aLong = Json.obj(aType("integer"), aFormat("int64"))
     val aTime = Json.obj(aType("string"), aFormat("date-time"))
     val aFloat = Json.obj(aType("float"), aFormat("float32"))
+    val aUri = Json.obj(aType("string"), aFormat("uri"))
+    val aUriArray = Json.obj(aType("string"), aFormat("uri-array"))
     fieldType match {
       case t if t =:= typeOf[Boolean]                => (true, aBoolean)
       case t if t =:= typeOf[Int]                    => (true, aInt)
@@ -110,6 +114,7 @@ object JsonSchema {
       case t if t =:= typeOf[Float]                  => (true, aFloat)
       case t if t <:< typeOf[EnumEntry]              => (true, aString)
       case t if t =:= typeOf[OffsetDateTime]         => (true, aTime)
+      case t if t =:= typeOf[Symbol]                 => (true, aString)
       case t if t =:= typeOf[Option[Boolean]]        => (false, aBoolean)
       case t if t =:= typeOf[Option[Int]]            => (false, aInt)
       case t if t =:= typeOf[Option[Long]]           => (false, aLong)
@@ -117,8 +122,11 @@ object JsonSchema {
       case t if t =:= typeOf[Option[Float]]          => (false, aFloat)
       case t if t <:< typeOf[Option[EnumEntry]]      => (false, aString)
       case t if t =:= typeOf[Option[OffsetDateTime]] => (false, aTime)
+      case t if t =:= typeOf[Option[Symbol]]         => (false, aString)
       case t if t =:= typeOf[Option[UUID]]           => (false, aString)
+      case t if t =:= typeOf[Option[URI]]            => (false, aUri)
       case t if t <:< typeOf[Option[Seq[String]]]    => (false, aStringArray)
+      case t if t <:< typeOf[Option[Seq[URI]]]       => (false, aUriArray)
       case _ =>
         throw new IllegalArgumentException(
           s"No JsonSchema support for $fieldName: $fieldType yet"

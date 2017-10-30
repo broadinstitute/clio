@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.client.util
 
+import java.net.URI
 import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
@@ -22,51 +23,59 @@ import scala.concurrent.duration._
 
 trait TestData {
 
-  val metadataFileLocation =
-    "clio-client/src/test/resources/testdata/metadata"
+  val metadataFileLocation: URI =
+    URI.create("clio-client/src/test/resources/testdata/metadata")
 
   val testWgsUbamLocation = Some(
-    "clio-client/src/test/resources/testdata/testWgsUbam"
+    URI.create("clio-client/src/test/resources/testdata/testWgsUbam")
   )
 
   val testTwoWgsUbamsLocation = Some(
-    "clio-client/src/test/resources/testdata/testWgsUbams"
+    URI.create("clio-client/src/test/resources/testdata/testWgsUbams")
   )
 
-  val metadataPlusExtraFieldsFileLocation =
-    "clio-client/src/test/resources/testdata/metadataplusextrafields"
+  val metadataPlusExtraFieldsFileLocation: URI =
+    URI.create(
+      "clio-client/src/test/resources/testdata/metadataplusextrafields"
+    )
 
-  val gvcfMetadataFileLocation =
-    "clio-client/src/test/resources/testdata/gvcfMetadata"
+  val gvcfMetadataFileLocation: URI =
+    URI.create("clio-client/src/test/resources/testdata/gvcfMetadata")
 
   val testGvcfLocation = Some(
-    "clio-client/src/test/resources/testdata/testGvcf"
+    URI.create("clio-client/src/test/resources/testdata/testGvcf")
   )
 
   val testGvcfMetadataOnlyMetricsLocation = Some(
-    "clio-client/src/test/resources/testdata/testGvcfMetadataOnlyMetrics"
+    URI.create(
+      "clio-client/src/test/resources/testdata/testGvcfMetadataOnlyMetrics"
+    )
   )
 
   val testGvcfMetadataOnlyOneMetricLocation = Some(
-    "clio-client/src/test/resources/testdata/testGvcfMetadataOnlyOneMetric"
+    URI.create(
+      "clio-client/src/test/resources/testdata/testGvcfMetadataOnlyOneMetric"
+    )
   )
 
   val testTwoGvcfsLocation = Some(
-    "clio-client/src/test/resources/testdata/testGvcfs"
+    URI.create("clio-client/src/test/resources/testdata/testGvcfs")
   )
 
-  val cramMetadataFileLocation =
-    "clio-client/src/test/resources/testdata/cramMetadata"
+  val cramMetadataFileLocation: URI =
+    URI.create("clio-client/src/test/resources/testdata/cramMetadata")
 
   val testWgsCramLocation = Some(
-    "clio-client/src/test/resources/testdata/testWgsCram"
+    URI.create("clio-client/src/test/resources/testdata/testWgsCram")
   )
 
-  val gvcfMetadataPlusExtraFieldsFileLocation =
-    "clio-client/src/test/resources/testdata/gvcfMetadataplusextrafields"
+  val gvcfMetadataPlusExtraFieldsFileLocation: URI =
+    URI.create(
+      "clio-client/src/test/resources/testdata/gvcfMetadataplusextrafields"
+    )
 
-  val badMetadataFileLocation =
-    "clio-client/src/test/resources/testdata/badmetadata"
+  val badMetadataFileLocation: URI =
+    URI.create("clio-client/src/test/resources/testdata/badmetadata")
 
   val testBearer = OAuth2BearerToken("testBearerToken")
   val testFlowcell = "testFlowcell"
@@ -81,38 +90,38 @@ trait TestData {
   val testRunDateStart: OffsetDateTime = OffsetDateTime.now()
   val testRunDateEnd: OffsetDateTime = OffsetDateTime.now().plusHours(1)
 
-  val testUbamCloudSourcePath: String =
-    "gs://testProject/testSample/ubamPath1.unmapped.bam"
+  val testUbamCloudSourcePath: URI =
+    URI.create("gs://testProject/testSample/ubamPath1.unmapped.bam")
 
-  val testUbamCloudDestinationPath: String =
-    "gs://testProject/testSample/ubamPath2.unmapped.bam"
+  val testUbamCloudDestinationPath: URI =
+    URI.create("gs://testProject/testSample/ubamPath2.unmapped.bam")
 
-  val testGvcfCloudSourcePath: String =
-    "gs://testProject/testSample/gvcfPath1.gvcf"
+  val testGvcfCloudSourcePath: URI =
+    URI.create("gs://testProject/testSample/gvcfPath1.gvcf")
 
-  val testGvcfSummaryMetricsCloudSourcePath: String =
-    "gs://path/gvcfSummaryMetrics1.gvcf"
+  val testGvcfSummaryMetricsCloudSourcePath: URI =
+    URI.create("gs://path/gvcfSummaryMetrics1.gvcf")
 
-  val testGvcfDetailMetricsCloudSourcePath: String =
-    "gs://path/gvcfDetailMetrics1.gvcf"
+  val testGvcfDetailMetricsCloudSourcePath: URI =
+    URI.create("gs://path/gvcfDetailMetrics1.gvcf")
 
-  val testCloudDestinationDirectoryPath: String =
-    "gs://testProject/testSample/moved/"
+  val testCloudDestinationDirectoryPath: URI =
+    URI.create("gs://testProject/testSample/moved/")
 
-  val testGvcfCloudDestinationPath: String =
-    testCloudDestinationDirectoryPath + "gvcfPath2.gvcf"
+  val testGvcfCloudDestinationPath: URI =
+    testCloudDestinationDirectoryPath.resolve("gvcfPath2.gvcf")
 
-  val testCramCloudSourcePath: String =
-    "gs://testProject/testSample/cramPath1.cram"
+  val testCramCloudSourcePath: URI =
+    URI.create("gs://testProject/testSample/cramPath1.cram")
 
-  val testCraiCloudSourcePath: String =
-    "gs://testProject/testSample/craiPath1.crai"
+  val testCraiCloudSourcePath: URI =
+    URI.create("gs://testProject/testSample/craiPath1.crai")
 
-  val testCramMd5CloudSourcePath: String =
-    "gs://testProject/testSample/cramPath1.cram.md5"
+  val testCramMd5CloudSourcePath: URI =
+    URI.create("gs://testProject/testSample/cramPath1.cram.md5")
 
-  val testWgsMetricsCloudSourcePath: String =
-    "gs://testProject/testSample/metrics.wgs_metrics"
+  val testWgsMetricsCloudSourcePath: URI =
+    URI.create("gs://testProject/testSample/metrics.wgs_metrics")
 
   val testCommon = CommonOptions(bearerToken = Some(testBearer))
   val testCommonNoToken = CommonOptions()

@@ -1,17 +1,17 @@
 package org.broadinstitute.clio.client.util
 
+import java.net.URI
+
 import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.mutable
 
 class MockIoUtil extends IoUtil with LazyLogging {
 
-  private val filesInCloud = mutable.ArrayBuffer.empty[String]
+  private val filesInCloud = mutable.ArrayBuffer.empty[URI]
 
-  override def copyGoogleObject(from: String, to: String): Int = {
-    if (from.startsWith(MockIoUtil.InvalidPath) || to.startsWith(
-          MockIoUtil.InvalidPath
-        )) {
+  override def copyGoogleObject(from: URI, to: URI): Int = {
+    if (MockIoUtil.isInvalid(from) || MockIoUtil.isInvalid(to)) {
       logger.info("Failing on invalid path")
       1
     } else if (!filesInCloud.contains(from)) {
@@ -28,8 +28,8 @@ class MockIoUtil extends IoUtil with LazyLogging {
     }
   }
 
-  override def deleteGoogleObject(path: String): Int = {
-    if (path.startsWith(MockIoUtil.InvalidPath)) {
+  override def deleteGoogleObject(path: URI): Int = {
+    if (MockIoUtil.isInvalid(path)) {
       logger.info("Failing on invalid path")
       1
     } else
@@ -39,14 +39,17 @@ class MockIoUtil extends IoUtil with LazyLogging {
       }
   }
 
-  override def googleObjectExists(path: String): Boolean =
+  override def googleObjectExists(path: URI): Boolean =
     filesInCloud.contains(path)
 
-  def putFileInCloud(path: String) = this.synchronized {
-    filesInCloud += path
+  def putFileInCloud(path: URI): Unit = this.synchronized {
+    val _ = filesInCloud += path
   }
 }
 
 object MockIoUtil {
-  val InvalidPath = "gs://not_a_valid_path"
+  val InvalidPath: URI = URI.create("/not_a_valid_path")
+
+  private def isInvalid(path: URI): Boolean =
+    path.getPath.startsWith(InvalidPath.getPath)
 }

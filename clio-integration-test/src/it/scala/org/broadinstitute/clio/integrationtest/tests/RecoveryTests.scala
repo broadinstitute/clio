@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import java.net.URI
 import java.nio.file.Files
 import java.time.OffsetDateTime
 import java.util.Comparator
@@ -32,12 +33,13 @@ trait RecoveryTests extends ForAllTestContainer {
     val libraryName = s"library$randomId"
     DocumentWgsUbam(
       upsertId = UpsertId.nextId(),
-      entityId = s"$flowcellBarcode.$lane.$libraryName.${location.entryName}",
+      entityId =
+        Symbol(s"$flowcellBarcode.$lane.$libraryName.${location.entryName}"),
       flowcellBarcode = flowcellBarcode,
       lane = lane,
       libraryName = libraryName,
       location = location,
-      ubamPath = Some(s"gs://$randomId/$randomId/$randomId"),
+      ubamPath = Some(URI.create(s"gs://$randomId/$randomId/$randomId")),
       documentStatus = Some(DocumentStatus.Normal)
     )
   }
@@ -47,12 +49,12 @@ trait RecoveryTests extends ForAllTestContainer {
     val version = Random.nextInt()
     DocumentGvcf(
       upsertId = UpsertId.nextId(),
-      entityId = s"${location.entryName}.$project.$sampleAlias.$version",
+      entityId = Symbol(s"${location.entryName}.$project.$sampleAlias.$version"),
       location = location,
       project = project,
       sampleAlias = sampleAlias,
       version = version,
-      gvcfPath = Some(s"gs://$randomId/$randomId/$randomId"),
+      gvcfPath = Some(URI.create(s"gs://$randomId/$randomId/$randomId")),
       documentStatus = Some(DocumentStatus.Normal)
     )
   }
@@ -62,12 +64,12 @@ trait RecoveryTests extends ForAllTestContainer {
     val version = Random.nextInt()
     DocumentWgsCram(
       upsertId = UpsertId.nextId(),
-      entityId = s"${location.entryName}.$project.$sampleAlias.$version",
+      entityId = Symbol(s"${location.entryName}.$project.$sampleAlias.$version"),
       location = location,
       project = project,
       sampleAlias = sampleAlias,
       version = version,
-      cramPath = Some(s"gs://$randomId/$randomId/$randomId"),
+      cramPath = Some(URI.create(s"gs://$randomId/$randomId/$randomId")),
       documentStatus = Some(DocumentStatus.Normal)
     )
   }

@@ -48,13 +48,13 @@ abstract class ElasticsearchIndex[Document] {
 
 object ElasticsearchIndex {
   val WgsUbam: ElasticsearchIndex[DocumentWgsUbam] =
-    indexDocument[DocumentWgsUbam]
+    indexDocument[DocumentWgsUbam](version = 1)
 
   val Gvcf: ElasticsearchIndex[DocumentGvcf] =
-    indexDocument[DocumentGvcf]
+    indexDocument[DocumentGvcf](version = 2)
 
   val WgsCram: ElasticsearchIndex[DocumentWgsCram] =
-    indexDocument[DocumentWgsCram]
+    indexDocument[DocumentWgsCram](version = 2)
 
   /**
     * Format the directory path for the indexed meta-data files.
@@ -71,12 +71,13 @@ object ElasticsearchIndex {
     *                  https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
     * @return The index.
     */
-  private[dataaccess] def indexDocument[Document: ClassTag: FieldMapper]
-    : ElasticsearchIndex[Document] = {
+  private[dataaccess] def indexDocument[Document: ClassTag: FieldMapper](
+    version: Int
+  ): ElasticsearchIndex[Document] = {
     val esName =
       ElasticsearchUtil
         .toElasticsearchName(classTag[Document].runtimeClass.getSimpleName)
         .stripPrefix("document_")
-    new AutoElasticsearchIndex[Document](esName)
+    new AutoElasticsearchIndex[Document](esName, version)
   }
 }

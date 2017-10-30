@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
+import java.net.URI
+
 import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
@@ -22,7 +24,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   import moveCommand.index.implicits._
 
   private val prettyKey = ClassUtil.formatFields(moveCommand.key)
-  private val destination: String = moveCommand.destination
+  private val destination: URI = moveCommand.destination
   private val name: String = moveCommand.index.name
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
@@ -187,8 +189,8 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     }
   }
 
-  private def copyGoogleObject(source: String,
-                               destination: String,
+  private def copyGoogleObject(source: URI,
+                               destination: URI,
                                ioUtil: IoUtil): Unit = {
     if (ioUtil.copyGoogleObject(source, destination) != 0) {
       throw new Exception(
@@ -197,7 +199,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     }
   }
 
-  private def deleteGoogleObject(path: String, ioUtil: IoUtil): Unit = {
+  private def deleteGoogleObject(path: URI, ioUtil: IoUtil): Unit = {
     if (ioUtil.deleteGoogleObject(path) != 0) {
       throw new Exception(s"Deleting file in the cloud failed for path '$path'")
     }
