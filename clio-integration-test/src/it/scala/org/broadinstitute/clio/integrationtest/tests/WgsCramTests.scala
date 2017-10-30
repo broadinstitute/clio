@@ -430,7 +430,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "move the cram, crai, and some metrics files together in GCP" in {
+  it should "move the cram and crai together in GCP" in {
     val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
@@ -494,12 +494,15 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         rootDestination.toUri.toString
       )
     } yield {
-      Seq(cramSource, craiSource, alignmentMetricsSource).foreach(
+      Seq(cramSource, craiSource).foreach(
         Files.exists(_) should be(false)
       )
+      Files.exists(alignmentMetricsSource) should be(true)
 
-      Seq(cramDestination, craiDestination, alignmentMetricsDestination)
+      Seq(cramDestination, craiDestination)
         .foreach(Files.exists(_) should be(true))
+
+      Files.exists(alignmentMetricsDestination) should be(false)
 
       // We don't deliver fingerprinting metrics for now because they're based on unpublished research.
       Files.exists(fingerprintMetricsSource) should be(true)
@@ -508,7 +511,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       Seq(
         (cramDestination, cramContents),
         (craiDestination, craiContents),
-        (alignmentMetricsDestination, alignmentMetricsContents),
+        (alignmentMetricsSource, alignmentMetricsContents),
         (fingerprintMetricsSource, fingerprintMetricsContents)
       ).foreach {
         case (destination, contents) =>

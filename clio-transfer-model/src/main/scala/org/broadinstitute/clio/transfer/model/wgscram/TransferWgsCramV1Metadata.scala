@@ -59,37 +59,11 @@ case class TransferWgsCramV1Metadata(
   readgroupLevelMetricsFiles: Option[List[URI]] = None
 ) extends TransferMetadata[TransferWgsCramV1Metadata] {
 
+  // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
   override def pathsToMove: Seq[URI] =
-    Seq.concat(
-      cramPath,
-      craiPath,
-      preAdapterSummaryMetricsPath,
-      preAdapterDetailMetricsPath,
-      alignmentSummaryMetricsPath,
-      preBqsrDepthSmPath,
-      preBqsrSelfSmPath,
-      cramValidationReportPath,
-      crosscheckPath,
-      duplicateMetricsPath,
-      gcBiasPdfPath,
-      gcBiasSummaryMetricsPath,
-      gcBiasDetailMetricsPath,
-      insertSizeHistogramPath,
-      insertSizeMetricsPath,
-      qualityDistributionPdfPath,
-      qualityDistributionMetricsPath,
-      rawWgsMetricsPath,
-      readgroupAlignmentSummaryMetricsPath,
-      readgroupGcBiasPdfPath,
-      readgroupGcBiasSummaryMetricsPath,
-      readgroupGcBiasDetailMetricsPath,
-      recalDataPath,
-      baitBiasSummaryMetricsPath,
-      baitBiasDetailMetricsPath,
-      wgsMetricsPath
-    ) ++ readgroupLevelMetricsFiles.getOrElse(Nil)
+    Seq.concat(cramPath, craiPath)
 
-  override def pathsToDelete: Seq[String] =
+  override def pathsToDelete: Seq[URI] =
     Seq.concat(cramPath, craiPath)
 
   override def mapMove(
@@ -97,38 +71,7 @@ case class TransferWgsCramV1Metadata(
   ): TransferWgsCramV1Metadata = {
     this.copy(
       cramPath = pathMapper(cramPath),
-      craiPath = pathMapper(craiPath),
-      preAdapterSummaryMetricsPath = pathMapper(preAdapterSummaryMetricsPath),
-      preAdapterDetailMetricsPath = pathMapper(preAdapterDetailMetricsPath),
-      alignmentSummaryMetricsPath = pathMapper(alignmentSummaryMetricsPath),
-      preBqsrDepthSmPath = pathMapper(preBqsrDepthSmPath),
-      preBqsrSelfSmPath = pathMapper(preBqsrSelfSmPath),
-      cramValidationReportPath = pathMapper(cramValidationReportPath),
-      crosscheckPath = pathMapper(crosscheckPath),
-      duplicateMetricsPath = pathMapper(duplicateMetricsPath),
-      gcBiasPdfPath = pathMapper(gcBiasPdfPath),
-      gcBiasSummaryMetricsPath = pathMapper(gcBiasSummaryMetricsPath),
-      gcBiasDetailMetricsPath = pathMapper(gcBiasDetailMetricsPath),
-      insertSizeHistogramPath = pathMapper(insertSizeHistogramPath),
-      insertSizeMetricsPath = pathMapper(insertSizeMetricsPath),
-      qualityDistributionPdfPath = pathMapper(qualityDistributionPdfPath),
-      qualityDistributionMetricsPath =
-        pathMapper(qualityDistributionMetricsPath),
-      rawWgsMetricsPath = pathMapper(rawWgsMetricsPath),
-      readgroupAlignmentSummaryMetricsPath =
-        pathMapper(readgroupAlignmentSummaryMetricsPath),
-      readgroupGcBiasPdfPath = pathMapper(readgroupGcBiasPdfPath),
-      readgroupGcBiasSummaryMetricsPath =
-        pathMapper(readgroupGcBiasSummaryMetricsPath),
-      readgroupGcBiasDetailMetricsPath =
-        pathMapper(readgroupGcBiasDetailMetricsPath),
-      recalDataPath = pathMapper(recalDataPath),
-      baitBiasSummaryMetricsPath = pathMapper(baitBiasSummaryMetricsPath),
-      baitBiasDetailMetricsPath = pathMapper(baitBiasDetailMetricsPath),
-      wgsMetricsPath = pathMapper(wgsMetricsPath),
-      readgroupLevelMetricsFiles = readgroupLevelMetricsFiles.map(
-        _.flatMap(path => pathMapper(Some(path)))
-      )
+      craiPath = pathMapper(craiPath)
     )
   }
 

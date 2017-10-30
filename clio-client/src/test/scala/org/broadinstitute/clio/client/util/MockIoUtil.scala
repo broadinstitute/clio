@@ -18,7 +18,17 @@ class MockIoUtil extends IoUtil with LazyLogging {
       logger.info(s"Failing on file $from not in mock cloud")
       1
     } else {
-      putFileInCloud(to)
+      val fromString = from.toString
+      if (to.toString.endsWith("/")) {
+        putFileInCloud(
+          URI.create(
+            to.toString + fromString
+              .substring(fromString.lastIndexOf('/') + 1, fromString.length)
+          )
+        )
+      } else {
+        putFileInCloud(to)
+      }
       0
     }
   }
