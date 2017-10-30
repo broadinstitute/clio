@@ -61,7 +61,7 @@ case class TransferWgsCramV1Metadata(
 ) extends TransferMetadata[TransferWgsCramV1Metadata] {
 
   // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
-  override def pathsToMove: Seq[String] =
+  override def pathsToMove: Seq[URI] =
     Seq.concat(cramPath, craiPath, cramMd5Path)
 
   override def pathsToDelete: Seq[URI] =
