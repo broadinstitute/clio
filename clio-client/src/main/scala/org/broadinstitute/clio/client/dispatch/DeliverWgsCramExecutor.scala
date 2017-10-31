@@ -20,9 +20,12 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Special-purpose CLP for delivering crams to Firecloud workspaces.
   *
-  * Wraps the move CLP with extra IO / upsert logic.
+  * Wraps the move CLP with extra IO / upsert logic:
+  *
+  *   1. Writes the cram md5 value to file at the target path
+  *   2. Records the workspace name in the metadata for the delivered cram
   */
-class DeliverExecutor(deliverCommand: DeliverWgsCram) extends Executor {
+class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor {
 
   val moveCommand =
     MoveWgsCram(deliverCommand.key, deliverCommand.workspacePath)
@@ -38,9 +41,15 @@ class DeliverExecutor(deliverCommand: DeliverWgsCram) extends Executor {
 
     for {
       moveResponse <- moveExecutor.execute(webClient, ioUtil)
+      /*
+       * Discard bytes from the move response to avoid
+       * back-pressuring the server.
+       */
       _ = moveResponse.discardEntityBytes()
       _ <- writeCramMd5(webClient, ioUtil)
+        .logErrorMsg("Failed to write cram md5 to file")
       upsertResponse <- recordWorkspaceName(webClient)
+        .logErrorMsg("Failed to records workspace name in cram metadata")
     } yield {
       upsertResponse
     }
