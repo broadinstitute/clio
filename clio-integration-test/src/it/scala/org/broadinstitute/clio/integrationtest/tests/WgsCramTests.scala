@@ -752,7 +752,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "move files and record the workspace name when delivering crams" in {
+  it should "move files, generate an md5 file, and record the workspace name when delivering crams" in {
     val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
@@ -762,14 +762,13 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val md5Contents = randomId
 
     val cramName = s"$randomId.cram"
-    val craiName = s"$randomId.crai"
-    val md5Name = s"$randomId.md5"
+    val craiName = s"$cramName.crai"
+    val md5Name = s"$cramName.md5"
 
     val rootSource =
       rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
     val cramSource = rootSource.resolve(cramName)
     val craiSource = rootSource.resolve(craiName)
-    val md5Source = rootSource.resolve(md5Name)
 
     val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
     val cramDestination = rootDestination.resolve(cramName)
@@ -780,16 +779,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val metadata = TransferWgsCramV1Metadata(
       cramPath = Some(cramSource.toUri),
       craiPath = Some(craiSource.toUri),
-      cramMd5Path = Some(md5Source.toUri)
+      cramMd5 = Some(Symbol(md5Contents))
     )
 
     val workspaceName = s"$randomId-TestWorkspace-$randomId"
 
-    val _ = Seq(
-      (cramSource, cramContents),
-      (craiSource, craiContents),
-      (md5Source, md5Contents)
-    ).map {
+    val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
       case (source, contents) => Files.write(source, contents.getBytes)
     }
     val result = for {
@@ -816,9 +811,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       )
       outputs <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
     } yield {
-      Seq(cramSource, craiSource, md5Source).foreach(
-        Files.exists(_) should be(false)
-      )
+      Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
 
       Seq(cramDestination, craiDestination, md5Destination).foreach(
         Files.exists(_) should be(true)
@@ -843,7 +836,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
             workspaceName = Some(workspaceName),
             cramPath = Some(cramDestination.toUri),
             craiPath = Some(craiDestination.toUri),
-            cramMd5Path = Some(md5Destination.toUri),
+            cramMd5 = Some(Symbol(md5Contents)),
             documentStatus = Some(DocumentStatus.Normal)
           )
         )
@@ -857,7 +850,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           cramDestination,
           craiSource,
           craiDestination,
-          md5Source,
           md5Destination
         ).map(Files.deleteIfExists)
       }
