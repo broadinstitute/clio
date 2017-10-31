@@ -69,10 +69,7 @@ case class TransferWgsCramV1Metadata(
   override def mapMove(
     pathMapper: Option[URI] => Option[URI]
   ): TransferWgsCramV1Metadata = {
-    this.copy(
-      cramPath = pathMapper(cramPath),
-      craiPath = pathMapper(craiPath)
-    )
+    this.copy(cramPath = pathMapper(cramPath), craiPath = pathMapper(craiPath))
   }
 
   override def markDeleted(deletionNote: String): TransferWgsCramV1Metadata =
