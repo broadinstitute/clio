@@ -494,9 +494,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         rootDestination.toUri.toString
       )
     } yield {
-      Seq(cramSource, craiSource).foreach(
-        Files.exists(_) should be(false)
-      )
+      Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
       Files.exists(alignmentMetricsSource) should be(true)
 
       Seq(cramDestination, craiDestination)

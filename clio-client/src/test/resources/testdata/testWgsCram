@@ -7,7 +7,6 @@
     "cram_path" : "gs://testProject/testSample/cramPath1.cram",
     "cram_size" : 1000,
     "crai_path" : "gs://testProject/testSample/craiPath1.crai",
-    "cram_md5_path": "gs://testProject/testSample/cramPath1.cram.md5",
     "wgs_metrics_path" : "gs://testProject/testSample/metrics.wgs_metrics"
   }
 ]
