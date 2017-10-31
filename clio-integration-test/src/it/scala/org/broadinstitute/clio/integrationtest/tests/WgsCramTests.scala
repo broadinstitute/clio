@@ -855,4 +855,67 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       }
     }
   }
+
+  it should "fail delivery if the underlying move fails" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val md5Contents = randomId
+
+    val cramName = s"$randomId.cram"
+    val craiName = s"$cramName.crai"
+
+    val rootSource =
+      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
+    val cramSource = rootSource.resolve(cramName)
+    val craiSource = rootSource.resolve(craiName)
+
+    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
+
+    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
+    val metadata = TransferWgsCramV1Metadata(
+      cramPath = Some(cramSource.toUri),
+      craiPath = Some(craiSource.toUri),
+      cramMd5 = Some(Symbol(md5Contents))
+    )
+
+    val workspaceName = s"$randomId-TestWorkspace-$randomId"
+
+    recoverToExceptionIf[Exception] {
+      for {
+        _ <- runUpsertCram(key, metadata)
+        // Should fail because the source files don't exist.
+        deliverResponse <- runClient(
+          ClioCommand.deliverWgsCramName,
+          "--location",
+          Location.GCP.entryName,
+          "--project",
+          project,
+          "--sample-alias",
+          sample,
+          "--version",
+          version.toString,
+          "--workspace-name",
+          workspaceName,
+          "--workspace-path",
+          rootDestination.toUri.toString
+        )
+      } yield {
+        deliverResponse
+      }
+    }.flatMap { _ =>
+      for {
+        response <- runClient(
+          ClioCommand.queryWgsCramName,
+          "--workspace-name",
+          workspaceName
+        )
+        outputs <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
+      } yield {
+        // The CLP shouldn't have tried to upsert the workspace name.
+        outputs shouldBe empty
+      }
+    }
+  }
 }
