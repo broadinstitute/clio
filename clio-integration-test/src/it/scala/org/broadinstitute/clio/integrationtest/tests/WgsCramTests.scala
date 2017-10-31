@@ -430,14 +430,13 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "move the cram, crai, md5 together in GCP" in {
+  it should "move the cram and crai together in GCP" in {
     val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
 
     val cramContents = s"$randomId --- I am a dummy cram --- $randomId"
     val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
-    val md5Contents = randomId
     val alignmentMetricsContents =
       s"$randomId --- I am dummy alignment metrics --- $randomId"
     val fingerprintMetricsContents =
@@ -445,7 +444,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val cramName = s"$randomId.cram"
     val craiName = s"$randomId.crai"
-    val md5Name = s"$randomId.md5"
     val alignmentMetricsName = s"$randomId.metrics"
     val fingerprintMetricsName = s"$randomId.metrics"
 
@@ -453,14 +451,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
     val cramSource = rootSource.resolve(cramName)
     val craiSource = rootSource.resolve(craiName)
-    val md5Source = rootSource.resolve(md5Name)
     val alignmentMetricsSource = rootSource.resolve(alignmentMetricsName)
     val fingerprintMetricsSource = rootSource.resolve(fingerprintMetricsName)
 
     val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
     val cramDestination = rootDestination.resolve(cramName)
     val craiDestination = rootDestination.resolve(craiName)
-    val md5Destination = rootDestination.resolve(md5Name)
     val alignmentMetricsDestination =
       rootDestination.resolve(alignmentMetricsName)
     val fingerprintMetricsDestination =
@@ -470,7 +466,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val metadata = TransferWgsCramV1Metadata(
       cramPath = Some(cramSource.toUri),
       craiPath = Some(craiSource.toUri),
-      cramMd5Path = Some(md5Source.toUri),
       alignmentSummaryMetricsPath = Some(alignmentMetricsSource.toUri),
       fingerprintingSummaryMetricsPath = Some(fingerprintMetricsSource.toUri)
     )
@@ -478,7 +473,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val _ = Seq(
       (cramSource, cramContents),
       (craiSource, craiContents),
-      (md5Source, md5Contents),
       (alignmentMetricsSource, alignmentMetricsContents),
       (fingerprintMetricsSource, fingerprintMetricsContents)
     ).map {
@@ -500,14 +494,13 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         rootDestination.toUri.toString
       )
     } yield {
-      Seq(cramSource, craiSource, md5Source).foreach(
+      Seq(cramSource, craiSource).foreach(
         Files.exists(_) should be(false)
       )
       Files.exists(alignmentMetricsSource) should be(true)
 
-      Seq(cramDestination, craiDestination, md5Destination).foreach(
-        Files.exists(_) should be(true)
-      )
+      Seq(cramDestination, craiDestination)
+        .foreach(Files.exists(_) should be(true))
 
       Files.exists(alignmentMetricsDestination) should be(false)
 
@@ -518,7 +511,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       Seq(
         (cramDestination, cramContents),
         (craiDestination, craiContents),
-        (md5Destination, md5Contents),
         (alignmentMetricsSource, alignmentMetricsContents),
         (fingerprintMetricsSource, fingerprintMetricsContents)
       ).foreach {
@@ -535,8 +527,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           cramDestination,
           craiSource,
           craiDestination,
-          md5Source,
-          md5Destination,
           alignmentMetricsSource,
           alignmentMetricsDestination,
           fingerprintMetricsSource,
@@ -652,7 +642,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "delete the cram, crai, and md5, but not metrics" in {
+  it should "delete the cram and crai, but not metrics" in {
     val deleteNote =
       s"$randomId --- Deleted by the integration tests --- $randomId"
 
@@ -663,7 +653,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val cramContents = s"$randomId --- I am a cram fated to die --- $randomId"
     val craiContents =
       s"$randomId --- I am an index fated to die --- $randomId"
-    val md5Contents = randomId
     val metrics1Contents =
       s"$randomId --- I am an immortal metrics file --- $randomId"
     val metrics2Contents =
@@ -673,7 +662,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
     val cramPath = storageDir.resolve(s"$randomId.cram")
     val craiPath = storageDir.resolve(s"$randomId.crai")
-    val md5Path = storageDir.resolve(s"$randomId.md5")
     val metrics1Path = storageDir.resolve(s"$randomId.metrics")
     val metrics2Path = storageDir.resolve(s"$randomId.metrics")
 
@@ -682,7 +670,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       TransferWgsCramV1Metadata(
         cramPath = Some(cramPath.toUri),
         craiPath = Some(craiPath.toUri),
-        cramMd5Path = Some(md5Path.toUri),
         alignmentSummaryMetricsPath = Some(metrics1Path.toUri),
         fingerprintingSummaryMetricsPath = Some(metrics1Path.toUri)
       )
@@ -690,7 +677,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val _ = Seq(
       (cramPath, cramContents),
       (craiPath, craiContents),
-      (md5Path, md5Contents),
       (metrics1Path, metrics1Contents),
       (metrics2Path, metrics2Contents)
     ).map {
@@ -725,7 +711,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       )
       outputs <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
     } yield {
-      Seq(cramPath, craiPath, md5Path).foreach {
+      Seq(cramPath, craiPath).foreach {
         Files.exists(_) should be(false)
       }
       Seq((metrics1Path, metrics1Contents), (metrics2Path, metrics2Contents))
@@ -744,7 +730,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     result.andThen[Unit] {
       case _ => {
         // Without `val _ =`, the compiler complains about discarded non-Unit value.
-        val _ = Seq(cramPath, craiPath, md5Path, metrics1Path, metrics2Path)
+        val _ = Seq(cramPath, craiPath, metrics1Path, metrics2Path)
           .map(Files.deleteIfExists)
       }
     }

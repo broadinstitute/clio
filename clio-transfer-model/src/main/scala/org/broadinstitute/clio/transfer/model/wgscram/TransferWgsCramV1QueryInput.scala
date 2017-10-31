@@ -19,7 +19,6 @@ case class TransferWgsCramV1QueryInput(
   cramSize: Option[Long] = None,
   cramPath: Option[URI] = None,
   craiPath: Option[URI] = None,
-  cramMd5Path: Option[URI] = None,
   logPath: Option[URI] = None,
   fingerprintPath: Option[URI] = None,
   cromwellId: Option[UUID] = None,

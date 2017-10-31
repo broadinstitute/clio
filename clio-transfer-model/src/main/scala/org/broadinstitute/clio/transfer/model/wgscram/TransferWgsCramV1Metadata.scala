@@ -16,7 +16,6 @@ case class TransferWgsCramV1Metadata(
   cramSize: Option[Long] = None,
   cramPath: Option[URI] = None,
   craiPath: Option[URI] = None,
-  cramMd5Path: Option[URI] = None,
   logPath: Option[URI] = None,
   fingerprintPath: Option[URI] = None,
   cromwellId: Option[UUID] = None,
@@ -62,18 +61,17 @@ case class TransferWgsCramV1Metadata(
 
   // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
   override def pathsToMove: Seq[URI] =
-    Seq.concat(cramPath, craiPath, cramMd5Path)
+    Seq.concat(cramPath, craiPath)
 
   override def pathsToDelete: Seq[URI] =
-    Seq.concat(cramPath, craiPath, cramMd5Path)
+    Seq.concat(cramPath, craiPath)
 
   override def mapMove(
     pathMapper: Option[URI] => Option[URI]
   ): TransferWgsCramV1Metadata = {
     this.copy(
       cramPath = pathMapper(cramPath),
-      craiPath = pathMapper(craiPath),
-      cramMd5Path = pathMapper(cramMd5Path)
+      craiPath = pathMapper(craiPath)
     )
   }
 
