@@ -91,17 +91,15 @@ class MoveWgsCramSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testCramCloudSourcePath)
     mockIoUtil.putFileInCloud(testCraiCloudSourcePath)
-    mockIoUtil.putFileInCloud(testCramMd5CloudSourcePath)
     succeedingReturningDispatcherWgsCram(mockIoUtil)
       .dispatch(goodCramMoveCommand)
       .map(_.status should be(StatusCodes.OK))
   }
 
-  it should "only move the cram, crai, and md5" in {
+  it should "only move the cram and crai" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testCramCloudSourcePath)
     mockIoUtil.putFileInCloud(testCraiCloudSourcePath)
-    mockIoUtil.putFileInCloud(testCramMd5CloudSourcePath)
     mockIoUtil.putFileInCloud(testWgsMetricsCloudSourcePath)
 
     succeedingReturningDispatcherWgsCram(mockIoUtil)

@@ -86,8 +86,6 @@ class CommandDispatchSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testCramCloudSourcePath)
     mockIoUtil.putFileInCloud(testCraiCloudSourcePath)
-    mockIoUtil.putFileInCloud(testCramMd5CloudSourcePath)
-    mockIoUtil.putFileInCloud(testWgsMetricsCloudSourcePath)
     succeedingReturningDispatcherWgsCram(mockIoUtil)
       .dispatch(goodCramMoveCommand)
       .map(_.status should be(StatusCodes.OK))
