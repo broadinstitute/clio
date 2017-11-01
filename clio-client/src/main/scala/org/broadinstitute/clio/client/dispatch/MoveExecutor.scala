@@ -35,7 +35,6 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
       _ <- Future(verifyCloudPaths(ioUtil))
       existingMetadata <- queryForKey(webClient)
         .logErrorMsg(s"Could not query the $name. No files have been moved.")
-      _ <- Future(checkDestinationVsExistingPaths(ioUtil, existingMetadata))
       upsertResponse <- moveFiles(webClient, ioUtil, existingMetadata)
     } yield {
       upsertResponse
@@ -44,12 +43,14 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
 
   private def verifyCloudPaths(ioUtil: IoUtil): Unit = {
     if (moveCommand.key.location != Location.GCP) {
-      throw new Exception(s"Only cloud ${name}s are supported at this time.")
+      throw new IllegalArgumentException(
+        s"Only cloud ${name}s are supported at this time."
+      )
     }
 
-    if (!ioUtil.isGoogleObject(destination)) {
-      throw new Exception(
-        s"The destination of the $name must be a cloud path. '$destination' is not a cloud path."
+    if (!ioUtil.isGoogleDirectory(destination)) {
+      throw new IllegalArgumentException(
+        s"The destination of the $name must be a cloud path ending with '/'."
       )
     }
   }
@@ -98,35 +99,6 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     }
   }
 
-  private def checkDestinationVsExistingPaths(
-    ioUtil: IoUtil,
-    metadata: moveCommand.index.MetadataType
-  ): Unit = {
-    val pathsToMove = metadata.pathsToMove
-
-    pathsToMove.toList match {
-      case Nil =>
-        throw new Exception(
-          s"The $name for $prettyKey has no registered paths, and can't be moved."
-        )
-      case path :: Nil => {
-        if (!ioUtil.isGoogleObject(path)) {
-          throw new Exception(
-            s"Inconsistent state detected: non-cloud path '$path' is registered to the $name for $prettyKey."
-          )
-        }
-      }
-      case _ => {
-        if (!ioUtil.isGoogleDirectory(destination)) {
-          throw new Exception(
-            s"""The $name for $prettyKey is associated with ${pathsToMove.length} files, so the move destination must be a directory.
-               |Signal that you're OK with this by ending the destination argument with '/'""".stripMargin
-          )
-        }
-      }
-    }
-  }
-
   private def moveFiles(client: ClioWebClient,
                         ioUtil: IoUtil,
                         existingMetadata: moveCommand.index.MetadataType)(
@@ -134,28 +106,66 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     ec: ExecutionContext
   ): Future[HttpResponse] = {
 
-    val preMovePaths = existingMetadata.pathsToMove
     val newMetadata = existingMetadata.moveInto(destination)
-    val postMovePaths = newMetadata.pathsToMove
 
-    val pathsToMove =
-      preMovePaths.filterNot(path => postMovePaths.contains(path))
+    /*
+     * Here there be hacks to reduce boilerplate; may the typed gods have mercy.
+     *
+     * We flatten out the metadata instances for pre- and post-move into Maps
+     * from string keys to Any values, then flatMap away Options by extracting
+     * the underlying values from Somes and removing Nones.
+     *
+     * The Option-removal is needed so we can successfully pattern-match on URI
+     * later when building up the list of (preMove -> postMove) paths. Without it,
+     * matching on Option[URI] fails because of type erasure.
+     */
+    val metadataMapper = new CaseClassMapper[moveCommand.index.MetadataType]
+    val preMoveFields = metadataMapper.vals(existingMetadata).flatMap {
+      case (key, optValue: Option[_]) => optValue.map(v => key -> v)
+      case (key, nonOptValue)         => Some(key -> nonOptValue)
+    }
+    val postMoveFields = metadataMapper.vals(newMetadata).flatMap {
+      case (key, optValue: Option[_]) => optValue.map(v => key -> v)
+      case (key, nonOptValue)         => Some(key -> nonOptValue)
+    }
 
-    if (pathsToMove.isEmpty) {
+    val movesToPerform = preMoveFields.flatMap {
+      case (fieldName, path: URI) => {
+        /*
+         * Assumptions:
+         *   1. If the field exists pre-move, it will still exist post-move
+         *   2. If the field is a URI pre-move, it will still be a URI post-move
+         */
+        Some(path -> postMoveFields(fieldName).asInstanceOf[URI])
+          .filterNot { case (oldPath, newPath) => oldPath.equals(newPath) }
+      }
+      case _ => None
+    }
+
+    if (movesToPerform.isEmpty) {
       logger.warn("Nothing to move.")
       Future.successful(HttpResponse(StatusCodes.OK))
     } else {
-      val sourcesAsString =
-        pathsToMove.mkString("'", "', '", "'")
+      val oldPaths = movesToPerform.keys
+      oldPaths.foreach { path =>
+        if (!ioUtil.isGoogleObject(path)) {
+          sys.error(
+            s"Inconsistent state detected: non-cloud path '$path' is registered to the $name for $prettyKey"
+          )
+        }
+      }
 
-      val googleCopies = pathsToMove.map { p =>
-        Future(copyGoogleObject(p, destination, ioUtil))
+      val sourcesAsString = movesToPerform.keys.mkString("'", "', '", "'")
+
+      val googleCopies = movesToPerform.map {
+        case (oldPath, newPath) =>
+          Future(copyGoogleObject(oldPath, newPath, ioUtil))
       }
 
       // VERY IMPORTANT that this is lazy; we cannot delete anything
       // until Clio has been updated successfully.
-      lazy val googleDeletes = pathsToMove.map { p =>
-        Future(deleteGoogleObject(p, ioUtil))
+      lazy val googleDeletes = oldPaths.map { oldPath =>
+        Future(deleteGoogleObject(oldPath, ioUtil))
       }
 
       for {

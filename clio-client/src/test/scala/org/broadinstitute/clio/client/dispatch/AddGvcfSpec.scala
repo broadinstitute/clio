@@ -10,9 +10,11 @@ class AddGvcfSpec extends BaseClientSpec {
 
   implicit val bearerToken: OAuth2BearerToken = testBearer
 
+  val dispatcher = succeedingDispatcher()
+
   it should "fail if the metadata is not valid json" in {
     recoverToSucceededIf[Exception] {
-      succeedingDispatcher.dispatch(
+      dispatcher.dispatch(
         AddGvcf(
           metadataLocation = badMetadataFileLocation,
           key = testGvcfTransferV1Key
@@ -23,7 +25,7 @@ class AddGvcfSpec extends BaseClientSpec {
 
   it should "fail if the json is valid but we can't unmarshal it" in {
     recoverToSucceededIf[Exception] {
-      succeedingDispatcher.dispatch(
+      dispatcher.dispatch(
         AddGvcf(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
           key = testGvcfTransferV1Key
@@ -40,7 +42,7 @@ class AddGvcfSpec extends BaseClientSpec {
   }
 
   it should "return a successful HttpResponse if the server response is OK" in {
-    succeedingDispatcher
+    dispatcher
       .dispatch(goodGvcfAddCommand)
       .map(_.status should be(StatusCodes.OK))
   }

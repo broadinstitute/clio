@@ -397,18 +397,20 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val library = s"lib$randomId"
 
     val fileContents = s"$randomId --- I am a dummy ubam --- $randomId"
-    val cloudPath = rootTestStorageDir.resolve(
-      s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
-    )
-    val cloudPath2 =
-      cloudPath.getParent.resolve(s"moved/$randomId.unmapped.bam")
+    val ubamName = s"$randomId.unmapped.bam"
+    val sourceDir =
+      rootTestStorageDir.resolve(s"wgs-ubam/$barcode/$lane/$library/$ubamName")
+    val targetDir =
+      sourceDir.getParent.resolve(s"moved/")
+    val sourceUbam = sourceDir.resolve(ubamName)
+    val targetUbam = targetDir.resolve(ubamName)
 
     val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
     val metadata =
-      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri))
+      TransferWgsUbamV1Metadata(ubamPath = Some(sourceUbam.toUri))
 
     // Clio needs the metadata to be added before it can be moved.
-    val _ = Files.write(cloudPath, fileContents.getBytes)
+    val _ = Files.write(sourceUbam, fileContents.getBytes)
     val result = for {
       _ <- runUpsertWgsUbam(key, metadata)
       _ <- runClient(
@@ -422,18 +424,18 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         "--location",
         Location.GCP.entryName,
         "--destination",
-        cloudPath2.toUri.toString
+        targetDir.toUri.toString
       )
     } yield {
-      Files.exists(cloudPath) should be(false)
-      Files.exists(cloudPath2) should be(true)
-      new String(Files.readAllBytes(cloudPath2)) should be(fileContents)
+      Files.exists(sourceUbam) should be(false)
+      Files.exists(targetUbam) should be(true)
+      new String(Files.readAllBytes(targetUbam)) should be(fileContents)
     }
 
     result.andThen[Unit] {
       case _ => {
         // Without `val _ =`, the compiler complains about discarded non-Unit value.
-        val _ = Seq(cloudPath, cloudPath2).map(Files.deleteIfExists)
+        val _ = Seq(sourceUbam, targetUbam).map(Files.deleteIfExists)
       }
     }
   }
@@ -444,16 +446,16 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val library = s"lib$randomId"
 
     val fileContents = s"$randomId --- I am a dummy ubam --- $randomId"
-    val cloudPath = rootTestStorageDir.resolve(
-      s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
-    )
+    val ubamDir =
+      rootTestStorageDir.resolve(s"wgs-ubam/$barcode/$lane/$library/")
+    val ubamPath = ubamDir.resolve(s"$randomId.unmapped.bam")
 
     val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
     val metadata =
-      TransferWgsUbamV1Metadata(ubamPath = Some(cloudPath.toUri))
+      TransferWgsUbamV1Metadata(ubamPath = Some(ubamPath.toUri))
 
     // Clio needs the metadata to be added before it can be moved.
-    val _ = Files.write(cloudPath, fileContents.getBytes)
+    val _ = Files.write(ubamPath, fileContents.getBytes)
     val result = for {
       _ <- runUpsertWgsUbam(key, metadata)
       _ <- runClient(
@@ -467,16 +469,16 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         "--location",
         Location.GCP.entryName,
         "--destination",
-        cloudPath.toUri.toString
+        ubamDir.toUri.toString
       )
     } yield {
-      Files.exists(cloudPath) should be(true)
-      new String(Files.readAllBytes(cloudPath)) should be(fileContents)
+      Files.exists(ubamPath) should be(true)
+      new String(Files.readAllBytes(ubamPath)) should be(fileContents)
     }
 
     result.andThen[Unit] {
       case _ => {
-        val _ = Files.deleteIfExists(cloudPath)
+        val _ = Files.deleteIfExists(ubamPath)
       }
     }
   }

@@ -27,7 +27,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
         ),
         note = "Deleting for test"
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -39,26 +39,24 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
 
   it should "throw an exception if Clio doesn't return a WgsUbam" in {
     recoverToSucceededIf[Exception] {
-      succeedingDispatcher.dispatch(goodDeleteCommand)
+      succeedingDispatcher().dispatch(goodDeleteCommand)
     }
   }
 
   it should "throw an exception if Clio returns multiple records for a WgsUbam" in {
     val mockIoUtil = new MockIoUtil
     recoverToSucceededIf[Exception] {
-      new CommandDispatch(MockClioWebClient.returningTwoWgsUbams, mockIoUtil)
+      succeedingDispatcher(mockIoUtil, testTwoWgsUbamsLocation)
         .dispatch(goodDeleteCommand)
     }
   }
 
   it should "throw an exception if Clio can't delete the cloud file" in {
-    class FailingDeleteMockIoUtil extends MockIoUtil {
-      override def deleteGoogleObject(path: URI): Int = 1
-      override def googleObjectExists(path: URI): Boolean = true
-    }
     recoverToSucceededIf[Exception] {
-      succeedingReturningDispatcherWgsUbam(new FailingDeleteMockIoUtil)
-        .dispatch(goodDeleteCommand)
+      succeedingDispatcher(new MockIoUtil {
+        override def deleteGoogleObject(path: URI): Int = 1
+        override def googleObjectExists(path: URI): Boolean = true
+      }, testWgsUbamLocation).dispatch(goodDeleteCommand)
     }
   }
 
@@ -72,7 +70,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "delete a WgsUbam in Clio if the cloud ubam does not exist" in {
-    succeedingReturningDispatcherWgsUbam(new MockIoUtil)
+    succeedingDispatcher(new MockIoUtil, testWgsUbamLocation)
       .dispatch(goodDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }
@@ -80,7 +78,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   it should "delete a WgsUbam in Clio and the cloud" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
-    succeedingReturningDispatcherWgsUbam(mockIoUtil)
+    succeedingDispatcher(mockIoUtil, testWgsUbamLocation)
       .dispatch(goodDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }

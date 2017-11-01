@@ -16,12 +16,12 @@ class MoveWgsCramSpec extends BaseClientSpec {
   implicit val bearerToken: OAuth2BearerToken = testBearer
 
   it should "throw an exception if the destination path scheme is invalid" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsCram(
         key = testCramTransferV1Key,
         destination = MockIoUtil.InvalidPath
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -32,7 +32,7 @@ class MoveWgsCramSpec extends BaseClientSpec {
           key = testCramTransferV1Key,
           destination = testUbamCloudSourcePath
         )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -47,18 +47,18 @@ class MoveWgsCramSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw an exception if Clio doesn't return a Ubam" in {
+  it should "throw an exception if Clio doesn't return a cram" in {
     recoverToSucceededIf[Exception] {
       val command =
         MoveWgsCram(
           key = testCramTransferV1Key,
           destination = testUbamCloudSourcePath
         )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
-  it should "throw an exception if Clio can't upsert the new WgsUbam" in {
+  it should "throw an exception if Clio can't upsert the new cram" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     recoverToSucceededIf[Exception] {
@@ -68,22 +68,22 @@ class MoveWgsCramSpec extends BaseClientSpec {
   }
 
   it should "throw an exception if given a non-GCP cram" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsCram(
         key = testCramTransferV1Key.copy(location = Location.OnPrem),
         destination = testUbamCloudDestinationPath
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
   it should "throw an exception if the destination path is not in GCP" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsCram(
         key = testCramTransferV1Key,
         destination = URI.create("/this/is/a/local/path")
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -91,7 +91,7 @@ class MoveWgsCramSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testCramCloudSourcePath)
     mockIoUtil.putFileInCloud(testCraiCloudSourcePath)
-    succeedingReturningDispatcherWgsCram(mockIoUtil)
+    succeedingDispatcher(mockIoUtil, testWgsCramLocation)
       .dispatch(goodCramMoveCommand)
       .map(_.status should be(StatusCodes.OK))
   }
@@ -101,29 +101,48 @@ class MoveWgsCramSpec extends BaseClientSpec {
     mockIoUtil.putFileInCloud(testCramCloudSourcePath)
     mockIoUtil.putFileInCloud(testCraiCloudSourcePath)
     mockIoUtil.putFileInCloud(testWgsMetricsCloudSourcePath)
-
-    succeedingReturningDispatcherWgsCram(mockIoUtil)
+    succeedingDispatcher(mockIoUtil, testWgsCramLocation)
       .dispatch(goodCramMoveCommand)
-      .map(_.status should be(StatusCodes.OK))
-      .andThen {
-        case _ =>
-          mockIoUtil.googleObjectExists(
-            URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram")
-          ) should be(true)
-          mockIoUtil.googleObjectExists(
-            URI.create(s"${testCloudDestinationDirectoryPath}craiPath1.crai")
-          ) should be(true)
-          mockIoUtil.googleObjectExists(
-            URI
-              .create(s"${testCloudDestinationDirectoryPath}cramPath1.cram.md5")
-          ) should be(true)
-          mockIoUtil.googleObjectExists(
-            URI.create(
-              s"${testCloudDestinationDirectoryPath}metrics.wgs_metrics"
-            )
-          ) should be(false)
+      .map { response =>
+        response.status should be(StatusCodes.OK)
 
+        mockIoUtil.googleObjectExists(
+          URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram")
+        ) should be(true)
+        mockIoUtil.googleObjectExists(
+          URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram.crai")
+        ) should be(true)
+        mockIoUtil.googleObjectExists(
+          URI.create(s"${testCloudDestinationDirectoryPath}metrics.wgs_metrics")
+        ) should be(false)
       }
+  }
 
+  it should "change the crai extension to be .cram.crai" in {
+    val oldStyleCrai =
+      URI.create(
+        testCramCloudSourcePath.toString.replaceAll("\\.cram", ".crai")
+      )
+
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testCramCloudSourcePath)
+    mockIoUtil.putFileInCloud(oldStyleCrai)
+    mockIoUtil.putFileInCloud(testWgsMetricsCloudSourcePath)
+
+    succeedingDispatcher(mockIoUtil, testWgsCramWithOldExtensionLocation)
+      .dispatch(goodCramMoveCommand)
+      .map { response =>
+        response.status should be(StatusCodes.OK)
+
+        mockIoUtil.googleObjectExists(
+          URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram")
+        ) should be(true)
+        mockIoUtil.googleObjectExists(
+          URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram.crai")
+        ) should be(true)
+        mockIoUtil.googleObjectExists(
+          URI.create(s"${testCloudDestinationDirectoryPath}metrics.wgs_metrics")
+        ) should be(false)
+      }
   }
 }
