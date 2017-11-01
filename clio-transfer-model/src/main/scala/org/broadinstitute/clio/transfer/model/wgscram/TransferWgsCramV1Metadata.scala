@@ -59,12 +59,13 @@ case class TransferWgsCramV1Metadata(
   readgroupLevelMetricsFiles: Option[List[URI]] = None
 ) extends TransferMetadata[TransferWgsCramV1Metadata] {
 
-  // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
+  // As of DSDEGP-1711, delivering only the cram and crai.
   override def pathsToMove: Seq[URI] =
     Seq.concat(cramPath, craiPath)
 
+  // Delete the cramPath.md5 file (foo.cram.md5 where foo.cram is cramPath).
   override def pathsToDelete: Seq[URI] =
-    Seq.concat(cramPath, craiPath)
+    Seq.concat(cramPath, craiPath, cramPath.map(cp => URI.create(s"$cp.md5")))
 
   override def mapMove(
     pathMapper: Option[URI] => Option[URI]
