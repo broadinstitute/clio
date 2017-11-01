@@ -751,4 +751,171 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       _.getMessage should include("--note")
     }
   }
+
+  it should "move files, generate an md5 file, and record the workspace name when delivering crams" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val cramContents = s"$randomId --- I am a dummy cram --- $randomId"
+    val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
+    val md5Contents = randomId
+
+    val cramName = s"$randomId.cram"
+    val craiName = s"$cramName.crai"
+    val md5Name = s"$cramName.md5"
+
+    val rootSource =
+      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
+    val cramSource = rootSource.resolve(cramName)
+    val craiSource = rootSource.resolve(craiName)
+
+    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
+    val cramDestination = rootDestination.resolve(cramName)
+    val craiDestination = rootDestination.resolve(craiName)
+    val md5Destination = rootDestination.resolve(md5Name)
+
+    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
+    val metadata = TransferWgsCramV1Metadata(
+      cramPath = Some(cramSource.toUri),
+      craiPath = Some(craiSource.toUri),
+      cramMd5 = Some(Symbol(md5Contents))
+    )
+
+    val workspaceName = s"$randomId-TestWorkspace-$randomId"
+
+    val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
+      case (source, contents) => Files.write(source, contents.getBytes)
+    }
+    val result = for {
+      _ <- runUpsertCram(key, metadata)
+      _ <- runClient(
+        ClioCommand.deliverWgsCramName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--workspace-name",
+        workspaceName,
+        "--workspace-path",
+        rootDestination.toUri.toString
+      )
+      response <- runClient(
+        ClioCommand.queryWgsCramName,
+        "--workspace-name",
+        workspaceName
+      )
+      outputs <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
+    } yield {
+      Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
+
+      Seq(cramDestination, craiDestination, md5Destination).foreach(
+        Files.exists(_) should be(true)
+      )
+
+      Seq(
+        (cramDestination, cramContents),
+        (craiDestination, craiContents),
+        (md5Destination, md5Contents)
+      ).foreach {
+        case (destination, contents) =>
+          new String(Files.readAllBytes(destination)) should be(contents)
+      }
+
+      outputs should be {
+        Seq(
+          TransferWgsCramV1QueryOutput(
+            location = Location.GCP,
+            project = project,
+            sampleAlias = sample,
+            version = version,
+            workspaceName = Some(workspaceName),
+            cramPath = Some(cramDestination.toUri),
+            craiPath = Some(craiDestination.toUri),
+            cramMd5 = Some(Symbol(md5Contents)),
+            documentStatus = Some(DocumentStatus.Normal)
+          )
+        )
+      }
+    }
+
+    result.andThen {
+      case _ => {
+        val _ = Seq(
+          cramSource,
+          cramDestination,
+          craiSource,
+          craiDestination,
+          md5Destination
+        ).map(Files.deleteIfExists)
+      }
+    }
+  }
+
+  it should "fail delivery if the underlying move fails" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val md5Contents = randomId
+
+    val cramName = s"$randomId.cram"
+    val craiName = s"$cramName.crai"
+
+    val rootSource =
+      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
+    val cramSource = rootSource.resolve(cramName)
+    val craiSource = rootSource.resolve(craiName)
+
+    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
+
+    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
+    val metadata = TransferWgsCramV1Metadata(
+      cramPath = Some(cramSource.toUri),
+      craiPath = Some(craiSource.toUri),
+      cramMd5 = Some(Symbol(md5Contents))
+    )
+
+    val workspaceName = s"$randomId-TestWorkspace-$randomId"
+
+    recoverToExceptionIf[Exception] {
+      for {
+        _ <- runUpsertCram(key, metadata)
+        // Should fail because the source files don't exist.
+        deliverResponse <- runClient(
+          ClioCommand.deliverWgsCramName,
+          "--location",
+          Location.GCP.entryName,
+          "--project",
+          project,
+          "--sample-alias",
+          sample,
+          "--version",
+          version.toString,
+          "--workspace-name",
+          workspaceName,
+          "--workspace-path",
+          rootDestination.toUri.toString
+        )
+      } yield {
+        deliverResponse
+      }
+    }.flatMap { _ =>
+      for {
+        response <- runClient(
+          ClioCommand.queryWgsCramName,
+          "--workspace-name",
+          workspaceName
+        )
+        outputs <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
+      } yield {
+        // The CLP shouldn't have tried to upsert the workspace name.
+        outputs shouldBe empty
+      }
+    }
+  }
 }
