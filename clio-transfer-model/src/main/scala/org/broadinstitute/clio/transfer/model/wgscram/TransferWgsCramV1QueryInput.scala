@@ -4,7 +4,11 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation
+}
 
 case class TransferWgsCramV1QueryInput(
   documentStatus: Option[DocumentStatus] = None,
@@ -57,5 +61,6 @@ case class TransferWgsCramV1QueryInput(
   baitBiasSummaryMetricsPath: Option[URI] = None,
   baitBiasDetailMetricsPath: Option[URI] = None,
   wgsMetricsPath: Option[URI] = None,
+  regulatoryDesignation: Option[RegulatoryDesignation] = None,
   readgroupLevelMetricsFiles: Option[List[URI]] = None
 )

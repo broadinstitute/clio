@@ -4,7 +4,12 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation,
+  UpsertId
+}
 
 case class DocumentWgsCram(
   upsertId: UpsertId,
@@ -59,5 +64,6 @@ case class DocumentWgsCram(
   baitBiasSummaryMetricsPath: Option[URI] = None,
   baitBiasDetailMetricsPath: Option[URI] = None,
   wgsMetricsPath: Option[URI] = None,
+  regulatoryDesignation: Option[RegulatoryDesignation] = None,
   readgroupLevelMetricsFiles: Option[List[URI]] = None
 ) extends ClioDocument

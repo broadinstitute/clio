@@ -14,7 +14,12 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram._
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation,
+  UpsertId
+}
 
 import scala.concurrent.Future
 
@@ -74,6 +79,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       sampleAlias = s"someAlias$randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
+      regulatoryDesignation = Some(RegulatoryDesignation.ResearchOnly),
       cramPath = Some(URI.create("gs://path/cram.cram"))
     )
 
@@ -837,7 +843,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
             cramPath = Some(cramDestination.toUri),
             craiPath = Some(craiDestination.toUri),
             cramMd5 = Some(Symbol(md5Contents)),
-            documentStatus = Some(DocumentStatus.Normal)
+            documentStatus = Some(DocumentStatus.Normal),
+            regulatoryDesignation = Some(RegulatoryDesignation.ResearchOnly)
           )
         )
       }
@@ -854,6 +861,54 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         ).map(Files.deleteIfExists)
       }
     }
+  }
+
+  it should "automatically set regulatory designation to RESEARCH_ONLY" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val md5Contents = randomId
+
+    val cramName = s"$randomId.cram"
+    val craiName = s"$cramName.crai"
+
+    val rootSource =
+      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
+    val cramSource = rootSource.resolve(cramName)
+    val craiSource = rootSource.resolve(craiName)
+
+    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
+    val metadata = TransferWgsCramV1Metadata(
+      cramPath = Some(cramSource.toUri),
+      craiPath = Some(craiSource.toUri),
+      cramMd5 = Some(Symbol(md5Contents)),
+      regulatoryDesignation = None
+    )
+
+    def query = {
+      for {
+        response <- runClient(
+          ClioCommand.queryWgsCramName,
+          "--project",
+          project
+        )
+        results <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
+      } yield {
+        results should have length 1
+        results.head
+      }
+    }
+
+    for {
+      _ <- runUpsertCram(key, metadata)
+      result <- query
+    } yield {
+      result.regulatoryDesignation should be(
+        Some(RegulatoryDesignation.ResearchOnly)
+      )
+    }
+
   }
 
   it should "fail delivery if the underlying move fails" in {

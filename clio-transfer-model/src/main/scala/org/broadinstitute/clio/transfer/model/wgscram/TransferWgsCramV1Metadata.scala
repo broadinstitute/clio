@@ -5,7 +5,10 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import org.broadinstitute.clio.transfer.model.TransferMetadata
-import org.broadinstitute.clio.util.model.DocumentStatus
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  RegulatoryDesignation
+}
 
 case class TransferWgsCramV1Metadata(
   documentStatus: Option[DocumentStatus] = None,
@@ -55,6 +58,7 @@ case class TransferWgsCramV1Metadata(
   baitBiasSummaryMetricsPath: Option[URI] = None,
   baitBiasDetailMetricsPath: Option[URI] = None,
   wgsMetricsPath: Option[URI] = None,
+  regulatoryDesignation: Option[RegulatoryDesignation] = None,
   // TODO: Move these to top-level named fields in the wgs-ubam index?
   readgroupLevelMetricsFiles: Option[List[URI]] = None
 ) extends TransferMetadata[TransferWgsCramV1Metadata] {
