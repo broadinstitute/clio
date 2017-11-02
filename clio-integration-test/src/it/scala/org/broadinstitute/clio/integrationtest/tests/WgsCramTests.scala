@@ -863,7 +863,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "automatically set regulatory designation to RESEARCH_ONLY" in {
+  it should "automatically set regulatory designation to RESEARCH_ONLY for crams" in {
     val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
