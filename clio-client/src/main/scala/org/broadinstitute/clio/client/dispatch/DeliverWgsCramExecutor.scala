@@ -3,7 +3,6 @@ package org.broadinstitute.clio.client.dispatch
 import java.net.URI
 import java.nio.file.Files
 
-import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.commands.{DeliverWgsCram, MoveWgsCram}
 import org.broadinstitute.clio.client.util.IoUtil
@@ -14,6 +13,7 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1QueryInput,
   TransferWgsCramV1QueryOutput
 }
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -25,7 +25,8 @@ import scala.concurrent.{ExecutionContext, Future}
   *   1. Writes the cram md5 value to file at the target path
   *   2. Records the workspace name in the metadata for the delivered cram
   */
-class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor {
+class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
+    extends Executor[UpsertId] {
 
   val moveCommand =
     MoveWgsCram(deliverCommand.key, deliverCommand.workspacePath)
@@ -34,24 +35,33 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ex: ExecutionContext,
     credentials: HttpCredentials
-  ): Future[HttpResponse] = {
-    import webClient.materializer
-
-    val moveExecutor = new MoveExecutor(moveCommand)
+  ): Future[UpsertId] = {
 
     for {
-      moveResponse <- moveExecutor.execute(webClient, ioUtil)
-      /*
-       * Discard bytes from the move response to avoid
-       * back-pressuring the server.
-       */
-      _ = moveResponse.discardEntityBytes()
+      _ <- ensureMove(webClient, ioUtil)
       _ <- writeCramMd5(webClient, ioUtil)
         .logErrorMsg("Failed to write cram md5 to file")
-      upsertResponse <- recordWorkspaceName(webClient)
+      upsertId <- recordWorkspaceName(webClient)
         .logErrorMsg("Failed to records workspace name in cram metadata")
     } yield {
-      upsertResponse
+      upsertId
+    }
+  }
+
+  private def ensureMove(webClient: ClioWebClient, ioUtil: IoUtil)(
+    implicit ec: ExecutionContext,
+    credentials: HttpCredentials
+  ): Future[UpsertId] = {
+    val moveExecutor = new MoveExecutor(moveCommand)
+    moveExecutor.execute(webClient, ioUtil).map {
+      _.fold(
+        { _ =>
+          throw new IllegalStateException(
+            s"The ${moveExecutor.name} for ${moveExecutor.prettyKey} has no associated files, and can't be delivered"
+          )
+        },
+        identity
+      )
     }
   }
 
@@ -72,10 +82,10 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor {
         queryInput,
         includeDeleted = false
       )
-      outputs <- webClient.unmarshal[Seq[TransferWgsCramV1QueryOutput]](
-        queryResponse
-      )
     } yield {
+      val outputs = queryResponse
+        .as[Seq[TransferWgsCramV1QueryOutput]]
+        .fold(throw _, identity)
       // If there was more than one cram in Clio, the original move would have failed.
       val cramData = outputs.head
 
@@ -108,7 +118,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor {
 
   private def recordWorkspaceName(
     webClient: ClioWebClient
-  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
+  )(implicit credentials: HttpCredentials): Future[UpsertId] = {
     val newMetadata = TransferWgsCramV1Metadata(
       workspaceName = Some(deliverCommand.workspaceName)
     )

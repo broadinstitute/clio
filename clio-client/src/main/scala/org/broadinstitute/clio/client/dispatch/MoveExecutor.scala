@@ -2,7 +2,6 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveCommand}
@@ -14,23 +13,23 @@ import org.broadinstitute.clio.util.generic.{
   CaseClassMapper,
   CaseClassTypeConverter
 }
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
-    extends Executor {
+    extends Executor[Either[Unit, UpsertId]] {
 
   import moveCommand.index.implicits._
 
-  private val prettyKey = ClassUtil.formatFields(moveCommand.key)
+  private[dispatch] val name: String = moveCommand.index.name
+  private[dispatch] val prettyKey = ClassUtil.formatFields(moveCommand.key)
   private val destination: URI = moveCommand.destination
-  private val name: String = moveCommand.index.name
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     credentials: HttpCredentials
-  ): Future[HttpResponse] = {
+  ): Future[Either[Unit, UpsertId]] = {
     for {
       _ <- Future(verifyCloudPaths(ioUtil))
       existingMetadata <- queryForKey(webClient)
@@ -80,7 +79,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
       .logErrorMsg("There was an error contacting the Clio server.")
 
     val queryOutputs = queryResponse
-      .flatMap(client.unmarshal[Seq[moveCommand.index.QueryOutputType]])
+      .map(_.as[Seq[moveCommand.index.QueryOutputType]].fold(throw _, identity))
 
     queryOutputs.map { outputs =>
       val commandName = moveCommand.index.commandName
@@ -125,7 +124,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
                         existingMetadata: moveCommand.index.MetadataType)(
     implicit credentials: HttpCredentials,
     ec: ExecutionContext
-  ): Future[HttpResponse] = {
+  ): Future[Either[Unit, UpsertId]] = {
 
     val newMetadata = existingMetadata.moveInto(destination)
     val preMoveFields = flattenMetadata(existingMetadata)
@@ -146,7 +145,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
 
     if (movesToPerform.isEmpty) {
       logger.warn("Nothing to move.")
-      Future.successful(HttpResponse(StatusCodes.OK))
+      Future.successful(Left(()))
     } else {
       val oldPaths = movesToPerform.keys
       oldPaths.foreach { path =>
@@ -196,7 +195,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
           )
       } yield {
         logger.info(s"Successfully moved $sourcesAsString to '$destination'")
-        upsertResponse
+        Right(upsertResponse)
       }
     }
   }

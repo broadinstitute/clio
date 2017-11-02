@@ -1,10 +1,10 @@
 package org.broadinstitute.clio.client.dispatch
 
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import io.circe.Json
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.GetServerVersion
-
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.clio.status.model.VersionInfo
 
 class GetServerVersionExecutorSpec extends BaseClientSpec {
   behavior of "GetServerVersion"
@@ -17,9 +17,13 @@ class GetServerVersionExecutorSpec extends BaseClientSpec {
     }
   }
 
-  it should "return a successful HttpResponse if the server response is OK" in {
+  it should "return version info as JSON if the server response is OK" in {
     succeedingDispatcher()
       .dispatch(GetServerVersion)
-      .map(_.status should be(StatusCodes.OK))
+      .map {
+        case json: Json =>
+          json.as[VersionInfo] should be(Right(VersionInfo("0.0.1")))
+        case other => fail(s"Expected json, got $other")
+      }
   }
 }

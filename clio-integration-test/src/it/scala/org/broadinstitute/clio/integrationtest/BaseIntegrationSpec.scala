@@ -24,7 +24,7 @@ import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
-import io.circe.{Decoder, Encoder, Printer}
+import io.circe.{Decoder, Encoder, Json, Printer}
 import io.circe.parser._
 import io.circe.syntax._
 import org.apache.http.HttpHost
@@ -214,7 +214,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * Run a command with arbitrary args through the main clio-client.
     * Returns a failed future if the command exits early.
     */
-  def runClient(command: String, args: String*): Future[HttpResponse] = {
+  def runClient(command: String, args: String*): Future[_] = {
     clioClient
       .instanceMain(
         (Seq("--bearer-token", bearerToken.token, command) ++ args).toArray
@@ -225,6 +225,19 @@ abstract class BaseIntegrationSpec(clioDescription: String)
             .failed(new Exception(s"Command exited early with $earlyReturn")),
         identity
       )
+  }
+
+  /**
+    * Run a command with arbitrary args through the main clio-client,
+    * mapping the JSON response to some type.
+    * Returns a failed future if the command exits early or if the
+    * response cannot be converted to the given type.
+    */
+  def runClientGetJsonAs[A: Decoder](command: String,
+                                     args: String*): Future[A] = {
+    runClient(command, args: _*)
+      .mapTo[Json]
+      .map(_.as[A].fold(throw _, identity))
   }
 
   /**

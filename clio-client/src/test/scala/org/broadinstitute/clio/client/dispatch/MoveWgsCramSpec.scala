@@ -2,13 +2,12 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.MoveWgsCram
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 class MoveWgsCramSpec extends BaseClientSpec {
   behavior of "MoveWgsCram"
@@ -93,7 +92,10 @@ class MoveWgsCramSpec extends BaseClientSpec {
     mockIoUtil.putFileInCloud(testCraiCloudSourcePath)
     succeedingDispatcher(mockIoUtil, testWgsCramLocation)
       .dispatch(goodCramMoveCommand)
-      .map(_.status should be(StatusCodes.OK))
+      .map {
+        case Right(id) => id shouldBe an[UpsertId]
+        case other     => fail(s"Expected a Right[UpsertId], got $other")
+      }
   }
 
   it should "only move the cram and crai" in {
@@ -104,7 +106,10 @@ class MoveWgsCramSpec extends BaseClientSpec {
     succeedingDispatcher(mockIoUtil, testWgsCramLocation)
       .dispatch(goodCramMoveCommand)
       .map { response =>
-        response.status should be(StatusCodes.OK)
+        response match {
+          case Right(id) => id shouldBe an[UpsertId]
+          case other     => fail(s"Expected a Right[UpsertId], got $other")
+        }
 
         mockIoUtil.googleObjectExists(
           URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram")
@@ -132,7 +137,10 @@ class MoveWgsCramSpec extends BaseClientSpec {
     succeedingDispatcher(mockIoUtil, testWgsCramWithOldExtensionLocation)
       .dispatch(goodCramMoveCommand)
       .map { response =>
-        response.status should be(StatusCodes.OK)
+        response match {
+          case Right(id) => id shouldBe an[UpsertId]
+          case other     => fail(s"Expected a Right[UpsertId], got $other")
+        }
 
         mockIoUtil.googleObjectExists(
           URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram")

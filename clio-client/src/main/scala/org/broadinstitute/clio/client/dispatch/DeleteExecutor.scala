@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.client.dispatch
 
-import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, DeleteCommand}
@@ -12,12 +11,12 @@ import org.broadinstitute.clio.util.generic.{
   CaseClassMapper,
   CaseClassTypeConverter
 }
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
-    extends Executor {
+    extends Executor[UpsertId] {
 
   import deleteCommand.index.implicits._
 
@@ -27,7 +26,7 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     credentials: HttpCredentials
-  ): Future[HttpResponse] = {
+  ): Future[UpsertId] = {
     if (!deleteCommand.key.location.equals(Location.GCP)) {
       Future.failed(
         new Exception(s"Only cloud ${name}s are supported at this time.")
@@ -70,7 +69,9 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
       .logErrorMsg(s"There was a problem querying the Clio server for ${name}s")
 
     val queryOutputs = queryResponse
-      .flatMap(client.unmarshal[Seq[deleteCommand.index.QueryOutputType]])
+      .map(
+        _.as[Seq[deleteCommand.index.QueryOutputType]].fold(throw _, identity)
+      )
 
     queryOutputs.map { outputs =>
       val commandName = deleteCommand.index.commandName
@@ -107,7 +108,7 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
                           existingMetadata: deleteCommand.index.MetadataType)(
     implicit credentials: HttpCredentials,
     ec: ExecutionContext
-  ): Future[HttpResponse] = {
+  ): Future[UpsertId] = {
     val pathsToDelete = existingMetadata.pathsToDelete.filter { path =>
       val pathExists = ioUtil.googleObjectExists(path)
       if (!pathExists) {

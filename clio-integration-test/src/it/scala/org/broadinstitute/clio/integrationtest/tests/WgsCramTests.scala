@@ -3,9 +3,7 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 import java.nio.file.Files
 
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.sksamuel.elastic4s.IndexAndType
-import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -41,7 +39,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       key.version.toString,
       "--metadata-location",
       tmpMetadata.toString
-    ).flatMap(Unmarshal(_).to[UpsertId])
+    ).mapTo[UpsertId]
   }
 
   it should "create the expected wgs-cram mapping in elasticsearch" in {
@@ -58,7 +56,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
   it should "report the expected JSON schema for wgs-cram" in {
     runClient(ClioCommand.getWgsCramSchemaName)
-      .flatMap(Unmarshal(_).to[Json])
       .map(_ should be(WgsCramIndex.jsonSchema))
   }
 
@@ -106,16 +103,13 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       it should s"handle upserts and queries for wgs-cram location $location" in {
         for {
           returnedUpsertId <- responseFuture
-          queryResponse <- runClient(
+          outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
             ClioCommand.queryWgsCramName,
             "--sample-alias",
             expected.sampleAlias
           )
-          outputs <- Unmarshal(queryResponse)
-            .to[Seq[TransferWgsCramV1QueryOutput]]
         } yield {
-          outputs should have length 1
-          outputs.head should be(expected)
+          outputs should be(Seq(expected))
 
           val storedDocument =
             getJsonFrom[DocumentWgsCram](
@@ -224,20 +218,16 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      projectResponse <- runClient(
+      projectResults <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
         "--project",
         project
       )
-      projectResults <- Unmarshal(projectResponse)
-        .to[Seq[TransferWgsCramV1QueryOutput]]
-      sampleResponse <- runClient(
+      sampleResults <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
         "--sample-alias",
         samples.head
       )
-      sampleResults <- Unmarshal(sampleResponse)
-        .to[Seq[TransferWgsCramV1QueryOutput]]
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
@@ -263,12 +253,11 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        response <- runClient(
+        results <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
           ClioCommand.queryWgsCramName,
           "--project",
           project
         )
-        results <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
       } yield {
         results should have length 1
         results.head
@@ -331,14 +320,13 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        response <- runClient(
+        results <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
           ClioCommand.queryWgsCramName,
           "--project",
           project,
           "--sample-alias",
           sampleAlias
         )
-        results <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
       } yield {
         results.length should be(expectedLength)
         results.foreach { result =>
@@ -359,7 +347,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       )
       _ <- checkQuery(expectedLength = 2)
 
-      response <- runClient(
+      results <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
         "--project",
         project,
@@ -367,7 +355,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         sampleAlias,
         "--include-deleted"
       )
-      results <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
     } yield {
       results.length should be(keysWithMetadata.length)
       results.foldLeft(succeed) { (_, result) =>
@@ -616,7 +603,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         deleteNote
       )
       _ = Files.exists(cloudPath) should be(false)
-      response <- runClient(
+      outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
         "--location",
         Location.GCP.entryName,
@@ -628,7 +615,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         version.toString,
         "--include-deleted"
       )
-      outputs <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
     } yield {
       outputs should have length 1
       outputs.head
@@ -721,7 +707,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--note",
         deleteNote
       )
-      response <- runClient(
+      outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
         "--location",
         Location.GCP.entryName,
@@ -733,7 +719,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         version.toString,
         "--include-deleted"
       )
-      outputs <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
     } yield {
       Seq(cramPath, craiPath).foreach {
         Files.exists(_) should be(false)
@@ -830,12 +815,11 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--workspace-path",
         rootDestination.toUri.toString
       )
-      response <- runClient(
+      outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
         "--workspace-name",
         workspaceName
       )
-      outputs <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
     } yield {
       Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
 
@@ -908,12 +892,11 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        response <- runClient(
+        results <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
           ClioCommand.queryWgsCramName,
           "--project",
           project
         )
-        results <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
       } yield {
         results should have length 1
         results.head
@@ -956,12 +939,11 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        response <- runClient(
+        results <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
           ClioCommand.queryWgsCramName,
           "--project",
           project
         )
-        results <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
       } yield {
         results should have length 1
         results.head
@@ -1029,12 +1011,11 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       }
     }.flatMap { _ =>
       for {
-        response <- runClient(
+        outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
           ClioCommand.queryWgsCramName,
           "--workspace-name",
           workspaceName
         )
-        outputs <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
       } yield {
         // The CLP shouldn't have tried to upsert the workspace name.
         outputs shouldBe empty

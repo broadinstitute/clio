@@ -8,11 +8,12 @@ import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import io.circe.{Encoder, Printer}
+import io.circe.{Encoder, Json, Printer}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.util.FutureWithErrorMessage
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -117,21 +118,23 @@ class ClioWebClient(
     }
   }
 
-  def getClioServerVersion: Future[HttpResponse] = {
+  def getClioServerVersion: Future[Json] = {
     dispatchRequest(HttpRequest(uri = "/version"))
+      .flatMap(unmarshal[Json])
   }
 
-  def getClioServerHealth: Future[HttpResponse] = {
+  def getClioServerHealth: Future[Json] = {
     dispatchRequest(HttpRequest(uri = "/health"))
+      .flatMap(unmarshal[Json])
   }
 
   def getSchema(
     transferIndex: TransferIndex
-  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
+  )(implicit credentials: HttpCredentials): Future[Json] = {
     dispatchRequest(
       HttpRequest(uri = s"/api/v1/${transferIndex.urlSegment}/schema")
         .addHeader(Authorization(credentials = credentials))
-    )
+    ).flatMap(unmarshal[Json])
   }
 
   def upsert[M <: TransferMetadata[M]](
@@ -139,7 +142,7 @@ class ClioWebClient(
     key: TransferKey,
     metadata: M
   )(implicit credentials: HttpCredentials,
-    encoder: Encoder[M]): Future[HttpResponse] = {
+    encoder: Encoder[M]): Future[UpsertId] = {
     val entity = HttpEntity(
       ContentTypes.`application/json`,
       metadata.asJson.pretty(implicitly[Printer])
@@ -159,13 +162,13 @@ class ClioWebClient(
         method = HttpMethods.POST,
         entity = entity
       ).addHeader(Authorization(credentials = credentials))
-    )
+    ).flatMap(unmarshal[UpsertId])
   }
 
   def query[T](transferIndex: TransferIndex, input: T, includeDeleted: Boolean)(
     implicit credentials: HttpCredentials,
     encoder: Encoder[T]
-  ): Future[HttpResponse] = {
+  ): Future[Json] = {
     val queryPath = if (includeDeleted) "queryall" else "query"
 
     val entity = HttpEntity(
@@ -178,10 +181,10 @@ class ClioWebClient(
         method = HttpMethods.POST,
         entity = entity
       ).addHeader(Authorization(credentials = credentials))
-    )
+    ).flatMap(unmarshal[Json])
   }
 
-  def unmarshal[A: FromEntityUnmarshaller: TypeTag](
+  private def unmarshal[A: FromEntityUnmarshaller: TypeTag](
     httpResponse: HttpResponse
   ): Future[A] = {
     Unmarshal(httpResponse)
@@ -193,6 +196,9 @@ class ClioWebClient(
 
   def ensureOkResponse(httpResponse: HttpResponse): Future[HttpResponse] = {
     if (httpResponse.status.isSuccess()) {
+      logger.info(
+        s"Successfully completed command. Response code: ${httpResponse.status}"
+      )
       Future.successful(httpResponse)
     } else {
       httpResponse.entity.toStrict(requestTimeout).map { entity =>
