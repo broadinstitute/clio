@@ -18,7 +18,6 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryOutput
 }
-import org.broadinstitute.clio.util.model.RegulatoryDesignation.ClinicalDiagnostics
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
   Location,
@@ -817,7 +816,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         results should have length 1
         results.head
       }
-      Seq(1).mkString()
     }
 
     for {
@@ -843,7 +841,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val metadata =
       TransferGvcfV1Metadata(
         gvcfPath = Some(cloudPath.toUri),
-        regulatoryDesignation = Some(ClinicalDiagnostics)
+        regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
       )
 
     def query = {
