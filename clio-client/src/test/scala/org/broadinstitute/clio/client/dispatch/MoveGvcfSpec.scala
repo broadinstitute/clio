@@ -17,12 +17,12 @@ class MoveGvcfSpec extends BaseClientSpec {
   implicit val bearerToken: OAuth2BearerToken = testBearer
 
   it should "throw an exception if the destination path scheme is invalid" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveGvcf(
         key = testGvcfTransferV1Key,
         destination = MockIoUtil.InvalidPath
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -33,19 +33,7 @@ class MoveGvcfSpec extends BaseClientSpec {
           key = testGvcfTransferV1Key,
           destination = testGvcfCloudSourcePath
         )
-      succeedingDispatcher.dispatch(command)
-    }
-  }
-
-  it should "throw an exception if the source and destination paths are the same" in {
-    val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
-    recoverToSucceededIf[Exception] {
-      val command = MoveGvcf(
-        key = testGvcfTransferV1Key,
-        destination = testGvcfCloudSourcePath
-      )
-      succeedingReturningDispatcherGvcf(mockIoUtil).dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -56,7 +44,7 @@ class MoveGvcfSpec extends BaseClientSpec {
           key = testGvcfTransferV1Key,
           destination = testGvcfCloudSourcePath
         )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -70,7 +58,7 @@ class MoveGvcfSpec extends BaseClientSpec {
   }
 
   it should "throw an exception if given a non-GCP gvcf" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveGvcf(
         key = TransferGvcfV1Key(
           location = Location.OnPrem,
@@ -80,27 +68,27 @@ class MoveGvcfSpec extends BaseClientSpec {
         ),
         destination = testCloudDestinationDirectoryPath
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
   it should "throw an exception if the destination path is not in GCP" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveGvcf(
         key = testGvcfTransferV1Key,
         destination = URI.create("/this/is/a/local/path")
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
-  it should "throw an exception if given a non-directory destination for multiple source files" in {
-    recoverToSucceededIf[Exception] {
+  it should "throw an exception if given a non-directory destination" in {
+    recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveGvcf(
         key = testGvcfTransferV1Key,
         destination = testGvcfCloudDestinationPath
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -109,26 +97,8 @@ class MoveGvcfSpec extends BaseClientSpec {
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     mockIoUtil.putFileInCloud(testGvcfSummaryMetricsCloudSourcePath)
     mockIoUtil.putFileInCloud(testGvcfDetailMetricsCloudSourcePath)
-    succeedingReturningDispatcherGvcf(mockIoUtil)
+    succeedingDispatcher(mockIoUtil, testGvcfLocation)
       .dispatch(goodGvcfMoveCommand)
-      .map(_.status should be(StatusCodes.OK))
-  }
-
-  it should "move to a non-directory destination if only one file is associated with a gvcf key" in {
-    val mockIoUtil = new MockIoUtil
-    val dispatcher = new CommandDispatch(
-      MockClioWebClient.returningGvcfOnlyOneMetric,
-      mockIoUtil
-    )
-    mockIoUtil.putFileInCloud(testGvcfSummaryMetricsCloudSourcePath)
-//    mockIoUtil.putFileInCloud(testGvcfDetailMetricsCloudSourcePath)
-    dispatcher
-      .dispatch(
-        MoveGvcf(
-          key = testGvcfTransferV1Key,
-          destination = testGvcfCloudDestinationPath
-        )
-      )
       .map(_.status should be(StatusCodes.OK))
   }
 }

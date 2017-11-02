@@ -69,6 +69,12 @@ trait TestData {
     URI.create("clio-client/src/test/resources/testdata/testWgsCram")
   )
 
+  val testWgsCramWithOldExtensionLocation = Some(
+    URI.create(
+      "clio-client/src/test/resources/testdata/testWgsCramOldIndexExtension"
+    )
+  )
+
   val gvcfMetadataPlusExtraFieldsFileLocation: URI =
     URI.create(
       "clio-client/src/test/resources/testdata/gvcfMetadataplusextrafields"
@@ -115,10 +121,10 @@ trait TestData {
     URI.create("gs://testProject/testSample/cramPath1.cram")
 
   val testCraiCloudSourcePath: URI =
-    URI.create("gs://testProject/testSample/craiPath1.crai")
+    URI.create("gs://testProject/testSample/cramPath1.cram.crai")
 
   val testWgsMetricsCloudSourcePath: URI =
-    URI.create("gs://testProject/testSample/metrics.wgs_metrics")
+    URI.create("gs://testProject/testSample/cramPath1.wgs_metrics")
 
   val testCommon = CommonOptions(bearerToken = Some(testBearer))
   val testCommonNoToken = CommonOptions()
@@ -150,7 +156,7 @@ trait TestData {
 
   val goodMoveCommand = MoveWgsUbam(
     key = testTransferV1Key,
-    destination = testUbamCloudDestinationPath
+    destination = testCloudDestinationDirectoryPath
   )
 
   val goodDeleteCommand =
@@ -193,3 +199,10 @@ trait TestData {
   val testMaxConcurrent: Int = 1
   val testRequestTimeout: FiniteDuration = 3.seconds
 }
+
+/**
+  * Trait as object, for situations where it's more convenient to
+  * import a piece of test data instead of mixing in all fields
+  * through inheritence.
+  */
+object TestData extends TestData

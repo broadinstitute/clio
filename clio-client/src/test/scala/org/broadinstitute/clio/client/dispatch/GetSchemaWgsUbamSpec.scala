@@ -18,7 +18,7 @@ class GetSchemaWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "return a successful HttpResponse if the server response is OK" in {
-    succeedingDispatcher
+    succeedingDispatcher()
       .dispatch(GetSchemaWgsUbam)
       .map(_.status should be(StatusCodes.OK))
   }

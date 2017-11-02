@@ -27,7 +27,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
         ),
         note = "Deleting for test"
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -39,26 +39,24 @@ class DeleteGvcfSpec extends BaseClientSpec {
 
   it should "throw an exception if Clio doesn't return a gvcf" in {
     recoverToSucceededIf[Exception] {
-      succeedingDispatcher.dispatch(goodGvcfDeleteCommand)
+      succeedingDispatcher().dispatch(goodGvcfDeleteCommand)
     }
   }
 
   it should "throw an exception if Clio returns multiple records for a gvcf" in {
     val mockIoUtil = new MockIoUtil
     recoverToSucceededIf[Exception] {
-      new CommandDispatch(MockClioWebClient.returningTwoGvcfs, mockIoUtil)
+      succeedingDispatcher(mockIoUtil, testTwoGvcfsLocation)
         .dispatch(goodGvcfDeleteCommand)
     }
   }
 
   it should "throw an exception if Clio can't delete the cloud file" in {
-    class FailingDeleteMockIoUtil extends MockIoUtil {
-      override def deleteGoogleObject(path: URI): Int = 1
-      override def googleObjectExists(path: URI): Boolean = true
-    }
     recoverToSucceededIf[Exception] {
-      succeedingReturningDispatcherGvcf(new FailingDeleteMockIoUtil)
-        .dispatch(goodGvcfDeleteCommand)
+      succeedingDispatcher(new MockIoUtil {
+        override def deleteGoogleObject(path: URI): Int = 1
+        override def googleObjectExists(path: URI): Boolean = true
+      }, testGvcfLocation).dispatch(goodGvcfDeleteCommand)
     }
   }
 
@@ -72,7 +70,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
   }
 
   it should "delete a gvcf in Clio if the cloud gvcf does not exist" in {
-    succeedingReturningDispatcherGvcf(new MockIoUtil)
+    succeedingDispatcher(new MockIoUtil, testGvcfLocation)
       .dispatch(goodGvcfDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }
@@ -80,7 +78,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
   it should "delete a gvcf in Clio and the cloud" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
-    succeedingReturningDispatcherGvcf(mockIoUtil)
+    succeedingDispatcher(new MockIoUtil, testGvcfLocation)
       .dispatch(goodGvcfDeleteCommand)
       .map(_.status should be(StatusCodes.OK))
   }

@@ -21,12 +21,6 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
   val notes: Option[String]
 
   /**
-    * Paths to all files that should be moved by the clio-client move
-    * command for this metadata's index.
-    */
-  def pathsToMove: Seq[URI]
-
-  /**
     * Paths to all files that should be deleted by the clio-client delete
     * command for this metadata's index.
     */
@@ -34,22 +28,18 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
 
   /**
     * Return a copy of this object in which all files in `pathsToMove`
-    * have been moved to the given destination.
+    * have been moved to the given destination directory.
     *
-    * If `pathsToMove` contains > 1 element, `destination` must end with '/'.
+    * Until we move to a Path-based API, `destination` must end with '/'.
     */
   def moveInto(destination: URI): M = {
-    val pathMapper =
-      if (destination.getPath.endsWith("/")) { (opt: Option[URI]) =>
-        opt.map(path => moveIntoDirectory(path, destination))
-      } else if (pathsToMove.length > 1) {
-        sys.error(
-          "Non-directory destination given for metadata with > 1 path to move"
-        )
-      } else { (opt: Option[URI]) =>
-        opt.map(_ => destination)
-      }
-    mapMove(pathMapper)
+    if (!destination.getPath.endsWith("/")) {
+      sys.error(
+        s"Non-directory destination '$destination' given for metadata move"
+      )
+    }
+
+    mapMove(opt => opt.map(path => moveIntoDirectory(path, destination)))
   }
 
   /**

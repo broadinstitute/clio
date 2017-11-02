@@ -24,14 +24,6 @@ case class TransferGvcfV1Metadata(
   notes: Option[String] = None
 ) extends TransferMetadata[TransferGvcfV1Metadata] {
 
-  override def pathsToMove: Seq[URI] =
-    Seq.concat(
-      gvcfPath,
-      gvcfIndexPath,
-      gvcfSummaryMetricsPath,
-      gvcfDetailMetricsPath
-    )
-
   override def pathsToDelete: Seq[URI] =
     Seq.concat(gvcfPath, gvcfIndexPath)
 
