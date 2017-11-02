@@ -99,6 +99,27 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     }
   }
 
+  /**
+    * Here there be hacks to reduce boilerplate; may the typed gods have mercy.
+    *
+    * We flatten out the metadata instances for pre- and post-move into Maps
+    * from string keys to Any values, then flatMap away Options by extracting
+    * the underlying values from Somes and removing Nones.
+    *
+    * The Option-removal is needed so we can successfully pattern-match on URI
+    * later when building up the list of (preMove -> postMove) paths. Without it,
+    * matching on Option[URI] fails because of type erasure.
+    */
+  private def flattenMetadata(
+    metadata: moveCommand.index.MetadataType
+  ): Map[String, Any] = {
+    val metadataMapper = new CaseClassMapper[moveCommand.index.MetadataType]
+    metadataMapper.vals(metadata).flatMap {
+      case (key, optValue: Option[_]) => optValue.map(v => key -> v)
+      case (key, nonOptValue)         => Some(key -> nonOptValue)
+    }
+  }
+
   private def moveFiles(client: ClioWebClient,
                         ioUtil: IoUtil,
                         existingMetadata: moveCommand.index.MetadataType)(
@@ -107,27 +128,8 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   ): Future[HttpResponse] = {
 
     val newMetadata = existingMetadata.moveInto(destination)
-
-    /*
-     * Here there be hacks to reduce boilerplate; may the typed gods have mercy.
-     *
-     * We flatten out the metadata instances for pre- and post-move into Maps
-     * from string keys to Any values, then flatMap away Options by extracting
-     * the underlying values from Somes and removing Nones.
-     *
-     * The Option-removal is needed so we can successfully pattern-match on URI
-     * later when building up the list of (preMove -> postMove) paths. Without it,
-     * matching on Option[URI] fails because of type erasure.
-     */
-    val metadataMapper = new CaseClassMapper[moveCommand.index.MetadataType]
-    val preMoveFields = metadataMapper.vals(existingMetadata).flatMap {
-      case (key, optValue: Option[_]) => optValue.map(v => key -> v)
-      case (key, nonOptValue)         => Some(key -> nonOptValue)
-    }
-    val postMoveFields = metadataMapper.vals(newMetadata).flatMap {
-      case (key, optValue: Option[_]) => optValue.map(v => key -> v)
-      case (key, nonOptValue)         => Some(key -> nonOptValue)
-    }
+    val preMoveFields = flattenMetadata(existingMetadata)
+    val postMoveFields = flattenMetadata(newMetadata)
 
     val movesToPerform = preMoveFields.flatMap {
       case (fieldName, path: URI) => {
