@@ -792,7 +792,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "automatically set regulatory designation to RESEARCH_ONLY for gvcfs" in {
+  it should "automatically set regulatory designation to ResearchOnly for gvcfs" in {
     val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
@@ -803,7 +803,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata =
-      TransferGvcfV1Metadata(gvcfPath = Some(cloudPath.toUri))
+      TransferGvcfV1Metadata(gvcfPath = Some(cloudPath.toUri), regulatoryDesignation = None)
 
     def query = {
       for {
