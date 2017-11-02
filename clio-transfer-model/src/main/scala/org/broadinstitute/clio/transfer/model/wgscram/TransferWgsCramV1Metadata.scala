@@ -63,7 +63,7 @@ case class TransferWgsCramV1Metadata(
   readgroupLevelMetricsFiles: Option[List[URI]] = None
 ) extends TransferMetadata[TransferWgsCramV1Metadata] {
 
-  // As of DSDEGP-1711, delivering only the cram and crai.
+  // As of DSDEGP-1711, no longer delivering metrics.
   override def pathsToMove: Seq[URI] =
     Seq.concat(cramPath, craiPath)
 
