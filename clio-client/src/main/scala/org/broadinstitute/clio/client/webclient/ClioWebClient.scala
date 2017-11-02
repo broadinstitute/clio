@@ -144,9 +144,18 @@ class ClioWebClient(
       ContentTypes.`application/json`,
       metadata.asJson.pretty(implicitly[Printer])
     )
+    /*
+     * The `/` method on Uri.Path performs a raw URI encoding on the
+     * added segment, which is needed to deal with potential spaces
+     * in the fields of the key.
+     */
+    val encodedPath = key.getUrlSegments.foldLeft(
+      Uri.Path(s"/api/v1/${transferIndex.urlSegment}/metadata")
+    )(_ / _)
+
     dispatchRequest(
       HttpRequest(
-        uri = s"/api/v1/${transferIndex.urlSegment}/metadata/${key.getUrlPath}",
+        uri = Uri(path = encodedPath),
         method = HttpMethods.POST,
         entity = entity
       ).addHeader(Authorization(credentials = credentials))

@@ -77,9 +77,9 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val expected = TransferWgsUbamV1QueryOutput(
       flowcellBarcode = "barcode2",
       lane = 2,
-      libraryName = s"library$randomId",
+      libraryName = s"library $randomId",
       location = location,
-      project = Some("testProject"),
+      project = Some("test project"),
       documentStatus = Some(DocumentStatus.Normal)
     )
 

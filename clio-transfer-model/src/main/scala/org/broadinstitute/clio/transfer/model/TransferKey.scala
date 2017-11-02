@@ -13,9 +13,8 @@ trait TransferKey {
   val location: Location
 
   /**
-    * Encode the index key as a URL path segment for use in web service API calls.
-    *
-    * @return the url path representation of this key
+    * The paths segments, in order, that should be encoded and used as URL path
+    * segments for use in upsert requests to the server.
     */
-  def getUrlPath: String
+  def getUrlSegments: Seq[String]
 }
