@@ -3,7 +3,11 @@ package org.broadinstitute.clio.transfer.model.gvcf
 import java.net.URI
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation
+}
 
 case class TransferGvcfV1QueryOutput(
   location: Location,
@@ -20,5 +24,6 @@ case class TransferGvcfV1QueryOutput(
   gvcfSummaryMetricsPath: Option[URI] = None,
   gvcfDetailMetricsPath: Option[URI] = None,
   pipelineVersion: Option[Symbol] = None,
+  regulatoryDesignation: Option[RegulatoryDesignation] = None,
   notes: Option[String] = None
 )

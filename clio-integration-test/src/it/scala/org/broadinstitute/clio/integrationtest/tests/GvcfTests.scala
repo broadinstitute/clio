@@ -18,7 +18,12 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryOutput
 }
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation,
+  UpsertId
+}
 
 import scala.concurrent.Future
 
@@ -78,7 +83,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       sampleAlias = s"someAlias$randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
-      gvcfPath = Some(URI.create("gs://path/gvcf.gvcf"))
+      gvcfPath = Some(URI.create("gs://path/gvcf.gvcf")),
+      regulatoryDesignation = Some(RegulatoryDesignation.ResearchOnly)
     )
 
     /*
@@ -122,6 +128,9 @@ trait GvcfTests { self: BaseIntegrationSpec =>
           storedDocument.sampleAlias should be(expected.sampleAlias)
           storedDocument.version should be(expected.version)
           storedDocument.gvcfPath should be(expected.gvcfPath)
+          storedDocument.regulatoryDesignation should be(
+            expected.regulatoryDesignation
+          )
         }
       }
     }
@@ -780,6 +789,78 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         // Without `val _ =`, the compiler complains about discarded non-Unit value.
         val _ = Files.deleteIfExists(cloudPath)
       }
+    }
+  }
+
+  it should "automatically set regulatory designation to ResearchOnly for gvcfs" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val cloudPath = rootTestStorageDir.resolve(
+      s"gvcf/$project/$sample/v$version/$randomId.gvcf"
+    )
+
+    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
+    val metadata =
+      TransferGvcfV1Metadata(
+        gvcfPath = Some(cloudPath.toUri),
+        regulatoryDesignation = None
+      )
+
+    def query = {
+      for {
+        response <- runClient(ClioCommand.queryGvcfName, "--project", project)
+        results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
+      } yield {
+        results should have length 1
+        results.head
+      }
+    }
+
+    for {
+      _ <- runUpsertGvcf(key, metadata)
+      result <- query
+    } yield {
+      result.regulatoryDesignation should be(
+        Some(RegulatoryDesignation.ResearchOnly)
+      )
+    }
+  }
+
+  it should "respect user-set regulatory designation for gvcfs" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val cloudPath = rootTestStorageDir.resolve(
+      s"gvcf/$project/$sample/v$version/$randomId.gvcf"
+    )
+
+    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
+    val metadata =
+      TransferGvcfV1Metadata(
+        gvcfPath = Some(cloudPath.toUri),
+        regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
+      )
+
+    def query = {
+      for {
+        response <- runClient(ClioCommand.queryGvcfName, "--project", project)
+        results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
+      } yield {
+        results should have length 1
+        results.head
+      }
+    }
+
+    for {
+      _ <- runUpsertGvcf(key, metadata)
+      result <- query
+    } yield {
+      result.regulatoryDesignation should be(
+        Some(RegulatoryDesignation.ClinicalDiagnostics)
+      )
     }
   }
 
