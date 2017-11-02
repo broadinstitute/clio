@@ -18,6 +18,7 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryOutput
 }
+import org.broadinstitute.clio.util.model.RegulatoryDesignation.ClinicalDiagnostics
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
   Location,
@@ -803,7 +804,47 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata =
-      TransferGvcfV1Metadata(gvcfPath = Some(cloudPath.toUri), regulatoryDesignation = None)
+      TransferGvcfV1Metadata(
+        gvcfPath = Some(cloudPath.toUri),
+        regulatoryDesignation = None
+      )
+
+    def query = {
+      for {
+        response <- runClient(ClioCommand.queryGvcfName, "--project", project)
+        results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
+      } yield {
+        results should have length 1
+        results.head
+      }
+      Seq(1).mkString()
+    }
+
+    for {
+      _ <- runUpsertGvcf(key, metadata)
+      result <- query
+    } yield {
+      result.regulatoryDesignation should be(
+        Some(RegulatoryDesignation.ResearchOnly)
+      )
+    }
+  }
+
+  it should "respect user-set regulatory designation for gvcfs" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val cloudPath = rootTestStorageDir.resolve(
+      s"gvcf/$project/$sample/v$version/$randomId.gvcf"
+    )
+
+    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
+    val metadata =
+      TransferGvcfV1Metadata(
+        gvcfPath = Some(cloudPath.toUri),
+        regulatoryDesignation = Some(ClinicalDiagnostics)
+      )
 
     def query = {
       for {
@@ -820,7 +861,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       result <- query
     } yield {
       result.regulatoryDesignation should be(
-        Some(RegulatoryDesignation.ResearchOnly)
+        Some(RegulatoryDesignation.ClinicalDiagnostics)
       )
     }
   }

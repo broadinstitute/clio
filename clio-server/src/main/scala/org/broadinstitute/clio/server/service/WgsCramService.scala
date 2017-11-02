@@ -36,7 +36,9 @@ class WgsCramService(
     val updatedTransferMetadata = transferMetadata.copy(
       documentStatus =
         transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal)),
-      regulatoryDesignation = transferMetadata.regulatoryDesignation.orElse(Some(RegulatoryDesignation.ResearchOnly))
+      regulatoryDesignation = transferMetadata.regulatoryDesignation.orElse(
+        Some(RegulatoryDesignation.ResearchOnly)
+      )
     )
 
     persistenceService

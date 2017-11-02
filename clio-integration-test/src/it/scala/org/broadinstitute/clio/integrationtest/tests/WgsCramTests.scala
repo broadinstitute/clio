@@ -911,6 +911,54 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
   }
 
+  it should "respect user-set regulatory designation for crams" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val md5Contents = randomId
+
+    val cramName = s"$randomId.cram"
+    val craiName = s"$cramName.crai"
+
+    val rootSource =
+      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
+    val cramSource = rootSource.resolve(cramName)
+    val craiSource = rootSource.resolve(craiName)
+
+    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
+    val metadata = TransferWgsCramV1Metadata(
+      cramPath = Some(cramSource.toUri),
+      craiPath = Some(craiSource.toUri),
+      cramMd5 = Some(Symbol(md5Contents)),
+      regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
+    )
+
+    def query = {
+      for {
+        response <- runClient(
+          ClioCommand.queryWgsCramName,
+          "--project",
+          project
+        )
+        results <- Unmarshal(response).to[Seq[TransferWgsCramV1QueryOutput]]
+      } yield {
+        results should have length 1
+        results.head
+      }
+    }
+
+    for {
+      _ <- runUpsertCram(key, metadata)
+      result <- query
+    } yield {
+      result.regulatoryDesignation should be(
+        Some(RegulatoryDesignation.ClinicalDiagnostics)
+      )
+    }
+
+  }
+
   it should "fail delivery if the underlying move fails" in {
     val project = s"project$randomId"
     val sample = s"sample$randomId"
