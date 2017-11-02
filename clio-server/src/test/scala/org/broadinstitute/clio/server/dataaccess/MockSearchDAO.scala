@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.{HitReader, Indexable}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -35,8 +37,8 @@ class MockSearchDAO extends SearchDAO {
   override def queryMetadata[D: HitReader](
     queryDefinition: QueryDefinition,
     index: ElasticsearchIndex[D]
-  ): Future[Seq[D]] = {
-    Future.successful(Seq.empty[D])
+  ): Source[D, NotUsed] = {
+    Source.empty[D]
   }
 
   // Not implemented on purpose; there's nothing sensible to return here.

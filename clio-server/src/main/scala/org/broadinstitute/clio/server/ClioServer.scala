@@ -3,11 +3,18 @@ package org.broadinstitute.clio.server
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
-import akka.stream.{ActorMaterializer, ActorMaterializerSettings, Supervision}
+import akka.stream.{
+  ActorMaterializer,
+  ActorMaterializerSettings,
+  Materializer,
+  Supervision
+}
 import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.service._
 import org.broadinstitute.clio.server.webservice._
+
+import scala.concurrent.ExecutionContext
 
 object ClioServer
     extends JsonWebService
@@ -21,9 +28,10 @@ object ClioServer
     with SwaggerDirectives
     with StrictLogging {
 
-  private implicit val system = ActorSystem("clio")
+  private implicit val system: ActorSystem = ActorSystem("clio")
 
-  private implicit def executionContext = system.dispatcher
+  private implicit lazy val executionContext: ExecutionContext =
+    system.dispatcher
 
   private val loggingDecider: Supervision.Decider = { error =>
     logger.error("stopping due to error", error)
@@ -32,7 +40,7 @@ object ClioServer
 
   private lazy val actorMaterializerSettings =
     ActorMaterializerSettings(system).withSupervisionStrategy(loggingDecider)
-  private implicit lazy val materializer = ActorMaterializer(
+  private implicit lazy val materializer: Materializer = ActorMaterializer(
     actorMaterializerSettings
   )
 

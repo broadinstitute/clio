@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.server.service
 
+import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
@@ -44,7 +45,7 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
     val transferInput =
       TransferWgsUbamV1QueryInput(project = Option("testProject"))
     for {
-      _ <- wgsUbamService.queryMetadata(transferInput)
+      _ <- wgsUbamService.queryMetadata(transferInput).runWith(Sink.seq)
     } yield {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(

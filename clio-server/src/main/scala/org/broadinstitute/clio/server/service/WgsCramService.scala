@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.service
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.circe._
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
@@ -52,7 +54,7 @@ class WgsCramService(
 
   def queryMetadata(
     transferInput: TransferWgsCramV1QueryInput
-  ): Future[Seq[TransferWgsCramV1QueryOutput]] = {
+  ): Source[TransferWgsCramV1QueryOutput, NotUsed] = {
     val transferInputNew =
       transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
     queryAllMetadata(transferInputNew)
@@ -60,7 +62,7 @@ class WgsCramService(
 
   def queryAllMetadata(
     transferInput: TransferWgsCramV1QueryInput
-  ): Future[Seq[TransferWgsCramV1QueryOutput]] = {
+  ): Source[TransferWgsCramV1QueryOutput, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
       ElasticsearchIndex.WgsCram,
