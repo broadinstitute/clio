@@ -9,16 +9,6 @@ case class TransferWgsUbamV1Key(location: Location,
                                 libraryName: String)
     extends TransferKey {
 
-  def getUrlPath: String =
-    s"$location/$flowcellBarcode/$lane/$libraryName"
-}
-
-object TransferWgsUbamV1Key {
-  def apply(wgsUbam: TransferWgsUbamV1QueryOutput): TransferWgsUbamV1Key =
-    new TransferWgsUbamV1Key(
-      wgsUbam.location,
-      wgsUbam.flowcellBarcode,
-      wgsUbam.lane,
-      wgsUbam.libraryName
-    )
+  override def getUrlSegments: Seq[String] =
+    Seq(location.entryName, flowcellBarcode, lane.toString, libraryName)
 }

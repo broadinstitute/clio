@@ -12,11 +12,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.WgsUbamService
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.wgsubam.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1QueryInput
-}
-import org.broadinstitute.clio.util.model.Location.{GCP, OnPrem}
+import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1QueryInput
 
 class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
   behavior of "WgsUbamWebService"
@@ -24,12 +20,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
   it should "postMetadata with OnPrem location" in {
     val webService = new MockWgsUbamWebService()
     Post(
-      "/metadata/" + TransferWgsUbamV1Key(
-        OnPrem,
-        "barcodeOnPrem",
-        3,
-        "libraryOnPrem"
-      ).getUrlPath,
+      "/metadata/OnPrem/barcodeOnPrem/3/libraryOnPrem",
       Map("project" -> "testOnPremLocation")
     ) ~> webService.postMetadata ~> check {
       UpsertId.isValidId(responseAs[String]) should be(true)
@@ -39,7 +30,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
   it should "postMetadata with GCP location" in {
     val webService = new MockWgsUbamWebService()
     Post(
-      "/metadata/" + TransferWgsUbamV1Key(GCP, "barcodeGCP", 4, "libraryGCP").getUrlPath,
+      "/metadata/GCP/barcodeGCP/4/libraryGCP",
       Map("project" -> "testGCPlocation")
     ) ~> webService.postMetadata ~> check {
       UpsertId.isValidId(responseAs[String]) should be(true)
@@ -51,19 +42,19 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val webService = new MockWgsUbamWebService(app)
     Post(
-      "/metadata/" + TransferWgsUbamV1Key(GCP, "barcodeGCP", 5, "libraryGCP").getUrlPath,
+      "/metadata/GCP/barcodeGCP/5/libraryGCP",
       Map("project" -> "testProject1", "sample_alias" -> "sample1")
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
     Post(
-      "/metadata/" + TransferWgsUbamV1Key(GCP, "barcodeGCP", 6, "libraryGCP").getUrlPath,
+      "/metadata/GCP/barcodeGCP/6/libraryGCP",
       Map("project" -> "testProject1", "sample_alias" -> "sample1")
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
     Post(
-      "/metadata/" + TransferWgsUbamV1Key(GCP, "barcodeGCP", 7, "libraryGCP").getUrlPath,
+      "/metadata/GCP/barcodeGCP/7/libraryGCP",
       Map("project" -> "testProject1", "sample_alias" -> "sample2")
     ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
@@ -99,7 +90,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
     val app = MockClioApp(searchDAO = memorySearchDAO)
     val webService = new MockWgsUbamWebService(app)
     Post(
-      "/metadata/" + TransferWgsUbamV1Key(GCP, "FC123", 1, "lib1").getUrlPath,
+      "/metadata/GCP/FC123/1/lib1",
       Map(
         "project" -> "G123",
         "sample_alias" -> "sample1",
@@ -138,7 +129,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
     }
 
     Post(
-      "/metadata/" + TransferWgsUbamV1Key(GCP, "FC123", 1, "lib1").getUrlPath,
+      "/metadata/GCP/FC123/1/lib1",
       Map(
         "project" -> "G123",
         "sample_alias" -> "sample1",

@@ -9,6 +9,6 @@ case class TransferWgsCramV1Key(location: Location,
                                 version: Int)
     extends TransferKey {
 
-  def getUrlPath: String =
-    s"$location/$project/$sampleAlias/$version"
+  override def getUrlSegments: Seq[String] =
+    Seq(location.entryName, project, sampleAlias, version.toString)
 }
