@@ -24,11 +24,11 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
   implicit system: ActorSystem
 ) extends ClioWebClient(
       "localhost",
-      MockClioWebClient.testServerPort,
+      TestData.testServerPort,
       false,
-      MockClioWebClient.testMaxQueued,
-      MockClioWebClient.testMaxConcurrent,
-      MockClioWebClient.testRequestTimeout
+      TestData.testMaxQueued,
+      TestData.testMaxConcurrent,
+      TestData.testRequestTimeout
     )
     with TestData
     with ModelAutoDerivation {
@@ -112,24 +112,9 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
   }
 }
 
-object MockClioWebClient extends TestData {
-  def returningOk(implicit system: ActorSystem) =
-    new MockClioWebClient(status = StatusCodes.OK, None)
-
-  def returningInternalError(implicit system: ActorSystem) =
-    new MockClioWebClient(status = StatusCodes.InternalServerError, None)
-
-  def returningWgsUbam(implicit system: ActorSystem): MockClioWebClient = {
-    new MockClioWebClient(status = StatusCodes.OK, testWgsUbamLocation)
-  }
-
-  def returningTwoWgsUbams(implicit system: ActorSystem): MockClioWebClient = {
-    new MockClioWebClient(status = StatusCodes.OK, testTwoWgsUbamsLocation)
-  }
-
-  def failingToUpsert(implicit system: ActorSystem): MockClioWebClient = {
-    class MockClioWebClientCantUpsert
-        extends MockClioWebClient(status = StatusCodes.OK, None) {
+object MockClioWebClient {
+  def failingToUpsert(implicit system: ActorSystem): MockClioWebClient =
+    new MockClioWebClient(status = StatusCodes.OK, None) {
       override def upsert[T](
         transferIndex: TransferIndex,
         key: TransferKey,
@@ -141,40 +126,4 @@ object MockClioWebClient extends TestData {
         )
       }
     }
-    new MockClioWebClientCantUpsert
-  }
-
-  def returningInternalErrorGvcf(implicit system: ActorSystem) =
-    new MockClioWebClient(status = StatusCodes.InternalServerError, None)
-
-  def returningGvcf(implicit system: ActorSystem): MockClioWebClient = {
-    new MockClioWebClient(status = StatusCodes.OK, testGvcfLocation)
-  }
-
-  def returningGvcfOnlyMetrics(
-    implicit system: ActorSystem
-  ): MockClioWebClient = {
-    new MockClioWebClient(
-      status = StatusCodes.OK,
-      testGvcfMetadataOnlyMetricsLocation
-    )
-  }
-
-  def returningTwoGvcfs(implicit system: ActorSystem): MockClioWebClient = {
-    new MockClioWebClient(status = StatusCodes.OK, testTwoGvcfsLocation)
-  }
-
-  def returningWgsCram(implicit system: ActorSystem): MockClioWebClient = {
-    new MockClioWebClient(status = StatusCodes.OK, testWgsCramLocation)
-  }
-
-  def returningGvcfOnlyOneMetric(
-    implicit system: ActorSystem
-  ): MockClioWebClient = {
-    new MockClioWebClient(
-      status = StatusCodes.OK,
-      testGvcfMetadataOnlyOneMetricLocation
-    )
-  }
-
 }

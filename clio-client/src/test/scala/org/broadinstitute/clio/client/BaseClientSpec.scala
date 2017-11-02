@@ -1,11 +1,13 @@
 package org.broadinstitute.clio.client
 
-import org.broadinstitute.clio.client.dispatch.CommandDispatch
-import org.broadinstitute.clio.client.util.{MockIoUtil, TestData}
-import org.broadinstitute.clio.client.webclient.MockClioWebClient
+import java.net.URI
 
+import org.broadinstitute.clio.client.util.{IoUtil, MockIoUtil, TestData}
 import akka.actor.ActorSystem
+import akka.http.scaladsl.model.StatusCodes
 import akka.testkit.TestKit
+import org.broadinstitute.clio.client.dispatch.CommandDispatch
+import org.broadinstitute.clio.client.webclient.MockClioWebClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 abstract class BaseClientSpec
@@ -15,19 +17,17 @@ abstract class BaseClientSpec
     with TestData
     with Matchers {
 
-  val succeedingDispatcher =
-    new CommandDispatch(MockClioWebClient.returningOk, new MockIoUtil)
-  def succeedingReturningDispatcherWgsUbam(mockIoUtil: MockIoUtil) =
-    new CommandDispatch(MockClioWebClient.returningWgsUbam, mockIoUtil)
-  def succeedingReturningDispatcherGvcf(mockIoUtil: MockIoUtil) =
-    new CommandDispatch(MockClioWebClient.returningGvcf, mockIoUtil)
-  def succeedingReturningDispatcherWgsCram(mockIoUtil: MockIoUtil) =
-    new CommandDispatch(MockClioWebClient.returningWgsCram, mockIoUtil)
-  val failingDispatcher =
+  def succeedingDispatcher(ioUtil: IoUtil = new MockIoUtil,
+                           jsonToReturn: Option[URI] = None) =
     new CommandDispatch(
-      MockClioWebClient.returningInternalError,
-      new MockIoUtil
+      new MockClioWebClient(StatusCodes.OK, jsonToReturn),
+      ioUtil
     )
+
+  val failingDispatcher = new CommandDispatch(
+    new MockClioWebClient(StatusCodes.InternalServerError, None),
+    new MockIoUtil
+  )
 
   override def afterAll(): Unit = {
     shutdown()

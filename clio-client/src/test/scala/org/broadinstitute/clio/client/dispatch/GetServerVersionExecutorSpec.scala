@@ -18,7 +18,7 @@ class GetServerVersionExecutorSpec extends BaseClientSpec {
   }
 
   it should "return a successful HttpResponse if the server response is OK" in {
-    succeedingDispatcher
+    succeedingDispatcher()
       .dispatch(GetServerVersion)
       .map(_.status should be(StatusCodes.OK))
   }

@@ -42,8 +42,6 @@ case class TransferWgsUbamV1Metadata(
   documentStatus: Option[DocumentStatus] = None
 ) extends TransferMetadata[TransferWgsUbamV1Metadata] {
 
-  override def pathsToMove: Seq[URI] = ubamPath.toSeq
-
   override def pathsToDelete: Seq[URI] = ubamPath.toSeq
 
   override def mapMove(

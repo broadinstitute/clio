@@ -11,9 +11,11 @@ class AddWgsUbamSpec extends BaseClientSpec {
 
   implicit val bearerToken: OAuth2BearerToken = testBearer
 
+  val dispatcher = succeedingDispatcher()
+
   it should "fail if the metadata is not valid json" in {
     recoverToSucceededIf[Exception] {
-      succeedingDispatcher.dispatch(
+      dispatcher.dispatch(
         AddWgsUbam(
           metadataLocation = badMetadataFileLocation,
           key = testTransferV1Key
@@ -24,7 +26,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
 
   it should "fail if the json is valid but we can't unmarshal it" in {
     recoverToSucceededIf[Exception] {
-      succeedingDispatcher.dispatch(
+      dispatcher.dispatch(
         AddWgsUbam(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
           key = testTransferV1Key
@@ -41,7 +43,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "return a successful HttpResponse if the server response is OK" in {
-    succeedingDispatcher
+    dispatcher
       .dispatch(goodAddCommand)
       .map(_.status should be(StatusCodes.OK))
   }

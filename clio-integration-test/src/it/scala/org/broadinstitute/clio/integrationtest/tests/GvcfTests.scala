@@ -390,52 +390,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "move gvcfs in GCP" in {
-    val project = s"project$randomId"
-    val sample = s"sample$randomId"
-    val version = 3
-
-    val fileContents = s"$randomId --- I am a dummy gvcf --- $randomId"
-    val cloudPath = rootTestStorageDir.resolve(
-      s"gvcf/$project/$sample/v$version/$randomId.gvcf"
-    )
-    val cloudPath2 = cloudPath.getParent.resolve(s"moved/$randomId.gvcf")
-
-    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
-    val metadata =
-      TransferGvcfV1Metadata(gvcfPath = Some(cloudPath.toUri))
-
-    // Clio needs the metadata to be added before it can be moved.
-    val _ = Files.write(cloudPath, fileContents.getBytes)
-    val result = for {
-      _ <- runUpsertGvcf(key, metadata)
-      _ <- runClient(
-        ClioCommand.moveGvcfName,
-        "--location",
-        Location.GCP.entryName,
-        "--project",
-        project,
-        "--sample-alias",
-        sample,
-        "--version",
-        version.toString,
-        "--destination",
-        cloudPath2.toUri.toString
-      )
-    } yield {
-      Files.exists(cloudPath) should be(false)
-      Files.exists(cloudPath2) should be(true)
-      new String(Files.readAllBytes(cloudPath2)) should be(fileContents)
-    }
-
-    result.andThen[Unit] {
-      case _ => {
-        // Without `val _ =`, the compiler complains about discarded non-Unit value.
-        val _ = Seq(cloudPath, cloudPath2).map(Files.deleteIfExists)
-      }
-    }
-  }
-
   it should "move the gvcf, index, and metrics files together in GCP" in {
     val project = s"project$randomId"
     val sample = s"sample$randomId"

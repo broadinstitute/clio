@@ -17,12 +17,12 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   implicit val bearerToken: OAuth2BearerToken = testBearer
 
   it should "throw an exception if the destination path scheme is invalid" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsUbam(
         key = testTransferV1Key,
         destination = MockIoUtil.InvalidPath
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -33,7 +33,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
           key = testTransferV1Key,
           destination = testUbamCloudSourcePath
         )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -55,7 +55,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
           key = testTransferV1Key,
           destination = testUbamCloudSourcePath
         )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
@@ -69,7 +69,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw an exception if given a non-GCP unmapped bam" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsUbam(
         key = TransferWgsUbamV1Key(
           flowcellBarcode = testFlowcell,
@@ -79,24 +79,33 @@ class MoveWgsUbamSpec extends BaseClientSpec {
         ),
         destination = testUbamCloudDestinationPath
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
     }
   }
 
   it should "throw an exception if the destination path is not in GCP" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsUbam(
         key = testTransferV1Key,
         destination = URI.create("/this/is/a/local/path")
       )
-      succeedingDispatcher.dispatch(command)
+      succeedingDispatcher().dispatch(command)
+    }
+  }
+  it should "throw an exception if given a non-directory destination" in {
+    recoverToSucceededIf[IllegalArgumentException] {
+      val command = MoveWgsUbam(
+        key = testTransferV1Key,
+        destination = testGvcfCloudDestinationPath
+      )
+      succeedingDispatcher().dispatch(command)
     }
   }
 
   it should "move clio unmapped bams if no errors are encountered" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
-    succeedingReturningDispatcherWgsUbam(mockIoUtil)
+    succeedingDispatcher(mockIoUtil, testWgsUbamLocation)
       .dispatch(goodMoveCommand)
       .map(_.status should be(StatusCodes.OK))
   }

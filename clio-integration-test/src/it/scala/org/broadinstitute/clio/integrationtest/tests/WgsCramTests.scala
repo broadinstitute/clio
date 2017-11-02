@@ -390,52 +390,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "move wgs-crams in GCP" in {
-    val project = s"project$randomId"
-    val sample = s"sample$randomId"
-    val version = 3
-
-    val fileContents = s"$randomId --- I am a dummy cram --- $randomId"
-    val cloudPath = rootTestStorageDir.resolve(
-      s"cram/$project/$sample/v$version/$randomId.cram"
-    )
-    val cloudPath2 = cloudPath.getParent.resolve(s"moved/$randomId.cram")
-
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata =
-      TransferWgsCramV1Metadata(cramPath = Some(cloudPath.toUri))
-
-    // Clio needs the metadata to be added before it can be moved.
-    val _ = Files.write(cloudPath, fileContents.getBytes)
-    val result = for {
-      _ <- runUpsertCram(key, metadata)
-      _ <- runClient(
-        ClioCommand.moveWgsCramName,
-        "--location",
-        Location.GCP.entryName,
-        "--project",
-        project,
-        "--sample-alias",
-        sample,
-        "--version",
-        version.toString,
-        "--destination",
-        cloudPath2.toUri.toString
-      )
-    } yield {
-      Files.exists(cloudPath) should be(false)
-      Files.exists(cloudPath2) should be(true)
-      new String(Files.readAllBytes(cloudPath2)) should be(fileContents)
-    }
-
-    result.andThen[Unit] {
-      case _ => {
-        // Without `val _ =`, the compiler complains about discarded non-Unit value.
-        val _ = Seq(cloudPath, cloudPath2).map(Files.deleteIfExists)
-      }
-    }
-  }
-
   it should "move the cram and crai together in GCP" in {
     val project = s"project$randomId"
     val sample = s"sample$randomId"
@@ -449,7 +403,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       s"$randomId --- I am dummy fingerprinting metrics --- $randomId"
 
     val cramName = s"$randomId.cram"
-    val craiName = s"$randomId.crai"
+    val craiName = s"$cramName.crai"
     val alignmentMetricsName = s"$randomId.metrics"
     val fingerprintMetricsName = s"$randomId.metrics"
 
@@ -536,6 +490,72 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           fingerprintMetricsSource,
           fingerprintMetricsDestination
         ).map(Files.deleteIfExists)
+      }
+    }
+  }
+
+  it should "fixup the crai extension on move" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val cramContents = s"$randomId --- I am a dummy cram --- $randomId"
+    val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
+
+    val cramName = s"$randomId.cram"
+    val craiName = cramName.replaceAll("\\.cram", ".crai")
+
+    val rootSource =
+      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
+    val cramSource = rootSource.resolve(cramName)
+    val craiSource = rootSource.resolve(craiName)
+
+    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
+    val cramDestination = rootDestination.resolve(cramName)
+    val craiDestination = rootDestination.resolve(s"$cramName.crai")
+
+    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
+    val metadata = TransferWgsCramV1Metadata(
+      cramPath = Some(cramSource.toUri),
+      craiPath = Some(craiSource.toUri)
+    )
+
+    val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
+      case (source, contents) => Files.write(source, contents.getBytes)
+    }
+    val result = for {
+      _ <- runUpsertCram(key, metadata)
+      _ <- runClient(
+        ClioCommand.moveWgsCramName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--destination",
+        rootDestination.toUri.toString
+      )
+    } yield {
+      Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
+
+      Seq(cramDestination, craiDestination)
+        .foreach(Files.exists(_) should be(true))
+
+      Seq((cramDestination, cramContents), (craiDestination, craiContents))
+        .foreach {
+          case (destination, contents) =>
+            new String(Files.readAllBytes(destination)) should be(contents)
+        }
+      succeed
+    }
+
+    result.andThen {
+      case _ => {
+        val _ = Seq(cramSource, cramDestination, craiSource, craiDestination)
+          .map(Files.deleteIfExists)
       }
     }
   }
