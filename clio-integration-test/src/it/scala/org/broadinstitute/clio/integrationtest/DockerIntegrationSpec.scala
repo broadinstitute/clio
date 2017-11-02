@@ -10,7 +10,7 @@ import akka.stream.alpakka.file.scaladsl.FileTailSource
 import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.integrationtest.tests.RecoveryTests
+import org.broadinstitute.clio.integrationtest.tests.{LoadTests, RecoveryTests}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -108,6 +108,9 @@ class CoreDockerIntegrationSpec
 
 /** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
 class RecoveryIntegrationSpec extends DockerIntegrationSpec with RecoveryTests
+
+/** Load tests. Should only be run against Docker. */
+class LoadIntegrationSpec extends DockerIntegrationSpec with LoadTests
 
 /**
   * Container for constants for setting up / connecting into the docker-compose environment.

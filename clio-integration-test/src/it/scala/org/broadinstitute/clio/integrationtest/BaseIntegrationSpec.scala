@@ -52,8 +52,6 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
   behavior of clioDescription
 
-  implicit val m: ActorMaterializer = ActorMaterializer()
-
   /**
     * Max number of requests that can be queued within the client at a time.
     *
@@ -82,6 +80,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * The web client to use within the tested clio-client.
     */
   def clioWebClient: ClioWebClient
+
+  lazy implicit val m: ActorMaterializer = clioWebClient.materializer
 
   /**
     * The clio-client to test against.
