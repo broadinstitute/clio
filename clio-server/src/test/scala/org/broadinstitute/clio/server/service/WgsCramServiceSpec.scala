@@ -13,7 +13,11 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1Metadata,
   TransferWgsCramV1QueryInput
 }
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation
+}
 
 class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
   behavior of "WgsCramService"
@@ -90,7 +94,10 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
       val expectedDocument = WgsCramService.v1DocumentConverter
         .withMetadata(
           WgsCramService.v1DocumentConverter.empty(transferKey),
-          transferMetadata.copy(documentStatus = expectedDocumentStatus)
+          transferMetadata.copy(
+            documentStatus = expectedDocumentStatus,
+            regulatoryDesignation = Some(RegulatoryDesignation.ResearchOnly)
+          )
         )
         .copy(upsertId = returnedUpsertId)
 
