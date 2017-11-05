@@ -14,6 +14,10 @@ import io.circe.parser._
 import java.nio.file.Files
 import java.time.OffsetDateTime
 
+import akka.stream.scaladsl.Sink
+
+import scala.concurrent.Future
+
 class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
   behavior of "PersistenceDAO"
 
@@ -69,51 +73,45 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
   it should "return metadata documents from GCS in order" in {
     val dao = new MemoryPersistenceDAO()
     val half = 23
-    val documents = (0L until (2L * half)).map(
-      n =>
-        DocumentMock.default.copy(
-          mockKeyLong = n,
-          mockFilePath = Some(URI.create(s"gs://document-mock-key-$n"))
+    val documents = Seq.tabulate(2 * half) { n =>
+      DocumentMock.default.copy(
+        mockKeyLong = n.toLong,
+        mockFilePath = Some(URI.create(s"gs://document-mock-key-$n"))
       )
-    )
+    }
     documents.toSet.size should be(documents.size)
     documents.map(_.upsertId).toSet.size should be(documents.size)
     val expected = documents.drop(half)
-    val result = dao
-      .initialize(Seq(index))
-      .map(
-        _ =>
-          documents
-            .map(document => dao.writeUpdate(document, index))
-      )
-      .flatMap(_ => dao.getAllSince(expected.headOption, index))
-    result.flatMap(_.toVector should be(expected.tail))
+    for {
+      _ <- dao.initialize(Seq(index))
+      _ <- Future.sequence(documents.map(dao.writeUpdate(_, index)))
+      result <- dao.getAllSince(expected.headOption, index).runWith(Sink.seq)
+    } yield {
+      result should be(expected.tail)
+    }
   }
 
   it should "return all documents from GCS if no latest upsertId is given" in {
     val dao = new MemoryPersistenceDAO()
-    val documents = (0L until 26L).map(
-      n =>
-        DocumentMock.default.copy(
-          mockKeyLong = n,
-          mockFilePath = Some(URI.create(s"gs://document-mock-key-$n"))
+    val documents = Seq.tabulate(26) { n =>
+      DocumentMock.default.copy(
+        mockKeyLong = n.toLong,
+        mockFilePath = Some(URI.create(s"gs://document-mock-key-$n"))
       )
-    )
+    }
     documents.toSet.size should be(documents.size)
     documents.map(_.upsertId).toSet.size should be(documents.size)
     val expected = documents
-    val result = dao
-      .initialize(Seq(index))
-      .map(
-        _ =>
-          documents
-            .map(document => dao.writeUpdate(document, index))
-      )
-      .flatMap(_ => dao.getAllSince(None, index))
-    result.flatMap(_.toVector should be(expected))
+    for {
+      _ <- dao.initialize(Seq(index))
+      _ <- Future.sequence(documents.map(dao.writeUpdate(_, index)))
+      result <- dao.getAllSince(None, index).runWith(Sink.seq)
+    } yield {
+      result should be(expected)
+    }
   }
 
-  it should "fail if upsertId is found more than once" in {
+  it should "stop at the the latest document with the last-known upsert ID if the ID occurs more than once in GCS" in {
     val document = DocumentMock.default
     val dao = new MemoryPersistenceDAO()
 
@@ -134,13 +132,23 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
           indexable.json(document).getBytes
         )
       }
-      x <- recoverToExceptionIf[RuntimeException] {
-        dao.getAllSince(Some(document), index)
+      result <- dao.getAllSince(Some(document), index).runWith(Sink.seq)
+    } yield {
+      result shouldBe empty
+    }
+  }
+
+  it should "fail if the last document in Elasticsearch isn't found in storage" in {
+    val document = DocumentMock.default
+    val dao = new MemoryPersistenceDAO()
+
+    for {
+      _ <- dao.initialize(Seq(index))
+      result <- recoverToSucceededIf[NoSuchElementException] {
+        dao.getAllSince(Some(document), index).runWith(Sink.seq)
       }
     } yield {
-      x.getMessage should include(
-        s" files end with /${document.persistenceFilename} in "
-      )
+      result
     }
   }
 
