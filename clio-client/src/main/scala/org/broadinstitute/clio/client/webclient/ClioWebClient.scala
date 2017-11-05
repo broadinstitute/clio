@@ -4,11 +4,12 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials}
+import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream._
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import io.circe.{Encoder, Json, Printer}
+import io.circe.{Json, Printer}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.util.FutureWithErrorMessage
 import org.broadinstitute.clio.transfer.model._
@@ -38,12 +39,37 @@ class ClioWebClient(
   /**
     * Reusable stream component ingesting `HttpRequest`s and emitting
     * `HttpResponse`s by communicating with the Clio server.
+    *
+    * Uses one of Akka's cached host connection pools under-the-hood,
+    * so repeated requests to the remove Clio server (i.e. during backfilling)
+    * will reuse some of the HTTP system infrastructure instead of
+    * setting up a new connection from scratch for each request.
     */
   private val connectionFlow = {
+    val settings = {
+      val default = ConnectionPoolSettings.default
+
+      default
+        .withConnectionSettings(
+          default.connectionSettings.withIdleTimeout(requestTimeout)
+        )
+        .withMaxRetries(0)
+        .withMaxConnections(maxConcurrentRequests)
+        .withMaxOpenRequests(maxConcurrentRequests)
+    }
+
     if (useHttps) {
-      Http().outgoingConnectionHttps(clioHost, clioPort)
+      Http().cachedHostConnectionPoolHttps[Promise[HttpResponse]](
+        clioHost,
+        clioPort,
+        settings = settings
+      )
     } else {
-      Http().outgoingConnection(clioHost, clioPort)
+      Http().cachedHostConnectionPool[Promise[HttpResponse]](
+        clioHost,
+        clioPort,
+        settings = settings
+      )
     }
   }
 
@@ -65,25 +91,7 @@ class ClioWebClient(
       maxQueuedRequests,
       OverflowStrategy.dropNew
     )
-    .mapAsyncUnordered(maxConcurrentRequests) {
-      case (request, promise) => {
-        /*
-         * Stream-within-a-stream is weird, but Akka HTTP doesn't currently
-         * support a proper client-side request timeout when using their
-         * higher-level cached APIs.
-         */
-        val response = Source
-          .single(request)
-          .via(connectionFlow)
-          .completionTimeout(requestTimeout)
-          .runWith(Sink.head)
-
-        response.transformWith {
-          case Success(r)  => Future.successful(Success(r) -> promise)
-          case Failure(ex) => Future.successful(Failure(ex) -> promise)
-        }
-      }
-    }
+    .via(connectionFlow)
     .toMat(Sink.foreach {
       case (Success(response), promise) => promise.success(response)
       case (Failure(ex), promise)       => promise.failure(ex)
@@ -137,12 +145,12 @@ class ClioWebClient(
     ).flatMap(unmarshal[Json])
   }
 
-  def upsert[M <: TransferMetadata[M]](
-    transferIndex: TransferIndex,
-    key: TransferKey,
-    metadata: M
-  )(implicit credentials: HttpCredentials,
-    encoder: Encoder[M]): Future[UpsertId] = {
+  def upsert[TI <: TransferIndex](transferIndex: TI)(
+    key: transferIndex.KeyType,
+    metadata: transferIndex.MetadataType
+  )(implicit credentials: HttpCredentials): Future[UpsertId] = {
+    import transferIndex.implicits._
+
     val entity = HttpEntity(
       ContentTypes.`application/json`,
       metadata.asJson.pretty(implicitly[Printer])
@@ -165,10 +173,12 @@ class ClioWebClient(
     ).flatMap(unmarshal[UpsertId])
   }
 
-  def query[T](transferIndex: TransferIndex, input: T, includeDeleted: Boolean)(
-    implicit credentials: HttpCredentials,
-    encoder: Encoder[T]
-  ): Future[Json] = {
+  def query[TI <: TransferIndex](transferIndex: TI)(
+    input: transferIndex.QueryInputType,
+    includeDeleted: Boolean
+  )(implicit credentials: HttpCredentials): Future[Json] = {
+    import transferIndex.implicits._
+
     val queryPath = if (includeDeleted) "queryall" else "query"
 
     val entity = HttpEntity(
@@ -194,7 +204,9 @@ class ClioWebClient(
       )
   }
 
-  def ensureOkResponse(httpResponse: HttpResponse): Future[HttpResponse] = {
+  private def ensureOkResponse(
+    httpResponse: HttpResponse
+  ): Future[HttpResponse] = {
     if (httpResponse.status.isSuccess()) {
       logger.info(
         s"Successfully completed command. Response code: ${httpResponse.status}"

@@ -29,8 +29,10 @@ import org.broadinstitute.clio.transfer.model.wgsubam.{
   */
 sealed trait ClioCommand
 
+sealed trait RetrieveAndPrintCommand extends ClioCommand
+
 sealed abstract class GetSchemaCommand[TI <: TransferIndex](val index: TI)
-    extends ClioCommand
+    extends RetrieveAndPrintCommand
 
 sealed abstract class AddCommand[TI <: TransferIndex](val index: TI)
     extends ClioCommand {
@@ -39,7 +41,7 @@ sealed abstract class AddCommand[TI <: TransferIndex](val index: TI)
 }
 
 sealed abstract class QueryCommand[TI <: TransferIndex](val index: TI)
-    extends ClioCommand {
+    extends RetrieveAndPrintCommand {
   def queryInput: index.QueryInputType
   def includeDeleted: Boolean
 }
@@ -59,10 +61,10 @@ sealed abstract class DeleteCommand[TI <: TransferIndex](val index: TI)
 // Generic commands.
 
 @CommandName(ClioCommand.getServerHealthName)
-case object GetServerHealth extends ClioCommand
+case object GetServerHealth extends RetrieveAndPrintCommand
 
 @CommandName(ClioCommand.getServerVersionName)
-case object GetServerVersion extends ClioCommand
+case object GetServerVersion extends RetrieveAndPrintCommand
 
 // WGS-uBAM commands.
 

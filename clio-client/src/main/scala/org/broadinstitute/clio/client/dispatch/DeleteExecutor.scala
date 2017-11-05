@@ -61,8 +61,7 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
     ](inKeys => inKeys -- keyFields)
 
     val queryResponse = client
-      .query(
-        deleteCommand.index,
+      .query(deleteCommand.index)(
         keyToQueryMapper.convert(deleteCommand.key),
         includeDeleted = false
       )
@@ -145,7 +144,7 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
              |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
         )
       upsertResponse <- client
-        .upsert(deleteCommand.index, deleteCommand.key, markedAsDeleted)
+        .upsert(deleteCommand.index)(deleteCommand.key, markedAsDeleted)
         .logErrorMsg(
           s"""Failed to delete the $name record for $prettyKey in Clio.
              |The associated files have been deleted in the cloud, but Clio doesn't know.

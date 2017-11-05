@@ -20,8 +20,8 @@ class CommandDispatch(webClient: ClioWebClient, ioUtil: IoUtil) {
       case deleteCommand: DeleteCommand[_] => new DeleteExecutor(deleteCommand)
       case deliverCommand: DeliverWgsCram =>
         new DeliverWgsCramExecutor(deliverCommand)
-      case other =>
-        new RetrieveAndPrintExecutor(other)
+      case retrieveAndPrint: RetrieveAndPrintCommand =>
+        new RetrieveAndPrintExecutor(retrieveAndPrint)
     }).execute(webClient, ioUtil)
   }
 }

@@ -107,8 +107,8 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     succeedingDispatcher(mockIoUtil, testWgsUbamLocation)
       .dispatch(goodMoveCommand)
       .map {
-        case Right(id) => id shouldBe an[UpsertId]
-        case other     => fail(s"Expected a Right[UpsertId], got $other")
+        case Some(id) => id shouldBe an[UpsertId]
+        case other    => fail(s"Expected a Some[UpsertId], got $other")
       }
   }
 }

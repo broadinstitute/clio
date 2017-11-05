@@ -7,7 +7,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpCredentials
 import io.circe.parser.parse
 import io.circe.syntax._
-import io.circe.{Encoder, Json}
+import io.circe.Json
 import org.broadinstitute.clio.client.util.{IoUtil, TestData}
 import org.broadinstitute.clio.status.model.{
   ServerStatusInfo,
@@ -72,10 +72,10 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     }
   }
 
-  override def upsert[T](transferIndex: TransferIndex,
-                         key: TransferKey,
-                         metadata: T)(implicit credentials: HttpCredentials,
-                                      encoder: Encoder[T]): Future[UpsertId] = {
+  override def upsert[TI <: TransferIndex](transferIndex: TI)(
+    key: transferIndex.KeyType,
+    metadata: transferIndex.MetadataType
+  )(implicit credentials: HttpCredentials): Future[UpsertId] = {
     if (status.isSuccess()) {
       Future.successful(UpsertId.nextId())
     } else {
@@ -83,12 +83,10 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     }
   }
 
-  override def query[T](
-    transferIndex: TransferIndex,
-    input: T,
+  override def query[TI <: TransferIndex](transferIndex: TI)(
+    input: transferIndex.QueryInputType,
     includeDeleted: Boolean
-  )(implicit credentials: HttpCredentials,
-    encoder: Encoder[T]): Future[Json] = {
+  )(implicit credentials: HttpCredentials): Future[Json] = {
     if (status.isSuccess()) {
       Future.successful(json.getOrElse(Json.fromValues(Seq.empty)))
     } else {
@@ -100,12 +98,10 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
 object MockClioWebClient {
   def failingToUpsert(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, None) {
-      override def upsert[T](
-        transferIndex: TransferIndex,
-        key: TransferKey,
-        metadata: T
-      )(implicit credentials: HttpCredentials,
-        encoder: Encoder[T]): Future[UpsertId] = {
+      override def upsert[TI <: TransferIndex](transferIndex: TI)(
+        key: transferIndex.KeyType,
+        metadata: transferIndex.MetadataType
+      )(implicit credentials: HttpCredentials): Future[UpsertId] = {
         Future.failed(new RuntimeException("Failed to upsert"))
       }
     }

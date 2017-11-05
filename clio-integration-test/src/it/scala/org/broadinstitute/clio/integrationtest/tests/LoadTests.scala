@@ -75,7 +75,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
     val upserts = Source(ubams)
       .mapAsync(maxQueuedRequests) {
         case (key, metadata) => {
-          clioWebClient.upsert(WgsUbamIndex, key, metadata)
+          clioWebClient.upsert(WgsUbamIndex)(key, metadata)
         }
       }
       .runWith(Sink.ignore)

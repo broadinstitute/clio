@@ -54,14 +54,11 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
   ): Future[UpsertId] = {
     val moveExecutor = new MoveExecutor(moveCommand)
     moveExecutor.execute(webClient, ioUtil).map {
-      _.fold(
-        { _ =>
-          throw new IllegalStateException(
-            s"The ${moveExecutor.name} for ${moveExecutor.prettyKey} has no associated files, and can't be delivered"
-          )
-        },
-        identity
-      )
+      _.getOrElse {
+        throw new IllegalStateException(
+          s"The ${moveExecutor.name} for ${moveExecutor.prettyKey} has no files to move, and can't be delivered"
+        )
+      }
     }
   }
 
@@ -77,8 +74,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
     )
 
     for {
-      queryResponse <- webClient.query(
-        WgsCramIndex,
+      queryResponse <- webClient.query(WgsCramIndex)(
         queryInput,
         includeDeleted = false
       )
@@ -122,6 +118,6 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
     val newMetadata = TransferWgsCramV1Metadata(
       workspaceName = Some(deliverCommand.workspaceName)
     )
-    webClient.upsert(WgsCramIndex, deliverCommand.key, newMetadata)
+    webClient.upsert(WgsCramIndex)(deliverCommand.key, newMetadata)
   }
 }

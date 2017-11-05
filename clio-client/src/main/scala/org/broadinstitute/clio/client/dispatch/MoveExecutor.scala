@@ -18,7 +18,7 @@ import org.broadinstitute.clio.util.model.{Location, UpsertId}
 import scala.concurrent.{ExecutionContext, Future}
 
 class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
-    extends Executor[Either[Unit, UpsertId]] {
+    extends Executor[Option[UpsertId]] {
 
   import moveCommand.index.implicits._
 
@@ -29,7 +29,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     credentials: HttpCredentials
-  ): Future[Either[Unit, UpsertId]] = {
+  ): Future[Option[UpsertId]] = {
     for {
       _ <- Future(verifyCloudPaths(ioUtil))
       existingMetadata <- queryForKey(webClient)
@@ -71,8 +71,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     ](inKeys => inKeys -- keyFields)
 
     val queryResponse = client
-      .query(
-        moveCommand.index,
+      .query(moveCommand.index)(
         keyToQueryMapper.convert(moveCommand.key),
         includeDeleted = false
       )
@@ -124,7 +123,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
                         existingMetadata: moveCommand.index.MetadataType)(
     implicit credentials: HttpCredentials,
     ec: ExecutionContext
-  ): Future[Either[Unit, UpsertId]] = {
+  ): Future[Option[UpsertId]] = {
 
     val newMetadata = existingMetadata.moveInto(destination)
     val preMoveFields = flattenMetadata(existingMetadata)
@@ -145,7 +144,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
 
     if (movesToPerform.isEmpty) {
       logger.warn("Nothing to move.")
-      Future.successful(Left(()))
+      Future.successful(None)
     } else {
       val oldPaths = movesToPerform.keys
       oldPaths.foreach { path =>
@@ -179,7 +178,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
                |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.""".stripMargin
           )
         upsertResponse <- client
-          .upsert(moveCommand.index, moveCommand.key, newMetadata)
+          .upsert(moveCommand.index)(moveCommand.key, newMetadata)
           .logErrorMsg(
             s"""An error occurred while updating the $name record in Clio. All files associated with
                |$prettyKey exist at both the old and new locations, but Clio only knows about the old
@@ -195,7 +194,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
           )
       } yield {
         logger.info(s"Successfully moved $sourcesAsString to '$destination'")
-        Right(upsertResponse)
+        Some(upsertResponse)
       }
     }
   }

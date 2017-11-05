@@ -44,7 +44,7 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
       Future
         .failed(_) logErrorMsg s"Metadata at $location cannot be added to Clio", {
         decoded =>
-          webClient.upsert(addCommand.index, addCommand.key, decoded)
+          webClient.upsert(addCommand.index)(addCommand.key, decoded)
       }
     )
   }

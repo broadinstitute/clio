@@ -93,8 +93,8 @@ class MoveWgsCramSpec extends BaseClientSpec {
     succeedingDispatcher(mockIoUtil, testWgsCramLocation)
       .dispatch(goodCramMoveCommand)
       .map {
-        case Right(id) => id shouldBe an[UpsertId]
-        case other     => fail(s"Expected a Right[UpsertId], got $other")
+        case Some(id) => id shouldBe an[UpsertId]
+        case other    => fail(s"Expected a Some[UpsertId], got $other")
       }
   }
 
@@ -107,8 +107,8 @@ class MoveWgsCramSpec extends BaseClientSpec {
       .dispatch(goodCramMoveCommand)
       .map { response =>
         response match {
-          case Right(id) => id shouldBe an[UpsertId]
-          case other     => fail(s"Expected a Right[UpsertId], got $other")
+          case Some(id) => id shouldBe an[UpsertId]
+          case other    => fail(s"Expected a Sine[UpsertId], got $other")
         }
 
         mockIoUtil.googleObjectExists(
@@ -138,8 +138,8 @@ class MoveWgsCramSpec extends BaseClientSpec {
       .dispatch(goodCramMoveCommand)
       .map { response =>
         response match {
-          case Right(id) => id shouldBe an[UpsertId]
-          case other     => fail(s"Expected a Right[UpsertId], got $other")
+          case Some(id) => id shouldBe an[UpsertId]
+          case other    => fail(s"Expected a Some[UpsertId], got $other")
         }
 
         mockIoUtil.googleObjectExists(
