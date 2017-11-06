@@ -1,10 +1,14 @@
 package org.broadinstitute.clio.client.dispatch
 
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import io.circe.Json
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.GetServerHealth
-
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import org.broadinstitute.clio.status.model.{
+  ServerStatusInfo,
+  StatusInfo,
+  SystemStatusInfo
+}
 
 class GetServerHealthExecutorSpec extends BaseClientSpec {
   behavior of "GetServerHealth"
@@ -17,9 +21,15 @@ class GetServerHealthExecutorSpec extends BaseClientSpec {
     }
   }
 
-  it should "return a successful HttpResponse if the server response is OK" in {
+  it should "return the server status as JSON if the server response is OK" in {
     succeedingDispatcher()
       .dispatch(GetServerHealth)
-      .map(_.status should be(StatusCodes.OK))
+      .map {
+        case json: Json =>
+          json.as[StatusInfo] should be(
+            Right(StatusInfo(ServerStatusInfo.Started, SystemStatusInfo.OK))
+          )
+        case other => fail(s"Expected json, got $other")
+      }
   }
 }

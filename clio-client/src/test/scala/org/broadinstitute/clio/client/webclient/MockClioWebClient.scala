@@ -7,7 +7,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.HttpCredentials
 import io.circe.parser.parse
 import io.circe.syntax._
-import io.circe.{Encoder, Json, Printer}
+import io.circe.Json
 import org.broadinstitute.clio.client.util.{IoUtil, TestData}
 import org.broadinstitute.clio.status.model.{
   ServerStatusInfo,
@@ -17,6 +17,7 @@ import org.broadinstitute.clio.status.model.{
 }
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.Future
 
@@ -45,85 +46,64 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     }
   )
 
-  override def getClioServerHealth: Future[HttpResponse] = {
-    Future.successful(
-      HttpResponse(
-        status = status,
-        entity = HttpEntity(
-          ContentTypes.`application/json`,
-          health.asJson.pretty(implicitly[Printer])
-        )
-      )
-    )
+  override def getClioServerHealth: Future[Json] = {
+    if (status.isSuccess()) {
+      Future.successful(health.asJson)
+    } else {
+      Future.failed(new RuntimeException("Failed to get server health"))
+    }
   }
 
-  override def getClioServerVersion: Future[HttpResponse] = {
-    Future.successful(
-      HttpResponse(
-        status = status,
-        entity = HttpEntity(
-          ContentTypes.`application/json`,
-          version.asJson.pretty(implicitly[Printer])
-        )
-      )
-    )
+  override def getClioServerVersion: Future[Json] = {
+    if (status.isSuccess()) {
+      Future.successful(version.asJson)
+    } else {
+      Future.failed(new RuntimeException("Failed to get server version"))
+    }
   }
 
   override def getSchema(
     transferIndex: TransferIndex
-  )(implicit credentials: HttpCredentials): Future[HttpResponse] = {
-    Future.successful(
-      HttpResponse(
-        status = status,
-        entity = HttpEntity(
-          ContentTypes.`application/json`,
-          transferIndex.jsonSchema.pretty(implicitly[Printer])
-        )
-      )
-    )
+  )(implicit credentials: HttpCredentials): Future[Json] = {
+    if (status.isSuccess()) {
+      Future.successful(transferIndex.jsonSchema)
+    } else {
+      Future.failed(new RuntimeException("Failed to get schema"))
+    }
   }
 
-  override def upsert[T](
-    transferIndex: TransferIndex,
-    key: TransferKey,
-    metadata: T
-  )(implicit credentials: HttpCredentials,
-    encoder: Encoder[T]): Future[HttpResponse] = {
-    Future.successful(HttpResponse(status = status))
+  override def upsert[TI <: TransferIndex](transferIndex: TI)(
+    key: transferIndex.KeyType,
+    metadata: transferIndex.MetadataType
+  )(implicit credentials: HttpCredentials): Future[UpsertId] = {
+    if (status.isSuccess()) {
+      Future.successful(UpsertId.nextId())
+    } else {
+      Future.failed(new RuntimeException("Failed to upsert"))
+    }
   }
 
-  override def query[T](
-    transferIndex: TransferIndex,
-    input: T,
+  override def query[TI <: TransferIndex](transferIndex: TI)(
+    input: transferIndex.QueryInputType,
     includeDeleted: Boolean
-  )(implicit credentials: HttpCredentials,
-    encoder: Encoder[T]): Future[HttpResponse] = {
-    Future.successful(
-      HttpResponse(
-        status = status,
-        entity = HttpEntity(
-          ContentTypes.`application/json`,
-          json
-            .map(_.pretty(implicitly))
-            .getOrElse(Json.arr().pretty(implicitly))
-        )
-      )
-    )
+  )(implicit credentials: HttpCredentials): Future[Json] = {
+    if (status.isSuccess()) {
+      Future.successful(json.getOrElse(Json.fromValues(Seq.empty)))
+    } else {
+      Future.failed(new RuntimeException("Failed to query"))
+    }
   }
 }
 
 object MockClioWebClient {
-  def failingToUpsert(implicit system: ActorSystem): MockClioWebClient =
+  def failingToUpsert(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, None) {
-      override def upsert[T](
-        transferIndex: TransferIndex,
-        key: TransferKey,
-        metadata: T
-      )(implicit credentials: HttpCredentials,
-        encoder: Encoder[T]): Future[HttpResponse] = {
-        Future.successful(
-          HttpResponse(status = StatusCodes.InternalServerError)
-        )
+      override def upsert[TI <: TransferIndex](transferIndex: TI)(
+        key: transferIndex.KeyType,
+        metadata: transferIndex.MetadataType
+      )(implicit credentials: HttpCredentials): Future[UpsertId] = {
+        Future.failed(new RuntimeException("Failed to upsert"))
       }
     }
+  }
 }

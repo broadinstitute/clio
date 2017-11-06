@@ -5,7 +5,6 @@ import java.nio.file.Files
 import java.time.OffsetDateTime
 import java.util.Comparator
 
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.dimafeng.testcontainers.ForAllTestContainer
 import com.sksamuel.elastic4s.circe._
 import io.circe.Encoder
@@ -127,12 +126,11 @@ trait RecoveryTests extends ForAllTestContainer {
 
   it should "recover wgs-ubam metadata on startup" in {
     for {
-      ubamQuery <- runClient(
+      ubams <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--location",
         location.entryName
       )
-      ubams <- Unmarshal(ubamQuery).to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
       ubams should have length documentCount.toLong
       ubams.map(_.ubamPath) should contain theSameElementsAs storedUbams.map(
@@ -143,12 +141,11 @@ trait RecoveryTests extends ForAllTestContainer {
 
   it should "recover gvcf metadata on startup" in {
     for {
-      gvcfQuery <- runClient(
+      gvcfs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
         ClioCommand.queryGvcfName,
         "--location",
         location.entryName
       )
-      gvcfs <- Unmarshal(gvcfQuery).to[Seq[TransferGvcfV1QueryOutput]]
     } yield {
       gvcfs should have length documentCount.toLong
       gvcfs.map(_.gvcfPath) should contain theSameElementsAs gvcfs.map(
@@ -159,12 +156,11 @@ trait RecoveryTests extends ForAllTestContainer {
 
   it should "recover wgs-cram metadata on startup" in {
     for {
-      cramQuery <- runClient(
+      crams <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
         "--location",
         location.entryName
       )
-      crams <- Unmarshal(cramQuery).to[Seq[TransferWgsCramV1QueryOutput]]
     } yield {
       crams should have length documentCount.toLong
       crams.map(_.cramPath) should contain theSameElementsAs crams.map(

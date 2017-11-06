@@ -2,14 +2,13 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeleteGvcf
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
 import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1Key
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 class DeleteGvcfSpec extends BaseClientSpec {
   behavior of "DeleteGvcf"
@@ -72,7 +71,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
   it should "delete a gvcf in Clio if the cloud gvcf does not exist" in {
     succeedingDispatcher(new MockIoUtil, testGvcfLocation)
       .dispatch(goodGvcfDeleteCommand)
-      .map(_.status should be(StatusCodes.OK))
+      .map(_ shouldBe an[UpsertId])
   }
 
   it should "delete a gvcf in Clio and the cloud" in {
@@ -80,6 +79,6 @@ class DeleteGvcfSpec extends BaseClientSpec {
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     succeedingDispatcher(new MockIoUtil, testGvcfLocation)
       .dispatch(goodGvcfDeleteCommand)
-      .map(_.status should be(StatusCodes.OK))
+      .map(_ shouldBe an[UpsertId])
   }
 }

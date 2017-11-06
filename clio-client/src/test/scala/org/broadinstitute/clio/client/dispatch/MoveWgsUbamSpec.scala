@@ -2,14 +2,13 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.MoveWgsUbam
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.util.model.Location
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1Key
+import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 class MoveWgsUbamSpec extends BaseClientSpec {
   behavior of "MoveWgsUbam"
@@ -107,6 +106,9 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     succeedingDispatcher(mockIoUtil, testWgsUbamLocation)
       .dispatch(goodMoveCommand)
-      .map(_.status should be(StatusCodes.OK))
+      .map {
+        case Some(id) => id shouldBe an[UpsertId]
+        case other    => fail(s"Expected a Some[UpsertId], got $other")
+      }
   }
 }

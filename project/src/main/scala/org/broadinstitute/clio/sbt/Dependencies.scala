@@ -49,6 +49,7 @@ object Dependencies {
     "com.google.cloud" % "google-cloud-nio" % GoogleCloudNioVersion,
     "com.lightbend.akka" %% "akka-stream-alpakka-file" % AlpakkaVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
+    "com.sksamuel.elastic4s" %% "elastic4s-http-streams" % Elastic4sVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,

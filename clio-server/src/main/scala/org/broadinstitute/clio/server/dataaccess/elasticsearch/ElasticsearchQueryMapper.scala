@@ -39,10 +39,6 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput,
     * @return The query output.
     */
   def toQueryOutput(document: Document): ModelQueryOutput
-
-  def toQueryOutputs(documents: Seq[Document]): Seq[ModelQueryOutput] = {
-    documents.map(toQueryOutput)
-  }
 }
 
 object ElasticsearchQueryMapper {

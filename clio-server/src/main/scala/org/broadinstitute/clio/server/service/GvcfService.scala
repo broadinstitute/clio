@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.service
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.circe._
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
@@ -52,7 +54,7 @@ class GvcfService(
 
   def queryMetadata(
     transferInput: TransferGvcfV1QueryInput
-  ): Future[Seq[TransferGvcfV1QueryOutput]] = {
+  ): Source[TransferGvcfV1QueryOutput, NotUsed] = {
     val transferInputNew =
       transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
     queryAllMetadata(transferInputNew)
@@ -60,7 +62,7 @@ class GvcfService(
 
   def queryAllMetadata(
     transferInput: TransferGvcfV1QueryInput
-  ): Future[Seq[TransferGvcfV1QueryOutput]] = {
+  ): Source[TransferGvcfV1QueryOutput, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
       ElasticsearchIndex.Gvcf,

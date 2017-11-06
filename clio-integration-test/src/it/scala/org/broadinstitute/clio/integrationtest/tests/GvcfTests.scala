@@ -3,9 +3,7 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 import java.nio.file.Files
 
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.sksamuel.elastic4s.IndexAndType
-import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -45,7 +43,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       key.version.toString,
       "--metadata-location",
       tmpMetadata.toString
-    ).flatMap(Unmarshal(_).to[UpsertId])
+    ).mapTo[UpsertId]
   }
 
   it should "create the expected gvcf mapping in elasticsearch" in {
@@ -62,7 +60,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
   it should "report the expected JSON schema for gvcf" in {
     runClient(ClioCommand.getGvcfSchemaName)
-      .flatMap(Unmarshal(_).to[Json])
       .map(_ should be(GvcfIndex.jsonSchema))
   }
 
@@ -110,16 +107,13 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       it should s"handle upserts and queries for gvcf location $location" in {
         for {
           returnedUpsertId <- responseFuture
-          queryResponse <- runClient(
+          outputs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
             ClioCommand.queryGvcfName,
             "--sample-alias",
             expected.sampleAlias
           )
-          outputs <- Unmarshal(queryResponse)
-            .to[Seq[TransferGvcfV1QueryOutput]]
         } yield {
-          outputs should have length 1
-          outputs.head should be(expected)
+          outputs should be(Seq(expected))
 
           val storedDocument =
             getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, returnedUpsertId)
@@ -228,20 +222,16 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      projectResponse <- runClient(
+      projectResults <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
         ClioCommand.queryGvcfName,
         "--project",
         project
       )
-      projectResults <- Unmarshal(projectResponse)
-        .to[Seq[TransferGvcfV1QueryOutput]]
-      sampleResponse <- runClient(
+      sampleResults <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
         ClioCommand.queryGvcfName,
         "--sample-alias",
         samples.head
       )
-      sampleResults <- Unmarshal(sampleResponse)
-        .to[Seq[TransferGvcfV1QueryOutput]]
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
@@ -267,8 +257,11 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        response <- runClient(ClioCommand.queryGvcfName, "--project", project)
-        results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
+        results <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+          ClioCommand.queryGvcfName,
+          "--project",
+          project
+        )
       } yield {
         results should have length 1
         results.head
@@ -331,14 +324,13 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        response <- runClient(
+        results <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
           ClioCommand.queryGvcfName,
           "--project",
           project,
           "--sample-alias",
           sampleAlias
         )
-        results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
       } yield {
         results.length should be(expectedLength)
         results.foreach { result =>
@@ -359,7 +351,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       )
       _ <- checkQuery(expectedLength = 2)
 
-      response <- runClient(
+      results <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
         ClioCommand.queryGvcfName,
         "--project",
         project,
@@ -367,7 +359,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         sampleAlias,
         "--include-deleted"
       )
-      results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
     } yield {
       results.length should be(keysWithMetadata.length)
       results.foldLeft(succeed) { (_, result) =>
@@ -720,7 +711,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         deleteNote
       )
       _ = Files.exists(cloudPath) should be(false)
-      response <- runClient(
+      outputs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
         ClioCommand.queryGvcfName,
         "--location",
         Location.GCP.entryName,
@@ -732,7 +723,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         version.toString,
         "--include-deleted"
       )
-      outputs <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
     } yield {
       outputs should have length 1
       outputs.head
@@ -764,8 +754,11 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        response <- runClient(ClioCommand.queryGvcfName, "--project", project)
-        results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
+        results <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+          ClioCommand.queryGvcfName,
+          "--project",
+          project
+        )
       } yield {
         results should have length 1
         results.head
@@ -800,8 +793,11 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        response <- runClient(ClioCommand.queryGvcfName, "--project", project)
-        results <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
+        results <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+          ClioCommand.queryGvcfName,
+          "--project",
+          project
+        )
       } yield {
         results should have length 1
         results.head
@@ -897,7 +893,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         "--note",
         deleteNote
       )
-      response <- runClient(
+      outputs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
         ClioCommand.queryGvcfName,
         "--location",
         Location.GCP.entryName,
@@ -909,7 +905,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         version.toString,
         "--include-deleted"
       )
-      outputs <- Unmarshal(response).to[Seq[TransferGvcfV1QueryOutput]]
     } yield {
       Files.exists(gvcfPath) should be(false)
       Files.exists(indexPath) should be(false)

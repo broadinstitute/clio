@@ -1,21 +1,21 @@
 package org.broadinstitute.clio.client.dispatch
 
-import akka.http.scaladsl.model.HttpResponse
 import akka.http.scaladsl.model.headers.HttpCredentials
 import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands.{AddCommand, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
-    extends Executor {
+    extends Executor[UpsertId] {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     credentials: HttpCredentials
-  ): Future[HttpResponse] = {
+  ): Future[UpsertId] = {
 
     import addCommand.index.implicits._
 
@@ -44,7 +44,7 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
       Future
         .failed(_) logErrorMsg s"Metadata at $location cannot be added to Clio", {
         decoded =>
-          webClient.upsert(addCommand.index, addCommand.key, decoded)
+          webClient.upsert(addCommand.index)(addCommand.key, decoded)
       }
     )
   }

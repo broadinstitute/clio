@@ -2,7 +2,6 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveCommand}
@@ -14,23 +13,23 @@ import org.broadinstitute.clio.util.generic.{
   CaseClassMapper,
   CaseClassTypeConverter
 }
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
-    extends Executor {
+    extends Executor[Option[UpsertId]] {
 
   import moveCommand.index.implicits._
 
-  private val prettyKey = ClassUtil.formatFields(moveCommand.key)
+  private[dispatch] val name: String = moveCommand.index.name
+  private[dispatch] val prettyKey = ClassUtil.formatFields(moveCommand.key)
   private val destination: URI = moveCommand.destination
-  private val name: String = moveCommand.index.name
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext,
     credentials: HttpCredentials
-  ): Future[HttpResponse] = {
+  ): Future[Option[UpsertId]] = {
     for {
       _ <- Future(verifyCloudPaths(ioUtil))
       existingMetadata <- queryForKey(webClient)
@@ -72,15 +71,14 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     ](inKeys => inKeys -- keyFields)
 
     val queryResponse = client
-      .query(
-        moveCommand.index,
+      .query(moveCommand.index)(
         keyToQueryMapper.convert(moveCommand.key),
         includeDeleted = false
       )
       .logErrorMsg("There was an error contacting the Clio server.")
 
     val queryOutputs = queryResponse
-      .flatMap(client.unmarshal[Seq[moveCommand.index.QueryOutputType]])
+      .map(_.as[Seq[moveCommand.index.QueryOutputType]].fold(throw _, identity))
 
     queryOutputs.map { outputs =>
       val commandName = moveCommand.index.commandName
@@ -125,7 +123,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
                         existingMetadata: moveCommand.index.MetadataType)(
     implicit credentials: HttpCredentials,
     ec: ExecutionContext
-  ): Future[HttpResponse] = {
+  ): Future[Option[UpsertId]] = {
 
     val newMetadata = existingMetadata.moveInto(destination)
     val preMoveFields = flattenMetadata(existingMetadata)
@@ -146,7 +144,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
 
     if (movesToPerform.isEmpty) {
       logger.warn("Nothing to move.")
-      Future.successful(HttpResponse(StatusCodes.OK))
+      Future.successful(None)
     } else {
       val oldPaths = movesToPerform.keys
       oldPaths.foreach { path =>
@@ -180,7 +178,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
                |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.""".stripMargin
           )
         upsertResponse <- client
-          .upsert(moveCommand.index, moveCommand.key, newMetadata)
+          .upsert(moveCommand.index)(moveCommand.key, newMetadata)
           .logErrorMsg(
             s"""An error occurred while updating the $name record in Clio. All files associated with
                |$prettyKey exist at both the old and new locations, but Clio only knows about the old
@@ -196,7 +194,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
           )
       } yield {
         logger.info(s"Successfully moved $sourcesAsString to '$destination'")
-        upsertResponse
+        Some(upsertResponse)
       }
     }
   }

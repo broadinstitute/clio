@@ -1,14 +1,16 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.scaladsl.Source
+import com.sksamuel.elastic4s.{HitReader, Indexable}
 import com.sksamuel.elastic4s.bulk.BulkCompatibleDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.cluster.ClusterHealthResponse
-import com.sksamuel.elastic4s.http.search.SearchResponse
 import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import com.sksamuel.elastic4s.{HitReader, Indexable}
+import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.typesafe.scalalogging.StrictLogging
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.server.ClioServerConfig
@@ -18,16 +20,15 @@ import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.RestClient
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 class HttpElasticsearchDAO private[dataaccess] (
   private[dataaccess] val httpHosts: Seq[HttpHost]
-)(implicit
-  val executionContext: ExecutionContext,
-  val system: ActorSystem)
+)(implicit val system: ActorSystem)
     extends SearchDAO
     with SystemElasticsearchDAO
     with StrictLogging {
+
+  implicit val ec: ExecutionContext = system.dispatcher
 
   private[dataaccess] val httpClient = {
     val restClient = RestClient
@@ -52,14 +53,15 @@ class HttpElasticsearchDAO private[dataaccess] (
   override def queryMetadata[D <: ClioDocument: HitReader](
     queryDefinition: QueryDefinition,
     index: ElasticsearchIndex[D]
-  ): Future[Seq[D]] = {
+  ): Source[D, NotUsed] = {
     val searchDefinition = search(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
       .size(HttpElasticsearchDAO.DocumentScrollSize)
       .sortByFieldAsc(HttpElasticsearchDAO.DocumentScrollSort)
       .query(queryDefinition)
-    val searchResponse = httpClient execute searchDefinition
-    searchResponse flatMap foldScroll(Seq.empty[D], searchDefinition.keepAlive)
+
+    val responsePublisher = httpClient.publisher(searchDefinition)
+    Source.fromPublisher(responsePublisher).map(_.to[D])
   }
 
   override def getMostRecentDocument[D <: ClioDocument: HitReader](
@@ -143,34 +145,10 @@ class HttpElasticsearchDAO private[dataaccess] (
   ): BulkCompatibleDefinition = {
     update(document.entityId) in index.indexName / index.indexType docAsUpsert document
   }
-
-  private def foldScroll[I, D: HitReader](
-    acc: Seq[D],
-    keepAlive: Option[String]
-  )(searchResponse: SearchResponse): Future[Seq[D]] = {
-    searchResponse.scrollId match {
-      case Some(scrollId) =>
-        if (searchResponse.nonEmpty) {
-          val scrollDefinition =
-            searchScroll(scrollId).copy(keepAlive = keepAlive)
-          val scrollResponse = httpClient execute scrollDefinition
-          scrollResponse flatMap foldScroll(
-            acc ++ searchResponse.to[D],
-            keepAlive
-          )
-        } else {
-          val clearResponse = httpClient execute clearScroll(scrollId)
-          clearResponse transform (_ => Success(acc))
-        }
-      case None =>
-        Future.successful(acc ++ searchResponse.to[D])
-    }
-  }
 }
 
 object HttpElasticsearchDAO extends StrictLogging {
-  def apply()(implicit executionContext: ExecutionContext,
-              system: ActorSystem): SearchDAO = {
+  def apply()(implicit system: ActorSystem): SearchDAO = {
     val httpHosts = ClioServerConfig.Elasticsearch.httpHosts.map(toHttpHost)
     new HttpElasticsearchDAO(httpHosts)
   }

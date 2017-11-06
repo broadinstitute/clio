@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.service
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.SearchDAO
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -7,10 +9,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
   ElasticsearchQueryMapper
 }
-
 import com.sksamuel.elastic4s.HitReader
-
-import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Service responsible for running queries against a search DAO.
@@ -32,13 +31,13 @@ class SearchService private (searchDAO: SearchDAO) {
     transferInput: TI,
     index: ElasticsearchIndex[D],
     queryMapper: ElasticsearchQueryMapper[TI, TO, D]
-  )(implicit ec: ExecutionContext): Future[Seq[TO]] = {
+  ): Source[TO, NotUsed] = {
     if (queryMapper.isEmpty(transferInput)) {
-      Future.successful(Seq.empty)
+      Source.empty[TO]
     } else {
       searchDAO
         .queryMetadata(queryMapper.buildQuery(transferInput), index)
-        .map(queryMapper.toQueryOutputs)
+        .map(queryMapper.toQueryOutput)
     }
   }
 }

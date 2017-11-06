@@ -1,13 +1,12 @@
 package org.broadinstitute.clio.client
 
+import akka.actor.ActorSystem
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import caseapp.core.help.{Help, WithHelp}
+import caseapp.core.{Error, RemainingArgs}
+import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.commands.{ClioCommand, CommonOptions}
 import org.broadinstitute.clio.client.dispatch.CommandDispatch
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.HttpResponse
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-import caseapp.core.{Error, RemainingArgs}
-import caseapp.core.help.{Help, WithHelp}
-import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.AuthUtil
@@ -185,9 +184,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     * (allowing this class to serve as a top-level entry-point), conflicting
     * with the main method already present in the companion object.
     */
-  def instanceMain(
-    args: Array[String]
-  ): Either[EarlyReturn, Future[HttpResponse]] = {
+  def instanceMain(args: Array[String]): Either[EarlyReturn, Future[_]] = {
     val maybeParse =
       ClioCommand.parser.withHelp
         .detailedParse(args)(CommonOptions.parser.withHelp)
@@ -263,7 +260,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
   private def commandMain(
     commonOpts: CommonOptions,
     commandParseWithArgs: (String, WithHelp[ClioCommand], RemainingArgs)
-  ): Either[EarlyReturn, Future[HttpResponse]] = {
+  ): Either[EarlyReturn, Future[_]] = {
     val (commandName, commandParse, args) = commandParseWithArgs
 
     for {
@@ -278,5 +275,4 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
       commandDispatch.dispatch(command)
     }
   }
-
 }

@@ -3,9 +3,7 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 import java.nio.file.Files
 
-import akka.http.scaladsl.unmarshalling.Unmarshal
 import com.sksamuel.elastic4s.IndexAndType
-import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -42,7 +40,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       key.location.entryName,
       "--metadata-location",
       tmpMetadata.toString
-    ).flatMap(Unmarshal(_).to[UpsertId])
+    ).mapTo[UpsertId]
   }
 
   it should "create the expected wgs-ubam mapping in elasticsearch" in {
@@ -59,7 +57,6 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
   it should "report the expected JSON schema for wgs-ubams" in {
     runClient(ClioCommand.getWgsUbamSchemaName)
-      .flatMap(Unmarshal(_).to[Json])
       .map(_ should be(WgsUbamIndex.jsonSchema))
   }
 
@@ -106,16 +103,15 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       it should s"handle upserts and queries for wgs-ubam location $location" in {
         for {
           returnedUpsertId <- responseFuture
-          queryResponse <- runClient(
+          queryResponse <- runClientGetJsonAs[Seq[
+            TransferWgsUbamV1QueryOutput
+          ]](
             ClioCommand.queryWgsUbamName,
             "--library-name",
             expected.libraryName
           )
-          outputs <- Unmarshal(queryResponse)
-            .to[Seq[TransferWgsUbamV1QueryOutput]]
         } yield {
-          outputs should have length 1
-          outputs.head should be(expected)
+          queryResponse should be(Seq(expected))
 
           val storedDocument = getJsonFrom[DocumentWgsUbam](
             ElasticsearchIndex.WgsUbam,
@@ -217,27 +213,21 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      projectResponse <- runClient(
+      projectResults <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--project",
         project
       )
-      projectResults <- Unmarshal(projectResponse)
-        .to[Seq[TransferWgsUbamV1QueryOutput]]
-      sampleResponse <- runClient(
+      sampleResults <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--sample-alias",
         samples.head
       )
-      sampleResults <- Unmarshal(sampleResponse)
-        .to[Seq[TransferWgsUbamV1QueryOutput]]
-      rpIdResponse <- runClient(
+      rpIdResults <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--research-project-id",
         researchProjectIds.last
       )
-      rpIdResults <- Unmarshal(rpIdResponse)
-        .to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
@@ -266,12 +256,11 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        response <- runClient(
+        results <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
           ClioCommand.queryWgsUbamName,
           "--project",
           project
         )
-        results <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
       } yield {
         results should have length 1
         results.head
@@ -332,14 +321,13 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        response <- runClient(
+        results <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
           ClioCommand.queryWgsUbamName,
           "--project",
           project,
           "--flowcell-barcode",
           barcode
         )
-        results <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
       } yield {
         results.length should be(expectedLength)
         results.foreach { result =>
@@ -360,7 +348,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       )
       _ <- checkQuery(expectedLength = 2)
 
-      response <- runClient(
+      results <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--project",
         project,
@@ -368,7 +356,6 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         barcode,
         "--include-deleted"
       )
-      results <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
       results.length should be(keysWithMetadata.length)
       results.foldLeft(succeed) { (_, result) =>
@@ -533,7 +520,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
           cloudPath2.toUri.toString
         )
       }
-      queryResponse <- runClient(
+      queryOutputs <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--flowcell-barcode",
         barcode,
@@ -544,8 +531,6 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         "--location",
         Location.GCP.entryName
       )
-      queryOutputs <- Unmarshal(queryResponse)
-        .to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
       Files.exists(cloudPath2) should be(false)
       queryOutputs should have length 1
@@ -596,7 +581,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         deleteNote
       )
       _ = Files.exists(cloudPath) should be(false)
-      response <- runClient(
+      outputs <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--flowcell-barcode",
         barcode,
@@ -608,7 +593,6 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         Location.GCP.entryName,
         "--include-deleted"
       )
-      outputs <- Unmarshal(response).to[Seq[TransferWgsUbamV1QueryOutput]]
     } yield {
       outputs should have length 1
       outputs.head

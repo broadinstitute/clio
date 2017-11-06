@@ -2,6 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 
+import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
   MemoryPersistenceDAO,
@@ -50,7 +51,7 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
     val transferInput =
       TransferWgsCramV1QueryInput(project = Option("testProject"))
     for {
-      _ <- cramService.queryMetadata(transferInput)
+      _ <- cramService.queryMetadata(transferInput).runWith(Sink.seq)
     } yield {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(

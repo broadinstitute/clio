@@ -65,11 +65,10 @@ class ClioWebClientSpec
       result <- responses.foldLeft(Future.successful(succeed)) {
         case (prev, response) =>
           prev
-            .flatMap { _ =>
-              client.unmarshal[VersionInfo](response)
-            }
-            .map {
-              _ should be(VersionInfo("0.0.0-TEST"))
+            .map { _ =>
+              response.as[VersionInfo] should be(
+                Right(VersionInfo("0.0.0-TEST"))
+              )
             }
       }
     } yield {

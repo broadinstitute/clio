@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.{HitReader, Indexable}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -53,7 +55,7 @@ trait SearchDAO {
   def queryMetadata[D <: ClioDocument: HitReader](
     queryDefinition: QueryDefinition,
     index: ElasticsearchIndex[D]
-  ): Future[Seq[D]]
+  ): Source[D, NotUsed]
 
   /**
     * Given an elastic search index, return the most recent document for that index.

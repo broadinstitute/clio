@@ -2,12 +2,13 @@ package org.broadinstitute.clio.client
 
 import java.net.URI
 
-import org.broadinstitute.clio.client.util.{IoUtil, MockIoUtil, TestData}
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.testkit.TestKit
 import org.broadinstitute.clio.client.dispatch.CommandDispatch
+import org.broadinstitute.clio.client.util.{IoUtil, MockIoUtil, TestData}
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 abstract class BaseClientSpec
@@ -15,7 +16,8 @@ abstract class BaseClientSpec
     with AsyncFlatSpecLike
     with BeforeAndAfterAll
     with TestData
-    with Matchers {
+    with Matchers
+    with ModelAutoDerivation {
 
   def succeedingDispatcher(ioUtil: IoUtil = new MockIoUtil,
                            jsonToReturn: Option[URI] = None) =

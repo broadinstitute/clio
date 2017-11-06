@@ -2,6 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 
+import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{
@@ -50,7 +51,7 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
     val transferInput =
       TransferGvcfV1QueryInput(project = Option("testProject"))
     for {
-      _ <- gvcfService.queryMetadata(transferInput)
+      _ <- gvcfService.queryMetadata(transferInput).runWith(Sink.seq)
     } yield {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(

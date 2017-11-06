@@ -1,9 +1,9 @@
 package org.broadinstitute.clio.client.dispatch
 
-import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.AddGvcf
+import org.broadinstitute.clio.util.model.UpsertId
 
 class AddGvcfSpec extends BaseClientSpec {
   behavior of "AddGvcf"
@@ -41,10 +41,10 @@ class AddGvcfSpec extends BaseClientSpec {
     }
   }
 
-  it should "return a successful HttpResponse if the server response is OK" in {
+  it should "return an UpsertId if the server response is OK" in {
     dispatcher
       .dispatch(goodGvcfAddCommand)
-      .map(_.status should be(StatusCodes.OK))
+      .map(_ shouldBe an[UpsertId])
   }
 
 }

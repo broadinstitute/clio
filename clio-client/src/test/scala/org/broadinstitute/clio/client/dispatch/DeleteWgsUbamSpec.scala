@@ -2,14 +2,13 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeleteWgsUbam
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.util.model.Location
-import akka.http.scaladsl.model.StatusCodes
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1Key
+import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 class DeleteWgsUbamSpec extends BaseClientSpec {
   behavior of "DeleteWgsUbam"
@@ -72,7 +71,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   it should "delete a WgsUbam in Clio if the cloud ubam does not exist" in {
     succeedingDispatcher(new MockIoUtil, testWgsUbamLocation)
       .dispatch(goodDeleteCommand)
-      .map(_.status should be(StatusCodes.OK))
+      .map(_ shouldBe an[UpsertId])
   }
 
   it should "delete a WgsUbam in Clio and the cloud" in {
@@ -80,6 +79,6 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     succeedingDispatcher(mockIoUtil, testWgsUbamLocation)
       .dispatch(goodDeleteCommand)
-      .map(_.status should be(StatusCodes.OK))
+      .map(_ shouldBe an[UpsertId])
   }
 }
