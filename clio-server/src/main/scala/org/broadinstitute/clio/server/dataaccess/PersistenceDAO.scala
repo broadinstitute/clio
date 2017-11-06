@@ -95,12 +95,22 @@ trait PersistenceDAO extends LazyLogging {
     ordering: Ordering[Path],
     dayDirectoryFilter: Path => Boolean
   )(implicit ex: ExecutionContext, mat: Materializer): Source[Path, NotUsed] = {
+    val absoluteRoot = rootDir.toAbsolutePath
+
     // Walk the file tree to get all paths for the day-level directories.
     val sortedDirs = Directory
-      .walk(rootDir, maxDepth = Some(StorageWalkDepth))
+      .walk(absoluteRoot, maxDepth = Some(StorageWalkDepth))
       // Filter out month- and year-level directories.
       .filter { path =>
-        path.relativize(rootDir).getNameCount == StorageWalkDepth &&
+        /*
+         * The google-cloud-nio adapter requires that the two sides of a
+         * `relativize` call have the same return value for `isAbsolute()`:
+         *
+         * https://github.com/GoogleCloudPlatform/google-cloud-java/blob/master/google-cloud-contrib/google-cloud-nio/src/main/java/com/google/cloud/storage/contrib/nio/UnixPath.java#L345
+         */
+        path.toAbsolutePath
+          .relativize(absoluteRoot)
+          .getNameCount == StorageWalkDepth &&
         dayDirectoryFilter(path)
       }
       // Collect into a strict collection for sorting.
