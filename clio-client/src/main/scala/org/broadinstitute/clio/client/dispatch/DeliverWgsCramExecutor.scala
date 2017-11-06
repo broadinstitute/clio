@@ -40,7 +40,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
       _ <- writeCramMd5(webClient, ioUtil)
         .logErrorMsg("Failed to write cram md5 to file")
       upsertId <- recordWorkspaceName(webClient)
-        .logErrorMsg("Failed to records workspace name in cram metadata")
+        .logErrorMsg("Failed to record workspace name in cram metadata")
     } yield {
       upsertId
     }
