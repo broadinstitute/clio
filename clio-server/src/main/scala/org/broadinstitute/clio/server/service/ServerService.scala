@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.server.service
 
 import akka.stream.Materializer
+import akka.stream.scaladsl.Sink
 import com.sksamuel.elastic4s.{HitReader, Indexable}
 import com.sksamuel.elastic4s.circe._
 import com.typesafe.scalalogging.StrictLogging
@@ -56,30 +57,13 @@ class ServerService private (
   private[service] def recoverMetadata[
     D <: ClioDocument: Indexable: HitReader: Decoder
   ](index: ElasticsearchIndex[D]): Future[Int] = {
-    for {
-      mostRecentDocument <- searchDAO.getMostRecentDocument(index)
-      documents <- persistenceDAO.getAllSince(mostRecentDocument, index)
-      _ <- documents.foldLeft(Future.successful(())) {
-        case (accFuture, document) => {
-          for {
-            /*
-             * Don't update metadata for the current document until
-             * the accumulator Future (the result updating metadata
-             * for the previous document in storage) completes,
-             * ensuring the order of updates is preserved.
-             */
-            _ <- accFuture
-            _ = logger.debug(
-              s"Recovering document with ID ${document.upsertId}"
-            )
-            _ <- searchDAO.updateMetadata(document, index)
-          } yield {
-            ()
-          }
-        }
-      }
-    } yield {
-      documents.length
+    searchDAO.getMostRecentDocument(index).flatMap { mostRecent =>
+      persistenceDAO
+        .getAllSince(mostRecent, index)
+        .runWith(Sink.foldAsync(0) { (count, doc) =>
+          logger.debug(s"Recovering document with ID ${doc.upsertId}")
+          searchDAO.updateMetadata(doc, index).map(_ => count + 1)
+        })
     }
   }
 

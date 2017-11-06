@@ -2,9 +2,10 @@ package org.broadinstitute.clio.server.dataaccess
 
 import java.nio.file.{Files, Path}
 
+import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{Sink, Source}
 import com.sksamuel.elastic4s.Indexable
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder
@@ -24,6 +25,8 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 trait PersistenceDAO extends LazyLogging {
 
+  import PersistenceDAO.{StorageWalkDepth, VersionFileName}
+
   /**
     * Root path for all metadata writes.
     *
@@ -39,7 +42,7 @@ trait PersistenceDAO extends LazyLogging {
     indexes: Seq[ElasticsearchIndex[_]]
   )(implicit ec: ExecutionContext): Future[Unit] = Future {
     // Make sure the rootPath can actually be used.
-    val versionPath = rootPath.resolve(PersistenceDAO.versionFileName)
+    val versionPath = rootPath.resolve(VersionFileName)
     try {
       val versionFile =
         Files.write(versionPath, ClioServerConfig.Version.value.getBytes)
@@ -84,30 +87,78 @@ trait PersistenceDAO extends LazyLogging {
     }
 
   /**
-    * Return the `ClioDocument`s under `rootdir` upserted later
-    * than `withId`.
+    * Build a stream of all the paths to Clio upserts persisted under `rootDir`
+    * under the given ordering, filtered by day-directory.
+    */
+  private def getPathsOrderedBy(
+    rootDir: Path,
+    ordering: Ordering[Path],
+    dayDirectoryFilter: Path => Boolean
+  )(implicit ex: ExecutionContext, mat: Materializer): Source[Path, NotUsed] = {
+    // Walk the file tree to get all paths for the day-level directories.
+    val sortedDirs = Directory
+      .walk(rootDir, maxDepth = Some(StorageWalkDepth))
+      // Filter out month- and year-level directories.
+      .filter { path =>
+        path.relativize(rootDir).getNameCount == StorageWalkDepth &&
+        dayDirectoryFilter(path)
+      }
+      // Collect into a strict collection for sorting.
+      .runWith(Sink.seq)
+      .map(_.sorted(ordering))
+
+    // Rebuild a stream from the sorted Seq.
+    Source
+      .fromFuture(sortedDirs)
+      .mapConcat(identity)
+      /*
+       * We use `mapAsync` then `mapConcat`, instead of just `flatMapConcat`,
+       * so we can sort the intermediate Seq result of the ls.
+       */
+      .mapAsync(1)(Directory.ls(_).runWith(Sink.seq))
+      .mapConcat(_.sorted(ordering))
+  }
+
+  private val pathOrdering: Ordering[Path] = Ordering.by(_.toString)
+
+  /**
+    * Return the `ClioDocument`s stored under `rootDir` that were
+    * written more recently than `lastToIgnore` (or all documents
+    * if `lastToIgnore` not defined).
     *
     * @param rootDir is path to a bucket of "params files"
-    * @param shouldRestore is a predicate which should return true for
-    *                      all documents that should be restored
-    * @param ec is an `ExecutionContext`
+    * @param lastToIgnore the last (most recent) path in storage
+    *                     that should be dropped instead of read
+    *                     and converted into a document
     * @tparam D is the type of `ClioDocument` expected under `rootDir`
     * @return the `ClioDocument` at `withId` and all later ones
     */
-  private def getAllMatching[D <: ClioDocument: Decoder](
+  private def getAllAfter[D <: ClioDocument: Decoder](
     rootDir: Path,
-    shouldRestore: Path => Boolean
+    lastToIgnore: Option[Path]
   )(implicit ec: ExecutionContext,
-    materializer: Materializer): Future[Seq[D]] = {
-    val document = (p: Path) => {
-      decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
+    materializer: Materializer): Source[D, NotUsed] = {
+
+    val dayFilter = lastToIgnore.fold((_: Path) => true) {
+      /*
+       * We filter inclusively on date because the most recent
+       * document in Elasticsearch might not have been the last
+       * document upsert-ed during the day it was added.
+       */
+      last => (dir: Path) =>
+        last.getParent.toString >= dir.toString
     }
-    Directory
-      .walk(rootDir)
-      .filter(shouldRestore(_))
-      .map(p => document(p))
-      .runWith(Sink.seq)
-      .map(_.sortBy(_.upsertId))
+
+    val docFilter = lastToIgnore.fold((_: Path) => false) {
+      last => (path: Path) =>
+        last.toString >= path.toString
+    }
+
+    getPathsOrderedBy(rootDir, pathOrdering, dayFilter)
+      .dropWhile(docFilter)
+      .map { p =>
+        decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
+      }
   }
 
   /**
@@ -115,44 +166,48 @@ trait PersistenceDAO extends LazyLogging {
     * after `document`.  Decode the files from JSON as `ClioDocument`s
     * sorted by `upsertId`.
     *
-    * @param document the last known upserted document, `None` if
-    *                 all documents should be restored
-    * @param index  to query against.
-    * @param ec is the implicit ExecutionContext
+    * @param mostRecentDocument the last known upserted document, `None`
+    *                           if all documents should be restored
+    * @param index  to query against
     * @tparam D is a ClioDocument type with a JSON Decoder
     * @return a Future Seq of ClioDocument
     */
-  def getAllSince[D <: ClioDocument: Decoder](document: Option[ClioDocument],
-                                              index: ElasticsearchIndex[D])(
-    implicit ec: ExecutionContext,
-    materializer: Materializer
-  ): Future[Seq[D]] = {
+  def getAllSince[D <: ClioDocument: Decoder](
+    mostRecentDocument: Option[ClioDocument],
+    index: ElasticsearchIndex[D]
+  )(implicit ec: ExecutionContext,
+    materializer: Materializer): Source[D, NotUsed] = {
     val rootDir = rootPath.resolve(index.rootDir)
-    val isJson = (p: Path) => p.toString.endsWith(".json")
 
-    document.fold(
+    mostRecentDocument.fold(
       // If Elasticsearch contained no documents, load every JSON file in storage.
-      getAllMatching[D](rootDir, isJson)
-    ) { document: ClioDocument =>
-      logger.debug(s"Recovering all upserts since ${document.upsertId}")
+      getAllAfter(rootDir, None)
+    ) { document =>
+      logger.debug(
+        s"Recovering all upserts from index ${index.indexName} since ${document.upsertId}"
+      )
+      val filename = document.persistenceFilename
 
-      val suffix = s"/${document.persistenceFilename}"
-      val filesWithId = Directory
-        .walk(rootDir)
-        .filter(_.toString.endsWith(suffix))
-        .runWith(Sink.seq)
-      filesWithId.map {
-        case Seq(path) => {
-          getAllMatching[D](
-            rootDir,
-            (p: Path) => isJson(p) && p.compareTo(path) > 0
-          )
+      /*
+       * Pull the stream until we find the path corresponding to the last
+       * ID in Elasticsearch, remembering the last-seen Path. Since we take
+       * inclusively, eventually the stream will emit the Path pointing to
+       * the record for the most recent document in Elasticsearch.
+       *
+       * If the document isn't found, the stream will fail.
+       */
+      getPathsOrderedBy(rootDir, pathOrdering.reverse, _ => true)
+        .takeWhile(_.getFileName.toString != filename, inclusive = true)
+        .fold[Option[Path]](None)((_, p) => Some(p))
+        .flatMapConcat { maybePathToLast =>
+          maybePathToLast.fold(
+            Source.failed[D](
+              new NoSuchElementException(
+                s"No document found in storage for ID ${document.upsertId}"
+              )
+            )
+          )(pathToLast => getAllAfter(rootDir, Some(pathToLast)))
         }
-        case paths =>
-          throw new RuntimeException(
-            s"${paths.size} files end with $suffix in ${rootDir.toUri}"
-          )
-      }.flatten
     }
   }
 }
@@ -168,7 +223,17 @@ object PersistenceDAO {
     * aren't really a thing in GCS. We could special-case the local-file DAO but
     * the extra complexity isn't worth it.
     */
-  val versionFileName = "current-clio-version.txt"
+  val VersionFileName = "current-clio-version.txt"
+
+  /**
+    * Directory depth to naively walk during recovery.
+    *
+    * We store documents in directories binned by yyyy/MM/dd, so 3 is deep enough to
+    * cover date-based partitions of documents in storage, but not the documents themselves.
+    *
+    * @see [[ElasticsearchIndex.dateTimeFormatter]]
+    */
+  val StorageWalkDepth = 3
 
   def apply(config: Persistence.PersistenceConfig): PersistenceDAO =
     config match {
