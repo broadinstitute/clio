@@ -60,11 +60,10 @@ class ServerService private (
     searchDAO.getMostRecentDocument(index).flatMap { mostRecent =>
       persistenceDAO
         .getAllSince(mostRecent, index)
-        .foldAsync(0) { (count, doc) =>
+        .runWith(Sink.foldAsync(0) { (count, doc) =>
           logger.debug(s"Recovering document with ID ${doc.upsertId}")
           searchDAO.updateMetadata(doc, index).map(_ => count + 1)
-        }
-        .runWith(Sink.head)
+        })
     }
   }
 

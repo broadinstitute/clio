@@ -111,7 +111,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
     }
   }
 
-  it should "stop at the the latest document with the last-known upsert ID if the ID occurs more than once in GCS" in {
+  it should "stop searching storage when it finds the document with the last-known upsert ID" in {
     val document = DocumentMock.default
     val dao = new MemoryPersistenceDAO()
 

@@ -182,27 +182,32 @@ trait PersistenceDAO extends LazyLogging {
     mostRecentDocument.fold(
       // If Elasticsearch contained no documents, load every JSON file in storage.
       getAllAfter(rootDir, None)
-    ) { document: ClioDocument =>
+    ) { document =>
       logger.debug(
         s"Recovering all upserts from index ${index.indexName} since ${document.upsertId}"
       )
-
       val filename = document.persistenceFilename
 
       /*
        * Pull the stream until we find the path corresponding to the last
-       * ID in Elasticsearch. Taking inclusively + Sink.last results in a
-       * Future that will eventually complete with the path to the found
-       * document. If the document isn't found, the Future will fail.
+       * ID in Elasticsearch, remembering the last-seen Path. Since we take
+       * inclusively, eventually the stream will emit the Path pointing to
+       * the record for the most recent document in Elasticsearch.
+       *
+       * If the document isn't found, the stream will fail.
        */
-      val lastKnownPath =
-        getPathsOrderedBy(rootDir, pathOrdering.reverse, _ => true)
-          .takeWhile(_.getFileName.toString != filename, inclusive = true)
-          .runWith(Sink.last)
-
-      Source
-        .fromFuture(lastKnownPath)
-        .flatMapConcat(last => getAllAfter(rootDir, Some(last)))
+      getPathsOrderedBy(rootDir, pathOrdering.reverse, _ => true)
+        .takeWhile(_.getFileName.toString != filename, inclusive = true)
+        .fold[Option[Path]](None)((_, p) => Some(p))
+        .flatMapConcat { maybePathToLast =>
+          maybePathToLast.fold(
+            Source.failed[D](
+              new NoSuchElementException(
+                s"No document found in storage for ID ${document.upsertId}"
+              )
+            )
+          )(pathToLast => getAllAfter(rootDir, Some(pathToLast)))
+        }
     }
   }
 }
@@ -223,8 +228,10 @@ object PersistenceDAO {
   /**
     * Directory depth to naively walk during recovery.
     *
-    * Should be deep enough to cover date-based partitions of documents in storage,
-    * but not the documents themselves.
+    * We store documents in directories binned by yyyy/MM/dd, so 3 is deep enough to
+    * cover date-based partitions of documents in storage, but not the documents themselves.
+    *
+    * @see [[ElasticsearchIndex.dateTimeFormatter]]
     */
   val StorageWalkDepth = 3
 
