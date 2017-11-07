@@ -3,7 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import java.net.URI
 import java.nio.file.Files
 
-import akka.http.scaladsl.model.headers.HttpCredentials
+import com.google.auth.oauth2.OAuth2Credentials
 import org.broadinstitute.clio.client.commands.{DeliverWgsCram, MoveWgsCram}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -25,16 +25,16 @@ import scala.concurrent.{ExecutionContext, Future}
   *   1. Writes the cram md5 value to file at the target path
   *   2. Records the workspace name in the metadata for the delivered cram
   */
-class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
-    extends Executor[UpsertId] {
+class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)(
+  implicit credentials: OAuth2Credentials
+) extends Executor[UpsertId] {
 
   val moveCommand =
     MoveWgsCram(deliverCommand.key, deliverCommand.workspacePath)
   import moveCommand.index.implicits._
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
-    implicit ex: ExecutionContext,
-    credentials: HttpCredentials
+    implicit ec: ExecutionContext
   ): Future[UpsertId] = {
 
     for {
@@ -49,8 +49,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
   }
 
   private def ensureMove(webClient: ClioWebClient, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext,
-    credentials: HttpCredentials
+    implicit ec: ExecutionContext
   ): Future[UpsertId] = {
     val moveExecutor = new MoveExecutor(moveCommand)
     moveExecutor.execute(webClient, ioUtil).map {
@@ -63,8 +62,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
   }
 
   private def writeCramMd5(webClient: ClioWebClient, ioUtil: IoUtil)(
-    implicit ex: ExecutionContext,
-    credentials: HttpCredentials
+    implicit ec: ExecutionContext
   ): Future[Unit] = {
     val queryInput = TransferWgsCramV1QueryInput(
       location = Some(deliverCommand.key.location),
@@ -114,7 +112,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
 
   private def recordWorkspaceName(
     webClient: ClioWebClient
-  )(implicit credentials: HttpCredentials): Future[UpsertId] = {
+  ): Future[UpsertId] = {
     val newMetadata = TransferWgsCramV1Metadata(
       workspaceName = Some(deliverCommand.workspaceName)
     )

@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.client.commands
 
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
+import java.nio.file.Path
+
 import caseapp.core.help.Help
 import caseapp.core.parser.Parser
 
@@ -13,7 +14,7 @@ import caseapp.core.parser.Parser
   * names will be treated as long options. It's possible
   * to change this behavior through annotations.
   */
-final case class CommonOptions(bearerToken: Option[OAuth2BearerToken] = None)
+final case class CommonOptions(accountJsonPath: Option[Path] = None)
 
 object CommonOptions extends ClioParsers {
 

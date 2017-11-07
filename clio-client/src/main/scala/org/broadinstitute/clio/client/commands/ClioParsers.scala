@@ -1,8 +1,8 @@
 package org.broadinstitute.clio.client.commands
 
 import java.net.URI
+import java.nio.file.{Path, Paths}
 
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp.core.Error
 import caseapp.core.argparser.{ArgParser, SimpleArgParser}
 import cats.syntax.either._
@@ -48,9 +48,6 @@ trait ClioParsers {
     }
   }
 
-  implicit val oauthBearerTokenParser: ArgParser[OAuth2BearerToken] =
-    parseWith("token", OAuth2BearerToken.apply)
-
   implicit val offsetDateTimeParser: ArgParser[OffsetDateTime] =
     parseWith("date", OffsetDateTime.parse)
 
@@ -58,6 +55,8 @@ trait ClioParsers {
     parseWith("string", Symbol.apply)
 
   implicit val uriParser: ArgParser[URI] = parseWith("uri", URI.create)
+
+  implicit val pathParser: ArgParser[Path] = parseWith("path", Paths.get(_))
 
   implicit val uuidParser: ArgParser[UUID] = parseWith("uuid", UUID.fromString)
 }

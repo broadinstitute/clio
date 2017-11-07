@@ -1,15 +1,17 @@
 package org.broadinstitute.clio.client
 
+import java.nio.file.Path
+
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp.core.help.{Help, WithHelp}
 import caseapp.core.{Error, RemainingArgs}
+import com.google.auth.oauth2.OAuth2Credentials
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.commands.{ClioCommand, CommonOptions}
 import org.broadinstitute.clio.client.dispatch.CommandDispatch
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.util.AuthUtil
+import org.broadinstitute.clio.util.auth.AuthUtil
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -226,16 +228,16 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     Either.cond(!asked, (), UsageOrHelpAsked(message))
   }
 
-  private def getAccessToken(
-    tokenOption: Option[OAuth2BearerToken]
-  ): Either[EarlyReturn, OAuth2BearerToken] = {
-    tokenOption.fold({
-      AuthUtil
-        .getAccessToken(ClioClientConfig.serviceAccountJson)
-        .map(token => OAuth2BearerToken(token.getTokenValue))
-        .left
-        .map(AuthError.apply)
-    })(Right(_))
+  private def getOAuthCredentials(
+    accountJsonPath: Option[Path]
+  ): Either[EarlyReturn, OAuth2Credentials] = {
+    AuthUtil
+      .getOAuth2Credentials(
+        accountJsonPath
+          .orElse(ClioClientConfig.serviceAccountJson)
+      )
+      .left
+      .map(AuthError.apply)
   }
 
   /**
@@ -266,12 +268,11 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     for {
       _ <- messageIfAsked(commandHelp(commandName), commandParse.help)
       _ <- messageIfAsked(commandUsage(commandName), commandParse.usage)
-      token <- getAccessToken(commonOpts.bearerToken)
       command <- wrapError(commandParse.baseOrError)
+      credentials <- getOAuthCredentials(commonOpts.accountJsonPath)
       _ <- checkRemainingArgs(args.remaining)
     } yield {
-      implicit val bearerToken: OAuth2BearerToken = token
-      val commandDispatch = new CommandDispatch(webClient, ioUtil)
+      val commandDispatch = new CommandDispatch(webClient, ioUtil)(credentials)
       commandDispatch.dispatch(command)
     }
   }

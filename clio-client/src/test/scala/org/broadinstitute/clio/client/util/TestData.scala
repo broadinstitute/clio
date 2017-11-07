@@ -126,8 +126,6 @@ trait TestData {
   val testWgsMetricsCloudSourcePath: URI =
     URI.create("gs://testProject/testSample/cramPath1.wgs_metrics")
 
-  val testCommon = CommonOptions(bearerToken = Some(testBearer))
-  val testCommonNoToken = CommonOptions()
   val testTransferV1Key = TransferWgsUbamV1Key(
     flowcellBarcode = testFlowcell,
     lane = testLane,

@@ -4,7 +4,7 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.HttpCredentials
+import com.google.auth.oauth2.OAuth2Credentials
 import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.Json
@@ -64,7 +64,7 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
 
   override def getSchema(
     transferIndex: TransferIndex
-  )(implicit credentials: HttpCredentials): Future[Json] = {
+  )(implicit credentials: OAuth2Credentials): Future[Json] = {
     if (status.isSuccess()) {
       Future.successful(transferIndex.jsonSchema)
     } else {
@@ -75,7 +75,7 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
   override def upsert[TI <: TransferIndex](transferIndex: TI)(
     key: transferIndex.KeyType,
     metadata: transferIndex.MetadataType
-  )(implicit credentials: HttpCredentials): Future[UpsertId] = {
+  )(implicit credentials: OAuth2Credentials): Future[UpsertId] = {
     if (status.isSuccess()) {
       Future.successful(UpsertId.nextId())
     } else {
@@ -86,7 +86,7 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
   override def query[TI <: TransferIndex](transferIndex: TI)(
     input: transferIndex.QueryInputType,
     includeDeleted: Boolean
-  )(implicit credentials: HttpCredentials): Future[Json] = {
+  )(implicit credentials: OAuth2Credentials): Future[Json] = {
     if (status.isSuccess()) {
       Future.successful(json.getOrElse(Json.fromValues(Seq.empty)))
     } else {
@@ -101,7 +101,7 @@ object MockClioWebClient {
       override def upsert[TI <: TransferIndex](transferIndex: TI)(
         key: transferIndex.KeyType,
         metadata: transferIndex.MetadataType
-      )(implicit credentials: HttpCredentials): Future[UpsertId] = {
+      )(implicit credentials: OAuth2Credentials): Future[UpsertId] = {
         Future.failed(new RuntimeException("Failed to upsert"))
       }
     }

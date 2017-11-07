@@ -1,20 +1,14 @@
 package org.broadinstitute.clio.integrationtest
 
-import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.{ClioClient, ClioClientConfig}
-import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
+import java.nio.file.{FileSystem, Files, Path, Paths}
+import java.util.UUID
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import com.bettercloud.vault.{Vault, VaultConfig}
+import com.google.auth.oauth2.OAuth2Credentials
 import com.google.cloud.storage.StorageOptions
 import com.google.cloud.storage.contrib.nio.{
   CloudStorageConfiguration,
@@ -24,18 +18,26 @@ import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
-import io.circe.{Decoder, Encoder, Json, Printer}
 import io.circe.parser._
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder, Json, Printer}
 import org.apache.http.HttpHost
+import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.client.{ClioClient, ClioClientConfig}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
+  ElasticsearchIndex
+}
+import org.broadinstitute.clio.util.auth.AuthUtil
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
 import org.elasticsearch.client.RestClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import java.nio.file.{FileSystem, Files, Path, Paths}
-import java.util.UUID
 
 /**
   * Base class for Clio integration tests, agnostic to the location
@@ -73,9 +75,6 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   val clientTimeout: FiniteDuration = ClioClientConfig.responseTimeout
 
-  /** The bearer token to use when hitting the /api route of Clio. */
-  implicit def bearerToken: OAuth2BearerToken
-
   /**
     * The web client to use within the tested clio-client.
     */
@@ -111,10 +110,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     "https://www.googleapis.com/auth/devstorage.read_write"
   )
 
-  /**
-    * Service account credentials for use when accessing cloud resources.
-    */
-  protected lazy val serviceAccount: ServiceAccount = {
+  /** Service account credentials for use when accessing cloud resources. */
+  final protected lazy val serviceAccount: ServiceAccount = {
     val vaultToken: String = vaultTokenPaths
       .find(Files.exists(_))
       .map { path =>
@@ -148,6 +145,23 @@ abstract class BaseIntegrationSpec(clioDescription: String)
         )
       }, identity)
   }
+
+  /** OAuth2 credential for use in direct calls to the ClioWebClient. */
+  final implicit lazy val oauthCredential: OAuth2Credentials = {
+    AuthUtil
+      .getCredsFromServiceAccount(serviceAccount)
+      .fold(
+        fail(s"Couldn't get access token for account $serviceAccount", _),
+        identity
+      )
+  }
+
+  /**
+    * Temp file for storing service-account JSON, to pass
+    * into calls to the clio-client.
+    */
+  private lazy val serviceAccountJsonPath: Path =
+    Files.createTempFile("clio-integration", system.name)
 
   /**
     * Get a path to the root of a bucket in cloud-storage,
@@ -217,7 +231,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   def runClient(command: String, args: String*): Future[_] = {
     clioClient
       .instanceMain(
-        (Seq("--bearer-token", bearerToken.token, command) ++ args).toArray
+        (Seq("--account-json-path", serviceAccountJsonPath.toString, command) ++ args).toArray
       )
       .fold(
         earlyReturn =>
@@ -308,8 +322,18 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     tmpFile
   }
 
+  /** Write service-account JSON to file before running tests. */
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    val _ = Files.write(
+      serviceAccountJsonPath,
+      serviceAccount.asJson.noSpaces.getBytes
+    )
+  }
+
   /** Shut down the actor system at the end of the suite. */
   override protected def afterAll(): Unit = {
+    Files.delete(serviceAccountJsonPath)
     shutdown()
     super.afterAll()
   }

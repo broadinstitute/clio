@@ -1,15 +1,16 @@
 package org.broadinstitute.clio.server
 
-import org.broadinstitute.clio.util.config.{ClioConfig, ConfigReaders}
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{Location, ServiceAccount}
+import java.nio.file.Path
+
 import com.typesafe.config.{Config, ConfigException}
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-import scala.concurrent.duration.FiniteDuration
-import java.nio.file.Path
+import org.broadinstitute.clio.util.auth.AuthUtil
+import org.broadinstitute.clio.util.config.{ClioConfig, ConfigReaders}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.{Location, ServiceAccount}
 
-import org.broadinstitute.clio.util.AuthUtil
+import scala.concurrent.duration.FiniteDuration
 
 /**
   * Configuration file accessors.

@@ -5,7 +5,6 @@ import java.nio.file.{FileSystems, Path, Paths}
 
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.file.scaladsl.FileTailSource
 import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
@@ -57,11 +56,6 @@ abstract class DockerIntegrationSpec
       clientTimeout
     )
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)
-
-  // No bearer token needed for talking to local Clio.
-  override implicit val bearerToken: OAuth2BearerToken = OAuth2BearerToken(
-    "dummy-token"
-  )
 
   // SBT sets a local path for persisting metadata updates.
   override val rootPersistenceDir: Path =
