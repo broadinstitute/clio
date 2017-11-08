@@ -5,6 +5,7 @@ import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.commands._
+import org.broadinstitute.clio.client.webclient.CredentialsGenerator
 import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Key,
   TransferGvcfV1QueryInput
@@ -126,8 +127,6 @@ trait TestData {
   val testWgsMetricsCloudSourcePath: URI =
     URI.create("gs://testProject/testSample/cramPath1.wgs_metrics")
 
-  val testCommon = CommonOptions(bearerToken = Some(testBearer))
-  val testCommonNoToken = CommonOptions()
   val testTransferV1Key = TransferWgsUbamV1Key(
     flowcellBarcode = testFlowcell,
     lane = testLane,
@@ -198,6 +197,9 @@ trait TestData {
   val testMaxQueued: Int = 4
   val testMaxConcurrent: Int = 1
   val testRequestTimeout: FiniteDuration = 3.seconds
+
+  val fakeTokenGenerator: CredentialsGenerator =
+    () => OAuth2BearerToken("fake-token")
 }
 
 /**

@@ -54,14 +54,10 @@ abstract class DockerIntegrationSpec
       useHttps = false,
       maxQueuedRequests,
       maxConcurrentRequests,
-      clientTimeout
+      clientTimeout,
+      () => OAuth2BearerToken("fake-token")
     )
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)
-
-  // No bearer token needed for talking to local Clio.
-  override implicit val bearerToken: OAuth2BearerToken = OAuth2BearerToken(
-    "dummy-token"
-  )
 
   // SBT sets a local path for persisting metadata updates.
   override val rootPersistenceDir: Path =

@@ -1,14 +1,13 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.server.ClioServerConfig.Persistence
+import java.nio.file.{FileSystem, Path}
 
+import com.google.cloud.storage.StorageOptions
 import com.google.cloud.storage.contrib.nio.{
   CloudStorageConfiguration,
   CloudStorageFileSystem
 }
-import com.google.cloud.storage.StorageOptions
-
-import java.nio.file.{FileSystem, Path}
+import org.broadinstitute.clio.server.ClioServerConfig.Persistence
 
 /**
   * Persistence DAO which writes to GCS.

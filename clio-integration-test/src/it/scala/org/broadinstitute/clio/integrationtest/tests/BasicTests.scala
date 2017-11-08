@@ -31,7 +31,10 @@ trait BasicTests { self: BaseIntegrationSpec =>
 
   it should "reject requests to invalid routes" in {
     recoverToExceptionIf[ClioWebClient.FailedResponse] {
-      clioWebClient.dispatchRequest(HttpRequest(uri = "/badpath"))
+      clioWebClient.dispatchRequest(
+        HttpRequest(uri = "/badpath"),
+        includeAuth = false
+      )
     }.map {
       _.statusCode should be(StatusCodes.NotFound)
     }
@@ -41,7 +44,8 @@ trait BasicTests { self: BaseIntegrationSpec =>
     recoverToExceptionIf[ClioWebClient.FailedResponse] {
       clioWebClient
         .dispatchRequest(
-          HttpRequest(uri = "/health", method = HttpMethods.POST)
+          HttpRequest(uri = "/health", method = HttpMethods.POST),
+          includeAuth = false
         )
     }.map {
       _.statusCode should be(StatusCodes.MethodNotAllowed)

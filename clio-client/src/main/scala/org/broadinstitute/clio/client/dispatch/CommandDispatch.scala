@@ -4,16 +4,13 @@ import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
-
 import scala.concurrent.{ExecutionContext, Future}
 
 class CommandDispatch(webClient: ClioWebClient, ioUtil: IoUtil) {
 
-  def dispatch(command: ClioCommand)(
-    implicit ec: ExecutionContext,
-    bearerToken: OAuth2BearerToken
-  ): Future[_] = {
+  def dispatch(
+    command: ClioCommand
+  )(implicit ec: ExecutionContext): Future[_] = {
     (command match {
       case addCommand: AddCommand[_]       => new AddExecutor(addCommand)
       case moveCommand: MoveCommand[_]     => new MoveExecutor(moveCommand)

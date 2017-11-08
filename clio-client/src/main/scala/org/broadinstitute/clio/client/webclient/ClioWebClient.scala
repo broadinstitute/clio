@@ -3,7 +3,6 @@ package org.broadinstitute.clio.client.webclient
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.{Authorization, HttpCredentials}
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream._
@@ -27,7 +26,8 @@ class ClioWebClient(
   useHttps: Boolean,
   maxQueuedRequests: Int,
   maxConcurrentRequests: Int,
-  requestTimeout: FiniteDuration
+  requestTimeout: FiniteDuration,
+  tokenGenerator: CredentialsGenerator
 )(implicit system: ActorSystem)
     extends ModelAutoDerivation
     with FailFastCirceSupport
@@ -98,57 +98,62 @@ class ClioWebClient(
     })(Keep.left)
     .run()
 
-  def dispatchRequest(request: HttpRequest): Future[HttpResponse] = {
+  def dispatchRequest(request: HttpRequest,
+                      includeAuth: Boolean = true): Future[HttpResponse] = {
     val responsePromise = Promise[HttpResponse]()
-    requestStream.offer(request -> responsePromise).flatMap { queueResult =>
-      queueResult match {
-        case QueueOfferResult.Enqueued => ()
-        case QueueOfferResult.Dropped => {
-          responsePromise.failure {
-            new RuntimeException(
-              s"Client queue was too full to add the request: $request"
-            )
-          }
-        }
-        case QueueOfferResult.Failure(ex) =>
-          responsePromise.failure(ex)
-        case QueueOfferResult.QueueClosed =>
-          responsePromise.failure {
-            new RuntimeException(
-              s"Client queue was closed while adding the request: $request"
-            )
-          }
-      }
+    val requestWithCreds = if (includeAuth) {
+      request.addCredentials(tokenGenerator.generateCredentials())
+    } else {
+      request
+    }
 
-      responsePromise.future
-        .logErrorMsg("Failed to send HTTP request to Clio server")
-        .flatMap(ensureOkResponse)
+    requestStream.offer(requestWithCreds -> responsePromise).flatMap {
+      queueResult =>
+        queueResult match {
+          case QueueOfferResult.Enqueued => ()
+          case QueueOfferResult.Dropped => {
+            responsePromise.failure {
+              new RuntimeException(
+                s"Client queue was too full to add the request: $request"
+              )
+            }
+          }
+          case QueueOfferResult.Failure(ex) =>
+            responsePromise.failure(ex)
+          case QueueOfferResult.QueueClosed =>
+            responsePromise.failure {
+              new RuntimeException(
+                s"Client queue was closed while adding the request: $request"
+              )
+            }
+        }
+
+        responsePromise.future
+          .logErrorMsg("Failed to send HTTP request to Clio server")
+          .flatMap(ensureOkResponse)
     }
   }
 
   def getClioServerVersion: Future[Json] = {
-    dispatchRequest(HttpRequest(uri = "/version"))
+    dispatchRequest(HttpRequest(uri = "/version"), includeAuth = false)
       .flatMap(unmarshal[Json])
   }
 
   def getClioServerHealth: Future[Json] = {
-    dispatchRequest(HttpRequest(uri = "/health"))
+    dispatchRequest(HttpRequest(uri = "/health"), includeAuth = false)
       .flatMap(unmarshal[Json])
   }
 
-  def getSchema(
-    transferIndex: TransferIndex
-  )(implicit credentials: HttpCredentials): Future[Json] = {
+  def getSchema(transferIndex: TransferIndex): Future[Json] = {
     dispatchRequest(
       HttpRequest(uri = s"/api/v1/${transferIndex.urlSegment}/schema")
-        .addHeader(Authorization(credentials = credentials))
     ).flatMap(unmarshal[Json])
   }
 
   def upsert[TI <: TransferIndex](transferIndex: TI)(
     key: transferIndex.KeyType,
     metadata: transferIndex.MetadataType
-  )(implicit credentials: HttpCredentials): Future[UpsertId] = {
+  ): Future[UpsertId] = {
     import transferIndex.implicits._
 
     val entity = HttpEntity(
@@ -169,14 +174,14 @@ class ClioWebClient(
         uri = Uri(path = encodedPath),
         method = HttpMethods.POST,
         entity = entity
-      ).addHeader(Authorization(credentials = credentials))
+      )
     ).flatMap(unmarshal[UpsertId])
   }
 
   def query[TI <: TransferIndex](transferIndex: TI)(
     input: transferIndex.QueryInputType,
     includeDeleted: Boolean
-  )(implicit credentials: HttpCredentials): Future[Json] = {
+  ): Future[Json] = {
     import transferIndex.implicits._
 
     val queryPath = if (includeDeleted) "queryall" else "query"
@@ -190,7 +195,7 @@ class ClioWebClient(
         uri = s"/api/v1/${transferIndex.urlSegment}/$queryPath",
         method = HttpMethods.POST,
         entity = entity
-      ).addHeader(Authorization(credentials = credentials))
+      )
     ).flatMap(unmarshal[Json])
   }
 

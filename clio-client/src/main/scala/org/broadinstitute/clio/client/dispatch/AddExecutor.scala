@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.client.dispatch
 
-import akka.http.scaladsl.model.headers.HttpCredentials
 import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands.{AddCommand, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
@@ -13,8 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
     extends Executor[UpsertId] {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext,
-    credentials: HttpCredentials
+    implicit ec: ExecutionContext
   ): Future[UpsertId] = {
 
     import addCommand.index.implicits._

@@ -1,15 +1,19 @@
 package org.broadinstitute.clio.client
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import caseapp.core.help.{Help, WithHelp}
+import caseapp.core.parser.Parser
 import caseapp.core.{Error, RemainingArgs}
+import cats.syntax.either._
 import com.typesafe.scalalogging.LazyLogging
-import org.broadinstitute.clio.client.commands.{ClioCommand, CommonOptions}
+import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.dispatch.CommandDispatch
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.util.AuthUtil
+import org.broadinstitute.clio.client.webclient.{
+  ClioWebClient,
+  GoogleCredentialsGenerator
+}
+import org.broadinstitute.clio.util.auth.AuthUtil
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -51,44 +55,51 @@ object ClioClient extends LazyLogging {
     import system.dispatcher
     sys.addShutdownHook({ val _ = system.terminate() })
 
-    val webClient: ClioWebClient = new ClioWebClient(
-      ClioClientConfig.ClioServer.clioServerHostName,
-      ClioClientConfig.ClioServer.clioServerPort,
-      ClioClientConfig.ClioServer.clioServerUseHttps,
-      ClioClientConfig.maxQueuedRequests,
-      ClioClientConfig.maxConcurrentRequests,
-      ClioClientConfig.responseTimeout
-    )
-    val client: ClioClient = new ClioClient(webClient, IoUtil)
+    val dispatchFutureOrErr = for {
+      credentials <- AuthUtil
+        .getOAuth2Credentials(ClioClientConfig.serviceAccountJson)
+        .leftMap(AuthError.apply)
 
-    client
-      .instanceMain(args)
-      .fold(
-        {
-          case UsageOrHelpAsked(message) => {
-            println(message)
-            sys.exit(0)
-          }
-          case ParsingError(error) => {
-            System.err.println(error.message)
-            sys.exit(1)
-          }
-          case AuthError(cause) => {
-            logger.error(
-              "Failed to automatically generate bearer token, try manually passing one via --bearer-token",
-              cause
-            )
-            sys.exit(1)
-          }
-        },
-        _.onComplete {
-          case Success(_) => sys.exit(0)
-          case Failure(ex) => {
-            logger.error("Failed to execute command", ex)
-            sys.exit(1)
-          }
-        }
+      webClient = new ClioWebClient(
+        ClioClientConfig.ClioServer.clioServerHostName,
+        ClioClientConfig.ClioServer.clioServerPort,
+        ClioClientConfig.ClioServer.clioServerUseHttps,
+        ClioClientConfig.maxQueuedRequests,
+        ClioClientConfig.maxConcurrentRequests,
+        ClioClientConfig.responseTimeout,
+        new GoogleCredentialsGenerator(credentials)
       )
+
+      client = new ClioClient(webClient, IoUtil)
+
+      dispatchFuture <- client.instanceMain(args)
+    } yield {
+      dispatchFuture
+    }
+
+    dispatchFutureOrErr.fold(
+      {
+        case UsageOrHelpAsked(message) => {
+          println(message)
+          sys.exit(0)
+        }
+        case ParsingError(error) => {
+          System.err.println(error.message)
+          sys.exit(1)
+        }
+        case AuthError(cause) => {
+          logger.error("Failed to authenticate", cause)
+          sys.exit(1)
+        }
+      },
+      _.onComplete {
+        case Success(_) => sys.exit(0)
+        case Failure(ex) => {
+          logger.error("Failed to execute command", ex)
+          sys.exit(1)
+        }
+      }
+    )
   }
 }
 
@@ -117,7 +128,7 @@ object ClioClient extends LazyLogging {
 class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
   implicit ec: ExecutionContext
 ) extends LazyLogging {
-  import ClioClient.{AuthError, EarlyReturn, ParsingError, UsageOrHelpAsked}
+  import ClioClient.{EarlyReturn, ParsingError, UsageOrHelpAsked}
 
   /**
     * Common option messages, updated to include our program
@@ -126,12 +137,14 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     * caseapp supports setting these through annotations, but
     * only if the values are constant strings.
     */
-  private val beforeCommandHelp: Help[CommonOptions] =
-    CommonOptions.help.copy(
+  private val beforeCommandHelp =
+    Help(
       appName = "Clio Client",
       appVersion = ClioClientConfig.Version.value,
       progName = ClioClient.progName,
-      optionsDesc = "[options] [command] [command-options]"
+      optionsDesc = "[command] [command-options]",
+      args = Seq.empty,
+      argsNameOption = None
     )
 
   /** Names of all valid sub-commands. */
@@ -140,8 +153,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
 
   /** Top-level help message to display on --help. */
   private val helpMessage: String =
-    s"""
-       |${beforeCommandHelp.help}
+    s"""${beforeCommandHelp.help.stripLineEnd}
        |Available commands:
        |${commands.map(commandHelp).mkString("\n\n")}
      """.stripMargin
@@ -151,8 +163,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     * or when users give no sub-command.
     */
   private val usageMessage: String =
-    s"""
-       |${beforeCommandHelp.usage}
+    s"""${beforeCommandHelp.usage}
        |Available commands:
        |  ${commands.mkString(", ")}
      """.stripMargin
@@ -187,19 +198,19 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
   def instanceMain(args: Array[String]): Either[EarlyReturn, Future[_]] = {
     val maybeParse =
       ClioCommand.parser.withHelp
-        .detailedParse(args)(CommonOptions.parser.withHelp)
+        .detailedParse(args)(Parser[None.type].withHelp)
 
     wrapError(maybeParse).flatMap {
       case (commonParse, commonArgs, maybeCommandParse) => {
         for {
           _ <- messageIfAsked(helpMessage, commonParse.help)
           _ <- messageIfAsked(usageMessage, commonParse.usage)
-          commonOpts <- wrapError(commonParse.baseOrError)
+          _ <- wrapError(commonParse.baseOrError)
           _ <- checkRemainingArgs(commonArgs)
           response <- maybeCommandParse
             .map { commandParse =>
               wrapError(commandParse)
-                .flatMap(commandMain(commonOpts, _))
+                .flatMap(commandMain)
             }
             .getOrElse(Left(ParsingError(Error.Other(usageMessage))))
         } yield {
@@ -214,7 +225,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     * for cleaner use in for-comprehensions.
     */
   private def wrapError[X](either: Either[Error, X]): Either[EarlyReturn, X] = {
-    either.left.map(ParsingError.apply)
+    either.leftMap(ParsingError.apply)
   }
 
   /**
@@ -224,18 +235,6 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
   private def messageIfAsked(message: String,
                              asked: Boolean): Either[EarlyReturn, Unit] = {
     Either.cond(!asked, (), UsageOrHelpAsked(message))
-  }
-
-  private def getAccessToken(
-    tokenOption: Option[OAuth2BearerToken]
-  ): Either[EarlyReturn, OAuth2BearerToken] = {
-    tokenOption.fold({
-      AuthUtil
-        .getAccessToken(ClioClientConfig.serviceAccountJson)
-        .map(token => OAuth2BearerToken(token.getTokenValue))
-        .left
-        .map(AuthError.apply)
-    })(Right(_))
   }
 
   /**
@@ -258,7 +257,6 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     * Handle the result of a sub-command parse.
     */
   private def commandMain(
-    commonOpts: CommonOptions,
     commandParseWithArgs: (String, WithHelp[ClioCommand], RemainingArgs)
   ): Either[EarlyReturn, Future[_]] = {
     val (commandName, commandParse, args) = commandParseWithArgs
@@ -266,11 +264,9 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     for {
       _ <- messageIfAsked(commandHelp(commandName), commandParse.help)
       _ <- messageIfAsked(commandUsage(commandName), commandParse.usage)
-      token <- getAccessToken(commonOpts.bearerToken)
       command <- wrapError(commandParse.baseOrError)
       _ <- checkRemainingArgs(args.remaining)
     } yield {
-      implicit val bearerToken: OAuth2BearerToken = token
       val commandDispatch = new CommandDispatch(webClient, ioUtil)
       commandDispatch.dispatch(command)
     }

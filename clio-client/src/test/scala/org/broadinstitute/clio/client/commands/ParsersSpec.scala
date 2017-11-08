@@ -9,7 +9,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 class ParsersSpec extends BaseClientSpec {
 
   private def parse(args: Array[String]) =
-    ClioCommand.parser.detailedParse(args)(CommonOptions.parser)
+    ClioCommand.parser.detailedParse[None.type](args)
 
   it should "properly parse a Location type " in {
     val parsed =
@@ -101,18 +101,6 @@ class ParsersSpec extends BaseClientSpec {
       case Left(_) => fail("Could not parse outer command.")
     }).flatten
     runDateStart should be(Some(testRunDateStart))
-  }
-
-  it should "properly parse a string into a bearerToken" in {
-    val parsed =
-      parse(
-        Array("--bearer-token", testBearer.token, ClioCommand.queryWgsUbamName)
-      )
-    val bearerToken = parsed match {
-      case Right((common, _, _)) => common.bearerToken
-      case Left(_)               => fail("Could not parse outer command")
-    }
-    bearerToken should be(Some(testBearer))
   }
 
   it should "parse a boolean argument as a flag" in {

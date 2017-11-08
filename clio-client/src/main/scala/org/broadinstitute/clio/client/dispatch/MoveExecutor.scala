@@ -2,7 +2,6 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.http.scaladsl.model.headers.HttpCredentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveCommand}
 import org.broadinstitute.clio.client.util.IoUtil
@@ -27,8 +26,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   private val destination: URI = moveCommand.destination
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext,
-    credentials: HttpCredentials
+    implicit ec: ExecutionContext
   ): Future[Option[UpsertId]] = {
     for {
       _ <- Future(verifyCloudPaths(ioUtil))
@@ -54,10 +52,9 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     }
   }
 
-  private def queryForKey(client: ClioWebClient)(
-    implicit credentials: HttpCredentials,
-    ec: ExecutionContext
-  ): Future[moveCommand.index.MetadataType] = {
+  private def queryForKey(
+    client: ClioWebClient
+  )(implicit ec: ExecutionContext): Future[moveCommand.index.MetadataType] = {
 
     val keyToQueryMapper = CaseClassTypeConverter[
       moveCommand.index.KeyType,
@@ -118,12 +115,11 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     }
   }
 
-  private def moveFiles(client: ClioWebClient,
-                        ioUtil: IoUtil,
-                        existingMetadata: moveCommand.index.MetadataType)(
-    implicit credentials: HttpCredentials,
-    ec: ExecutionContext
-  ): Future[Option[UpsertId]] = {
+  private def moveFiles(
+    client: ClioWebClient,
+    ioUtil: IoUtil,
+    existingMetadata: moveCommand.index.MetadataType
+  )(implicit ec: ExecutionContext): Future[Option[UpsertId]] = {
 
     val newMetadata = existingMetadata.moveInto(destination)
     val preMoveFields = flattenMetadata(existingMetadata)

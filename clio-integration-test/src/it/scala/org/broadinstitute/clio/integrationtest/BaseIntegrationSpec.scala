@@ -1,17 +1,10 @@
 package org.broadinstitute.clio.integrationtest
 
-import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.{ClioClient, ClioClientConfig}
-import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
+import java.nio.file.{FileSystem, Files, Path, Paths}
+import java.util.UUID
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import com.bettercloud.vault.{Vault, VaultConfig}
@@ -24,18 +17,25 @@ import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
-import io.circe.{Decoder, Encoder, Json, Printer}
 import io.circe.parser._
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder, Json, Printer}
 import org.apache.http.HttpHost
+import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.client.{ClioClient, ClioClientConfig}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
+  ElasticsearchIndex
+}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
 import org.elasticsearch.client.RestClient
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import java.nio.file.{FileSystem, Files, Path, Paths}
-import java.util.UUID
 
 /**
   * Base class for Clio integration tests, agnostic to the location
@@ -73,9 +73,6 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   val clientTimeout: FiniteDuration = ClioClientConfig.responseTimeout
 
-  /** The bearer token to use when hitting the /api route of Clio. */
-  implicit def bearerToken: OAuth2BearerToken
-
   /**
     * The web client to use within the tested clio-client.
     */
@@ -111,10 +108,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     "https://www.googleapis.com/auth/devstorage.read_write"
   )
 
-  /**
-    * Service account credentials for use when accessing cloud resources.
-    */
-  protected lazy val serviceAccount: ServiceAccount = {
+  /** Service account credentials for use when accessing cloud resources. */
+  final protected lazy val serviceAccount: ServiceAccount = {
     val vaultToken: String = vaultTokenPaths
       .find(Files.exists(_))
       .map { path =>
@@ -216,9 +211,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   def runClient(command: String, args: String*): Future[_] = {
     clioClient
-      .instanceMain(
-        (Seq("--bearer-token", bearerToken.token, command) ++ args).toArray
-      )
+      .instanceMain((command +: args).toArray)
       .fold(
         earlyReturn =>
           Future
@@ -277,13 +270,13 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     index: ElasticsearchIndex[Document],
     expectedId: UpsertId
   ): Document = {
-    val expectedPath =
-      rootPersistenceDir
-        .resolve(index.currentPersistenceDir)
-        .resolve(new ClioDocument {
-          override val entityId: Symbol = Symbol("")
-          override val upsertId: UpsertId = expectedId
-        }.persistenceFilename)
+    val expectedPath = rootPersistenceDir
+      .resolve(index.currentPersistenceDir)
+      .resolve(new ClioDocument {
+        override val entityId: Symbol = Symbol("")
+        override val upsertId: UpsertId = expectedId
+      }.persistenceFilename)
+
     Files.exists(expectedPath) should be(true)
     val document = parse(new String(Files.readAllBytes(expectedPath)))
       .flatMap(_.as[Document])

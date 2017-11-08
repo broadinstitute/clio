@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.client.dispatch
 
-import akka.http.scaladsl.model.headers.HttpCredentials
 import io.circe.Json
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.util.IoUtil
@@ -15,8 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand)
     extends Executor[Json] {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext,
-    credentials: HttpCredentials
+    implicit ec: ExecutionContext
   ): Future[Json] = {
     val responseFut = command match {
       case GetServerHealth  => webClient.getClioServerHealth

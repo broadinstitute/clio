@@ -35,7 +35,8 @@ class ClioWebClientSpec
     false,
     testMaxQueued,
     testMaxConcurrent,
-    testRequestTimeout
+    testRequestTimeout,
+    fakeTokenGenerator
   )
 
   it should "time out requests that take too long" in {
