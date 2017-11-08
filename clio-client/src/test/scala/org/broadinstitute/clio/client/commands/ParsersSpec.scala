@@ -9,7 +9,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 class ParsersSpec extends BaseClientSpec {
 
   private def parse(args: Array[String]) =
-    ClioCommand.parser.detailedParse(args)(CommonOptions.parser)
+    ClioCommand.parser.detailedParse[None.type](args)
 
   it should "properly parse a Location type " in {
     val parsed =

@@ -2,7 +2,6 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import com.google.auth.oauth2.OAuth2Credentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, MoveCommand}
 import org.broadinstitute.clio.client.util.IoUtil
@@ -17,9 +16,8 @@ import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])(
-  implicit credentials: OAuth2Credentials
-) extends Executor[Option[UpsertId]] {
+class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
+    extends Executor[Option[UpsertId]] {
 
   import moveCommand.index.implicits._
 

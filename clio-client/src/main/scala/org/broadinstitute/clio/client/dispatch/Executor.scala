@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.client.dispatch
 
-import com.google.auth.oauth2.OAuth2Credentials
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import org.broadinstitute.clio.client.util.{FutureWithErrorMessage, IoUtil}
@@ -9,7 +8,7 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class Executor[Out](implicit val credentials: OAuth2Credentials)
+trait Executor[Out]
     extends LazyLogging
     with FailFastCirceSupport
     with ModelAutoDerivation

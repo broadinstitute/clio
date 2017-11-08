@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.client.dispatch
 
-import com.google.auth.oauth2.OAuth2Credentials
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.{ClioCommand, DeleteCommand}
 import org.broadinstitute.clio.client.util.IoUtil
@@ -15,9 +14,8 @@ import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])(
-  implicit credentials: OAuth2Credentials
-) extends Executor[UpsertId] {
+class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
+    extends Executor[UpsertId] {
 
   import deleteCommand.index.implicits._
 

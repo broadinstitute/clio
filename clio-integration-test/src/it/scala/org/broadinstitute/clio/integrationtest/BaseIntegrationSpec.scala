@@ -8,7 +8,6 @@ import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import com.bettercloud.vault.{Vault, VaultConfig}
-import com.google.auth.oauth2.OAuth2Credentials
 import com.google.cloud.storage.StorageOptions
 import com.google.cloud.storage.contrib.nio.{
   CloudStorageConfiguration,
@@ -29,7 +28,6 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.util.auth.AuthUtil
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
 import org.elasticsearch.client.RestClient
@@ -146,23 +144,6 @@ abstract class BaseIntegrationSpec(clioDescription: String)
       }, identity)
   }
 
-  /** OAuth2 credential for use in direct calls to the ClioWebClient. */
-  final implicit lazy val oauthCredential: OAuth2Credentials = {
-    AuthUtil
-      .getCredsFromServiceAccount(serviceAccount)
-      .fold(
-        fail(s"Couldn't get access token for account $serviceAccount", _),
-        identity
-      )
-  }
-
-  /**
-    * Temp file for storing service-account JSON, to pass
-    * into calls to the clio-client.
-    */
-  private lazy val serviceAccountJsonPath: Path =
-    Files.createTempFile("clio-integration", system.name)
-
   /**
     * Get a path to the root of a bucket in cloud-storage,
     * using Google's NIO filesystem adapter.
@@ -230,9 +211,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   def runClient(command: String, args: String*): Future[_] = {
     clioClient
-      .instanceMain(
-        (Seq("--account-json-path", serviceAccountJsonPath.toString, command) ++ args).toArray
-      )
+      .instanceMain((command +: args).toArray)
       .fold(
         earlyReturn =>
           Future
@@ -291,13 +270,13 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     index: ElasticsearchIndex[Document],
     expectedId: UpsertId
   ): Document = {
-    val expectedPath =
-      rootPersistenceDir
-        .resolve(index.currentPersistenceDir)
-        .resolve(new ClioDocument {
-          override val entityId: Symbol = Symbol("")
-          override val upsertId: UpsertId = expectedId
-        }.persistenceFilename)
+    val expectedPath = rootPersistenceDir
+      .resolve(index.currentPersistenceDir)
+      .resolve(new ClioDocument {
+        override val entityId: Symbol = Symbol("")
+        override val upsertId: UpsertId = expectedId
+      }.persistenceFilename)
+
     Files.exists(expectedPath) should be(true)
     val document = parse(new String(Files.readAllBytes(expectedPath)))
       .flatMap(_.as[Document])
@@ -322,18 +301,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     tmpFile
   }
 
-  /** Write service-account JSON to file before running tests. */
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-    val _ = Files.write(
-      serviceAccountJsonPath,
-      serviceAccount.asJson.noSpaces.getBytes
-    )
-  }
-
   /** Shut down the actor system at the end of the suite. */
   override protected def afterAll(): Unit = {
-    Files.delete(serviceAccountJsonPath)
     shutdown()
     super.afterAll()
   }

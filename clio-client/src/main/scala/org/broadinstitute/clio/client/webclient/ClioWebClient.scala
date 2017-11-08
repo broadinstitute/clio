@@ -1,16 +1,12 @@
 package org.broadinstitute.clio.client.webclient
 
-import java.time.Instant
-
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream._
 import akka.stream.scaladsl.{Keep, Sink, Source}
-import com.google.auth.oauth2.OAuth2Credentials
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.{Json, Printer}
 import io.circe.syntax._
@@ -30,7 +26,8 @@ class ClioWebClient(
   useHttps: Boolean,
   maxQueuedRequests: Int,
   maxConcurrentRequests: Int,
-  requestTimeout: FiniteDuration
+  requestTimeout: FiniteDuration,
+  tokenGenerator: CredentialsGenerator
 )(implicit system: ActorSystem)
     extends ModelAutoDerivation
     with FailFastCirceSupport
@@ -101,43 +98,13 @@ class ClioWebClient(
     })(Keep.left)
     .run()
 
-  def dispatchRequest(
-    request: HttpRequest,
-    credentials: Option[OAuth2Credentials]
-  ): Future[HttpResponse] = {
+  def dispatchRequest(request: HttpRequest,
+                      includeAuth: Boolean = true): Future[HttpResponse] = {
     val responsePromise = Promise[HttpResponse]()
-    val requestWithCreds = credentials.fold(request) { creds =>
-      val now = Instant.now()
-
-      creds.synchronized {
-        /*
-         * Refresh the credential if either:
-         *   1. It has no underlying access token, or
-         *   2. The underlying access token has an expiration time, and it's expired
-         *
-         * DON'T refresh if the underlying access token has no expiration time,
-         * because refresh might not be supported for that token.
-         */
-        val maybeToken = Option(creds.getAccessToken)
-        lazy val maybeTokenExpirationInstant = for {
-          token <- maybeToken
-          expiration <- Option(token.getExpirationTime)
-        } yield {
-          expiration.toInstant
-        }
-        val shouldRefresh =
-          maybeToken.isEmpty || maybeTokenExpirationInstant.exists(
-            _.isAfter(now)
-          )
-
-        if (shouldRefresh) {
-          creds.refresh()
-        }
-      }
-
-      request.addCredentials(
-        OAuth2BearerToken(creds.getAccessToken.getTokenValue)
-      )
+    val requestWithCreds = if (includeAuth) {
+      request.addCredentials(tokenGenerator.generateCredentials())
+    } else {
+      request
     }
 
     requestStream.offer(requestWithCreds -> responsePromise).flatMap {
@@ -168,28 +135,25 @@ class ClioWebClient(
   }
 
   def getClioServerVersion: Future[Json] = {
-    dispatchRequest(HttpRequest(uri = "/version"), None)
+    dispatchRequest(HttpRequest(uri = "/version"), includeAuth = false)
       .flatMap(unmarshal[Json])
   }
 
   def getClioServerHealth: Future[Json] = {
-    dispatchRequest(HttpRequest(uri = "/health"), None)
+    dispatchRequest(HttpRequest(uri = "/health"), includeAuth = false)
       .flatMap(unmarshal[Json])
   }
 
-  def getSchema(
-    transferIndex: TransferIndex
-  )(implicit credentials: OAuth2Credentials): Future[Json] = {
+  def getSchema(transferIndex: TransferIndex): Future[Json] = {
     dispatchRequest(
-      HttpRequest(uri = s"/api/v1/${transferIndex.urlSegment}/schema"),
-      Some(credentials)
+      HttpRequest(uri = s"/api/v1/${transferIndex.urlSegment}/schema")
     ).flatMap(unmarshal[Json])
   }
 
   def upsert[TI <: TransferIndex](transferIndex: TI)(
     key: transferIndex.KeyType,
     metadata: transferIndex.MetadataType
-  )(implicit credentials: OAuth2Credentials): Future[UpsertId] = {
+  ): Future[UpsertId] = {
     import transferIndex.implicits._
 
     val entity = HttpEntity(
@@ -210,15 +174,14 @@ class ClioWebClient(
         uri = Uri(path = encodedPath),
         method = HttpMethods.POST,
         entity = entity
-      ),
-      Some(credentials)
+      )
     ).flatMap(unmarshal[UpsertId])
   }
 
   def query[TI <: TransferIndex](transferIndex: TI)(
     input: transferIndex.QueryInputType,
     includeDeleted: Boolean
-  )(implicit credentials: OAuth2Credentials): Future[Json] = {
+  ): Future[Json] = {
     import transferIndex.implicits._
 
     val queryPath = if (includeDeleted) "queryall" else "query"
@@ -232,8 +195,7 @@ class ClioWebClient(
         uri = s"/api/v1/${transferIndex.urlSegment}/$queryPath",
         method = HttpMethods.POST,
         entity = entity
-      ),
-      Some(credentials)
+      )
     ).flatMap(unmarshal[Json])
   }
 

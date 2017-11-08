@@ -3,8 +3,12 @@ package org.broadinstitute.clio.integrationtest
 import java.nio.file.Path
 
 import akka.http.scaladsl.model.Uri
-import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.client.webclient.{
+  ClioWebClient,
+  GoogleCredentialsGenerator
+}
 import org.broadinstitute.clio.integrationtest.tests.AuthRefreshTests
+import org.broadinstitute.clio.util.auth.AuthUtil
 
 /**
   * An integration spec that runs entirely against a Clio instance
@@ -20,13 +24,21 @@ abstract class EnvIntegrationSpec(env: String)
     "https://www.googleapis.com/auth/devstorage.read_only"
   )
 
+  protected lazy val googleCredential = AuthUtil
+    .getCredsFromServiceAccount(serviceAccount)
+    .fold(
+      fail(s"Couldn't get access token for account $serviceAccount", _),
+      identity
+    )
+
   override val clioWebClient: ClioWebClient = new ClioWebClient(
     s"clio101.gotc-$env.broadinstitute.org",
     443,
     useHttps = true,
     maxQueuedRequests,
     maxConcurrentRequests,
-    clientTimeout
+    clientTimeout,
+    new GoogleCredentialsGenerator(googleCredential)
   )
 
   override val elasticsearchUri: Uri = Uri(

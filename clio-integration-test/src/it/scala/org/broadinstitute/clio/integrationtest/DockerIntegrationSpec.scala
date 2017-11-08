@@ -5,6 +5,7 @@ import java.nio.file.{FileSystems, Path, Paths}
 
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.file.scaladsl.FileTailSource
 import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
@@ -53,7 +54,8 @@ abstract class DockerIntegrationSpec
       useHttps = false,
       maxQueuedRequests,
       maxConcurrentRequests,
-      clientTimeout
+      clientTimeout,
+      () => OAuth2BearerToken("fake-token")
     )
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)
 

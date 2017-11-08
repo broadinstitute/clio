@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.client.dispatch
 
-import com.google.auth.oauth2.OAuth2Credentials
 import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands.{AddCommand, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
@@ -10,9 +9,8 @@ import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])(
-  implicit credentials: OAuth2Credentials
-) extends Executor[UpsertId] {
+class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
+    extends Executor[UpsertId] {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[UpsertId] = {

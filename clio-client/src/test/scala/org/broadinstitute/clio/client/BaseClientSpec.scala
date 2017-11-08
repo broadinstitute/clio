@@ -5,7 +5,6 @@ import java.net.URI
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
 import akka.testkit.TestKit
-import com.google.auth.oauth2.{AccessToken, OAuth2Credentials}
 import org.broadinstitute.clio.client.dispatch.CommandDispatch
 import org.broadinstitute.clio.client.util.{IoUtil, MockIoUtil, TestData}
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
@@ -19,10 +18,6 @@ abstract class BaseClientSpec
     with TestData
     with Matchers
     with ModelAutoDerivation {
-
-  implicit val fakeCredentials: OAuth2Credentials = new OAuth2Credentials(
-    new AccessToken("fake-token", null)
-  )
 
   def succeedingDispatcher(ioUtil: IoUtil = new MockIoUtil,
                            jsonToReturn: Option[URI] = None) =
