@@ -773,7 +773,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
     val md5Contents = randomId
 
-    val cramName = s"$newPrefix$randomId.cram"
+    val cramName = s"$randomId.cram"
     val craiName = s"$cramName.crai"
     val md5Name = s"$cramName.md5"
 
@@ -783,9 +783,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiSource = rootSource.resolve(craiName)
 
     val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
-    val cramDestination = rootDestination.resolve(cramName)
-    val craiDestination = rootDestination.resolve(craiName)
-    val md5Destination = rootDestination.resolve(md5Name)
+    val cramDestination = rootDestination.resolve(s"$newPrefix$cramName")
+    val craiDestination = rootDestination.resolve(s"$newPrefix$craiName")
+    val md5Destination = rootDestination.resolve(s"$newPrefix$md5Name")
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata = TransferWgsCramV1Metadata(

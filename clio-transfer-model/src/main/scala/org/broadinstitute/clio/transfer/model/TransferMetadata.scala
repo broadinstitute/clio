@@ -27,8 +27,8 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
   def pathsToDelete: Seq[URI]
 
   /**
-    * Return a copy of this object in which all files in `pathsToMove`
-    * have been moved to the given destination directory.
+    * Return a copy of this object in which all files have been moved
+    * to the given destination directory.
     *
     * Until we move to a Path-based API, `destination` must end with '/'.
     */
@@ -71,4 +71,12 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
       case Some(existing) => Some(s"$existing\n$note")
       case None           => Some(note)
     }
+
+  /**
+    * Return a copy of this in which the `URI` vals are prefixed with
+    * `newPrefix` as necessary
+    *
+    * @return new metadata with some field values prefixed.
+    */
+  def prefixed(newPrefix: String): M = { val _ = newPrefix; self }
 }

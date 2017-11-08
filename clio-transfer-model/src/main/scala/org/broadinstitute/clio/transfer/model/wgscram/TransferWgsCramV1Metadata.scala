@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.transfer.model.wgscram
 
+import java.io.File
 import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -86,4 +87,13 @@ case class TransferWgsCramV1Metadata(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
     )
+
+  override def prefixed(newPrefix: String) = {
+    val cramName = cramPath.map(cp => new File(cp.getPath).getName)
+    val cramDir = cramPath.map(cp => cp.resolve("/../"))
+    val prefixedCramPath = cramDir.map(cd => cd.resolve(s"$newPrefix$cramName"))
+    val prefixedCraiPath =
+      prefixedCramPath.map(pcp => URI.create(s"${pcp.toString}.crai"))
+    this.copy(cramPath = prefixedCramPath, craiPath = prefixedCraiPath)
+  }
 }

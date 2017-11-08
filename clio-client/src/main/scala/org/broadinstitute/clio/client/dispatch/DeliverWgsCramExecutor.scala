@@ -28,7 +28,11 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
     extends Executor[UpsertId] {
 
   val moveCommand =
-    MoveWgsCram(deliverCommand.key, deliverCommand.workspacePath)
+    MoveWgsCram(
+      deliverCommand.key,
+      deliverCommand.workspacePath,
+      deliverCommand.newPrefix
+    )
   import moveCommand.index.implicits._
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
