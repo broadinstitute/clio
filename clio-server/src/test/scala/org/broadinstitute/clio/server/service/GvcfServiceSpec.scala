@@ -14,11 +14,7 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryInput
 }
-import org.broadinstitute.clio.util.model.{
-  DocumentStatus,
-  Location,
-  RegulatoryDesignation
-}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
   behavior of "GvcfService"
@@ -84,8 +80,7 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
       TransferGvcfV1Metadata(
         gvcfPath = Option(URI.create("gs://path/gvcfPath.gvcf")),
         notes = Option("notable update"),
-        documentStatus = documentStatus,
-        regulatoryDesignation = Some(RegulatoryDesignation.ResearchOnly)
+        documentStatus = documentStatus
       )
     for {
       returnedUpsertId <- gvcfService.upsertMetadata(
