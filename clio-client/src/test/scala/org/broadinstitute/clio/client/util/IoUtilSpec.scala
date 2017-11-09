@@ -2,6 +2,7 @@ package org.broadinstitute.clio.client.util
 
 import java.net.URI
 
+import org.broadinstitute.clio.client.util.IoUtil.GsUtil
 import org.scalatest.{FlatSpec, Matchers}
 
 //test the non-gs portions of io util
