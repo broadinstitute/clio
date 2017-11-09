@@ -76,7 +76,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       sampleAlias = s"someAlias $randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
-      regulatoryDesignation = Some(RegulatoryDesignation.ResearchOnly),
       cramPath = Some(URI.create("gs://path/cram.cram"))
     )
 
@@ -847,8 +846,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
             cramPath = Some(cramDestination.toUri),
             craiPath = Some(craiDestination.toUri),
             cramMd5 = Some(Symbol(md5Contents)),
-            documentStatus = Some(DocumentStatus.Normal),
-            regulatoryDesignation = Some(RegulatoryDesignation.ResearchOnly)
+            documentStatus = Some(DocumentStatus.Normal)
           )
         )
       }
@@ -865,53 +863,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         ).map(Files.deleteIfExists)
       }
     }
-  }
-
-  it should "automatically set regulatory designation to ResearchOnly for crams" in {
-    val project = s"project$randomId"
-    val sample = s"sample$randomId"
-    val version = 3
-
-    val md5Contents = randomId
-
-    val cramName = s"$randomId.cram"
-    val craiName = s"$cramName.crai"
-
-    val rootSource =
-      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
-    val cramSource = rootSource.resolve(cramName)
-    val craiSource = rootSource.resolve(craiName)
-
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferWgsCramV1Metadata(
-      cramPath = Some(cramSource.toUri),
-      craiPath = Some(craiSource.toUri),
-      cramMd5 = Some(Symbol(md5Contents)),
-      regulatoryDesignation = None
-    )
-
-    def query = {
-      for {
-        results <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
-          ClioCommand.queryWgsCramName,
-          "--project",
-          project
-        )
-      } yield {
-        results should have length 1
-        results.head
-      }
-    }
-
-    for {
-      _ <- runUpsertCram(key, metadata)
-      result <- query
-    } yield {
-      result.regulatoryDesignation should be(
-        Some(RegulatoryDesignation.ResearchOnly)
-      )
-    }
-
   }
 
   it should "respect user-set regulatory designation for crams" in {
@@ -958,7 +909,114 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         Some(RegulatoryDesignation.ClinicalDiagnostics)
       )
     }
+  }
 
+  it should "not overwrite existing regulatory designation on cram delivery" in {
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val cramContents = s"$randomId --- I am a dummy cram --- $randomId"
+    val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
+    val md5Contents = randomId
+
+    val cramName = s"$randomId.cram"
+    val craiName = s"$cramName.crai"
+    val md5Name = s"$cramName.md5"
+
+    val cramRegulatoryDesignation =
+      Some(RegulatoryDesignation.ClinicalDiagnostics)
+
+    val rootSource =
+      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
+    val cramSource = rootSource.resolve(cramName)
+    val craiSource = rootSource.resolve(craiName)
+
+    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
+    val cramDestination = rootDestination.resolve(cramName)
+    val craiDestination = rootDestination.resolve(craiName)
+    val md5Destination = rootDestination.resolve(md5Name)
+
+    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
+    val metadata = TransferWgsCramV1Metadata(
+      cramPath = Some(cramSource.toUri),
+      craiPath = Some(craiSource.toUri),
+      cramMd5 = Some(Symbol(md5Contents)),
+      regulatoryDesignation = cramRegulatoryDesignation
+    )
+
+    val workspaceName = s"$randomId-TestWorkspace-$randomId"
+
+    val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
+      case (source, contents) => Files.write(source, contents.getBytes)
+    }
+    val result = for {
+      _ <- runUpsertCram(key, metadata)
+      _ <- runClient(
+        ClioCommand.deliverWgsCramName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--workspace-name",
+        workspaceName,
+        "--workspace-path",
+        rootDestination.toUri.toString
+      )
+      outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+        ClioCommand.queryWgsCramName,
+        "--workspace-name",
+        workspaceName
+      )
+    } yield {
+      Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
+
+      Seq(cramDestination, craiDestination, md5Destination).foreach(
+        Files.exists(_) should be(true)
+      )
+
+      Seq(
+        (cramDestination, cramContents),
+        (craiDestination, craiContents),
+        (md5Destination, md5Contents)
+      ).foreach {
+        case (destination, contents) =>
+          new String(Files.readAllBytes(destination)) should be(contents)
+      }
+
+      outputs should be {
+        Seq(
+          TransferWgsCramV1QueryOutput(
+            location = Location.GCP,
+            project = project,
+            sampleAlias = sample,
+            version = version,
+            workspaceName = Some(workspaceName),
+            cramPath = Some(cramDestination.toUri),
+            craiPath = Some(craiDestination.toUri),
+            cramMd5 = Some(Symbol(md5Contents)),
+            documentStatus = Some(DocumentStatus.Normal),
+            regulatoryDesignation = cramRegulatoryDesignation
+          )
+        )
+      }
+    }
+
+    result.andThen {
+      case _ => {
+        val _ = Seq(
+          cramSource,
+          cramDestination,
+          craiSource,
+          craiDestination,
+          md5Destination
+        ).map(Files.deleteIfExists)
+      }
+    }
   }
 
   it should "fail delivery if the underlying move fails" in {
