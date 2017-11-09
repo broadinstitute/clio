@@ -7,11 +7,11 @@ import java.util.Comparator
 
 import scala.sys.process.Process
 
-class IoUtil(gsUtil: Option[IoUtil.GsUtil]) {
+trait IoUtil {
 
   val googleCloudStorageScheme = "gs"
 
-  val gs: IoUtil.GsUtil = gsUtil.getOrElse(new IoUtil.GsUtil(None))
+  protected def gsUtil: IoUtil.GsUtil
 
   def isGoogleObject(location: URI): Boolean =
     Option(location.getScheme).contains(googleCloudStorageScheme)
@@ -52,19 +52,19 @@ class IoUtil(gsUtil: Option[IoUtil.GsUtil]) {
    */
 
   def readGoogleObjectData(location: URI): String = {
-    gs.cat(location.toString)
+    gsUtil.cat(location.toString)
   }
 
   def copyGoogleObject(from: URI, to: URI): Int = {
-    gs.cp(from.toString, to.toString)
+    gsUtil.cp(from.toString, to.toString)
   }
 
   def deleteGoogleObject(path: URI): Int = {
-    gs.rm(path.toString)
+    gsUtil.rm(path.toString)
   }
 
   def googleObjectExists(path: URI): Boolean = {
-    gs.exists(path.toString) == 0
+    gsUtil.exists(path.toString) == 0
   }
 
   private val md5HashPattern = "Hash \\(md5\\):\\s+([0-9a-f]+)".r
@@ -74,12 +74,13 @@ class IoUtil(gsUtil: Option[IoUtil.GsUtil]) {
      * Files uploaded through parallel composite uploads won't have an md5 hash.
      * See https://cloud.google.com/storage/docs/gsutil/commands/cp#parallel-composite-uploads
      */
-    val rawHash = gs.hash(path.toString)
+    val rawHash = gsUtil.hash(path.toString)
     md5HashPattern.findFirstMatchIn(rawHash).map(m => Symbol(m.group(1)))
   }
 
   def getSizeOfGoogleObject(path: URI): Long = {
-    gs.du(path.toString)
+    gsUtil
+      .du(path.toString)
       .head
       .split("\\s+")
       .head
@@ -87,11 +88,13 @@ class IoUtil(gsUtil: Option[IoUtil.GsUtil]) {
   }
 
   def listGoogleObjects(path: URI): Seq[String] = {
-    gs.ls(path.toString)
+    gsUtil.ls(path.toString)
   }
 }
 
-object IoUtil extends IoUtil(None) {
+object IoUtil extends IoUtil {
+
+  override val gsUtil: GsUtil = new GsUtil(None)
 
   /**
     * Wrapper around gsutil managing state directory creation

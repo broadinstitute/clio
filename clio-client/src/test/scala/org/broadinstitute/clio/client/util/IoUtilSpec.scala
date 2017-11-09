@@ -27,9 +27,8 @@ class IoUtilSpec extends FlatSpec with Matchers with TestData {
          """.stripMargin
     }
 
-    new IoUtil(Some(mockGsUtil)).getMd5HashOfGoogleObject(uri) should be(
-      Some(expectedHash)
-    )
+    new IoUtil { override val gsUtil: GsUtil = mockGsUtil }
+      .getMd5HashOfGoogleObject(uri) should be(Some(expectedHash))
   }
 
   it should "not fail when 'gsutil hash' doesn't output an md5 hash" in {
@@ -40,7 +39,8 @@ class IoUtilSpec extends FlatSpec with Matchers with TestData {
          """.stripMargin
     }
 
-    new IoUtil(Some(mockGsUtil)).getMd5HashOfGoogleObject(uri) should be(None)
+    new IoUtil { override val gsUtil: GsUtil = mockGsUtil }
+      .getMd5HashOfGoogleObject(uri) should be(None)
   }
 
 }
