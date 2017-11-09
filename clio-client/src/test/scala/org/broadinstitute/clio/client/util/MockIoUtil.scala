@@ -6,7 +6,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.mutable
 
-class MockIoUtil extends IoUtil with LazyLogging {
+class MockIoUtil extends IoUtil(None) with LazyLogging {
 
   private val filesInCloud = mutable.ArrayBuffer.empty[URI]
 
