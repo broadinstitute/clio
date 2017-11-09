@@ -844,7 +844,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           TransferWgsCramV1QueryOutput(
             location = Location.GCP,
             project = project,
-            sampleAlias = s"$newPrefix$sample",
+            sampleAlias = sample,
             version = version,
             workspaceName = Some(workspaceName),
             cramPath = Some(cramDestination.toUri),

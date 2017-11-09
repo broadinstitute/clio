@@ -50,7 +50,7 @@ sealed abstract class MoveCommand[TI <: TransferIndex](val index: TI)
     extends ClioCommand {
   def key: index.KeyType
   def destination: URI
-  def newPrefix: Option[String] = None
+  def newSamplePrefix: Option[String] = None
 }
 
 sealed abstract class DeleteCommand[TI <: TransferIndex](val index: TI)
@@ -131,7 +131,7 @@ final case class QueryWgsCram(@Recurse queryInput: TransferWgsCramV1QueryInput,
 @CommandName(ClioCommand.moveWgsCramName)
 final case class MoveWgsCram(@Recurse key: TransferWgsCramV1Key,
                              destination: URI,
-                             override val newPrefix: Option[String])
+                             override val newSamplePrefix: Option[String])
     extends MoveCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.deleteWgsCramName)
@@ -142,7 +142,7 @@ final case class DeleteWgsCram(@Recurse key: TransferWgsCramV1Key, note: String)
 final case class DeliverWgsCram(@Recurse key: TransferWgsCramV1Key,
                                 workspaceName: String,
                                 workspacePath: URI,
-                                newPrefix: Option[String])
+                                newSamplePrefix: Option[String])
     extends ClioCommand
 
 object ClioCommand extends ClioParsers {

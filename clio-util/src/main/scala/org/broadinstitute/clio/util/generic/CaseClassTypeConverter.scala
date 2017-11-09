@@ -34,7 +34,7 @@ object CaseClassTypeConverter {
 
   /**
     * Create an instance of a CaseClassTypeConverter.
-    * 
+    *
     * @param convertVals Function to modify the values extracted from
     *                    the `From` before they are used to initiate
     *                    an instance of `To`.

@@ -89,11 +89,12 @@ case class TransferWgsCramV1Metadata(
     )
 
   override def prefixed(newPrefix: String) = {
-    val cramName = cramPath.map(cp => new File(cp.getPath).getName)
-    val cramDir = cramPath.map(cp => cp.resolve("/../"))
-    val prefixedCramPath = cramDir.map(cd => cd.resolve(s"$newPrefix$cramName"))
-    val prefixedCraiPath =
-      prefixedCramPath.map(pcp => URI.create(s"${pcp.toString}.crai"))
-    this.copy(cramPath = prefixedCramPath, craiPath = prefixedCraiPath)
+    val prefixedCram = cramPath.map { cp =>
+      val name = new File(cp.getPath).getName
+      val directory = URI.create(cp.toString.dropRight(name.length))
+      directory.resolve(s"$newPrefix$name")
+    }
+    val prefixedCrai = prefixedCram.map(pc => URI.create(s"${pc}.crai"))
+    this.copy(cramPath = prefixedCram, craiPath = prefixedCrai)
   }
 }

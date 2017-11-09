@@ -24,7 +24,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   private[dispatch] val name: String = moveCommand.index.name
   private[dispatch] val prettyKey = ClassUtil.formatFields(moveCommand.key)
   private val destination: URI = moveCommand.destination
-  private val newPrefix = moveCommand.newPrefix match {
+  private val newPrefix = moveCommand.newSamplePrefix match {
     case Some(prefix) => prefix
     case None         => ""
   }

@@ -31,7 +31,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
     MoveWgsCram(
       deliverCommand.key,
       deliverCommand.workspacePath,
-      deliverCommand.newPrefix
+      deliverCommand.newSamplePrefix
     )
   import moveCommand.index.implicits._
 
