@@ -5,13 +5,19 @@ import java.net.URI
 import java.nio.file.{FileVisitOption, Files, Path, Paths}
 import java.util.Comparator
 
-import scala.sys.process.Process
+import scala.sys.process.{Process, ProcessBuilder}
 
+/**
+  * Clio-client component handling all file IO operations.
+  */
 trait IoUtil {
-  val googleCloudStorageScheme = "gs"
+
+  import IoUtil._
+
+  protected def gsUtil: GsUtil
 
   def isGoogleObject(location: URI): Boolean =
-    Option(location.getScheme).contains(googleCloudStorageScheme)
+    Option(location.getScheme).contains(GoogleCloudStorageScheme)
 
   def isGoogleDirectory(location: URI): Boolean =
     isGoogleObject(location) && location.getPath.endsWith("/")
@@ -47,34 +53,36 @@ trait IoUtil {
    * google-cloud-nio adapter will eagerly check storage authentication
    * for each path, and fail.
    */
-  import IoUtil.GsUtil
 
   def readGoogleObjectData(location: URI): String = {
-    val gs = new GsUtil(None)
-    gs.cat(location.toString)
+    gsUtil.cat(location.toString)
   }
 
   def copyGoogleObject(from: URI, to: URI): Int = {
-    val gs = new GsUtil(None)
-    gs.cp(from.toString, to.toString)
+    gsUtil.cp(from.toString, to.toString)
   }
 
   def deleteGoogleObject(path: URI): Int = {
-    val gs = new GsUtil(None)
-    gs.rm(path.toString)
+    gsUtil.rm(path.toString)
   }
 
   def googleObjectExists(path: URI): Boolean = {
-    val gs = new GsUtil(None)
-    gs.exists(path.toString) == 0
+    gsUtil.exists(path.toString) == 0
   }
 
-  def getMd5HashOfGoogleObject(path: URI): Symbol = {
-    Symbol(new GsUtil(None).md5Hash(path.toString))
+  private val md5HashPattern = "Hash \\(md5\\):\\s+([0-9a-f]+)".r
+
+  def getMd5HashOfGoogleObject(path: URI): Option[Symbol] = {
+    /*
+     * Files uploaded through parallel composite uploads won't have an md5 hash.
+     * See https://cloud.google.com/storage/docs/gsutil/commands/cp#parallel-composite-uploads
+     */
+    val rawHash = gsUtil.hash(path.toString)
+    md5HashPattern.findFirstMatchIn(rawHash).map(m => Symbol(m.group(1)))
   }
 
   def getSizeOfGoogleObject(path: URI): Long = {
-    new GsUtil(None)
+    gsUtil
       .du(path.toString)
       .head
       .split("\\s+")
@@ -83,12 +91,25 @@ trait IoUtil {
   }
 
   def listGoogleObjects(path: URI): Seq[String] = {
-    new GsUtil(None).ls(path.toString)
+    gsUtil.ls(path.toString)
   }
 }
+
 object IoUtil extends IoUtil {
-  // We should consider moving this to api usage instead of gsutil.
-  class GsUtil(stateDir: Option[Path]) {
+
+  val GoogleCloudStorageScheme = "gs"
+
+  override val gsUtil: GsUtil = new GsUtil
+
+  /**
+    * Wrapper around gsutil managing state directory creation
+    * and basic result parsing.
+    *
+    * TODO: We should consider moving this to google-cloud-java
+    * api usage instead of gsutil. We pay significant overhead
+    * on the startup time of every gsutil call.
+    */
+  class GsUtil {
 
     def ls(path: String): Seq[String] = {
       runGsUtilAndGetStdout(Seq("ls", path)).split("\n")
@@ -118,35 +139,26 @@ object IoUtil extends IoUtil {
       runGsUtilAndGetExitCode(Seq("-q", "stat", path))
     }
 
-    def md5Hash(path: String): String = {
-      val output = runGsUtilAndGetStdout(Seq("hash", "-m", "-h", path))
-      output.lines.filter(_.contains("md5")).next.split(":")(1).trim
+    def hash(path: String): String = {
+      runGsUtilAndGetStdout(Seq("hash", "-m", "-h", path))
     }
 
-    def runGsUtilAndGetStdout(gsUtilArgs: Seq[String]): String = {
-      val cmd = getGsUtilCmdWithStateDir(gsUtilArgs)
-      Process(cmd).!!
-    }
+    private val runGsUtilAndGetStdout = runGsUtil(_.!!)(_)
 
-    def runGsUtilAndGetExitCode(gsUtilArgs: Seq[String]): Int = {
-      val cmd = getGsUtilCmdWithStateDir(gsUtilArgs)
-      Process(cmd).!
-    }
+    private val runGsUtilAndGetExitCode = runGsUtil(_.!)(_)
 
-    def getGsUtilCmdWithStateDir(gsUtilArgs: Seq[String]): Seq[String] = {
-      def getTempStateDir: Path = {
-        val tempStateDir = Files.createTempDirectory("gsutil-save")
-        sys.addShutdownHook({
-          IoUtil.deleteDirectoryRecursively(tempStateDir)
-        })
-        tempStateDir
+    private def runGsUtil[Out](
+      runner: ProcessBuilder => Out
+    )(gsUtilArgs: Seq[String]): Out = {
+      val tmp = Files.createTempDirectory("gsutil-state")
+      val process = Process(
+        Seq("gsutil", "-o", s"GSUtil:state_dir=$tmp") ++ gsUtilArgs
+      )
+      try {
+        runner(process)
+      } finally {
+        deleteDirectoryRecursively(tmp)
       }
-
-      Seq(
-        "gsutil",
-        "-o",
-        "GSUtil:state_dir=" + stateDir.getOrElse(getTempStateDir)
-      ) ++ gsUtilArgs
     }
   }
 }

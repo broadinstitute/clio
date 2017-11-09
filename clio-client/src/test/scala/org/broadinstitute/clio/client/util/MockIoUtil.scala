@@ -3,10 +3,13 @@ package org.broadinstitute.clio.client.util
 import java.net.URI
 
 import com.typesafe.scalalogging.LazyLogging
+import org.broadinstitute.clio.client.util.IoUtil.GsUtil
 
 import scala.collection.mutable
 
 class MockIoUtil extends IoUtil with LazyLogging {
+
+  override val gsUtil: GsUtil = new GsUtil
 
   private val filesInCloud = mutable.ArrayBuffer.empty[URI]
 
