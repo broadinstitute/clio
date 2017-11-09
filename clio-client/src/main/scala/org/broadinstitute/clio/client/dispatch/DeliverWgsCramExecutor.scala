@@ -28,11 +28,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
     extends Executor[UpsertId] {
 
   val moveCommand =
-    MoveWgsCram(
-      deliverCommand.key,
-      deliverCommand.workspacePath,
-      deliverCommand.newSamplePrefix
-    )
+    MoveWgsCram(deliverCommand.key, deliverCommand.workspacePath)
   import moveCommand.index.implicits._
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
@@ -53,7 +49,8 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
   private def ensureMove(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[UpsertId] = {
-    val moveExecutor = new MoveExecutor(moveCommand)
+    val moveExecutor =
+      new MoveExecutor(moveCommand, deliverCommand.samplePrefix)
     moveExecutor.execute(webClient, ioUtil).map {
       _.getOrElse {
         throw new IllegalStateException(

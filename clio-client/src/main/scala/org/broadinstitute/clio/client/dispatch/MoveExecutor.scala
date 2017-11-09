@@ -16,7 +16,8 @@ import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
+class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI],
+                                        samplePrefix: Option[String] = None)
     extends Executor[Option[UpsertId]] {
 
   import moveCommand.index.implicits._
@@ -24,10 +25,6 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   private[dispatch] val name: String = moveCommand.index.name
   private[dispatch] val prettyKey = ClassUtil.formatFields(moveCommand.key)
   private val destination: URI = moveCommand.destination
-  private val newPrefix = moveCommand.newSamplePrefix match {
-    case Some(prefix) => prefix
-    case None         => ""
-  }
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
@@ -125,7 +122,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     existingMetadata: moveCommand.index.MetadataType
   )(implicit ec: ExecutionContext): Future[Option[UpsertId]] = {
 
-    val newMetadata = existingMetadata.moveInto(destination).prefixed(newPrefix)
+    val newMetadata = existingMetadata.moveInto(destination, samplePrefix)
     val preMoveFields = flattenMetadata(existingMetadata)
     val postMoveFields = flattenMetadata(newMetadata)
 
