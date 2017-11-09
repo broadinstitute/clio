@@ -5,16 +5,19 @@ import java.net.URI
 import java.nio.file.{FileVisitOption, Files, Path, Paths}
 import java.util.Comparator
 
-import scala.sys.process.Process
+import scala.sys.process.{Process, ProcessBuilder}
 
+/**
+  * Clio-client component handling all file IO operations.
+  */
 trait IoUtil {
 
-  val googleCloudStorageScheme = "gs"
+  import IoUtil._
 
-  protected def gsUtil: IoUtil.GsUtil
+  protected def gsUtil: GsUtil
 
   def isGoogleObject(location: URI): Boolean =
-    Option(location.getScheme).contains(googleCloudStorageScheme)
+    Option(location.getScheme).contains(GoogleCloudStorageScheme)
 
   def isGoogleDirectory(location: URI): Boolean =
     isGoogleObject(location) && location.getPath.endsWith("/")
@@ -94,7 +97,9 @@ trait IoUtil {
 
 object IoUtil extends IoUtil {
 
-  override val gsUtil: GsUtil = new GsUtil(None)
+  val GoogleCloudStorageScheme = "gs"
+
+  override val gsUtil: GsUtil = new GsUtil
 
   /**
     * Wrapper around gsutil managing state directory creation
@@ -104,7 +109,7 @@ object IoUtil extends IoUtil {
     * api usage instead of gsutil. We pay significant overhead
     * on the startup time of every gsutil call.
     */
-  class GsUtil(stateDir: Option[Path]) {
+  class GsUtil {
 
     def ls(path: String): Seq[String] = {
       runGsUtilAndGetStdout(Seq("ls", path)).split("\n")
@@ -138,30 +143,22 @@ object IoUtil extends IoUtil {
       runGsUtilAndGetStdout(Seq("hash", "-m", "-h", path))
     }
 
-    def runGsUtilAndGetStdout(gsUtilArgs: Seq[String]): String = {
-      val cmd = getGsUtilCmdWithStateDir(gsUtilArgs)
-      Process(cmd).!!
-    }
+    private val runGsUtilAndGetStdout = runGsUtil(_.!!)(_)
 
-    def runGsUtilAndGetExitCode(gsUtilArgs: Seq[String]): Int = {
-      val cmd = getGsUtilCmdWithStateDir(gsUtilArgs)
-      Process(cmd).!
-    }
+    private val runGsUtilAndGetExitCode = runGsUtil(_.!)(_)
 
-    def getGsUtilCmdWithStateDir(gsUtilArgs: Seq[String]): Seq[String] = {
-      def getTempStateDir: Path = {
-        val tempStateDir = Files.createTempDirectory("gsutil-save")
-        sys.addShutdownHook({
-          IoUtil.deleteDirectoryRecursively(tempStateDir)
-        })
-        tempStateDir
+    private def runGsUtil[Out](
+      runner: ProcessBuilder => Out
+    )(gsUtilArgs: Seq[String]): Out = {
+      val tmp = Files.createTempDirectory("gsutil-state")
+      val process = Process(
+        Seq("gsutil", "-o", s"GSUtil:state_dir=$tmp") ++ gsUtilArgs
+      )
+      try {
+        runner(process)
+      } finally {
+        deleteDirectoryRecursively(tmp)
       }
-
-      Seq(
-        "gsutil",
-        "-o",
-        "GSUtil:state_dir=" + stateDir.getOrElse(getTempStateDir)
-      ) ++ gsUtilArgs
     }
   }
 }

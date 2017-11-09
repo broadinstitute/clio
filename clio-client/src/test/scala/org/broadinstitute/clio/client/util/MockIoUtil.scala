@@ -9,7 +9,7 @@ import scala.collection.mutable
 
 class MockIoUtil extends IoUtil with LazyLogging {
 
-  override val gsUtil: GsUtil = new GsUtil(None)
+  override val gsUtil: GsUtil = new GsUtil
 
   private val filesInCloud = mutable.ArrayBuffer.empty[URI]
 

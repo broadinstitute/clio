@@ -19,7 +19,7 @@ class IoUtilSpec extends FlatSpec with Matchers with TestData {
 
   it should "parse the md5 hash out of 'gsutil hash' output" in {
     val expectedHash = Symbol("998e42da13d7bd619f798baf8ea08a13")
-    val mockGsUtil = new GsUtil(None) {
+    val mockGsUtil = new GsUtil {
       override def hash(path: String): String =
         s"""Hashes [hex] for pipeline/C1963/CHMI_CHMI3_Nex1/v1/id.txt:
            |        Hash (crc32c):          392eca9a
@@ -32,7 +32,7 @@ class IoUtilSpec extends FlatSpec with Matchers with TestData {
   }
 
   it should "not fail when 'gsutil hash' doesn't output an md5 hash" in {
-    val mockGsUtil = new GsUtil(None) {
+    val mockGsUtil = new GsUtil {
       override def hash(path: String): String =
         s"""Hashes [hex] for pipeline/C1963/CHMI_CHMI3_Nex1/v1/id.txt:
            |        Hash (crc32c):          392eca9a
