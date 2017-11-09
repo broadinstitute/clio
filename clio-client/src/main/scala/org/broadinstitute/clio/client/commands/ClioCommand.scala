@@ -129,10 +129,11 @@ final case class QueryWgsCram(@Recurse queryInput: TransferWgsCramV1QueryInput,
     extends QueryCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.moveWgsCramName)
-final case class MoveWgsCram(@Recurse key: TransferWgsCramV1Key,
-                             destination: URI,
-                             override val newSamplePrefix: Option[String])
-    extends MoveCommand(WgsCramIndex)
+final case class MoveWgsCram(
+  @Recurse key: TransferWgsCramV1Key,
+  destination: URI,
+  override val newSamplePrefix: Option[String] = None
+) extends MoveCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.deleteWgsCramName)
 final case class DeleteWgsCram(@Recurse key: TransferWgsCramV1Key, note: String)
