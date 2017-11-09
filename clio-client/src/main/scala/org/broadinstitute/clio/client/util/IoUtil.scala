@@ -7,7 +7,7 @@ import java.util.Comparator
 
 import scala.sys.process.Process
 
-class IoUtil private[util] (gsUtil: Option[IoUtil.GsUtil]) {
+class IoUtil(gsUtil: Option[IoUtil.GsUtil]) {
 
   val googleCloudStorageScheme = "gs"
 
@@ -101,7 +101,7 @@ object IoUtil extends IoUtil(None) {
     * api usage instead of gsutil. We pay significant overhead
     * on the startup time of every gsutil call.
     */
-  private[util] class GsUtil(stateDir: Option[Path]) {
+  class GsUtil(stateDir: Option[Path]) {
 
     def ls(path: String): Seq[String] = {
       runGsUtilAndGetStdout(Seq("ls", path)).split("\n")
