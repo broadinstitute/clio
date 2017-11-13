@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.transfer.model
 
+import java.io.File
 import java.net.URI
 
 import org.broadinstitute.clio.util.model.DocumentStatus
@@ -55,7 +56,7 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
   /**
     * Return a copy of this with files transformed by applying
     * `pathMapper` and `samplePrefix`.
-    * 
+    *
     * @param samplePrefix added to files derived from sample names
     * @param pathMapper of files from source to destination URI
     * @return new metadata
@@ -68,8 +69,8 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
     */
   protected def moveIntoDirectory(source: URI, destination: URI): URI = {
     // TODO: Rewrite this using a Path-based API.
-    val srcPath = source.getPath
-    destination.resolve(srcPath.substring(srcPath.lastIndexOf('/') + 1))
+    val srcName = new File(source.getPath).getName
+    destination.resolve(srcName)
   }
 
   /**

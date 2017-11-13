@@ -75,8 +75,7 @@ case class TransferWgsCramV1Metadata(
   ): TransferWgsCramV1Metadata = {
     val prefixedCram = cramPath.map { cp =>
       val name = new File(cp.getPath).getName
-      val directory = URI.create(cp.toString.dropRight(name.length))
-      directory.resolve(s"${samplePrefix.getOrElse("")}$name")
+      URI.create(s"${samplePrefix.getOrElse("")}$name")
     }
     val prefixedCrai = prefixedCram.map(pc => URI.create(s"${pc}.crai"))
     this.copy(
