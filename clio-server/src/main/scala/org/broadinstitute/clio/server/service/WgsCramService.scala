@@ -12,11 +12,7 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1QueryInput,
   TransferWgsCramV1QueryOutput
 }
-import org.broadinstitute.clio.util.model.{
-  DocumentStatus,
-  RegulatoryDesignation,
-  UpsertId
-}
+import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -37,10 +33,7 @@ class WgsCramService(
   ): Future[UpsertId] = {
     val updatedTransferMetadata = transferMetadata.copy(
       documentStatus =
-        transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal)),
-      regulatoryDesignation = transferMetadata.regulatoryDesignation.orElse(
-        Some(RegulatoryDesignation.ResearchOnly)
-      )
+        transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
     )
 
     persistenceService

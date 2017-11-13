@@ -80,8 +80,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       sampleAlias = s"someAlias $randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
-      gvcfPath = Some(URI.create("gs://path/gvcf.gvcf")),
-      regulatoryDesignation = Some(RegulatoryDesignation.ResearchOnly)
+      gvcfPath = Some(URI.create("gs://path/gvcf.gvcf"))
     )
 
     /*
@@ -122,9 +121,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
           storedDocument.sampleAlias should be(expected.sampleAlias)
           storedDocument.version should be(expected.version)
           storedDocument.gvcfPath should be(expected.gvcfPath)
-          storedDocument.regulatoryDesignation should be(
-            expected.regulatoryDesignation
-          )
         }
       }
     }
@@ -736,45 +732,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "automatically set regulatory designation to ResearchOnly for gvcfs" in {
-    val project = s"project$randomId"
-    val sample = s"sample$randomId"
-    val version = 3
-
-    val cloudPath = rootTestStorageDir.resolve(
-      s"gvcf/$project/$sample/v$version/$randomId.gvcf"
-    )
-
-    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
-    val metadata =
-      TransferGvcfV1Metadata(
-        gvcfPath = Some(cloudPath.toUri),
-        regulatoryDesignation = None
-      )
-
-    def query = {
-      for {
-        results <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
-          ClioCommand.queryGvcfName,
-          "--project",
-          project
-        )
-      } yield {
-        results should have length 1
-        results.head
-      }
-    }
-
-    for {
-      _ <- runUpsertGvcf(key, metadata)
-      result <- query
-    } yield {
-      result.regulatoryDesignation should be(
-        Some(RegulatoryDesignation.ResearchOnly)
-      )
-    }
-  }
-
   it should "respect user-set regulatory designation for gvcfs" in {
     val project = s"project$randomId"
     val sample = s"sample$randomId"
@@ -811,6 +768,46 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       result.regulatoryDesignation should be(
         Some(RegulatoryDesignation.ClinicalDiagnostics)
       )
+    }
+  }
+
+  it should "preserve any existing regulatory designation for gvcfs" in {
+    val expectedOutput = TransferGvcfV1QueryOutput(
+      location = Location.GCP,
+      project = s"project$randomId",
+      sampleAlias = s"sample$randomId",
+      version = 3,
+      gvcfPath = Some(URI.create(s"gs://gvcf/$randomId.gvcf")),
+      regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics),
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+
+    val key = TransferGvcfV1Key(
+      expectedOutput.location,
+      expectedOutput.project,
+      expectedOutput.sampleAlias,
+      expectedOutput.version
+    )
+    val firstMetadata = TransferGvcfV1Metadata(
+      regulatoryDesignation = expectedOutput.regulatoryDesignation
+    )
+    val secondMetadata =
+      TransferGvcfV1Metadata(gvcfPath = expectedOutput.gvcfPath)
+
+    for {
+      _ <- runUpsertGvcf(key, firstMetadata)
+      _ <- runUpsertGvcf(key, secondMetadata)
+      queryOutput <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+        ClioCommand.queryGvcfName,
+        "--project",
+        key.project,
+        "--sample-alias",
+        key.sampleAlias,
+        "--version",
+        key.version.toString
+      )
+    } yield {
+      queryOutput should be(Seq(expectedOutput))
     }
   }
 
