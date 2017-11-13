@@ -5,8 +5,9 @@ import scala.reflect.ClassTag
 /**
   * Convert from one case class to another.
   *
-  * @param convertVals Function to modify the the extracted from the From before they are used to initiate an instance
-  *                    of To.
+  * @param convertVals Function to modify the values extracted from
+  *                    the `From` before they are used to initiate an
+  *                    instance of `To`.
   * @tparam From The type of the original case class, with a context bound also specifying that an
   *              `implicit ctagFrom: ClassTag[T]` exists.
   *              https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
@@ -34,8 +35,9 @@ object CaseClassTypeConverter {
   /**
     * Create an instance of a CaseClassTypeConverter.
     *
-    * @param convertVals Function to modify the the extracted from the From before they are used to initiate an instance
-    *                    of To.
+    * @param convertVals Function to modify the values extracted from
+    *                    the `From` before they are used to initiate
+    *                    an instance of `To`.
     * @tparam From The type of the original case class, with a context bound also specifying that an
     *              `implicit ctagFrom: ClassTag[T]` exists.
     *              https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds

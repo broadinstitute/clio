@@ -45,6 +45,7 @@ case class TransferWgsUbamV1Metadata(
   override def pathsToDelete: Seq[URI] = ubamPath.toSeq
 
   override def mapMove(
+    samplePrefix: Option[String] = None,
     pathMapper: Option[URI] => Option[URI]
   ): TransferWgsUbamV1Metadata = {
     this.copy(ubamPath = pathMapper(ubamPath))

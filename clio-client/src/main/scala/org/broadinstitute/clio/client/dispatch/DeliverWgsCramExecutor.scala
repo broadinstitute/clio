@@ -40,7 +40,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
       _ <- writeCramMd5(webClient, ioUtil)
         .logErrorMsg("Failed to write cram md5 to file")
       upsertId <- recordWorkspaceName(webClient)
-        .logErrorMsg("Failed to records workspace name in cram metadata")
+        .logErrorMsg("Failed to record workspace name in cram metadata")
     } yield {
       upsertId
     }
@@ -49,7 +49,8 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
   private def ensureMove(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[UpsertId] = {
-    val moveExecutor = new MoveExecutor(moveCommand)
+    val moveExecutor =
+      new MoveExecutor(moveCommand, deliverCommand.samplePrefix)
     moveExecutor.execute(webClient, ioUtil).map {
       _.getOrElse {
         throw new IllegalStateException(

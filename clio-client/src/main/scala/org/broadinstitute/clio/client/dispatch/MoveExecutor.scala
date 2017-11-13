@@ -16,7 +16,8 @@ import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
+class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI],
+                                        samplePrefix: Option[String] = None)
     extends Executor[Option[UpsertId]] {
 
   import moveCommand.index.implicits._
@@ -121,7 +122,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     existingMetadata: moveCommand.index.MetadataType
   )(implicit ec: ExecutionContext): Future[Option[UpsertId]] = {
 
-    val newMetadata = existingMetadata.moveInto(destination)
+    val newMetadata = existingMetadata.moveInto(destination, samplePrefix)
     val preMoveFields = flattenMetadata(existingMetadata)
     val postMoveFields = flattenMetadata(newMetadata)
 

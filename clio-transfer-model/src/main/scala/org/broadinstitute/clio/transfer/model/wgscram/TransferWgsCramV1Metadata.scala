@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.transfer.model.wgscram
 
+import java.io.File
 import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -69,15 +70,19 @@ case class TransferWgsCramV1Metadata(
 
   // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
   override def mapMove(
+    samplePrefix: Option[String] = None,
     pathMapper: Option[URI] => Option[URI]
   ): TransferWgsCramV1Metadata = {
+    val prefixedCram = cramPath.map { cp =>
+      val name = new File(cp.getPath).getName
+      URI.create(s"${samplePrefix.getOrElse("")}$name")
+    }
+    val prefixedCrai = prefixedCram.map(pc => URI.create(s"${pc}.crai"))
     this.copy(
-      cramPath = pathMapper(cramPath),
+      cramPath = pathMapper(prefixedCram),
       // DSDEGP-1715: We've settled on '.cram.crai' as the extension and
       // want to fixup files with just '.crai' when possible.
-      craiPath = pathMapper(cramPath).map { cramUri =>
-        URI.create(s"${cramUri.toString}.crai")
-      }
+      craiPath = pathMapper(prefixedCrai)
     )
   }
 

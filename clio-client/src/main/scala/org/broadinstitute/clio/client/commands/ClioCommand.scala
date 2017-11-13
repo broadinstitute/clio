@@ -139,7 +139,8 @@ final case class DeleteWgsCram(@Recurse key: TransferWgsCramV1Key, note: String)
 @CommandName(ClioCommand.deliverWgsCramName)
 final case class DeliverWgsCram(@Recurse key: TransferWgsCramV1Key,
                                 workspaceName: String,
-                                workspacePath: URI)
+                                workspacePath: URI,
+                                samplePrefix: Option[String])
     extends ClioCommand
 
 object ClioCommand extends ClioParsers {
