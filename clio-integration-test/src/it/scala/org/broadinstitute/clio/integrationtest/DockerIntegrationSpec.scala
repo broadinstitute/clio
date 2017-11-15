@@ -11,10 +11,6 @@ import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.integrationtest.tests.{LoadTests, RecoveryTests}
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -33,12 +29,9 @@ abstract class DockerIntegrationSpec(name: String)
     with ForAllTestContainer {
 
   // Docker-compose appends "_<instance #>" to service names.
-  private val clioFullName = s"${DockerIntegrationSpec.clioServiceName}_1"
-  private val esFullName =
+  protected val clioFullName = s"${DockerIntegrationSpec.clioServiceName}_1"
+  protected val esFullName =
     s"${DockerIntegrationSpec.elasticsearchServiceName}_1"
-
-  protected val seededDocuments: Map[ElasticsearchIndex[_], Seq[ClioDocument]] =
-    Map.empty
 
   override val container = new ClioDockerComposeContainer(
     new File(getClass.getResource(DockerIntegrationSpec.composeFilename).toURI),
@@ -46,8 +39,7 @@ abstract class DockerIntegrationSpec(name: String)
     Map(
       clioFullName -> DockerIntegrationSpec.clioServicePort,
       esFullName -> DockerIntegrationSpec.elasticsearchServicePort
-    ),
-    seededDocuments
+    )
   )
 
   /*

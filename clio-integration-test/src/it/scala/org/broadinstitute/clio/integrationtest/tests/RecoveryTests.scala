@@ -1,9 +1,13 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import java.io.File
 import java.net.URI
 
 import org.broadinstitute.clio.client.commands.ClioCommand
-import org.broadinstitute.clio.integrationtest.DockerIntegrationSpec
+import org.broadinstitute.clio.integrationtest.{
+  ClioDockerComposeContainer,
+  DockerIntegrationSpec
+}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
 import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1QueryOutput
@@ -66,12 +70,19 @@ trait RecoveryTests {
     )
   }
 
-  override val seededDocuments: Map[ElasticsearchIndex[_], Seq[ClioDocument]] =
+  override val container = new ClioDockerComposeContainer(
+    new File(getClass.getResource(DockerIntegrationSpec.composeFilename).toURI),
+    DockerIntegrationSpec.elasticsearchServiceName,
+    Map(
+      clioFullName -> DockerIntegrationSpec.clioServicePort,
+      esFullName -> DockerIntegrationSpec.elasticsearchServicePort
+    ),
     Map(
       ElasticsearchIndex.WgsUbam -> storedUbams,
       ElasticsearchIndex.Gvcf -> storedGvcfs,
       ElasticsearchIndex.WgsCram -> storedWgsCrams
     )
+  )
 
   it should "recover wgs-ubam metadata on startup" in {
     for {
