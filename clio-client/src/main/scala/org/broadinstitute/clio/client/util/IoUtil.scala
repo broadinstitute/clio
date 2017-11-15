@@ -1,8 +1,9 @@
 package org.broadinstitute.clio.client.util
 
+import java.io.IOException
 import java.net.URI
-import java.nio.file.{FileVisitOption, Files, Path, Paths}
-import java.util.Comparator
+import java.nio.file._
+import java.nio.file.attribute.BasicFileAttributes
 
 import scala.sys.process.{Process, ProcessBuilder}
 
@@ -34,10 +35,22 @@ trait IoUtil {
   }
 
   def deleteDirectoryRecursively(directory: Path): Unit = {
-    Files
-      .walk(directory, FileVisitOption.FOLLOW_LINKS)
-      .sorted(Comparator.reverseOrder())
-      .forEach(Files.delete(_))
+    val _ =
+      Files.walkFileTree(directory, new SimpleFileVisitor[Path]() {
+        override def visitFile(file: Path,
+                               attrs: BasicFileAttributes): FileVisitResult = {
+          Files.delete(file)
+          FileVisitResult.CONTINUE
+        }
+
+        override def postVisitDirectory(dir: Path,
+                                        exc: IOException): FileVisitResult = {
+          Option(exc).fold({
+            Files.delete(dir)
+            FileVisitResult.CONTINUE
+          })(throw _)
+        }
+      })
   }
 
   /*

@@ -1,24 +1,25 @@
 package org.broadinstitute.clio.server.dataaccess
 
 import java.net.URI
-
-import org.broadinstitute.clio.server.TestKitSuite
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentMock,
-  ElasticsearchIndex
-}
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
-import com.sksamuel.elastic4s.Indexable
-import com.sksamuel.elastic4s.circe._
-import io.circe.parser._
 import java.nio.file.Files
 import java.time.OffsetDateTime
 
 import akka.stream.scaladsl.Sink
+import com.sksamuel.elastic4s.Indexable
+import com.sksamuel.elastic4s.circe._
+import io.circe.parser._
+import org.broadinstitute.clio.server.TestKitSuite
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  DocumentMock,
+  Elastic4sAutoDerivation,
+  ElasticsearchIndex
+}
 
 import scala.concurrent.Future
 
-class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") {
+class PersistenceDAOSpec
+    extends TestKitSuite("PersistenceDAOSpec")
+    with Elastic4sAutoDerivation {
   behavior of "PersistenceDAO"
 
   val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
