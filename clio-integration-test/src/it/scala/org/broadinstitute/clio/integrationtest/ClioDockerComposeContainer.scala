@@ -1,21 +1,42 @@
 package org.broadinstitute.clio.integrationtest
 
+import java.io.File
+import java.nio.file.attribute.PosixFilePermissions
+import java.nio.file.{Files, Path, Paths}
+import java.time.OffsetDateTime
+
 import akka.http.scaladsl.model.Uri
 import com.dimafeng.testcontainers.DockerComposeContainer
+import com.sksamuel.elastic4s.Indexable
+import org.broadinstitute.clio.client.util.IoUtil
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
+  ElasticsearchIndex
+}
+import org.junit.runner.Description
 
 import scala.collection.JavaConverters._
-
-import java.io.File
 
 /**
   * Extension of [[com.dimafeng.testcontainers.DockerComposeContainer]],
   * with settings tailored for our integration tests, since
   * testcontainers-scala doesn't make the settings configurable.
   */
-class ClioDockerComposeContainer(composeFile: File,
-                                 elasticsearchHostname: String,
-                                 exposedServices: Map[String, Int])
-    extends DockerComposeContainer(composeFile, exposedServices) {
+class ClioDockerComposeContainer(
+  composeFile: File,
+  elasticsearchHostname: String,
+  exposedServices: Map[String, Int],
+  seededDocuments: Map[ElasticsearchIndex[_], Seq[ClioDocument]] = Map.empty
+) extends DockerComposeContainer(composeFile, exposedServices) {
+
+  /** Log files to mount into the Elasticsearch containers. */
+  private val esLogs = for {
+    service <- Seq("elasticsearch1", "elasticsearch2")
+    filename <- Seq("docker-cluster.log", "docker-cluster_access.log")
+  } yield {
+    Paths.get(ClioBuildInfo.logDir, service, filename)
+  }
+
   /*
    * Skip "docker pull" because it'll fail if we're testing against a non-
    * pushed version of clio-server.
@@ -42,10 +63,83 @@ class ClioDockerComposeContainer(composeFile: File,
       ClioDockerComposeContainer.elasticsearchHostVariable -> elasticsearchHostname,
       ClioDockerComposeContainer.configDirVariable -> ClioBuildInfo.confDir,
       ClioDockerComposeContainer.logDirVariable -> ClioBuildInfo.logDir,
-      ClioDockerComposeContainer.clioLogFileVariable -> ClioBuildInfo.clioLog,
+      ClioDockerComposeContainer.clioLogFileVariable -> ClioDockerComposeContainer.clioLog.toString,
       ClioDockerComposeContainer.persistenceDirVariable -> ClioBuildInfo.persistenceDir
     ).asJava
   )
+
+  /**
+    * Make sure log files exist with global rw permissions before starting containers.
+    *
+    * Global rw permissions are needed so the integration tests can run on Jenkins,
+    * which uses an older version of Docker that bind-mounts files into containers
+    * with weird uids and gids. If permissions aren't set properly, log4j will fail
+    * to initialize in the ES containers and tests will fail to start.
+    */
+  override def starting()(implicit description: Description): Unit = {
+    val rootPersistenceDir = Paths.get(ClioBuildInfo.persistenceDir)
+
+    Seq(ClioDockerComposeContainer.clioLog, rootPersistenceDir).foreach { dir =>
+      if (Files.exists(dir)) {
+        IoUtil.deleteDirectoryRecursively(dir)
+        val _ = Files.createDirectories(dir)
+      }
+    }
+
+    // Simulate spreading pre-seeded documents over time.
+    val daySpread = 10L
+    val today: OffsetDateTime = OffsetDateTime.now()
+    val earliest: OffsetDateTime = today.minusDays(daySpread)
+
+    seededDocuments.foreach {
+      case (index, documents) =>
+        val documentCount = documents.length
+        documents.zipWithIndex.foreach {
+          case (doc, i) => {
+            val dateDir = earliest
+              .plusDays(i.toLong / (documentCount.toLong / daySpread))
+              .format(ElasticsearchIndex.dateTimeFormatter)
+
+            val writeDir = Files.createDirectories(
+              rootPersistenceDir.resolve(s"${index.rootDir}$dateDir/")
+            )
+
+            val _ = Files.write(
+              writeDir.resolve(s"${doc.persistenceFilename}"),
+              index.indexable
+                .asInstanceOf[Indexable[ClioDocument]]
+                .json(doc)
+                .getBytes
+            )
+          }
+        }
+    }
+
+    val logPaths = ClioDockerComposeContainer.clioLog +: esLogs
+    logPaths.foreach { log =>
+      if (!Files.exists(log.getParent)) {
+        val _ = Files.createDirectories(log.getParent)
+      }
+      if (!Files.exists(log)) {
+        val _ = Files.createFile(log)
+        Files.setPosixFilePermissions(
+          log,
+          PosixFilePermissions.fromString("rw-rw-rw-")
+        )
+      }
+    }
+    super.starting()
+  }
+
+  override def finished()(implicit description: Description): Unit = {
+    super.finished()
+    val logTarget =
+      Paths.get(s"${ClioBuildInfo.logDir}-${description.getDisplayName}")
+    if (Files.exists(logTarget)) {
+      IoUtil.deleteDirectoryRecursively(logTarget)
+    }
+    val _ = Files.move(Paths.get(ClioBuildInfo.logDir), logTarget)
+  }
 
   /**
     * Get the exposed hostname for one of the exposed services running in the underlying container.
@@ -108,4 +202,8 @@ object ClioDockerComposeContainer {
     * for use as a "source of truth" when persisting metadata updates.
     */
   val persistenceDirVariable = "LOCAL_PERSISTENCE_DIR"
+
+  /** Log file to mount into the Clio container. */
+  val clioLog: Path =
+    Paths.get(ClioBuildInfo.logDir, "clio-server", "clio-server.log")
 }

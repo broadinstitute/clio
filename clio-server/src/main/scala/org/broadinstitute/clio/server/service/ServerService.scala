@@ -2,14 +2,11 @@ package org.broadinstitute.clio.server.service
 
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.{HitReader, Indexable}
-import com.sksamuel.elastic4s.circe._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
-  Elastic4sAutoDerivation,
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.dataaccess.{
@@ -19,6 +16,7 @@ import org.broadinstitute.clio.server.dataaccess.{
   ServerStatusDAO
 }
 import org.broadinstitute.clio.status.model.ServerStatusInfo
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -29,7 +27,8 @@ class ServerService private (
   persistenceDAO: PersistenceDAO,
   searchDAO: SearchDAO
 )(implicit executionContext: ExecutionContext, mat: Materializer)
-    extends StrictLogging {
+    extends ModelAutoDerivation
+    with StrictLogging {
 
   /**
     * Kick off a startup, initializing all DAOs
@@ -54,9 +53,9 @@ class ServerService private (
     *
     * Returns the number of updates pulled & applied on success.
     */
-  private[service] def recoverMetadata[
-    D <: ClioDocument: Indexable: HitReader: Decoder
-  ](index: ElasticsearchIndex[D]): Future[Int] = {
+  private[service] def recoverMetadata[D <: ClioDocument: Decoder](
+    index: ElasticsearchIndex[D]
+  ): Future[Int] = {
     searchDAO.getMostRecentDocument(index).flatMap { mostRecent =>
       persistenceDAO
         .getAllSince(mostRecent, index)
@@ -90,7 +89,6 @@ class ServerService private (
   }
 
   private[service] def startup(): Future[Unit] = {
-    import Elastic4sAutoDerivation._
 
     val indexes = immutable.Seq(
       ElasticsearchIndex.WgsUbam,

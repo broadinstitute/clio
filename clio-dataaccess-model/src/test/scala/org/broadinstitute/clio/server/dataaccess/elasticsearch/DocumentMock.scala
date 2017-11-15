@@ -17,7 +17,9 @@ case class DocumentMock(upsertId: UpsertId,
                         mockFileSize: Option[Long] = None)
     extends ClioDocument
 
-object DocumentMock {
+object DocumentMock extends Elastic4sAutoDerivation {
+  import com.sksamuel.elastic4s.circe._
+
   def default: DocumentMock = DocumentMock(
     upsertId = UpsertId.nextId(),
     entityId = Symbol("1234.the-string"),

@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.client.util
 
-import java.io.File
 import java.net.URI
 import java.nio.file.{FileVisitOption, Files, Path, Paths}
 import java.util.Comparator
@@ -38,8 +37,7 @@ trait IoUtil {
     Files
       .walk(directory, FileVisitOption.FOLLOW_LINKS)
       .sorted(Comparator.reverseOrder())
-      .map[File](path => path.toFile)
-      .forEach(file => file.deleteOnExit())
+      .forEach(Files.delete(_))
   }
 
   /*

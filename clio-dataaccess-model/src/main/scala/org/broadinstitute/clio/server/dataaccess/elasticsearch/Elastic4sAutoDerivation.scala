@@ -4,7 +4,7 @@ import io.circe.Json
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 /** Automatic JSON encoding and decoding for the Elasticsearch DAO. */
-object Elastic4sAutoDerivation extends ModelAutoDerivation {
+trait Elastic4sAutoDerivation extends ModelAutoDerivation {
 
   import scala.language.implicitConversions
 
@@ -19,3 +19,5 @@ object Elastic4sAutoDerivation extends ModelAutoDerivation {
   implicit def implicitEncoder(json: Json): String =
     defaultPrinter.pretty(json)
 }
+
+object Elastic4sAutoDerivation extends Elastic4sAutoDerivation

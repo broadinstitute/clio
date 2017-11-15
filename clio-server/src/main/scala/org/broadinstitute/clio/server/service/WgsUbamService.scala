@@ -2,7 +2,6 @@ package org.broadinstitute.clio.server.service
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.sksamuel.elastic4s.circe._
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
@@ -24,8 +23,6 @@ class WgsUbamService(
   persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext) {
-
-  import Elastic4sAutoDerivation._
 
   def upsertMetadata(
     transferKey: TransferWgsUbamV1Key,

@@ -1,14 +1,13 @@
 package org.broadinstitute.clio.server.dataaccess
+
+import java.nio.file.Path
+
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
 
-import com.sksamuel.elastic4s.Indexable
-
 import scala.concurrent.{ExecutionContext, Future}
-
-import java.nio.file.Path
 
 class FailingPersistenceDAO extends PersistenceDAO {
   val ex = new Exception("Tried to use failing persistence DAO")
@@ -18,6 +17,6 @@ class FailingPersistenceDAO extends PersistenceDAO {
   override def writeUpdate[D <: ClioDocument](
     document: D,
     index: ElasticsearchIndex[D]
-  )(implicit ec: ExecutionContext, indexable: Indexable[D]): Future[Unit] =
+  )(implicit ec: ExecutionContext): Future[Unit] =
     Future.failed(ex)
 }

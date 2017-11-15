@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.integrationtest
 
 import java.io.File
-import java.nio.file.{FileSystems, Path, Paths}
+import java.nio.file.{Path, Paths}
 
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
@@ -11,6 +11,10 @@ import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.integrationtest.tests.{LoadTests, RecoveryTests}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
+  ElasticsearchIndex
+}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -24,8 +28,8 @@ import scala.concurrent.duration._
   * docker-compose file when forking to run integration tests.
   * @see `ClioIntegrationTestSettings` in the build
   */
-abstract class DockerIntegrationSpec
-    extends BaseIntegrationSpec("Clio in Docker")
+abstract class DockerIntegrationSpec(name: String)
+    extends BaseIntegrationSpec(name)
     with ForAllTestContainer {
 
   // Docker-compose appends "_<instance #>" to service names.
@@ -33,13 +37,17 @@ abstract class DockerIntegrationSpec
   private val esFullName =
     s"${DockerIntegrationSpec.elasticsearchServiceName}_1"
 
+  protected val seededDocuments: Map[ElasticsearchIndex[_], Seq[ClioDocument]] =
+    Map.empty
+
   override val container = new ClioDockerComposeContainer(
     new File(getClass.getResource(DockerIntegrationSpec.composeFilename).toURI),
     DockerIntegrationSpec.elasticsearchServiceName,
     Map(
       clioFullName -> DockerIntegrationSpec.clioServicePort,
       esFullName -> DockerIntegrationSpec.elasticsearchServicePort
-    )
+    ),
+    seededDocuments
   )
 
   /*
@@ -70,9 +78,8 @@ abstract class DockerIntegrationSpec
      * Testcontainers doesn't provide a way to wait on a docker-compose
      * container to reach a ready state, so we roll our own here.
      */
-    val fs = FileSystems.getDefault
     val clioLogLines: Source[String, NotUsed] = FileTailSource.lines(
-      path = fs.getPath(ClioBuildInfo.clioLog),
+      path = ClioDockerComposeContainer.clioLog,
       maxLineSize = 8192,
       pollingInterval = 250.millis
     )
@@ -99,14 +106,18 @@ abstract class DockerIntegrationSpec
 
 /** Dockerized version of the integration tests that also run against our deployed Clios. */
 class CoreDockerIntegrationSpec
-    extends DockerIntegrationSpec
+    extends DockerIntegrationSpec("Clio in Docker")
     with IntegrationSuite
 
 /** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
-class RecoveryIntegrationSpec extends DockerIntegrationSpec with RecoveryTests
+class RecoveryIntegrationSpec
+    extends DockerIntegrationSpec("Clio in recovery")
+    with RecoveryTests
 
 /** Load tests. Should only be run against Docker. */
-class LoadIntegrationSpec extends DockerIntegrationSpec with LoadTests
+class LoadIntegrationSpec
+    extends DockerIntegrationSpec("Clio under load")
+    with LoadTests
 
 /**
   * Container for constants for setting up / connecting into the docker-compose environment.

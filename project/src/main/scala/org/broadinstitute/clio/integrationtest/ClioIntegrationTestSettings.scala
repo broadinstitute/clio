@@ -22,53 +22,6 @@ object ClioIntegrationTestSettings extends BuildInfoKeys {
     target.value / "integration-test" / "persistence"
   }
 
-  /** File to which Clio-server container logs will be sent during Dockerized integration tests. */
-  lazy val clioLogFile: Initialize[File] = Def.setting {
-    logTarget.value / "clio-server" / "clio.log"
-  }
-
-  /** Files to which Elasticsearch container logs will be sent during Dockerized integration tests. */
-  lazy val elasticsearchLogFiles: Initialize[Seq[File]] = Def.setting {
-    val logBase = logTarget.value
-    Seq("elasticsearch1", "elasticsearch2").flatMap { container =>
-      Seq(
-        logBase / container / "docker-cluster.log",
-        logBase / container / "docker-cluster_access.log"
-      )
-    }
-  }
-
-  /** Task to clear out the IT log and persistence dirs before running tests. */
-  lazy val resetLogs: Initialize[Task[Unit]] = Def.task {
-    val logDir = logTarget.value
-    val persistenceDir = persistenceTarget.value
-
-    IO.delete(logDir)
-    IO.createDirectory(logDir)
-    IO.delete(persistenceDir)
-    IO.createDirectory(persistenceDir)
-
-    /*
-     * Our Dockerized integration tests tail the clio log to check
-     * for the "started" message before starting tests, so we ensure
-     * it exists here.
-     *
-     * We also touch and chmod the Elasticsearch log files to work
-     * around docker-compose behavior on Jenkins. Elasticsearch runs
-     * inside its container as the user / group "elasticsearch", but
-     * on Jenkins docker-compose mounts the files (by default) with
-     * uid:gid "1023:1025". We set the logs to be world-readable and
-     * world-writeable to work around this and avoid permissions
-     * errors in log4j.
-     */
-    val logs = clioLogFile.value +: elasticsearchLogFiles.value
-    logs.foreach { f =>
-      IO.touch(f)
-      f.setReadable(true, false)
-      f.setWritable(true, false)
-    }
-  }
-
   /**
     * Regex for parsing major version out of "docker --version" stdout.
     *
@@ -137,7 +90,6 @@ object ClioIntegrationTestSettings extends BuildInfoKeys {
         ("elasticsearchVersion", Dependencies.ElasticsearchVersion)
       ),
       BuildInfoKey.constant(("logDir", logTarget.value.getAbsolutePath)),
-      BuildInfoKey.constant(("clioLog", clioLogFile.value.getAbsolutePath)),
       BuildInfoKey.constant(("confDir", confDir.getAbsolutePath)),
       BuildInfoKey.constant(
         ("persistenceDir", persistenceTarget.value.getAbsolutePath)
@@ -164,10 +116,6 @@ object ClioIntegrationTestSettings extends BuildInfoKeys {
          * makes all containers be removed as soon as tests finish running.
          */
         fork := true,
-        // Reset log files before running any tests.
-        test := test.dependsOn(resetLogs).value,
-        testOnly := testOnly.dependsOn(resetLogs).evaluated,
-        testQuick := testQuick.dependsOn(resetLogs).evaluated,
         /*
          * We use sbt-buildinfo to inject parameters into test code.
          */

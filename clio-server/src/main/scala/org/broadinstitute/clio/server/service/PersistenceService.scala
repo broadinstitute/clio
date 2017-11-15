@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import com.sksamuel.elastic4s.Indexable
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
@@ -33,7 +32,7 @@ class PersistenceService private (persistenceDAO: PersistenceDAO,
     * @tparam D  The type of the Document.
     * @return the ID for this upsert
     */
-  def upsertMetadata[TK, TM, D <: ClioDocument: Indexable](
+  def upsertMetadata[TK, TM, D <: ClioDocument](
     transferKey: TK,
     transferMetadata: TM,
     index: ElasticsearchIndex[D],

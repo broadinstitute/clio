@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import com.sksamuel.elastic4s.circe._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentMock,
   Elastic4sAutoDerivation

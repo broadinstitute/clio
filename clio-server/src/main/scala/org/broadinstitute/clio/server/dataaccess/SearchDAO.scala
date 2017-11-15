@@ -3,7 +3,6 @@ package org.broadinstitute.clio.server.dataaccess
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import com.sksamuel.elastic4s.{HitReader, Indexable}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
@@ -40,7 +39,7 @@ trait SearchDAO {
     * @param index    The index in which to update the document.
     * @tparam D The type of the document.
     */
-  def updateMetadata[D <: ClioDocument: Indexable](
+  def updateMetadata[D <: ClioDocument](
     document: D,
     index: ElasticsearchIndex[D]
   ): Future[Unit]
@@ -52,7 +51,7 @@ trait SearchDAO {
     * @param index       The index to run the query against.
     * @tparam D          The type of the document to query.
     */
-  def queryMetadata[D <: ClioDocument: HitReader](
+  def queryMetadata[D <: ClioDocument](
     queryDefinition: QueryDefinition,
     index: ElasticsearchIndex[D]
   ): Source[D, NotUsed]
@@ -66,7 +65,7 @@ trait SearchDAO {
     * @tparam D the document type this index contains
     * @return the most recent document for this index, if any
     */
-  def getMostRecentDocument[D <: ClioDocument: HitReader](
+  def getMostRecentDocument[D <: ClioDocument](
     index: ElasticsearchIndex[D]
   ): Future[Option[D]]
 }
