@@ -79,11 +79,11 @@ class ClioDockerComposeContainer(
   override def starting()(implicit description: Description): Unit = {
     val rootPersistenceDir = Paths.get(ClioBuildInfo.persistenceDir)
 
-    Seq(ClioDockerComposeContainer.clioLog, rootPersistenceDir).foreach { dir =>
+    Seq(Paths.get(ClioBuildInfo.logDir), rootPersistenceDir).foreach { dir =>
       if (Files.exists(dir)) {
         IoUtil.deleteDirectoryRecursively(dir)
-        val _ = Files.createDirectories(dir)
       }
+      val _ = Files.createDirectories(dir)
     }
 
     // Simulate spreading pre-seeded documents over time.
@@ -131,14 +131,20 @@ class ClioDockerComposeContainer(
     super.starting()
   }
 
+  /**
+    * After the container stops, move its logs and storage so
+    * they don't interfere with subsequent test suites.
+    */
   override def finished()(implicit description: Description): Unit = {
     super.finished()
-    val logTarget =
-      Paths.get(s"${ClioBuildInfo.logDir}-${description.getDisplayName}")
-    if (Files.exists(logTarget)) {
-      IoUtil.deleteDirectoryRecursively(logTarget)
+    Seq(ClioBuildInfo.logDir, ClioBuildInfo.persistenceDir).foreach {
+      dirPrefix =>
+        val target = Paths.get(s"$dirPrefix-${description.getDisplayName}")
+        if (Files.exists(target)) {
+          IoUtil.deleteDirectoryRecursively(target)
+        }
+        val _ = Files.move(Paths.get(dirPrefix), target)
     }
-    val _ = Files.move(Paths.get(ClioBuildInfo.logDir), logTarget)
   }
 
   /**
