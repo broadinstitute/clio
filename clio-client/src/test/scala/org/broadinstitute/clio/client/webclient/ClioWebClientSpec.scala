@@ -7,6 +7,7 @@ import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.util.MockClioServer
 import org.broadinstitute.clio.status.model.VersionInfo
+import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
@@ -36,6 +37,7 @@ class ClioWebClientSpec
     testMaxQueued,
     testMaxConcurrent,
     testRequestTimeout,
+    testMaxRetries,
     fakeTokenGenerator
   )
 
@@ -85,5 +87,9 @@ class ClioWebClientSpec
     recoverToSucceededIf[Exception](sequenceAll)
       .flatMap(_ => sequenceMaxQueued)
       .map(_ => succeed)
+  }
+
+  it should "retry requests that fail with connection errors" in {
+    client.getSchema(WgsUbamIndex).map(_ should be(WgsUbamIndex.jsonSchema))
   }
 }

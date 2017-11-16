@@ -74,6 +74,13 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   val clientTimeout: FiniteDuration = ClioClientConfig.responseTimeout
 
   /**
+    * Request-retry count to use in the client.
+    *
+    * Use the client's default to make sure it's sane.
+    */
+  val maxRequestRetries: Int = ClioClientConfig.maxRequestRetries
+
+  /**
     * The web client to use within the tested clio-client.
     */
   def clioWebClient: ClioWebClient

@@ -197,6 +197,7 @@ trait TestData {
   val testMaxQueued: Int = 4
   val testMaxConcurrent: Int = 1
   val testRequestTimeout: FiniteDuration = 3.seconds
+  val testMaxRetries = 2
 
   val fakeTokenGenerator: CredentialsGenerator =
     () => OAuth2BearerToken("fake-token")

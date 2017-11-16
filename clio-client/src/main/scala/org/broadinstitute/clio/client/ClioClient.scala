@@ -67,6 +67,7 @@ object ClioClient extends LazyLogging {
         ClioClientConfig.maxQueuedRequests,
         ClioClientConfig.maxConcurrentRequests,
         ClioClientConfig.responseTimeout,
+        ClioClientConfig.maxRequestRetries,
         new GoogleCredentialsGenerator(credentials)
       )
 

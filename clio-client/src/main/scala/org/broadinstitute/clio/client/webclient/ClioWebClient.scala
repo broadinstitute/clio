@@ -3,7 +3,6 @@ package org.broadinstitute.clio.client.webclient
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream._
 import akka.stream.scaladsl.{Keep, Sink, Source}
@@ -27,6 +26,7 @@ class ClioWebClient(
   maxQueuedRequests: Int,
   maxConcurrentRequests: Int,
   requestTimeout: FiniteDuration,
+  maxRequestRetries: Int,
   tokenGenerator: CredentialsGenerator
 )(implicit system: ActorSystem)
     extends ModelAutoDerivation
@@ -37,39 +37,18 @@ class ClioWebClient(
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   /**
-    * Reusable stream component ingesting `HttpRequest`s and emitting
-    * `HttpResponse`s by communicating with the Clio server.
+    * FIXME: We use the "low-level" connection API from Akka HTTP instead
+    * of the higher-level "cached host connection pool" API because of a
+    * race condition in the pool implementation that can cause successful
+    * requests to be reported as failures:
     *
-    * Uses one of Akka's cached host connection pools under-the-hood,
-    * so repeated requests to the remove Clio server (i.e. during backfilling)
-    * will reuse some of the HTTP system infrastructure instead of
-    * setting up a new connection from scratch for each request.
+    * https://github.com/akka/akka-http/issues/1459#issuecomment-335487195
     */
   private val connectionFlow = {
-    val settings = {
-      val default = ConnectionPoolSettings.default
-
-      default
-        .withConnectionSettings(
-          default.connectionSettings.withIdleTimeout(requestTimeout)
-        )
-        .withMaxRetries(0)
-        .withMaxConnections(maxConcurrentRequests)
-        .withMaxOpenRequests(maxConcurrentRequests)
-    }
-
     if (useHttps) {
-      Http().cachedHostConnectionPoolHttps[Promise[HttpResponse]](
-        clioHost,
-        clioPort,
-        settings = settings
-      )
+      Http().outgoingConnectionHttps(clioHost, clioPort)
     } else {
-      Http().cachedHostConnectionPool[Promise[HttpResponse]](
-        clioHost,
-        clioPort,
-        settings = settings
-      )
+      Http().outgoingConnection(clioHost, clioPort)
     }
   }
 
@@ -91,7 +70,26 @@ class ClioWebClient(
       maxQueuedRequests,
       OverflowStrategy.dropNew
     )
-    .via(connectionFlow)
+    .mapAsyncUnordered(maxConcurrentRequests) {
+      case (request, promise) => {
+
+        val responseStream = Source
+          .single(request)
+          .via(connectionFlow)
+          .completionTimeout(requestTimeout)
+
+        val response = responseStream
+          .recoverWithRetries(maxRequestRetries, {
+            case _ => responseStream
+          })
+          .runWith(Sink.head)
+
+        response.transformWith {
+          case Success(r)  => Future.successful(Success(r) -> promise)
+          case Failure(ex) => Future.successful(Failure(ex) -> promise)
+        }
+      }
+    }
     .toMat(Sink.foreach {
       case (Success(response), promise) => promise.success(response)
       case (Failure(ex), promise)       => promise.failure(ex)
