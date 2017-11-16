@@ -6,7 +6,6 @@ import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{Sink, Source}
-import com.sksamuel.elastic4s.Indexable
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder
 import io.circe.parser._
@@ -72,16 +71,15 @@ trait PersistenceDAO extends LazyLogging {
     * @param index    Typeclass providing information on where to persist the
     *                 metadata update.
     */
-  def writeUpdate[D <: ClioDocument](
-    document: D,
-    index: ElasticsearchIndex[D]
-  )(implicit ec: ExecutionContext, indexable: Indexable[D]): Future[Unit] =
+  def writeUpdate[D <: ClioDocument](document: D, index: ElasticsearchIndex[D])(
+    implicit ec: ExecutionContext
+  ): Future[Unit] =
     Future {
       val writePath =
         Files.createDirectories(rootPath.resolve(index.currentPersistenceDir))
       val written = Files.write(
         writePath.resolve(s"${document.persistenceFilename}"),
-        indexable.json(document).getBytes
+        index.indexable.json(document).getBytes
       )
       logger.debug(s"Wrote document $document to ${written.toUri}")
     }

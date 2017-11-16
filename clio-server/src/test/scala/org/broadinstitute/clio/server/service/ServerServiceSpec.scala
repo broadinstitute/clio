@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import com.sksamuel.elastic4s.circe._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentMock,
   Elastic4sAutoDerivation
@@ -11,7 +10,9 @@ import org.broadinstitute.clio.status.model.ServerStatusInfo
 
 import scala.concurrent.Future
 
-class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
+class ServerServiceSpec
+    extends TestKitSuite("ServerServiceSpec")
+    with Elastic4sAutoDerivation {
   behavior of "ServerService"
 
   it should "beginStartup" in {
@@ -86,8 +87,6 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
   }
 
   it should "recover metadata from storage" in {
-    import Elastic4sAutoDerivation._
-
     val persistenceDAO = new MemoryPersistenceDAO()
     val searchDAO = new MemorySearchDAO()
     val app =

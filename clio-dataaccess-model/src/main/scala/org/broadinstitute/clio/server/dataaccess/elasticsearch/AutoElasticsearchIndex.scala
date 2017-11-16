@@ -4,6 +4,7 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
+import com.sksamuel.elastic4s.{HitReader, Indexable}
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import enumeratum.EnumEntry
@@ -19,7 +20,7 @@ import scala.reflect.runtime.universe.Type
   * @param version The mapping version to use for the index.
   * @tparam Document The document being indexed.
   */
-class AutoElasticsearchIndex[Document: FieldMapper] private[dataaccess] (
+class AutoElasticsearchIndex[Document: FieldMapper: Indexable: HitReader] private[dataaccess] (
   name: String,
   private[elasticsearch] val version: Int
 ) extends ElasticsearchIndex[Document] {
@@ -30,6 +31,10 @@ class AutoElasticsearchIndex[Document: FieldMapper] private[dataaccess] (
     } else {
       s"${name}_v$version"
     }
+
+  override val indexable: Indexable[Document] = implicitly[Indexable[Document]]
+
+  override val hitReader: HitReader[Document] = implicitly[HitReader[Document]]
 
   override def fields: Seq[FieldDefinition] =
     AutoElasticsearchIndex.getFieldDefinitions[Document](version)

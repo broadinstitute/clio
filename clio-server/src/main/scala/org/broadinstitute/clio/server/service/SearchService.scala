@@ -9,7 +9,6 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
   ElasticsearchQueryMapper
 }
-import com.sksamuel.elastic4s.HitReader
 
 /**
   * Service responsible for running queries against a search DAO.
@@ -27,7 +26,7 @@ class SearchService private (searchDAO: SearchDAO) {
     * @tparam D  The type of the Document.
     * @return The result of the query.
     */
-  def queryMetadata[TI, TO, D <: ClioDocument: HitReader](
+  def queryMetadata[TI, TO, D <: ClioDocument](
     transferInput: TI,
     index: ElasticsearchIndex[D],
     queryMapper: ElasticsearchQueryMapper[TI, TO, D]

@@ -1,27 +1,24 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import java.io.File
 import java.net.URI
-import java.nio.file.Files
-import java.time.OffsetDateTime
-import java.util.Comparator
 
-import com.dimafeng.testcontainers.ForAllTestContainer
-import com.sksamuel.elastic4s.circe._
-import io.circe.Encoder
 import org.broadinstitute.clio.client.commands.ClioCommand
-import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
+import org.broadinstitute.clio.integrationtest.{
+  ClioDockerComposeContainer,
+  DockerIntegrationSpec
+}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
 import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1QueryOutput
 import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1QueryOutput
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
-import org.scalatest.{Args, Status}
 
 import scala.util.Random
 
 /** Tests of Clio's recovery mechanisms. */
-trait RecoveryTests extends ForAllTestContainer {
-  self: BaseIntegrationSpec =>
+trait RecoveryTests {
+  self: DockerIntegrationSpec =>
 
   val documentCount = 50
   val location = Location.GCP
@@ -73,56 +70,19 @@ trait RecoveryTests extends ForAllTestContainer {
     )
   }
 
-  // Simulate spreading the docs over time.
-  val daySpread = 10L
-  val today: OffsetDateTime = OffsetDateTime.now()
-  val earliest: OffsetDateTime = today.minusDays(daySpread)
-
-  def writeDocuments[D <: ClioDocument](
-    documents: Seq[D],
-    index: ElasticsearchIndex[D]
-  )(implicit encoder: Encoder[D]): Unit = {
-    val indexable =
-      indexableWithCirce[D](encoder, Elastic4sAutoDerivation.implicitEncoder)
-
-    documents.zipWithIndex.foreach {
-      case (doc, i) => {
-        val dateDir = earliest
-          .plusDays(i.toLong / (documentCount.toLong / daySpread))
-          .format(ElasticsearchIndex.dateTimeFormatter)
-
-        val writeDir = Files.createDirectories(
-          rootPersistenceDir.resolve(s"${index.rootDir}$dateDir/")
-        )
-
-        val _ = Files.write(
-          writeDir.resolve(s"${doc.persistenceFilename}"),
-          indexable.json(doc).getBytes
-        )
-      }
-    }
-  }
-
-  /**
-    * Before starting any containers, we write a bunch of
-    * documents to local storage, so we can check that Clio
-    * recovers them properly on startup.
-    */
-  abstract override def run(testName: Option[String], args: Args): Status = {
-    logger.warn("Cleaning local persistence directory")
-    Files
-      .walk(rootPersistenceDir)
-      .sorted(Comparator.reverseOrder())
-      .forEach(f => Files.delete(f))
-    Files.createDirectories(rootPersistenceDir)
-
-    logger.info("Writing documents to local persistence directory")
-    writeDocuments(storedUbams, ElasticsearchIndex.WgsUbam)
-    writeDocuments(storedGvcfs, ElasticsearchIndex.Gvcf)
-    writeDocuments(storedWgsCrams, ElasticsearchIndex.WgsCram)
-
-    super.run(testName, args)
-  }
+  override val container = new ClioDockerComposeContainer(
+    new File(getClass.getResource(DockerIntegrationSpec.composeFilename).toURI),
+    DockerIntegrationSpec.elasticsearchServiceName,
+    Map(
+      clioFullName -> DockerIntegrationSpec.clioServicePort,
+      esFullName -> DockerIntegrationSpec.elasticsearchServicePort
+    ),
+    Map(
+      ElasticsearchIndex.WgsUbam -> storedUbams,
+      ElasticsearchIndex.Gvcf -> storedGvcfs,
+      ElasticsearchIndex.WgsCram -> storedWgsCrams
+    )
+  )
 
   it should "recover wgs-ubam metadata on startup" in {
     for {

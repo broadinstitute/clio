@@ -43,17 +43,19 @@ class HttpElasticsearchDAO private[dataaccess] (
     HttpClient.fromRestClient(restClient)
   }
 
-  override def updateMetadata[D <: ClioDocument: Indexable](
+  override def updateMetadata[D <: ClioDocument](
     document: D,
     index: ElasticsearchIndex[D]
   ): Future[Unit] = {
     bulkUpdate(updatePartialDocument(index, document))
   }
 
-  override def queryMetadata[D <: ClioDocument: HitReader](
+  override def queryMetadata[D <: ClioDocument](
     queryDefinition: QueryDefinition,
     index: ElasticsearchIndex[D]
   ): Source[D, NotUsed] = {
+    implicit val hitReader: HitReader[D] = index.hitReader
+
     val searchDefinition = search(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
       .size(HttpElasticsearchDAO.DocumentScrollSize)
@@ -64,9 +66,11 @@ class HttpElasticsearchDAO private[dataaccess] (
     Source.fromPublisher(responsePublisher).map(_.to[D])
   }
 
-  override def getMostRecentDocument[D <: ClioDocument: HitReader](
+  override def getMostRecentDocument[D <: ClioDocument](
     index: ElasticsearchIndex[D]
   ): Future[Option[D]] = {
+    implicit val hitReader: HitReader[D] = index.hitReader
+
     val searchDefinition = search(index.indexName / index.indexType)
       .size(1)
       .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
@@ -139,10 +143,11 @@ class HttpElasticsearchDAO private[dataaccess] (
     }
   }
 
-  private[dataaccess] def updatePartialDocument[D <: ClioDocument: Indexable](
+  private[dataaccess] def updatePartialDocument[D <: ClioDocument](
     index: ElasticsearchIndex[D],
     document: D
   ): BulkCompatibleDefinition = {
+    implicit val indexable: Indexable[D] = index.indexable
     update(document.entityId) in index.indexName / index.indexType docAsUpsert document
   }
 }

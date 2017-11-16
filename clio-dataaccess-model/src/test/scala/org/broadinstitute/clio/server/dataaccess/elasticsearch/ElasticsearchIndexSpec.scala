@@ -3,7 +3,11 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import org.scalatest.{FlatSpec, Matchers}
 
-class ElasticsearchIndexSpec extends FlatSpec with Matchers {
+class ElasticsearchIndexSpec
+    extends FlatSpec
+    with Matchers
+    with Elastic4sAutoDerivation {
+  import com.sksamuel.elastic4s.circe._
 
   Map(
     "ElasticsearchIndex" ->

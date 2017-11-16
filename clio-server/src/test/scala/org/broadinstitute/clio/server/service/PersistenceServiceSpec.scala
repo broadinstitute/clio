@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import com.sksamuel.elastic4s.circe._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.dataaccess.{
   FailingPersistenceDAO,
@@ -16,8 +15,6 @@ import org.broadinstitute.clio.util.model.Location
 
 class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
   behavior of "PersistenceService"
-
-  import Elastic4sAutoDerivation._
 
   val mockKey = TransferWgsUbamV1Key(Location.OnPrem, "barcode", 1, "library")
   val mockMetadata = TransferWgsUbamV1Metadata()

@@ -14,6 +14,7 @@ import org.apache.http.util.EntityUtils
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   AutoElasticsearchIndex,
   ClioDocument,
+  Elastic4sAutoDerivation,
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.util.model.UpsertId
@@ -27,7 +28,10 @@ class HttpElasticsearchDAOSpec
     extends AbstractElasticsearchDAOSpec("HttpElasticsearchDAO")
     with AsyncFlatSpecLike
     with Matchers
-    with EitherValues {
+    with EitherValues
+    with Elastic4sAutoDerivation {
+  import com.sksamuel.elastic4s.circe._
+
   behavior of "HttpElasticsearch"
 
   it should "initialize" in {
@@ -118,8 +122,6 @@ class HttpElasticsearchDAOSpec
 
   it should "return the most recent document" in {
     import HttpElasticsearchDAOSpec._
-    import com.sksamuel.elastic4s.circe._
-    import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
     import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 
     val index =
@@ -141,8 +143,6 @@ class HttpElasticsearchDAOSpec
 
   it should "not throw an exception if no documents exist" in {
     import HttpElasticsearchDAOSpec._
-    import com.sksamuel.elastic4s.circe._
-    import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
     import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 
     val index =
@@ -174,10 +174,6 @@ class HttpElasticsearchDAOSpec
           textField("content") analyzer StopAnalyzer
         )
       }
-
-    // Enabled circe Indexable and HitReader usage below
-    import com.sksamuel.elastic4s.circe._
-    import org.broadinstitute.clio.server.dataaccess.elasticsearch.Elastic4sAutoDerivation._
 
     val populateDefinition: BulkDefinition =
       bulk(

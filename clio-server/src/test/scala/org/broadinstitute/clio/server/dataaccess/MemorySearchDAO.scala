@@ -3,7 +3,6 @@ package org.broadinstitute.clio.server.dataaccess
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import com.sksamuel.elastic4s.{HitReader, Indexable}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
@@ -19,7 +18,7 @@ class MemorySearchDAO extends MockSearchDAO {
   val queryCalls: mutable.ArrayBuffer[QueryDefinition] =
     mutable.ArrayBuffer.empty
 
-  override def updateMetadata[D <: ClioDocument: Indexable](
+  override def updateMetadata[D <: ClioDocument](
     document: D,
     index: ElasticsearchIndex[D]
   ): Future[Unit] = {
@@ -27,7 +26,7 @@ class MemorySearchDAO extends MockSearchDAO {
     super.updateMetadata(document, index)
   }
 
-  override def queryMetadata[D: HitReader](
+  override def queryMetadata[D](
     queryDefinition: QueryDefinition,
     index: ElasticsearchIndex[D]
   ): Source[D, NotUsed] = {
@@ -35,7 +34,7 @@ class MemorySearchDAO extends MockSearchDAO {
     super.queryMetadata(queryDefinition, index)
   }
 
-  override def getMostRecentDocument[D <: ClioDocument: HitReader](
+  override def getMostRecentDocument[D <: ClioDocument](
     index: ElasticsearchIndex[D]
   ): Future[Option[D]] = {
     Future.successful(updateCalls.lastOption.map(_._1.asInstanceOf[D]))

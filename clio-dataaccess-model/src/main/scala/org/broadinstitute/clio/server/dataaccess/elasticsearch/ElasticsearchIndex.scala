@@ -3,6 +3,7 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
+import com.sksamuel.elastic4s.{HitReader, Indexable}
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import org.broadinstitute.clio.util.generic.FieldMapper
 
@@ -17,6 +18,12 @@ abstract class ElasticsearchIndex[Document] {
 
   /** The name of the index. */
   def indexName: String
+
+  /** Typeclass used to convert `Document` instances into JSON. */
+  def indexable: Indexable[Document]
+
+  /** Typeclass used to convert ES search hits back to `Document` instances. */
+  def hitReader: HitReader[Document]
 
   /**
     * The root directory to use when persisting updates of this index to storage.
@@ -46,7 +53,9 @@ abstract class ElasticsearchIndex[Document] {
   def fields: Seq[FieldDefinition]
 }
 
-object ElasticsearchIndex {
+object ElasticsearchIndex extends Elastic4sAutoDerivation {
+  import com.sksamuel.elastic4s.circe._
+
   val WgsUbam: ElasticsearchIndex[DocumentWgsUbam] =
     indexDocument[DocumentWgsUbam](version = 1)
 
@@ -71,9 +80,9 @@ object ElasticsearchIndex {
     *                  https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
     * @return The index.
     */
-  private[dataaccess] def indexDocument[Document: ClassTag: FieldMapper](
-    version: Int
-  ): ElasticsearchIndex[Document] = {
+  private[dataaccess] def indexDocument[
+    Document: ClassTag: FieldMapper: Indexable: HitReader
+  ](version: Int): ElasticsearchIndex[Document] = {
     val esName =
       ElasticsearchUtil
         .toElasticsearchName(classTag[Document].runtimeClass.getSimpleName)
