@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.client.webclient
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
@@ -73,27 +74,61 @@ class ClioWebClient(
     .mapAsyncUnordered(maxConcurrentRequests) {
       case (request, promise) => {
 
-        val responseStream = Source
+        /*
+         * Reusable `Source` which will run the given `HttpRequest` over the connection
+         * flow to the Clio server, erroring out early if the request fails to complete
+         * within the request timeout.
+         */
+        val responseSource = Source
           .single(request)
           .via(connectionFlow)
           .completionTimeout(requestTimeout)
 
-        val response = responseStream
+        /*
+         * Run the source with a `Sink` that takes the first element, retrying on any
+         * connection failures.
+         *
+         * Every retry will produce a new "materialization" of `responseSource`, so
+         * even though it's defined as a `Source.single` we can retry with it as many
+         * times as we need.
+         */
+        val response = responseSource
           .recoverWithRetries(maxRequestRetries, {
-            case _ => responseStream
+            case _ => responseSource
           })
           .runWith(Sink.head)
 
-        response.transformWith {
-          case Success(r)  => Future.successful(Success(r) -> promise)
-          case Failure(ex) => Future.successful(Failure(ex) -> promise)
-        }
+        response
+          .andThen {
+            /*
+             * Side-effect on the result of the HTTP request to communicate the result
+             * back to the caller.
+             *
+             * Note: `Failure` here means a failure to send the request / process the
+             * result, not a failure by the server. `Success` might contain an `HttpResponse`
+             * with an error status code, and it's up to the caller to handle that.
+             */
+            case Success(r)  => promise.success(r)
+            case Failure(ex) => promise.failure(ex)
+          }
+          .transform { _ =>
+            /*
+             * Always return a `Success` to prevent the stream from closing on failures.
+             * The `andThen` above handles communicating the actual result back to the
+             * caller by side-effecting on the promise.
+             */
+            Success(Done)
+          }
       }
     }
-    .toMat(Sink.foreach {
-      case (Success(response), promise) => promise.success(response)
-      case (Failure(ex), promise)       => promise.failure(ex)
-    })(Keep.left)
+    /*
+     * Since we communicate `HttpResponse`s back to the caller via side-effecting on
+     * promises, we ignore the outputs of the stream here.
+     *
+     * `Keep.left` sets the output of this expression to be the input `Source.queue`
+     * instead of the output `akka.Done`.
+     */
+    .toMat(Sink.ignore)(Keep.left)
     .run()
 
   def dispatchRequest(request: HttpRequest,
