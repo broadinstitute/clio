@@ -36,21 +36,26 @@ trait IoUtil {
 
   def deleteDirectoryRecursively(directory: Path): Unit = {
     val _ =
-      Files.walkFileTree(directory, new SimpleFileVisitor[Path]() {
-        override def visitFile(file: Path,
-                               attrs: BasicFileAttributes): FileVisitResult = {
-          Files.delete(file)
-          FileVisitResult.CONTINUE
-        }
-
-        override def postVisitDirectory(dir: Path,
-                                        exc: IOException): FileVisitResult = {
-          Option(exc).fold({
-            Files.delete(dir)
+      Files.walkFileTree(
+        directory,
+        new SimpleFileVisitor[Path]() {
+          override def visitFile(
+            file: Path,
+            attrs: BasicFileAttributes
+          ): FileVisitResult = {
+            Files.delete(file)
             FileVisitResult.CONTINUE
-          })(throw _)
+          }
+
+          override def postVisitDirectory(dir: Path,
+                                          exc: IOException): FileVisitResult = {
+            Option(exc).fold({
+              Files.delete(dir)
+              FileVisitResult.CONTINUE
+            })(throw _)
+          }
         }
-      })
+      )
   }
 
   /*

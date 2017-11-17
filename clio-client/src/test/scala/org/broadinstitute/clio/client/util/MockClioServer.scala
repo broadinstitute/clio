@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.client.util
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.Http.ServerBinding
@@ -14,6 +16,7 @@ import org.broadinstitute.clio.status.model.{
   SystemStatusInfo,
   VersionInfo
 }
+import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
@@ -28,6 +31,8 @@ class MockClioServer(implicit system: ActorSystem)
     with FailFastCirceSupport {
   implicit val mat: ActorMaterializer = ActorMaterializer()
   import system.dispatcher
+
+  val schemaRequests = new AtomicInteger(0)
 
   /** Subset of routes exposed by the clio-server, added to as needed for testing. */
   val route: Route =
@@ -57,6 +62,28 @@ class MockClioServer(implicit system: ActorSystem)
               Future.successful(VersionInfo("0.0.0-TEST"))
             }
           complete(slowResult)
+        }
+      } ~
+      pathPrefix("api") {
+        pathPrefix("v1") {
+          pathPrefix(WgsUbamIndex.urlSegment) {
+            path("schema") {
+              /*
+               * (As far as I can find) akka-http doesn't expose an API for prematurely
+               * severing a connection on the server-side, so we use request timeouts as
+               * a proxy for transient network problems.
+               */
+              val requestCount = schemaRequests.incrementAndGet()
+              val schema = Future.successful(WgsUbamIndex.jsonSchema)
+              val response =
+                if (requestCount <= TestData.testMaxRetries) {
+                  after(testRequestTimeout + 1.second, system.scheduler)(schema)
+                } else {
+                  schema
+                }
+              complete(response)
+            }
+          }
         }
       }
 

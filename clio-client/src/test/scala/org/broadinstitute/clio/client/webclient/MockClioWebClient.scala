@@ -29,6 +29,7 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
       TestData.testMaxQueued,
       TestData.testMaxConcurrent,
       TestData.testRequestTimeout,
+      TestData.testMaxRetries,
       TestData.fakeTokenGenerator
     )
     with TestData

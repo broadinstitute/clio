@@ -24,6 +24,9 @@ object ClioClientConfig extends ConfigReaders {
   val responseTimeout: FiniteDuration =
     clientConfig.as[FiniteDuration]("response-timeout")
 
+  val maxRequestRetries: Int =
+    clientConfig.as[Int]("max-request-retries")
+
   val greenTeamEmail: String = clientConfig.as[String]("greenteam.email")
 
   // This has to be checked for null since Config can't handle nulls

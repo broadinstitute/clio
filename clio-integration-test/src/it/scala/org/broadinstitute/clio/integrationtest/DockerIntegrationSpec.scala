@@ -55,6 +55,7 @@ abstract class DockerIntegrationSpec(name: String)
       maxQueuedRequests,
       maxConcurrentRequests,
       clientTimeout,
+      maxRequestRetries,
       () => OAuth2BearerToken("fake-token")
     )
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)

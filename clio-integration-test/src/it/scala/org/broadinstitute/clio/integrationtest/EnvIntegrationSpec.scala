@@ -38,6 +38,7 @@ abstract class EnvIntegrationSpec(env: String)
     maxQueuedRequests,
     maxConcurrentRequests,
     clientTimeout,
+    maxRequestRetries,
     new GoogleCredentialsGenerator(googleCredential)
   )
 

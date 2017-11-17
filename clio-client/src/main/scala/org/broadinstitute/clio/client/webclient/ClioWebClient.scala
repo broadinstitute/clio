@@ -1,9 +1,9 @@
 package org.broadinstitute.clio.client.webclient
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.settings.ConnectionPoolSettings
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream._
 import akka.stream.scaladsl.{Keep, Sink, Source}
@@ -27,6 +27,7 @@ class ClioWebClient(
   maxQueuedRequests: Int,
   maxConcurrentRequests: Int,
   requestTimeout: FiniteDuration,
+  maxRequestRetries: Int,
   tokenGenerator: CredentialsGenerator
 )(implicit system: ActorSystem)
     extends ModelAutoDerivation
@@ -37,39 +38,18 @@ class ClioWebClient(
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
   /**
-    * Reusable stream component ingesting `HttpRequest`s and emitting
-    * `HttpResponse`s by communicating with the Clio server.
+    * FIXME: We use the "low-level" connection API from Akka HTTP instead
+    * of the higher-level "cached host connection pool" API because of a
+    * race condition in the pool implementation that can cause successful
+    * requests to be reported as failures:
     *
-    * Uses one of Akka's cached host connection pools under-the-hood,
-    * so repeated requests to the remove Clio server (i.e. during backfilling)
-    * will reuse some of the HTTP system infrastructure instead of
-    * setting up a new connection from scratch for each request.
+    * https://github.com/akka/akka-http/issues/1459#issuecomment-335487195
     */
   private val connectionFlow = {
-    val settings = {
-      val default = ConnectionPoolSettings.default
-
-      default
-        .withConnectionSettings(
-          default.connectionSettings.withIdleTimeout(requestTimeout)
-        )
-        .withMaxRetries(0)
-        .withMaxConnections(maxConcurrentRequests)
-        .withMaxOpenRequests(maxConcurrentRequests)
-    }
-
     if (useHttps) {
-      Http().cachedHostConnectionPoolHttps[Promise[HttpResponse]](
-        clioHost,
-        clioPort,
-        settings = settings
-      )
+      Http().outgoingConnectionHttps(clioHost, clioPort)
     } else {
-      Http().cachedHostConnectionPool[Promise[HttpResponse]](
-        clioHost,
-        clioPort,
-        settings = settings
-      )
+      Http().outgoingConnection(clioHost, clioPort)
     }
   }
 
@@ -91,11 +71,64 @@ class ClioWebClient(
       maxQueuedRequests,
       OverflowStrategy.dropNew
     )
-    .via(connectionFlow)
-    .toMat(Sink.foreach {
-      case (Success(response), promise) => promise.success(response)
-      case (Failure(ex), promise)       => promise.failure(ex)
-    })(Keep.left)
+    .mapAsyncUnordered(maxConcurrentRequests) {
+      case (request, promise) => {
+
+        /*
+         * Reusable `Source` which will run the given `HttpRequest` over the connection
+         * flow to the Clio server, erroring out early if the request fails to complete
+         * within the request timeout.
+         */
+        val responseSource = Source
+          .single(request)
+          .via(connectionFlow)
+          .completionTimeout(requestTimeout)
+
+        /*
+         * Run the source with a `Sink` that takes the first element, retrying on any
+         * connection failures.
+         *
+         * Every retry will produce a new "materialization" of `responseSource`, so
+         * even though it's defined as a `Source.single` we can retry with it as many
+         * times as we need.
+         */
+        val response = responseSource
+          .recoverWithRetries(maxRequestRetries, {
+            case _ => responseSource
+          })
+          .runWith(Sink.head)
+
+        response
+          .andThen {
+            /*
+             * Side-effect on the result of the HTTP request to communicate the result
+             * back to the caller.
+             *
+             * Note: `Failure` here means a failure to send the request / process the
+             * result, not a failure by the server. `Success` might contain an `HttpResponse`
+             * with an error status code, and it's up to the caller to handle that.
+             */
+            case Success(r)  => promise.success(r)
+            case Failure(ex) => promise.failure(ex)
+          }
+          .transform { _ =>
+            /*
+             * Always return a `Success` to prevent the stream from closing on failures.
+             * The `andThen` above handles communicating the actual result back to the
+             * caller by side-effecting on the promise.
+             */
+            Success(Done)
+          }
+      }
+    }
+    /*
+     * Since we communicate `HttpResponse`s back to the caller via side-effecting on
+     * promises, we ignore the outputs of the stream here.
+     *
+     * `Keep.left` sets the output of this expression to be the input `Source.queue`
+     * instead of the output `akka.Done`.
+     */
+    .toMat(Sink.ignore)(Keep.left)
     .run()
 
   def dispatchRequest(request: HttpRequest,
