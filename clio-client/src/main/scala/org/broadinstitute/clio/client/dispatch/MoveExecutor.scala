@@ -96,24 +96,38 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI],
   }
 
   /**
-    * Here there be hacks to reduce boilerplate; may the typed gods have mercy.
+    * Given one of our `TransferMetadata` classes, extract out all fields that
+    * store path-related information into a map from 'fieldName' -> 'path'.
     *
-    * We flatten out the metadata instances for pre- and post-move into Maps
-    * from string keys to Any values, then flatMap away Options by extracting
-    * the underlying values from Somes and removing Nones.
-    *
-    * The Option-removal is needed so we can successfully pattern-match on URI
-    * later when building up the list of (preMove -> postMove) paths. Without it,
-    * matching on Option[URI] fails because of type erasure.
+    * Used to build a generic before-and-after move comparison to determine
+    * which paths in a metadata object will actually be affected by the move.
     */
-  private def flattenMetadata(
+  private def extractPaths(
     metadata: moveCommand.index.MetadataType
-  ): Map[String, Any] = {
+  ): Map[String, URI] = {
     val metadataMapper = new CaseClassMapper[moveCommand.index.MetadataType]
-    metadataMapper.vals(metadata).flatMap {
-      case (key, optValue: Option[_]) => optValue.map(v => key -> v)
-      case (key, nonOptValue)         => Some(key -> nonOptValue)
-    }
+    /*
+     * Here there be hacks to reduce boilerplate; may the typed gods have mercy.
+     *
+     * We flatten out the metadata instances for pre- and post-move into Maps
+     * from string keys to Any values, then flatMap away Options by extracting
+     * the underlying values from Somes and removing Nones, then finally filter
+     * away any non-URI values.
+     *
+     * The Option-removal is needed so we can successfully pattern-match on URI
+     * later when building up the list of (preMove -> postMove) paths. Without it,
+     * matching on Option[URI] fails because of type erasure.
+     */
+    metadataMapper
+      .vals(metadata)
+      .flatMap {
+        case (key, optValue: Option[_]) => optValue.map(v => key -> v)
+        case (key, nonOptValue)         => Some(key -> nonOptValue)
+      }
+      .flatMap {
+        case (key, value: URI) => Some(key -> value)
+        case _                 => None
+      }
   }
 
   private def moveFiles(
@@ -123,24 +137,29 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI],
   )(implicit ec: ExecutionContext): Future[Option[UpsertId]] = {
 
     val newMetadata = existingMetadata.moveInto(destination, samplePrefix)
-    val preMoveFields = flattenMetadata(existingMetadata)
-    val postMoveFields = flattenMetadata(newMetadata)
+    val preMovePaths = extractPaths(existingMetadata)
+    val postMovePaths = extractPaths(newMetadata)
 
-    val movesToPerform = preMoveFields.flatMap {
-      case (fieldName, path: URI) => {
+    val movesToPerform = preMovePaths.flatMap {
+      case (fieldName, path) => {
         /*
          * Assumptions:
          *   1. If the field exists pre-move, it will still exist post-move
          *   2. If the field is a URI pre-move, it will still be a URI post-move
          */
-        Some(path -> postMoveFields(fieldName).asInstanceOf[URI])
+        Some(path -> postMovePaths(fieldName))
           .filterNot { case (oldPath, newPath) => oldPath.equals(newPath) }
       }
-      case _ => None
     }
 
-    if (movesToPerform.isEmpty) {
-      logger.warn("Nothing to move.")
+    if (preMovePaths.isEmpty) {
+      Future.failed(
+        new IllegalStateException(
+          s"Nothing to move; no files registered to the $name for $prettyKey"
+        )
+      )
+    } else if (movesToPerform.isEmpty) {
+      logger.info(s"Nothing to move; all files already exist at $destination")
       Future.successful(None)
     } else {
       val oldPaths = movesToPerform.keys
