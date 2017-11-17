@@ -82,16 +82,19 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
           val md5Tmp = Files.createTempFile("clio-cram-deliver", "md5")
           val cloudMd5Path = s"$cramPath.md5"
 
-          Files.write(md5Tmp, cramMd5.name.getBytes)
-          val copyRc = ioUtil.copyGoogleObject(
-            URI.create(md5Tmp.toString),
-            URI.create(cloudMd5Path)
-          )
-          Files.delete(md5Tmp)
-          if (copyRc != 0) {
-            throw new RuntimeException(
-              s"Failed to copy local cram md5 file to path $cloudMd5Path"
+          try {
+            Files.write(md5Tmp, cramMd5.name.getBytes)
+            val copyRc = ioUtil.copyGoogleObject(
+              URI.create(md5Tmp.toString),
+              URI.create(cloudMd5Path)
             )
+            if (copyRc != 0) {
+              throw new RuntimeException(
+                s"Failed to copy local cram md5 file to path $cloudMd5Path"
+              )
+            }
+          } finally {
+            Files.delete(md5Tmp)
           }
         }
         case _ => {

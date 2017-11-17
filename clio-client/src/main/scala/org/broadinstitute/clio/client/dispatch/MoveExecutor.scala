@@ -96,21 +96,28 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI],
   }
 
   /**
-    * Here there be hacks to reduce boilerplate; may the typed gods have mercy.
+    * Given one of our `TransferMetadata` classes, extract out all fields that
+    * store path-related information into a map from 'fieldName' -> 'path'.
     *
-    * We flatten out the metadata instances for pre- and post-move into Maps
-    * from string keys to Any values, then flatMap away Options by extracting
-    * the underlying values from Somes and removing Nones, then finally filter
-    * away any non-URI values.
-    *
-    * The Option-removal is needed so we can successfully pattern-match on URI
-    * later when building up the list of (preMove -> postMove) paths. Without it,
-    * matching on Option[URI] fails because of type erasure.
+    * Used to build a generic before-and-after move comparison to determine
+    * which paths in a metadata object will actually be affected by the move.
     */
   private def extractPaths(
     metadata: moveCommand.index.MetadataType
   ): Map[String, URI] = {
     val metadataMapper = new CaseClassMapper[moveCommand.index.MetadataType]
+    /*
+     * Here there be hacks to reduce boilerplate; may the typed gods have mercy.
+     *
+     * We flatten out the metadata instances for pre- and post-move into Maps
+     * from string keys to Any values, then flatMap away Options by extracting
+     * the underlying values from Somes and removing Nones, then finally filter
+     * away any non-URI values.
+     *
+     * The Option-removal is needed so we can successfully pattern-match on URI
+     * later when building up the list of (preMove -> postMove) paths. Without it,
+     * matching on Option[URI] fails because of type erasure.
+     */
     metadataMapper
       .vals(metadata)
       .flatMap {
