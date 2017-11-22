@@ -17,6 +17,7 @@ import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.scalatest.Assertion
 
 import scala.concurrent.Future
 
@@ -378,7 +379,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "move wgs-ubams in GCP" in {
+  def testMoveUbam(srcIsDest: Boolean = false): Future[Assertion] = {
     val barcode = s"barcode$randomId"
     val lane = 3
     val library = s"lib$randomId"
@@ -386,9 +387,12 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val fileContents = s"$randomId --- I am a dummy ubam --- $randomId"
     val ubamName = s"$randomId.unmapped.bam"
     val sourceDir =
-      rootTestStorageDir.resolve(s"wgs-ubam/$barcode/$lane/$library/$ubamName")
-    val targetDir =
+      rootTestStorageDir.resolve(s"wgs-ubam/$barcode/$lane/$library/$ubamName/")
+    val targetDir = if (srcIsDest) {
+      sourceDir
+    } else {
       sourceDir.getParent.resolve(s"moved/")
+    }
     val sourceUbam = sourceDir.resolve(ubamName)
     val targetUbam = targetDir.resolve(ubamName)
 
@@ -414,7 +418,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
         targetDir.toUri.toString
       )
     } yield {
-      Files.exists(sourceUbam) should be(false)
+      Files.exists(sourceUbam) should be(srcIsDest)
       Files.exists(targetUbam) should be(true)
       new String(Files.readAllBytes(targetUbam)) should be(fileContents)
     }
@@ -427,48 +431,11 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "not delete wgs-ubams when moving and source == destination" in {
-    val barcode = s"barcode$randomId"
-    val lane = 3
-    val library = s"lib$randomId"
+  it should "move wgs-ubams in GCP" in testMoveUbam()
 
-    val fileContents = s"$randomId --- I am a dummy ubam --- $randomId"
-    val ubamDir =
-      rootTestStorageDir.resolve(s"wgs-ubam/$barcode/$lane/$library/")
-    val ubamPath = ubamDir.resolve(s"$randomId.unmapped.bam")
-
-    val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
-    val metadata =
-      TransferWgsUbamV1Metadata(ubamPath = Some(ubamPath.toUri))
-
-    // Clio needs the metadata to be added before it can be moved.
-    val _ = Files.write(ubamPath, fileContents.getBytes)
-    val result = for {
-      _ <- runUpsertWgsUbam(key, metadata)
-      _ <- runClient(
-        ClioCommand.moveWgsUbamName,
-        "--flowcell-barcode",
-        barcode,
-        "--lane",
-        lane.toString,
-        "--library-name",
-        library,
-        "--location",
-        Location.GCP.entryName,
-        "--destination",
-        ubamDir.toUri.toString
-      )
-    } yield {
-      Files.exists(ubamPath) should be(true)
-      new String(Files.readAllBytes(ubamPath)) should be(fileContents)
-    }
-
-    result.andThen[Unit] {
-      case _ => {
-        val _ = Files.deleteIfExists(ubamPath)
-      }
-    }
-  }
+  it should "not delete wgs-ubams when moving and source == destination" in testMoveUbam(
+    srcIsDest = true
+  )
 
   it should "not move wgs-ubams without a destination" in {
     recoverToExceptionIf[Exception] {
@@ -544,10 +511,10 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def addAndDeleteWgsUbam(
-    deleteNote: String,
-    existingNote: Option[String]
-  ): Future[TransferWgsUbamV1QueryOutput] = {
+  def testDeleteUbam(existingNote: Option[String] = None): Future[Assertion] = {
+    val deleteNote =
+      s"$randomId --- Deleted by the integration tests --- $randomId"
+
     val barcode = s"barcode$randomId"
     val lane = 4
     val library = s"lib$randomId"
@@ -595,7 +562,13 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       )
     } yield {
       outputs should have length 1
-      outputs.head
+      val output = outputs.head
+      output.notes should be(
+        existingNote
+          .map(existing => s"$existing\n$deleteNote")
+          .orElse(Some(deleteNote))
+      )
+      output.documentStatus should be(Some(DocumentStatus.Deleted))
     }
 
     result.andThen[Unit] {
@@ -606,29 +579,11 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "delete wgs-ubams in GCP" in {
-    val deleteNote =
-      s"$randomId --- Deleted by the integration tests --- $randomId"
+  it should "delete wgs-ubams in GCP" in testDeleteUbam()
 
-    val deletedWithNoExistingNote = addAndDeleteWgsUbam(deleteNote, None)
-    deletedWithNoExistingNote.map { output =>
-      output.notes should be(Some(deleteNote))
-      output.documentStatus should be(Some(DocumentStatus.Deleted))
-    }
-  }
-
-  it should "preserve existing notes when deleting wgs-ubams" in {
-    val deleteNote =
-      s"$randomId --- Deleted by the integration tests --- $randomId"
-    val existingNote = s"$randomId --- I am an existing note --- $randomId"
-
-    val deletedWithExistingNote =
-      addAndDeleteWgsUbam(deleteNote, Some(existingNote))
-    deletedWithExistingNote.map { output =>
-      output.notes should be(Some(s"$existingNote\n$deleteNote"))
-      output.documentStatus should be(Some(DocumentStatus.Deleted))
-    }
-  }
+  it should "preserve existing notes when deleting wgs-ubams" in testDeleteUbam(
+    existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
+  )
 
   it should "not delete wgs-ubams without a note" in {
     recoverToExceptionIf[Exception] {
