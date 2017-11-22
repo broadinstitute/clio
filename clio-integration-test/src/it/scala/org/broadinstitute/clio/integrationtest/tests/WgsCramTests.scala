@@ -377,7 +377,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testMoveCram(oldStyleCrai: Boolean = false): Future[Assertion] = {
+  def testMoveCram(oldStyleCrai: Boolean = false,
+                   changeBasename: Boolean = false): Future[Assertion] = {
 
     val project = s"project$randomId"
     val sample = s"sample$randomId"
@@ -402,9 +403,11 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val alignmentMetricsSource = rootSource.resolve(alignmentMetricsName)
     val fingerprintMetricsSource = rootSource.resolve(fingerprintMetricsName)
 
+    val endBasename = if (changeBasename) randomId else sample
+
     val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
-    val cramDestination = rootDestination.resolve(cramName)
-    val craiDestination = rootDestination.resolve(s"$cramName.crai")
+    val cramDestination = rootDestination.resolve(s"$endBasename.cram")
+    val craiDestination = rootDestination.resolve(s"$endBasename.cram.crai")
     val alignmentMetricsDestination =
       rootDestination.resolve(alignmentMetricsName)
     val fingerprintMetricsDestination =
@@ -427,17 +430,24 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       case (source, contents) => Files.write(source, contents.getBytes)
     }
 
-    val args = Seq(
-      "--location",
-      Location.GCP.entryName,
-      "--project",
-      project,
-      "--sample-alias",
-      sample,
-      "--version",
-      version.toString,
-      "--destination",
-      rootDestination.toUri.toString
+    val args = Seq.concat(
+      Seq(
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--destination",
+        rootDestination.toUri.toString
+      ),
+      if (changeBasename) {
+        Seq("--new-basename", endBasename)
+      } else {
+        Seq.empty
+      }
     )
 
     val result = for {
@@ -488,6 +498,10 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
   it should "fixup the crai extension on move" in testMoveCram(
     oldStyleCrai = true
+  )
+
+  it should "support changing the cram and crai basename on move" in testMoveCram(
+    changeBasename = true
   )
 
   it should "not move wgs-crams without a destination" in {

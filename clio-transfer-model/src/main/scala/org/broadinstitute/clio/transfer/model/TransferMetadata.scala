@@ -34,17 +34,17 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
     *
     * Until we move to a Path-based API, `destination` must end with '/'.
     */
-  def moveInto(destination: URI, samplePrefix: Option[String] = None): M = {
+  def moveInto(destination: URI, newBasename: Option[String] = None): M = {
     if (!destination.getPath.endsWith("/")) {
       sys.error(
         s"Non-directory destination '$destination' given for metadata move"
       )
     }
 
-    mapMove(
-      samplePrefix,
-      opt => opt.map(path => moveIntoDirectory(path, destination))
-    )
+    mapMove {
+      case (pathOpt, ext) =>
+        pathOpt.map(moveIntoDirectory(_, destination, ext, newBasename))
+    }
   }
 
   /**
@@ -56,21 +56,29 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
   /**
     * Return a copy of this with files transformed by applying
     * `pathMapper` and `samplePrefix`.
-    *
-    * @param samplePrefix added to files derived from sample names
     * @param pathMapper of files from source to destination URI
     * @return new metadata
     */
-  protected def mapMove(samplePrefix: Option[String] = None,
-                        pathMapper: Option[URI] => Option[URI]): M
+  protected def mapMove(pathMapper: (Option[URI], String) => Option[URI]): M
 
   /**
-    * Move the file at `source` into the directory `destination`.
+    * Move the file at `source` into the directory `destination`,
+    * optionally changing the base-name in the process.
+    *
+    * NOTE: Because we use '.' liberally in both our file names and file extensions,
+    * there's no easy formula at this abstract level for determining which part of a
+    * filename should be replaced by "newBasename" and which should be retained as the
+    * extension. Rather than make dangerous guesses, we require that the code calling
+    * the move operation provide the file extension to retain during the move operation.
     */
-  protected def moveIntoDirectory(source: URI, destination: URI): URI = {
+  protected def moveIntoDirectory(source: URI,
+                                  destination: URI,
+                                  extension: String,
+                                  newBasename: Option[String] = None): URI = {
     // TODO: Rewrite this using a Path-based API.
     val srcName = new File(source.getPath).getName
-    destination.resolve(srcName)
+    val srcBase = srcName.take(srcName.indexOf(extension))
+    destination.resolve(s"${newBasename.getOrElse(srcBase)}$extension")
   }
 
   /**

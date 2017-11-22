@@ -27,16 +27,24 @@ import scala.concurrent.{ExecutionContext, Future}
 class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
     extends Executor[UpsertId] {
 
-  val moveCommand =
-    MoveWgsCram(deliverCommand.key, deliverCommand.workspacePath)
-  import moveCommand.index.implicits._
+  import WgsCramIndex.implicits._
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[UpsertId] = {
 
-    val moveExecutor =
-      new MoveExecutor(moveCommand, deliverCommand.samplePrefix)
+    val deliveredFileBasename: String =
+      deliverCommand.samplePrefix.fold(deliverCommand.key.sampleAlias) {
+        prefix =>
+          s"$prefix${deliverCommand.key.sampleAlias}"
+      }
+    val moveCommand = MoveWgsCram(
+      deliverCommand.key,
+      deliverCommand.workspacePath,
+      Some(deliveredFileBasename)
+    )
+
+    val moveExecutor = new MoveExecutor(moveCommand)
 
     for {
       _ <- moveExecutor.execute(webClient, ioUtil)

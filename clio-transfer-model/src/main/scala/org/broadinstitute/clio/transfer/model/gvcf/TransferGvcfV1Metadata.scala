@@ -28,14 +28,15 @@ case class TransferGvcfV1Metadata(
     Seq.concat(gvcfPath, gvcfIndexPath)
 
   override def mapMove(
-    samplePrefix: Option[String] = None,
-    pathMapper: Option[URI] => Option[URI]
+    pathMapper: (Option[URI], String) => Option[URI]
   ): TransferGvcfV1Metadata = {
     this.copy(
-      gvcfPath = pathMapper(gvcfPath),
-      gvcfIndexPath = pathMapper(gvcfIndexPath),
-      gvcfSummaryMetricsPath = pathMapper(gvcfSummaryMetricsPath),
-      gvcfDetailMetricsPath = pathMapper(gvcfDetailMetricsPath)
+      gvcfPath = pathMapper(gvcfPath, ".g.vcf.gz"),
+      gvcfIndexPath = pathMapper(gvcfIndexPath, ".g.vcf.gz.tbi"),
+      gvcfSummaryMetricsPath =
+        pathMapper(gvcfSummaryMetricsPath, ".variant_calling_summary_metrics"),
+      gvcfDetailMetricsPath =
+        pathMapper(gvcfDetailMetricsPath, ".variant_calling_detail_metrics")
     )
   }
 
