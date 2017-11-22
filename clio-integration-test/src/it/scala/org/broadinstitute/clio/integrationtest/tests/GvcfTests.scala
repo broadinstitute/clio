@@ -96,9 +96,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         expected.sampleAlias,
         expected.version
       ),
-      TransferGvcfV1Metadata(
-        gvcfPath = Some(URI.create("gs://path/gvcf.g.vcf.gz"))
-      )
+      TransferGvcfV1Metadata(gvcfPath = expected.gvcfPath)
     )
 
     if (location == Location.Unknown) {
@@ -137,38 +135,32 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       version = 1
     )
 
+    val gvcfUri1 = Some(URI.create("gs://path/gvcf1.g.vcf.gz"))
+    val gvcfUri2 = Some(URI.create("gs://path/gvcf2.g.vcf.gz"))
+
     for {
       upsertId1 <- runUpsertGvcf(
         upsertKey,
-        TransferGvcfV1Metadata(
-          gvcfPath = Some(URI.create("gs://path/gvcf1.g.vcf.gz"))
-        )
+        TransferGvcfV1Metadata(gvcfPath = gvcfUri1)
       )
       upsertId2 <- runUpsertGvcf(
         upsertKey,
-        TransferGvcfV1Metadata(
-          gvcfPath = Some(URI.create("gs://path/gvcf2.g.vcf.gz"))
-        )
+        TransferGvcfV1Metadata(gvcfPath = gvcfUri2)
       )
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
         getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId1)
-      storedDocument1.gvcfPath should be(
-        Some(URI.create("gs://path/gvcf1.g.vcf.gz"))
-      )
+      storedDocument1.gvcfPath should be(gvcfUri1)
 
       val storedDocument2 =
         getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId2)
-      storedDocument2.gvcfPath should be(
-        Some(URI.create("gs://path/gvcf2.g.vcf.gz"))
-      )
+      storedDocument2.gvcfPath should be(gvcfUri2)
 
-      storedDocument1.copy(
-        upsertId = upsertId2,
-        gvcfPath = Some(URI.create("gs://path/gvcf2.g.vcf.gz"))
-      ) should be(storedDocument2)
+      storedDocument1.copy(upsertId = upsertId2, gvcfPath = gvcfUri2) should be(
+        storedDocument2
+      )
     }
   }
 
