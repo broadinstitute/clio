@@ -18,6 +18,7 @@ import org.broadinstitute.clio.util.model.{
   RegulatoryDesignation,
   UpsertId
 }
+import org.scalatest.Assertion
 
 import scala.concurrent.Future
 
@@ -376,7 +377,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "move the cram and crai together in GCP" in {
+  def testMoveCram(oldStyleCrai: Boolean = false): Future[Assertion] = {
+
     val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
@@ -388,8 +390,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val fingerprintMetricsContents =
       s"$randomId --- I am dummy fingerprinting metrics --- $randomId"
 
-    val cramName = s"$randomId.cram"
-    val craiName = s"$cramName.crai"
+    val cramName = s"$sample.cram"
+    val craiName = s"${if (oldStyleCrai) sample else cramName}.crai"
     val alignmentMetricsName = s"$randomId.metrics"
     val fingerprintMetricsName = s"$randomId.metrics"
 
@@ -402,7 +404,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
     val cramDestination = rootDestination.resolve(cramName)
-    val craiDestination = rootDestination.resolve(craiName)
+    val craiDestination = rootDestination.resolve(s"$cramName.crai")
     val alignmentMetricsDestination =
       rootDestination.resolve(alignmentMetricsName)
     val fingerprintMetricsDestination =
@@ -424,21 +426,23 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     ).map {
       case (source, contents) => Files.write(source, contents.getBytes)
     }
+
+    val args = Seq(
+      "--location",
+      Location.GCP.entryName,
+      "--project",
+      project,
+      "--sample-alias",
+      sample,
+      "--version",
+      version.toString,
+      "--destination",
+      rootDestination.toUri.toString
+    )
+
     val result = for {
       _ <- runUpsertCram(key, metadata)
-      _ <- runClient(
-        ClioCommand.moveWgsCramName,
-        "--location",
-        Location.GCP.entryName,
-        "--project",
-        project,
-        "--sample-alias",
-        sample,
-        "--version",
-        version.toString,
-        "--destination",
-        rootDestination.toUri.toString
-      )
+      _ <- runClient(ClioCommand.moveWgsCramName, args: _*)
     } yield {
       Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
       Files.exists(alignmentMetricsSource) should be(true)
@@ -480,71 +484,11 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "fixup the crai extension on move" in {
-    val project = s"project$randomId"
-    val sample = s"sample$randomId"
-    val version = 3
+  it should "move the cram and crai together in GCP" in testMoveCram()
 
-    val cramContents = s"$randomId --- I am a dummy cram --- $randomId"
-    val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
-
-    val cramName = s"$randomId.cram"
-    val craiName = cramName.replaceAll("\\.cram", ".crai")
-
-    val rootSource =
-      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
-    val cramSource = rootSource.resolve(cramName)
-    val craiSource = rootSource.resolve(craiName)
-
-    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
-    val cramDestination = rootDestination.resolve(cramName)
-    val craiDestination = rootDestination.resolve(s"$cramName.crai")
-
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferWgsCramV1Metadata(
-      cramPath = Some(cramSource.toUri),
-      craiPath = Some(craiSource.toUri)
-    )
-
-    val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
-      case (source, contents) => Files.write(source, contents.getBytes)
-    }
-    val result = for {
-      _ <- runUpsertCram(key, metadata)
-      _ <- runClient(
-        ClioCommand.moveWgsCramName,
-        "--location",
-        Location.GCP.entryName,
-        "--project",
-        project,
-        "--sample-alias",
-        sample,
-        "--version",
-        version.toString,
-        "--destination",
-        rootDestination.toUri.toString
-      )
-    } yield {
-      Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
-
-      Seq(cramDestination, craiDestination)
-        .foreach(Files.exists(_) should be(true))
-
-      Seq((cramDestination, cramContents), (craiDestination, craiContents))
-        .foreach {
-          case (destination, contents) =>
-            new String(Files.readAllBytes(destination)) should be(contents)
-        }
-      succeed
-    }
-
-    result.andThen {
-      case _ => {
-        val _ = Seq(cramSource, cramDestination, craiSource, craiDestination)
-          .map(Files.deleteIfExists)
-      }
-    }
-  }
+  it should "fixup the crai extension on move" in testMoveCram(
+    oldStyleCrai = true
+  )
 
   it should "not move wgs-crams without a destination" in {
     recoverToExceptionIf[Exception] {
@@ -592,94 +536,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def addAndDeleteCram(
-    deleteNote: String,
-    existingNote: Option[String]
-  ): Future[TransferWgsCramV1QueryOutput] = {
-    val project = s"project$randomId"
-    val sample = s"sample$randomId"
-    val version = 3
-
-    val fileContents = s"$randomId --- I am fated to die --- $randomId"
-    val cloudPath = rootTestStorageDir.resolve(
-      s"cram/$project/$sample/v$version/$randomId.cram"
-    )
-
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata =
-      TransferWgsCramV1Metadata(
-        cramPath = Some(cloudPath.toUri),
-        notes = existingNote
-      )
-
-    // Clio needs the metadata to be added before it can be deleted.
-    val _ = Files.write(cloudPath, fileContents.getBytes)
-    val result = for {
-      _ <- runUpsertCram(key, metadata)
-      _ <- runClient(
-        ClioCommand.deleteWgsCramName,
-        "--location",
-        Location.GCP.entryName,
-        "--project",
-        project,
-        "--sample-alias",
-        sample,
-        "--version",
-        version.toString,
-        "--note",
-        deleteNote
-      )
-      _ = Files.exists(cloudPath) should be(false)
-      outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
-        ClioCommand.queryWgsCramName,
-        "--location",
-        Location.GCP.entryName,
-        "--project",
-        project,
-        "--sample-alias",
-        sample,
-        "--version",
-        version.toString,
-        "--include-deleted"
-      )
-    } yield {
-      outputs should have length 1
-      outputs.head
-    }
-
-    result.andThen[Unit] {
-      case _ => {
-        // Without `val _ =`, the compiler complains about discarded non-Unit value.
-        val _ = Files.deleteIfExists(cloudPath)
-      }
-    }
-  }
-
-  it should "delete wgs-crams in GCP" in {
-    val deleteNote =
-      s"$randomId --- Deleted by the integration tests --- $randomId"
-
-    val deletedWithNoExistingNote = addAndDeleteCram(deleteNote, None)
-    deletedWithNoExistingNote.map { output =>
-      output.notes should be(Some(deleteNote))
-      output.documentStatus should be(Some(DocumentStatus.Deleted))
-    }
-  }
-
-  it should "preserve existing notes when deleting wgs-crams" in {
-    val deleteNote =
-      s"$randomId --- Deleted by the integration tests --- $randomId"
-    val existingNote = s"$randomId --- I am an existing note --- $randomId"
-
-    val deletedWithExistingNote =
-      addAndDeleteCram(deleteNote, Some(existingNote))
-    deletedWithExistingNote.map { output =>
-      output.notes should be(Some(s"$existingNote\n$deleteNote"))
-      output.documentStatus should be(Some(DocumentStatus.Deleted))
-    }
-  }
-
-  it should "delete the cram and crai, but not metrics" in {
+  def testDeleteCram(existingNote: Option[String] = None): Future[Assertion] = {
     val deleteNote =
       s"$randomId --- Deleted by the integration tests --- $randomId"
 
@@ -708,7 +565,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         cramPath = Some(cramPath.toUri),
         craiPath = Some(craiPath.toUri),
         alignmentSummaryMetricsPath = Some(metrics1Path.toUri),
-        fingerprintingSummaryMetricsPath = Some(metrics1Path.toUri)
+        fingerprintingSummaryMetricsPath = Some(metrics1Path.toUri),
+        notes = existingNote
       )
 
     val _ = Seq(
@@ -759,8 +617,13 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         }
 
       outputs should have length 1
-      outputs.head.notes should be(Some(deleteNote))
-      outputs.head.documentStatus should be(Some(DocumentStatus.Deleted))
+      val output = outputs.head
+      output.notes should be(
+        existingNote
+          .map(existing => s"$existing\n$deleteNote")
+          .orElse(Some(deleteNote))
+      )
+      output.documentStatus should be(Some(DocumentStatus.Deleted))
     }
 
     result.andThen[Unit] {
@@ -771,6 +634,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       }
     }
   }
+
+  it should "delete crams in GCP along with their crais, but not their metrics" in testDeleteCram()
+
+  it should "preserve existing notes when deleting wgs-crams" in testDeleteCram(
+    existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
+  )
 
   it should "not delete wgs-crams without a note" in {
     recoverToExceptionIf[Exception] {
@@ -800,7 +669,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
     val md5Contents = randomId
 
-    val cramName = s"$randomId.cram"
+    val cramName = s"$sample.cram"
     val craiName = s"$cramName.crai"
     val md5Name = s"$cramName.md5"
 
@@ -905,7 +774,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
     val md5Contents = randomId
 
-    val cramName = s"$randomId.cram"
+    val cramName = s"$sample.cram"
     val craiName = s"$cramName.crai"
     val md5Name = s"$cramName.md5"
 
@@ -996,7 +865,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val md5Contents = randomId
 
-    val cramName = s"$randomId.cram"
+    val cramName = s"$sample.cram"
     val craiName = s"$cramName.crai"
 
     val rootSource =
@@ -1044,7 +913,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
     val md5Contents = randomId
 
-    val cramName = s"$randomId.cram"
+    val cramName = s"$sample.cram"
     val craiName = s"$cramName.crai"
     val md5Name = s"$cramName.md5"
 
@@ -1150,7 +1019,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val md5Contents = randomId
 
-    val cramName = s"$randomId.cram"
+    val cramName = s"$sample.cram"
     val craiName = s"$cramName.crai"
 
     val rootSource =
