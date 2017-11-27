@@ -6,10 +6,22 @@ import java.nio.file.Files
 import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{DocumentWgsUbam, ElasticsearchIndex}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  DocumentWgsUbam,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.wgsubam.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryOutput}
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, RegulatoryDesignation, UpsertId}
+import org.broadinstitute.clio.transfer.model.wgsubam.{
+  TransferWgsUbamV1Key,
+  TransferWgsUbamV1Metadata,
+  TransferWgsUbamV1QueryOutput
+}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation,
+  UpsertId
+}
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
@@ -504,29 +516,23 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "respect user-set regulatory designation for crams" in {
+  it should "respect user-set regulatory designation for wgs ubams" in {
     val flowcellBarcode = s"testRegulatoryDesignation.$randomId"
     val library = s"library.$randomId"
     val lane = 1
-    val upsertKey = TransferWgsUbamV1Key(
-      Location.GCP,
-      flowcellBarcode,
-      lane,
-      library
+    val upsertKey =
+      TransferWgsUbamV1Key(Location.GCP, flowcellBarcode, lane, library)
+    val metadata = TransferWgsUbamV1Metadata(
+      project = Some("testProject1"),
+      regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
     )
-    val metadata = TransferWgsUbamV1Metadata(project = Some("testProject1"),
-      regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics))
 
     def query = {
       for {
         results <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
           ClioCommand.queryWgsUbamName,
           "--flowcell-barcode",
-          flowcellBarcode,
-          "--lane",
-          lane.toString,
-          "--library",
-          library
+          flowcellBarcode
         )
       } yield {
         results should have length 1
@@ -537,7 +543,9 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       upsert <- runUpsertWgsUbam(upsertKey, metadata)
       queried <- query
     } yield {
-      queried.regulatoryDesignation should be(Some(RegulatoryDesignation.ClinicalDiagnostics))
+      queried.regulatoryDesignation should be(
+        Some(RegulatoryDesignation.ClinicalDiagnostics)
+      )
     }
   }
 
