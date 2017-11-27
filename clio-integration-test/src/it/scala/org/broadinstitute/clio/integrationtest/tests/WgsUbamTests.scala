@@ -6,17 +6,10 @@ import java.nio.file.Files
 import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentWgsUbam,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{DocumentWgsUbam, ElasticsearchIndex}
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.wgsubam.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryOutput
-}
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.transfer.model.wgsubam.{TransferWgsUbamV1Key, TransferWgsUbamV1Metadata, TransferWgsUbamV1QueryOutput}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location, RegulatoryDesignation, UpsertId}
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
@@ -508,6 +501,43 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       case _ => {
         val _ = Files.deleteIfExists(cloudPath2)
       }
+    }
+  }
+
+  it should "respect user-set regulatory designation for crams" in {
+    val flowcellBarcode = s"testRegulatoryDesignation.$randomId"
+    val library = s"library.$randomId"
+    val lane = 1
+    val upsertKey = TransferWgsUbamV1Key(
+      Location.GCP,
+      flowcellBarcode,
+      lane,
+      library
+    )
+    val metadata = TransferWgsUbamV1Metadata(project = Some("testProject1"),
+      regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics))
+
+    def query = {
+      for {
+        results <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
+          ClioCommand.queryWgsUbamName,
+          "--flowcell-barcode",
+          flowcellBarcode,
+          "--lane",
+          lane.toString,
+          "--library",
+          library
+        )
+      } yield {
+        results should have length 1
+        results.head
+      }
+    }
+    for {
+      upsert <- runUpsertWgsUbam(upsertKey, metadata)
+      queried <- query
+    } yield {
+      queried.regulatoryDesignation should be(Some(RegulatoryDesignation.ClinicalDiagnostics))
     }
   }
 
