@@ -520,11 +520,12 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val flowcellBarcode = s"testRegulatoryDesignation.$randomId"
     val library = s"library.$randomId"
     val lane = 1
+    val regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
     val upsertKey =
       TransferWgsUbamV1Key(Location.GCP, flowcellBarcode, lane, library)
     val metadata = TransferWgsUbamV1Metadata(
       project = Some("testProject1"),
-      regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
+      regulatoryDesignation = regulatoryDesignation
     )
 
     def query = {
@@ -543,9 +544,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       upsert <- runUpsertWgsUbam(upsertKey, metadata)
       queried <- query
     } yield {
-      queried.regulatoryDesignation should be(
-        Some(RegulatoryDesignation.ClinicalDiagnostics)
-      )
+      queried.regulatoryDesignation should be(regulatoryDesignation)
     }
   }
 
