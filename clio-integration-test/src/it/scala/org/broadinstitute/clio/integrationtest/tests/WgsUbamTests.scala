@@ -16,7 +16,12 @@ import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Metadata,
   TransferWgsUbamV1QueryOutput
 }
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation,
+  UpsertId
+}
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
@@ -508,6 +513,38 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       case _ => {
         val _ = Files.deleteIfExists(cloudPath2)
       }
+    }
+  }
+
+  it should "respect user-set regulatory designation for wgs ubams" in {
+    val flowcellBarcode = s"testRegulatoryDesignation.$randomId"
+    val library = s"library.$randomId"
+    val lane = 1
+    val regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
+    val upsertKey =
+      TransferWgsUbamV1Key(Location.GCP, flowcellBarcode, lane, library)
+    val metadata = TransferWgsUbamV1Metadata(
+      project = Some("testProject1"),
+      regulatoryDesignation = regulatoryDesignation
+    )
+
+    def query = {
+      for {
+        results <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
+          ClioCommand.queryWgsUbamName,
+          "--flowcell-barcode",
+          flowcellBarcode
+        )
+      } yield {
+        results should have length 1
+        results.head
+      }
+    }
+    for {
+      upsert <- runUpsertWgsUbam(upsertKey, metadata)
+      queried <- query
+    } yield {
+      queried.regulatoryDesignation should be(regulatoryDesignation)
     }
   }
 

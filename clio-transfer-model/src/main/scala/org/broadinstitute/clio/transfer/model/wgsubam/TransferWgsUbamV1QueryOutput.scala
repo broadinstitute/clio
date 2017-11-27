@@ -3,7 +3,11 @@ package org.broadinstitute.clio.transfer.model.wgsubam
 import java.net.URI
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation
+}
 
 case class TransferWgsUbamV1QueryOutput(
   flowcellBarcode: String,
@@ -27,6 +31,7 @@ case class TransferWgsUbamV1QueryOutput(
   productPartNumber: Option[String] = None,
   project: Option[String] = None,
   readStructure: Option[String] = None,
+  regulatoryDesignation: Option[RegulatoryDesignation] = None,
   researchProjectId: Option[String] = None,
   researchProjectName: Option[String] = None,
   rootSampleId: Option[String] = None,
