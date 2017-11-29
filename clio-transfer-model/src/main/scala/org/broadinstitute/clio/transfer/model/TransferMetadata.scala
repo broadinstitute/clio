@@ -29,8 +29,8 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
 
   /**
     * Return a copy of this object in which all files have been moved
-    * to the given `destination` directory, optionally prefixed with
-    * `samplePrefix`.
+    * to the given `destination` directory, optionally changing their
+    * base-names in the process.
     *
     * Until we move to a Path-based API, `destination` must end with '/'.
     */
@@ -54,8 +54,8 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
   def markDeleted(deletionNote: String): M
 
   /**
-    * Return a copy of this with files transformed by applying
-    * `pathMapper` and `samplePrefix`.
+    * Return a copy of this with files transformed by applying `pathMapper`.
+    *
     * @param pathMapper of files from source to destination URI
     * @return new metadata
     */
@@ -77,7 +77,7 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
                                   newBasename: Option[String] = None): URI = {
     // TODO: Rewrite this using a Path-based API.
     val srcName = new File(source.getPath).getName
-    val srcBase = srcName.take(srcName.indexOf(extension))
+    val srcBase = srcName.take(srcName.toLowerCase.lastIndexOf(extension))
     destination.resolve(s"${newBasename.getOrElse(srcBase)}$extension")
   }
 
