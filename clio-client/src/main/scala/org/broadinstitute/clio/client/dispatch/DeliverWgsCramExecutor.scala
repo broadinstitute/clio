@@ -10,7 +10,8 @@ import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1Metadata,
   TransferWgsCramV1QueryInput,
-  TransferWgsCramV1QueryOutput
+  TransferWgsCramV1QueryOutput,
+  WgsCramExtensions
 }
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -87,8 +88,12 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
            * we can write directory to the source location instead of writing
            * to temp and then copying.
            */
-          val md5Tmp = Files.createTempFile("clio-cram-deliver", "md5")
-          val cloudMd5Path = s"$cramPath.md5"
+          val md5Tmp = Files.createTempFile(
+            "clio-cram-deliver",
+            WgsCramExtensions.Md5Extension
+          )
+          val cloudMd5Path =
+            s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}"
 
           try {
             Files.write(md5Tmp, cramMd5.name.getBytes)

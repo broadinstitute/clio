@@ -65,18 +65,27 @@ case class TransferWgsCramV1Metadata(
 
   // Delete the cramPath.md5 file (foo.cram.md5 where foo.cram is cramPath).
   override def pathsToDelete: Seq[URI] =
-    Seq.concat(cramPath, craiPath, cramPath.map(cp => URI.create(s"$cp.md5")))
+    Seq.concat(
+      cramPath,
+      craiPath,
+      cramPath.map(
+        cp => URI.create(s"$cp${WgsCramExtensions.Md5ExtensionAddition}")
+      )
+    )
 
   // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
   ): TransferWgsCramV1Metadata = {
-    val movedCram = pathMapper(cramPath, ".cram")
+    val movedCram = pathMapper(cramPath, WgsCramExtensions.CramExtension)
     this.copy(
       cramPath = movedCram,
       // DSDEGP-1715: We've settled on '.cram.crai' as the extension and
       // want to fixup files with just '.crai' when possible.
-      craiPath = movedCram.map(cramUri => URI.create(s"$cramUri.crai"))
+      craiPath = movedCram.map(
+        cramUri =>
+          URI.create(s"$cramUri${WgsCramExtensions.CraiExtensionAddition}")
+      )
     )
   }
 

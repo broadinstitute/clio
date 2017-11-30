@@ -10,7 +10,8 @@ import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryOutput
+  TransferWgsUbamV1QueryOutput,
+  WgsUbamExtensions
 }
 import org.broadinstitute.clio.util.model.Location
 
@@ -35,7 +36,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
     )
     val ubamPath = Seq
       .fill(randInt)(id)
-      .mkString("gs://", "/", ".unmapped.bam")
+      .mkString("gs://", "/", WgsUbamExtensions.UbamExtension)
 
     val metadata = TransferWgsUbamV1Metadata(
       ubamPath = Some(URI.create(ubamPath)),

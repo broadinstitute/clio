@@ -51,7 +51,7 @@ case class TransferWgsUbamV1Metadata(
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
   ): TransferWgsUbamV1Metadata = {
-    this.copy(ubamPath = pathMapper(ubamPath, ".unmapped.bam"))
+    this.copy(ubamPath = pathMapper(ubamPath, WgsUbamExtensions.UbamExtension))
   }
 
   override def markDeleted(deletionNote: String): TransferWgsUbamV1Metadata =

@@ -31,12 +31,14 @@ case class TransferGvcfV1Metadata(
     pathMapper: (Option[URI], String) => Option[URI]
   ): TransferGvcfV1Metadata = {
     this.copy(
-      gvcfPath = pathMapper(gvcfPath, ".g.vcf.gz"),
-      gvcfIndexPath = pathMapper(gvcfIndexPath, ".g.vcf.gz.tbi"),
-      gvcfSummaryMetricsPath =
-        pathMapper(gvcfSummaryMetricsPath, ".variant_calling_summary_metrics"),
+      gvcfPath = pathMapper(gvcfPath, GvcfExtensions.GvcfExtension),
+      gvcfIndexPath = pathMapper(gvcfIndexPath, GvcfExtensions.IndexExtension),
+      gvcfSummaryMetricsPath = pathMapper(
+        gvcfSummaryMetricsPath,
+        GvcfExtensions.SummaryMetricsExtension
+      ),
       gvcfDetailMetricsPath =
-        pathMapper(gvcfDetailMetricsPath, ".variant_calling_detail_metrics")
+        pathMapper(gvcfDetailMetricsPath, GvcfExtensions.DetailMetricsExtension)
     )
   }
 
