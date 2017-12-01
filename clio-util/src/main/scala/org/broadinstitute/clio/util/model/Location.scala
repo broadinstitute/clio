@@ -12,6 +12,4 @@ object Location extends Enum[Location] {
 
   case object GCP extends Location
   case object OnPrem extends Location
-
-  val key = "location"
 }
