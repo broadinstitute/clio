@@ -98,31 +98,24 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       ),
       TransferGvcfV1Metadata(gvcfPath = expected.gvcfPath)
     )
+    it should s"handle upserts and queries for gvcf location $location" in {
+      for {
+        returnedUpsertId <- responseFuture
+        outputs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+          ClioCommand.queryGvcfName,
+          "--sample-alias",
+          expected.sampleAlias
+        )
+      } yield {
+        outputs should be(Seq(expected))
 
-    if (location == Location.Unknown) {
-      it should "reject gvcf inputs with unknown location" in {
-        recoverToSucceededIf[Exception](responseFuture)
-      }
-    } else {
-      it should s"handle upserts and queries for gvcf location $location" in {
-        for {
-          returnedUpsertId <- responseFuture
-          outputs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
-            ClioCommand.queryGvcfName,
-            "--sample-alias",
-            expected.sampleAlias
-          )
-        } yield {
-          outputs should be(Seq(expected))
-
-          val storedDocument =
-            getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, returnedUpsertId)
-          storedDocument.location should be(expected.location)
-          storedDocument.project should be(expected.project)
-          storedDocument.sampleAlias should be(expected.sampleAlias)
-          storedDocument.version should be(expected.version)
-          storedDocument.gvcfPath should be(expected.gvcfPath)
-        }
+        val storedDocument =
+          getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, returnedUpsertId)
+        storedDocument.location should be(expected.location)
+        storedDocument.project should be(expected.project)
+        storedDocument.sampleAlias should be(expected.sampleAlias)
+        storedDocument.version should be(expected.version)
+        storedDocument.gvcfPath should be(expected.gvcfPath)
       }
     }
   }

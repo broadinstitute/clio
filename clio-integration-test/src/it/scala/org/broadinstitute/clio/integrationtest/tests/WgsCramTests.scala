@@ -95,33 +95,27 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       TransferWgsCramV1Metadata(cramPath = expected.cramPath)
     )
 
-    if (location == Location.Unknown) {
-      it should "reject wgs-cram inputs with unknown location" in {
-        recoverToSucceededIf[Exception](responseFuture)
-      }
-    } else {
-      it should s"handle upserts and queries for wgs-cram location $location" in {
-        for {
-          returnedUpsertId <- responseFuture
-          outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
-            ClioCommand.queryWgsCramName,
-            "--sample-alias",
-            expected.sampleAlias
-          )
-        } yield {
-          outputs should be(Seq(expected))
+    it should s"handle upserts and queries for wgs-cram location $location" in {
+      for {
+        returnedUpsertId <- responseFuture
+        outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+          ClioCommand.queryWgsCramName,
+          "--sample-alias",
+          expected.sampleAlias
+        )
+      } yield {
+        outputs should be(Seq(expected))
 
-          val storedDocument =
-            getJsonFrom[DocumentWgsCram](
-              ElasticsearchIndex.WgsCram,
-              returnedUpsertId
-            )
-          storedDocument.location should be(expected.location)
-          storedDocument.project should be(expected.project)
-          storedDocument.sampleAlias should be(expected.sampleAlias)
-          storedDocument.version should be(expected.version)
-          storedDocument.cramPath should be(expected.cramPath)
-        }
+        val storedDocument =
+          getJsonFrom[DocumentWgsCram](
+            ElasticsearchIndex.WgsCram,
+            returnedUpsertId
+          )
+        storedDocument.location should be(expected.location)
+        storedDocument.project should be(expected.project)
+        storedDocument.sampleAlias should be(expected.sampleAlias)
+        storedDocument.version should be(expected.version)
+        storedDocument.cramPath should be(expected.cramPath)
       }
     }
   }

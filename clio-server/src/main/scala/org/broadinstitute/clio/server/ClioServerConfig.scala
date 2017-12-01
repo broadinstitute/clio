@@ -60,13 +60,10 @@ object ClioServerConfig extends ConfigReaders {
               }
             )
           }
-          case Location.Unknown => None
         }
         .getOrElse {
           val validValues =
-            Location.namesToValuesMap
-              .filterNot(_._2 == Location.Unknown)
-              .keys
+            Location.namesToValuesMap.keys
               .mkString("'", "', '", "'")
 
           throw new ConfigException.BadValue(

@@ -101,34 +101,26 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       TransferWgsUbamV1Metadata(project = expected.project)
     )
 
-    if (location == Location.Unknown) {
-      it should "reject wgs-ubam inputs with unknown location" in {
-        recoverToSucceededIf[Exception](responseFuture)
-      }
-    } else {
-      it should s"handle upserts and queries for wgs-ubam location $location" in {
-        for {
-          returnedUpsertId <- responseFuture
-          queryResponse <- runClientGetJsonAs[Seq[
-            TransferWgsUbamV1QueryOutput
-          ]](
-            ClioCommand.queryWgsUbamName,
-            "--library-name",
-            expected.libraryName
-          )
-        } yield {
-          queryResponse should be(Seq(expected))
+    it should s"handle upserts and queries for wgs-ubam location $location" in {
+      for {
+        returnedUpsertId <- responseFuture
+        queryResponse <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
+          ClioCommand.queryWgsUbamName,
+          "--library-name",
+          expected.libraryName
+        )
+      } yield {
+        queryResponse should be(Seq(expected))
 
-          val storedDocument = getJsonFrom[DocumentWgsUbam](
-            ElasticsearchIndex.WgsUbam,
-            returnedUpsertId
-          )
-          storedDocument.flowcellBarcode should be(expected.flowcellBarcode)
-          storedDocument.lane should be(expected.lane)
-          storedDocument.libraryName should be(expected.libraryName)
-          storedDocument.location should be(expected.location)
-          storedDocument.project should be(expected.project)
-        }
+        val storedDocument = getJsonFrom[DocumentWgsUbam](
+          ElasticsearchIndex.WgsUbam,
+          returnedUpsertId
+        )
+        storedDocument.flowcellBarcode should be(expected.flowcellBarcode)
+        storedDocument.lane should be(expected.lane)
+        storedDocument.libraryName should be(expected.libraryName)
+        storedDocument.location should be(expected.location)
+        storedDocument.project should be(expected.project)
       }
     }
   }
