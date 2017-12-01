@@ -10,11 +10,6 @@ sealed trait Location extends EnumEntry
 object Location extends Enum[Location] {
   override val values: IndexedSeq[Location] = findValues
 
-  case object Unknown extends Location
   case object GCP extends Location
   case object OnPrem extends Location
-
-  val pathMatcher = Map(GCP.toString -> GCP, OnPrem.toString -> OnPrem)
-  val key = "location"
-  val unknown = (key, Unknown)
 }

@@ -24,7 +24,7 @@ trait WgsUbamWebService { self: JsonWebService =>
 
   private[webservice] val pathPrefixKey: Directive1[TransferWgsUbamV1Key] = {
     for {
-      location <- pathPrefix(Location.pathMatcher)
+      location <- pathPrefix(Location.namesToValuesMap)
       flowcellBarcode <- pathPrefix(Segment)
       lane <- pathPrefix(IntNumber)
       libraryName <- pathPrefix(Segment)
