@@ -13,6 +13,6 @@ object Location extends Enum[Location] {
   case object GCP extends Location
   case object OnPrem extends Location
 
-  val pathMatcher = Map(GCP.toString -> GCP, OnPrem.toString -> OnPrem)
+  val pathMatcher: Map[String, Location] = Location.namesToValuesMap
   val key = "location"
 }
