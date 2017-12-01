@@ -27,7 +27,7 @@ class ParsersSpec extends BaseClientSpec {
       case Left(_) => fail("Could not parse outer command.")
     }).flatten
 
-    location should be(Some(Location.pathMatcher(testLocation)))
+    location should be(Some(Location.namesToValuesMap(testLocation)))
   }
 
   it should "throw an exception when given an invalid Location type" in {

@@ -150,16 +150,16 @@ trait TestData {
     flowcellBarcode = testFlowcell,
     lane = testLane,
     libraryName = testLibName,
-    location = Location.pathMatcher(testLocation)
+    location = Location.namesToValuesMap(testLocation)
   )
   val testGvcfTransferV1Key = TransferGvcfV1Key(
-    location = Location.pathMatcher(testLocation),
+    location = Location.namesToValuesMap(testLocation),
     project = testProject,
     sampleAlias = testSampleAlias,
     version = testVersion
   )
   val testCramTransferV1Key = TransferWgsCramV1Key(
-    location = Location.pathMatcher(testLocation),
+    location = Location.namesToValuesMap(testLocation),
     project = testProject,
     sampleAlias = testSampleAlias,
     version = testVersion

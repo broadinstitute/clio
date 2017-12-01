@@ -24,7 +24,7 @@ trait GvcfWebService { self: JsonWebService =>
 
   private[webservice] val gvcfPathPrefixKey: Directive1[TransferGvcfV1Key] = {
     for {
-      location <- pathPrefix(Location.pathMatcher)
+      location <- pathPrefix(Location.namesToValuesMap )
       project <- pathPrefix(Segment)
       sampleAlias <- pathPrefix(Segment)
       version <- pathPrefix(IntNumber)
