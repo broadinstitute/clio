@@ -12,7 +12,10 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.GvcfService
 import org.broadinstitute.clio.transfer.model.GvcfIndex
-import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryInput
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  GvcfExtensions,
+  TransferGvcfV1QueryInput
+}
 
 class GvcfWebServiceSpec extends BaseWebserviceSpec {
   behavior of "GvcfWebService"
@@ -37,19 +40,28 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
     val webService = new MockGvcfWebService(app)
     Post(
       "/metadata/OnPrem/proj0/sample_alias0/1",
-      Map("notes" -> "some note", "gvcf_path" -> "gs://path/gvcf.gvcf")
+      Map(
+        "notes" -> "some note",
+        "gvcf_path" -> s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"
+      )
     ) ~> webService.gvcfPostMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
     Post(
       "/metadata/OnPrem/proj1/sample_alias0/1",
-      Map("notes" -> "some note", "gvcf_path" -> "gs://path/gvcf.gvcf")
+      Map(
+        "notes" -> "some note",
+        "gvcf_path" -> s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"
+      )
     ) ~> webService.gvcfPostMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
     Post(
       "/metadata/OnPrem/proj2/sample_alias0/1",
-      Map("notes" -> "some note", "gvcf_path" -> "gs://path/gvcf.gvcf")
+      Map(
+        "notes" -> "some note",
+        "gvcf_path" -> s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"
+      )
     ) ~> webService.gvcfPostMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
@@ -88,7 +100,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
       Map(
         "gvcf_md5" -> "abcgithashdef",
         "notes" -> "some note",
-        "gvcf_path" -> "gs://path/gvcf.gvcf"
+        "gvcf_path" -> s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"
       )
     ) ~> webService.gvcfPostMetadata ~> check {
       status shouldEqual StatusCodes.OK
@@ -105,7 +117,9 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
       firstUpdate.upsertId should be(responseAs[UpsertId])
       firstUpdate.gvcfMd5 should be(Some('abcgithashdef))
       firstUpdate.notes should be(Some("some note"))
-      firstUpdate.gvcfPath should be(Some(URI.create("gs://path/gvcf.gvcf")))
+      firstUpdate.gvcfPath should be(
+        Some(URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"))
+      )
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement

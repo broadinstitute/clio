@@ -7,16 +7,19 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.webclient.CredentialsGenerator
 import org.broadinstitute.clio.transfer.model.gvcf.{
+  GvcfExtensions,
   TransferGvcfV1Key,
   TransferGvcfV1QueryInput
 }
 import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1Key,
-  TransferWgsCramV1QueryInput
+  TransferWgsCramV1QueryInput,
+  WgsCramExtensions
 }
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
-  TransferWgsUbamV1QueryInput
+  TransferWgsUbamV1QueryInput,
+  WgsUbamExtensions
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -98,31 +101,47 @@ trait TestData {
   val testRunDateEnd: OffsetDateTime = OffsetDateTime.now().plusHours(1)
 
   val testUbamCloudSourcePath: URI =
-    URI.create("gs://testProject/testSample/ubamPath1.unmapped.bam")
+    URI.create(
+      s"gs://testProject/testSample/ubamPath1${WgsUbamExtensions.UbamExtension}"
+    )
 
   val testUbamCloudDestinationPath: URI =
-    URI.create("gs://testProject/testSample/ubamPath2.unmapped.bam")
+    URI.create(
+      s"gs://testProject/testSample/ubamPath2${WgsUbamExtensions.UbamExtension}"
+    )
 
   val testGvcfCloudSourcePath: URI =
-    URI.create("gs://testProject/testSample/gvcfPath1.gvcf")
+    URI.create(
+      s"gs://testProject/testSample/gvcfPath1${GvcfExtensions.GvcfExtension}"
+    )
 
   val testGvcfSummaryMetricsCloudSourcePath: URI =
-    URI.create("gs://path/gvcfSummaryMetrics1.gvcf")
+    URI.create(
+      s"gs://path/gvcfSummaryMetrics1${GvcfExtensions.SummaryMetricsExtension}"
+    )
 
   val testGvcfDetailMetricsCloudSourcePath: URI =
-    URI.create("gs://path/gvcfDetailMetrics1.gvcf")
+    URI.create(
+      s"gs://path/gvcfDetailMetrics1${GvcfExtensions.DetailMetricsExtension}"
+    )
 
   val testCloudDestinationDirectoryPath: URI =
     URI.create("gs://testProject/testSample/moved/")
 
   val testGvcfCloudDestinationPath: URI =
-    testCloudDestinationDirectoryPath.resolve("gvcfPath2.gvcf")
+    testCloudDestinationDirectoryPath.resolve(
+      s"gvcfPath2${GvcfExtensions.GvcfExtension}"
+    )
 
   val testCramCloudSourcePath: URI =
-    URI.create("gs://testProject/testSample/cramPath1.cram")
+    URI.create(
+      s"gs://testProject/testSample/cramPath1${WgsCramExtensions.CramExtension}"
+    )
 
   val testCraiCloudSourcePath: URI =
-    URI.create("gs://testProject/testSample/cramPath1.cram.crai")
+    URI.create(
+      s"gs://testProject/testSample/cramPath1${WgsCramExtensions.CraiExtension}"
+    )
 
   val testWgsMetricsCloudSourcePath: URI =
     URI.create("gs://testProject/testSample/cramPath1.wgs_metrics")

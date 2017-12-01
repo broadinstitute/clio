@@ -7,6 +7,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.MoveWgsCram
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
+import org.broadinstitute.clio.transfer.model.wgscram.WgsCramExtensions
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 class MoveWgsCramSpec extends BaseClientSpec {
@@ -112,10 +113,14 @@ class MoveWgsCramSpec extends BaseClientSpec {
         }
 
         mockIoUtil.googleObjectExists(
-          URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram")
+          URI.create(
+            s"${testCloudDestinationDirectoryPath}cramPath1${WgsCramExtensions.CramExtension}"
+          )
         ) should be(true)
         mockIoUtil.googleObjectExists(
-          URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram.crai")
+          URI.create(
+            s"${testCloudDestinationDirectoryPath}cramPath1${WgsCramExtensions.CraiExtension}"
+          )
         ) should be(true)
         mockIoUtil.googleObjectExists(
           URI.create(s"${testCloudDestinationDirectoryPath}metrics.wgs_metrics")
@@ -123,10 +128,13 @@ class MoveWgsCramSpec extends BaseClientSpec {
       }
   }
 
-  it should "change the crai extension to be .cram.crai" in {
+  it should s"change the crai extension to be ${WgsCramExtensions.CraiExtension}" in {
     val oldStyleCrai =
       URI.create(
-        testCramCloudSourcePath.toString.replaceAll("\\.cram", ".crai")
+        testCramCloudSourcePath.toString.replaceAll(
+          s"\\${WgsCramExtensions.CramExtension}",
+          WgsCramExtensions.CraiExtensionAddition
+        )
       )
 
     val mockIoUtil = new MockIoUtil
@@ -143,10 +151,14 @@ class MoveWgsCramSpec extends BaseClientSpec {
         }
 
         mockIoUtil.googleObjectExists(
-          URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram")
+          URI.create(
+            s"${testCloudDestinationDirectoryPath}cramPath1${WgsCramExtensions.CramExtension}"
+          )
         ) should be(true)
         mockIoUtil.googleObjectExists(
-          URI.create(s"${testCloudDestinationDirectoryPath}cramPath1.cram.crai")
+          URI.create(
+            s"${testCloudDestinationDirectoryPath}cramPath1${WgsCramExtensions.CraiExtension}"
+          )
         ) should be(true)
         mockIoUtil.googleObjectExists(
           URI.create(s"${testCloudDestinationDirectoryPath}metrics.wgs_metrics")

@@ -10,7 +10,8 @@ import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1Metadata,
   TransferWgsCramV1QueryInput,
-  TransferWgsCramV1QueryOutput
+  TransferWgsCramV1QueryOutput,
+  WgsCramExtensions
 }
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -27,16 +28,24 @@ import scala.concurrent.{ExecutionContext, Future}
 class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
     extends Executor[UpsertId] {
 
-  val moveCommand =
-    MoveWgsCram(deliverCommand.key, deliverCommand.workspacePath)
-  import moveCommand.index.implicits._
+  import WgsCramIndex.implicits._
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[UpsertId] = {
 
-    val moveExecutor =
-      new MoveExecutor(moveCommand, deliverCommand.samplePrefix)
+    val deliveredFileBasename: String =
+      deliverCommand.samplePrefix.fold(deliverCommand.key.sampleAlias) {
+        prefix =>
+          s"$prefix${deliverCommand.key.sampleAlias}"
+      }
+    val moveCommand = MoveWgsCram(
+      deliverCommand.key,
+      deliverCommand.workspacePath,
+      Some(deliveredFileBasename)
+    )
+
+    val moveExecutor = new MoveExecutor(moveCommand)
 
     for {
       _ <- moveExecutor.execute(webClient, ioUtil)
@@ -79,8 +88,12 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
            * we can write directory to the source location instead of writing
            * to temp and then copying.
            */
-          val md5Tmp = Files.createTempFile("clio-cram-deliver", "md5")
-          val cloudMd5Path = s"$cramPath.md5"
+          val md5Tmp = Files.createTempFile(
+            "clio-cram-deliver",
+            WgsCramExtensions.Md5Extension
+          )
+          val cloudMd5Path =
+            s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}"
 
           try {
             Files.write(md5Tmp, cramMd5.name.getBytes)

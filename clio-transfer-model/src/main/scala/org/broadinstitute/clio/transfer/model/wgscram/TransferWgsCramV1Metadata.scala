@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.transfer.model.wgscram
 
-import java.io.File
 import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -66,23 +65,27 @@ case class TransferWgsCramV1Metadata(
 
   // Delete the cramPath.md5 file (foo.cram.md5 where foo.cram is cramPath).
   override def pathsToDelete: Seq[URI] =
-    Seq.concat(cramPath, craiPath, cramPath.map(cp => URI.create(s"$cp.md5")))
+    Seq.concat(
+      cramPath,
+      craiPath,
+      cramPath.map(
+        cp => URI.create(s"$cp${WgsCramExtensions.Md5ExtensionAddition}")
+      )
+    )
 
   // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
   override def mapMove(
-    samplePrefix: Option[String] = None,
-    pathMapper: Option[URI] => Option[URI]
+    pathMapper: (Option[URI], String) => Option[URI]
   ): TransferWgsCramV1Metadata = {
-    val prefixedCram = cramPath.map { cp =>
-      val name = new File(cp.getPath).getName
-      URI.create(s"${samplePrefix.getOrElse("")}$name")
-    }
-    val prefixedCrai = prefixedCram.map(pc => URI.create(s"${pc}.crai"))
+    val movedCram = pathMapper(cramPath, WgsCramExtensions.CramExtension)
     this.copy(
-      cramPath = pathMapper(prefixedCram),
+      cramPath = movedCram,
       // DSDEGP-1715: We've settled on '.cram.crai' as the extension and
       // want to fixup files with just '.crai' when possible.
-      craiPath = pathMapper(prefixedCrai)
+      craiPath = movedCram.map(
+        cramUri =>
+          URI.create(s"$cramUri${WgsCramExtensions.CraiExtensionAddition}")
+      )
     )
   }
 
