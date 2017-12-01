@@ -8,7 +8,7 @@
       "contamination" : 0.75,
       "gvcf_md5" : "gvcfMd5",
       "gvcf_size" : 1,
-      "gvcf_summary_metrics_path": "gs://path/gvcfSummaryMetrics1.gvcf",
+      "gvcf_summary_metrics_path": "gs://path/gvcfSummaryMetrics1.g.vcf.gz",
       "pipeline_version": "versionHash",
       "notes": "some note"
   }

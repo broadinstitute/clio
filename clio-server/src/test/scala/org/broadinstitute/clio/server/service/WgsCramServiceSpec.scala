@@ -12,7 +12,8 @@ import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1Key,
   TransferWgsCramV1Metadata,
-  TransferWgsCramV1QueryInput
+  TransferWgsCramV1QueryInput,
+  WgsCramExtensions
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -78,7 +79,9 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
       TransferWgsCramV1Key(Location.GCP, "project1", "sample1", 1)
     val transferMetadata =
       TransferWgsCramV1Metadata(
-        cramPath = Option(URI.create("gs://path/cramPath.cram")),
+        cramPath = Option(
+          URI.create(s"gs://path/cramPath${WgsCramExtensions.CramExtension}")
+        ),
         notes = Option("notable update"),
         documentStatus = documentStatus
       )

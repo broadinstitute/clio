@@ -11,7 +11,10 @@ import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsCram
 import org.broadinstitute.clio.server.service.WgsCramService
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1QueryInput
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1QueryInput,
+  WgsCramExtensions
+}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 
 class WgsCramWebServiceSpec extends BaseWebserviceSpec {
@@ -37,19 +40,28 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
     val webService = new MockWgsCramWebService(app)
     Post(
       "/metadata/OnPrem/proj0/sample_alias0/1",
-      Map("notes" -> "some note", "cram_path" -> "gs://path/cram.cram")
+      Map(
+        "notes" -> "some note",
+        "cram_path" -> s"gs://path/cram${WgsCramExtensions.CramExtension}"
+      )
     ) ~> webService.cramPostMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
     Post(
       "/metadata/OnPrem/proj1/sample_alias0/1",
-      Map("notes" -> "some note", "cram_path" -> "gs://path/cram.cram")
+      Map(
+        "notes" -> "some note",
+        "cram_path" -> s"gs://path/cram${WgsCramExtensions.CramExtension}"
+      )
     ) ~> webService.cramPostMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
     Post(
       "/metadata/OnPrem/proj2/sample_alias0/1",
-      Map("notes" -> "some note", "cram_path" -> "gs://path/cram.cram")
+      Map(
+        "notes" -> "some note",
+        "cram_path" -> s"gs://path/cram${WgsCramExtensions.CramExtension}"
+      )
     ) ~> webService.cramPostMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
@@ -88,7 +100,7 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
       Map(
         "cram_md5" -> "abcgithashdef",
         "notes" -> "some note",
-        "cram_path" -> "gs://path/cram.cram"
+        "cram_path" -> s"gs://path/cram${WgsCramExtensions.CramExtension}"
       )
     ) ~> webService.cramPostMetadata ~> check {
       status shouldEqual StatusCodes.OK
@@ -105,7 +117,9 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
       firstUpdate.upsertId should be(responseAs[UpsertId])
       firstUpdate.cramMd5 should be(Some('abcgithashdef))
       firstUpdate.notes should be(Some("some note"))
-      firstUpdate.cramPath should be(Some(URI.create("gs://path/cram.cram")))
+      firstUpdate.cramPath should be(
+        Some(URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}"))
+      )
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement

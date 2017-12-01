@@ -50,6 +50,7 @@ sealed abstract class MoveCommand[TI <: TransferIndex](val index: TI)
     extends ClioCommand {
   def key: index.KeyType
   def destination: URI
+  def newBasename: Option[String]
 }
 
 sealed abstract class DeleteCommand[TI <: TransferIndex](val index: TI)
@@ -83,7 +84,8 @@ final case class QueryWgsUbam(@Recurse queryInput: TransferWgsUbamV1QueryInput,
 
 @CommandName(ClioCommand.moveWgsUbamName)
 final case class MoveWgsUbam(@Recurse key: TransferWgsUbamV1Key,
-                             destination: URI)
+                             destination: URI,
+                             newBasename: Option[String] = None)
     extends MoveCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.deleteWgsUbamName)
@@ -105,7 +107,9 @@ final case class QueryGvcf(@Recurse queryInput: TransferGvcfV1QueryInput,
     extends QueryCommand(GvcfIndex)
 
 @CommandName(ClioCommand.moveGvcfName)
-final case class MoveGvcf(@Recurse key: TransferGvcfV1Key, destination: URI)
+final case class MoveGvcf(@Recurse key: TransferGvcfV1Key,
+                          destination: URI,
+                          newBasename: Option[String] = None)
     extends MoveCommand(GvcfIndex)
 
 @CommandName(ClioCommand.deleteGvcfName)
@@ -129,7 +133,8 @@ final case class QueryWgsCram(@Recurse queryInput: TransferWgsCramV1QueryInput,
 
 @CommandName(ClioCommand.moveWgsCramName)
 final case class MoveWgsCram(@Recurse key: TransferWgsCramV1Key,
-                             destination: URI)
+                             destination: URI,
+                             newBasename: Option[String] = None)
     extends MoveCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.deleteWgsCramName)

@@ -10,6 +10,7 @@ import org.broadinstitute.clio.server.dataaccess.{
   MemorySearchDAO
 }
 import org.broadinstitute.clio.transfer.model.gvcf.{
+  GvcfExtensions,
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryInput
@@ -78,7 +79,9 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
       TransferGvcfV1Key(Location.GCP, "project1", "sample1", 1)
     val transferMetadata =
       TransferGvcfV1Metadata(
-        gvcfPath = Option(URI.create("gs://path/gvcfPath.gvcf")),
+        gvcfPath = Option(
+          URI.create(s"gs://path/gvcfPath${GvcfExtensions.GvcfExtension}")
+        ),
         notes = Option("notable update"),
         documentStatus = documentStatus
       )

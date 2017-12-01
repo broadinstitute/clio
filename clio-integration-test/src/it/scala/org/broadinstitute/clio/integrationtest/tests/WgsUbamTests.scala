@@ -14,7 +14,8 @@ import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
   TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryOutput
+  TransferWgsUbamV1QueryOutput,
+  WgsUbamExtensions
 }
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
@@ -382,7 +383,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val library = s"lib$randomId"
 
     val fileContents = s"$randomId --- I am a dummy ubam --- $randomId"
-    val ubamName = s"$randomId.unmapped.bam"
+    val ubamName = s"$randomId${WgsUbamExtensions.UbamExtension}"
     val sourceDir =
       rootTestStorageDir.resolve(s"wgs-ubam/$barcode/$lane/$library/$ubamName/")
     val targetDir = if (srcIsDest) {
@@ -458,10 +459,12 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
     val library = s"lib$randomId"
 
     val cloudPath = rootTestStorageDir.resolve(
-      s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
+      s"wgs-ubam/$barcode/$lane/$library/$randomId${WgsUbamExtensions.UbamExtension}"
     )
     val cloudPath2 =
-      cloudPath.getParent.resolve(s"moved/$randomId.unmapped.bam")
+      cloudPath.getParent.resolve(
+        s"moved/$randomId${WgsUbamExtensions.UbamExtension}"
+      )
 
     val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)
     val metadata =
@@ -550,7 +553,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
 
     val fileContents = s"$randomId --- I am fated to die --- $randomId"
     val cloudPath = rootTestStorageDir.resolve(
-      s"wgs-ubam/$barcode/$lane/$library/$randomId.unmapped.bam"
+      s"wgs-ubam/$barcode/$lane/$library/$randomId${WgsUbamExtensions.UbamExtension}"
     )
 
     val key = TransferWgsUbamV1Key(Location.GCP, barcode, lane, library)

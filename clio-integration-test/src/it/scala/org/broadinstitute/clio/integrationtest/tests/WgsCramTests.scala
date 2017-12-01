@@ -77,7 +77,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       sampleAlias = s"someAlias $randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
-      cramPath = Some(URI.create("gs://path/cram.cram"))
+      cramPath =
+        Some(URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}"))
     )
 
     /*
@@ -132,13 +133,17 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertCram(
         upsertKey,
         TransferWgsCramV1Metadata(
-          cramPath = Some(URI.create("gs://path/cram1.cram"))
+          cramPath = Some(
+            URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}")
+          )
         )
       )
       upsertId2 <- runUpsertCram(
         upsertKey,
         TransferWgsCramV1Metadata(
-          cramPath = Some(URI.create("gs://path/cram2.cram"))
+          cramPath = Some(
+            URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}")
+          )
         )
       )
     } yield {
@@ -147,18 +152,19 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       val storedDocument1 =
         getJsonFrom[DocumentWgsCram](ElasticsearchIndex.WgsCram, upsertId1)
       storedDocument1.cramPath should be(
-        Some(URI.create("gs://path/cram1.cram"))
+        Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
       )
 
       val storedDocument2 =
         getJsonFrom[DocumentWgsCram](ElasticsearchIndex.WgsCram, upsertId2)
       storedDocument2.cramPath should be(
-        Some(URI.create("gs://path/cram2.cram"))
+        Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))
       )
 
       storedDocument1.copy(
         upsertId = upsertId2,
-        cramPath = Some(URI.create("gs://path/cram2.cram"))
+        cramPath =
+          Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))
       ) should be(storedDocument2)
     }
   }
@@ -172,7 +178,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     )
     val upsertData =
       TransferWgsCramV1Metadata(
-        cramPath = Some(URI.create("gs://path/cram1.cram"))
+        cramPath =
+          Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
       )
 
     for {
@@ -203,7 +210,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         case (sample, version) =>
           val key = TransferWgsCramV1Key(location, project, sample, version)
           val data = TransferWgsCramV1Metadata(
-            cramPath = Some(URI.create("gs://path/cram.cram")),
+            cramPath = Some(
+              URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
+            ),
             cramSize = Some(1000L)
           )
           runUpsertCram(key, data)
@@ -238,7 +247,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val project = s"testProject$randomId"
     val key =
       TransferWgsCramV1Key(Location.GCP, project, s"testSample$randomId", 1)
-    val cramPath = URI.create("gs://path/cram.cram")
+    val cramPath =
+      URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
     val metadata = TransferWgsCramV1Metadata(
       cramPath = Some(cramPath),
       cramSize = Some(1000L),
@@ -371,7 +381,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testMoveCram(oldStyleCrai: Boolean = false): Future[Assertion] = {
+  def testMoveCram(oldStyleCrai: Boolean = false,
+                   changeBasename: Boolean = false): Future[Assertion] = {
 
     val project = s"project$randomId"
     val sample = s"sample$randomId"
@@ -384,8 +395,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val fingerprintMetricsContents =
       s"$randomId --- I am dummy fingerprinting metrics --- $randomId"
 
-    val cramName = s"$sample.cram"
-    val craiName = s"${if (oldStyleCrai) sample else cramName}.crai"
+    val cramName = s"$sample${WgsCramExtensions.CramExtension}"
+    val craiName =
+      s"${if (oldStyleCrai) sample else cramName}${WgsCramExtensions.CraiExtensionAddition}"
     val alignmentMetricsName = s"$randomId.metrics"
     val fingerprintMetricsName = s"$randomId.metrics"
 
@@ -396,9 +408,13 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val alignmentMetricsSource = rootSource.resolve(alignmentMetricsName)
     val fingerprintMetricsSource = rootSource.resolve(fingerprintMetricsName)
 
+    val endBasename = if (changeBasename) randomId else sample
+
     val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
-    val cramDestination = rootDestination.resolve(cramName)
-    val craiDestination = rootDestination.resolve(s"$cramName.crai")
+    val cramDestination =
+      rootDestination.resolve(s"$endBasename${WgsCramExtensions.CramExtension}")
+    val craiDestination =
+      rootDestination.resolve(s"$endBasename${WgsCramExtensions.CraiExtension}")
     val alignmentMetricsDestination =
       rootDestination.resolve(alignmentMetricsName)
     val fingerprintMetricsDestination =
@@ -421,17 +437,24 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       case (source, contents) => Files.write(source, contents.getBytes)
     }
 
-    val args = Seq(
-      "--location",
-      Location.GCP.entryName,
-      "--project",
-      project,
-      "--sample-alias",
-      sample,
-      "--version",
-      version.toString,
-      "--destination",
-      rootDestination.toUri.toString
+    val args = Seq.concat(
+      Seq(
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--destination",
+        rootDestination.toUri.toString
+      ),
+      if (changeBasename) {
+        Seq("--new-basename", endBasename)
+      } else {
+        Seq.empty
+      }
     )
 
     val result = for {
@@ -482,6 +505,10 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
   it should "fixup the crai extension on move" in testMoveCram(
     oldStyleCrai = true
+  )
+
+  it should "support changing the cram and crai basename on move" in testMoveCram(
+    changeBasename = true
   )
 
   it should "not move wgs-crams without a destination" in {
@@ -548,8 +575,10 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val storageDir =
       rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
-    val cramPath = storageDir.resolve(s"$randomId.cram")
-    val craiPath = storageDir.resolve(s"$randomId.crai")
+    val cramPath =
+      storageDir.resolve(s"$randomId${WgsCramExtensions.CramExtension}")
+    val craiPath =
+      storageDir.resolve(s"$randomId${WgsCramExtensions.CraiExtensionAddition}")
     val metrics1Path = storageDir.resolve(s"$randomId.metrics")
     val metrics2Path = storageDir.resolve(s"$randomId.metrics")
 
@@ -663,9 +692,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
     val md5Contents = randomId
 
-    val cramName = s"$sample.cram"
-    val craiName = s"$cramName.crai"
-    val md5Name = s"$cramName.md5"
+    val cramName = s"$sample${WgsCramExtensions.CramExtension}"
+    val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
+    val md5Name = s"$cramName${WgsCramExtensions.Md5ExtensionAddition}"
 
     val rootSource =
       rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
@@ -768,9 +797,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
     val md5Contents = randomId
 
-    val cramName = s"$sample.cram"
-    val craiName = s"$cramName.crai"
-    val md5Name = s"$cramName.md5"
+    val cramName = s"$sample${WgsCramExtensions.CramExtension}"
+    val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
+    val md5Name = s"$cramName${WgsCramExtensions.Md5ExtensionAddition}"
 
     val rootSource =
       rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
@@ -859,8 +888,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val md5Contents = randomId
 
-    val cramName = s"$sample.cram"
-    val craiName = s"$cramName.crai"
+    val cramName = s"$sample${WgsCramExtensions.CramExtension}"
+    val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
 
     val rootSource =
       rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
@@ -907,9 +936,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
     val md5Contents = randomId
 
-    val cramName = s"$sample.cram"
-    val craiName = s"$cramName.crai"
-    val md5Name = s"$cramName.md5"
+    val cramName = s"$sample${WgsCramExtensions.CramExtension}"
+    val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
+    val md5Name = s"$cramName${WgsCramExtensions.Md5ExtensionAddition}"
 
     val cramRegulatoryDesignation =
       Some(RegulatoryDesignation.ClinicalDiagnostics)
@@ -1013,8 +1042,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val md5Contents = randomId
 
-    val cramName = s"$sample.cram"
-    val craiName = s"$cramName.crai"
+    val cramName = s"$sample${WgsCramExtensions.CramExtension}"
+    val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
 
     val rootSource =
       rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")

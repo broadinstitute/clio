@@ -12,6 +12,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
+  GvcfExtensions,
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryOutput
@@ -81,7 +82,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       sampleAlias = s"someAlias $randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
-      gvcfPath = Some(URI.create("gs://path/gvcf.g.vcf.gz"))
+      gvcfPath =
+        Some(URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"))
     )
 
     /*
@@ -128,8 +130,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       version = 1
     )
 
-    val gvcfUri1 = Some(URI.create("gs://path/gvcf1.g.vcf.gz"))
-    val gvcfUri2 = Some(URI.create("gs://path/gvcf2.g.vcf.gz"))
+    val gvcfUri1 =
+      Some(URI.create(s"gs://path/gvcf1${GvcfExtensions.GvcfExtension}"))
+    val gvcfUri2 =
+      Some(URI.create(s"gs://path/gvcf2${GvcfExtensions.GvcfExtension}"))
 
     for {
       upsertId1 <- runUpsertGvcf(
@@ -166,7 +170,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     )
     val upsertData =
       TransferGvcfV1Metadata(
-        gvcfPath = Some(URI.create("gs://path/gvcf1.g.vcf.gz"))
+        gvcfPath =
+          Some(URI.create(s"gs://path/gvcf1${GvcfExtensions.GvcfExtension}"))
       )
 
     for {
@@ -197,7 +202,9 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         case (sample, version) =>
           val key = TransferGvcfV1Key(location, project, sample, version)
           val data = TransferGvcfV1Metadata(
-            gvcfPath = Some(URI.create("gs://path/gvcf.g.vcf.gz")),
+            gvcfPath = Some(
+              URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}")
+            ),
             contamination = Some(.65f)
           )
           runUpsertGvcf(key, data)
@@ -232,7 +239,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val project = s"testProject$randomId"
     val key =
       TransferGvcfV1Key(Location.GCP, project, s"testSample$randomId", 1)
-    val gvcfPath = URI.create("gs://path/gvcf.g.vcf.gz")
+    val gvcfPath = URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}")
     val metadata = TransferGvcfV1Metadata(
       gvcfPath = Some(gvcfPath),
       contamination = Some(.75f),
@@ -294,7 +301,11 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         version = version
       )
       val upsertMetadata = TransferGvcfV1Metadata(
-        gvcfPath = Some(URI.create(s"gs://gvcf/$sampleAlias.$version"))
+        gvcfPath = Some(
+          URI.create(
+            s"gs://gvcf/$sampleAlias.$version.${GvcfExtensions.GvcfExtension}"
+          )
+        )
       )
       (upsertKey, upsertMetadata)
     }
@@ -371,7 +382,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val version = 3
 
     val cloudPath = rootTestStorageDir.resolve(
-      s"gvcf/$project/$sample/v$version/$randomId.g.vcf.gz"
+      s"gvcf/$project/$sample/v$version/$randomId${GvcfExtensions.GvcfExtension}"
     )
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
@@ -410,7 +421,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
       version = 3,
-      gvcfPath = Some(URI.create(s"gs://gvcf/$randomId.g.vcf.gz")),
+      gvcfPath =
+        Some(URI.create(s"gs://gvcf/$randomId${GvcfExtensions.GvcfExtension}")),
       regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics),
       documentStatus = Some(DocumentStatus.Normal)
     )
@@ -458,10 +470,11 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val detailMetricsContents =
       s"$randomId --- I am dummy detail metrics --- $randomId"
 
-    val gvcfName = s"$randomId.g.vcf.gz"
-    val indexName = s"$randomId.g.vcf.gz.tbi"
-    val summaryMetricsName = s"$randomId.variant_calling_summary_metrics"
-    val detailMetricsName = s"$randomId.variant_calling_detail_metrics"
+    val gvcfName = s"$randomId${GvcfExtensions.GvcfExtension}"
+    val indexName = s"$randomId${GvcfExtensions.IndexExtension}"
+    val summaryMetricsName =
+      s"$randomId${GvcfExtensions.SummaryMetricsExtension}"
+    val detailMetricsName = s"$randomId${GvcfExtensions.DetailMetricsExtension}"
 
     val rootSource =
       rootTestStorageDir.resolve(s"gvcf/$project/$sample/v$version/")
@@ -600,12 +613,14 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val storageDir =
       rootTestStorageDir.resolve(s"gvcf/$project/$sample/v$version/")
-    val gvcfPath = storageDir.resolve(s"$randomId.g.vcf.gz")
-    val indexPath = storageDir.resolve(s"$randomId.g.vcf.gz.tbi")
+    val gvcfPath =
+      storageDir.resolve(s"$randomId${GvcfExtensions.GvcfExtension}")
+    val indexPath =
+      storageDir.resolve(s"$randomId${GvcfExtensions.IndexExtension}")
     val summaryMetricsPath =
-      storageDir.resolve(s"$randomId.variant_calling_summary_metrics")
+      storageDir.resolve(s"$randomId${GvcfExtensions.SummaryMetricsExtension}")
     val detailMetricsPath =
-      storageDir.resolve(s"$randomId.variant_calling_detail_metrics")
+      storageDir.resolve(s"$randomId${GvcfExtensions.DetailMetricsExtension}")
 
     val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
     val metadata =
