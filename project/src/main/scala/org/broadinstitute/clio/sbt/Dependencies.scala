@@ -70,8 +70,7 @@ object Dependencies {
   ).map(_ % Test)
 
   /** The full list of server dependencies. */
-  val ServerDependencies
-    : Seq[ModuleID] = ServerMainDependencies ++ ServerTestDependencies
+  val ServerDependencies: Seq[ModuleID] = ServerMainDependencies ++ ServerTestDependencies
 
   /** Suppress warning for evicted libraries. */
   val ServerOverrideDependencies: Set[ModuleID] = Set(
@@ -101,8 +100,7 @@ object Dependencies {
   ).map(_ % Test)
 
   /**The full list of client dependencies. */
-  val ClientDependencies
-    : Seq[ModuleID] = ClientMainDependencies ++ ClientTestDependencies
+  val ClientDependencies: Seq[ModuleID] = ClientMainDependencies ++ ClientTestDependencies
 
   val UtilMainDependencies: Seq[ModuleID] = Seq(
     "com.beachape" %% "enumeratum" % EnumeratumVersion,
@@ -137,8 +135,7 @@ object Dependencies {
     "org.scalatest" %% "scalatest" % ScalaTestVersion
   ).map(_ % Test)
 
-  val TransferModelDependencies
-    : Seq[ModuleID] = TransferModelMainDependencies ++ TransferModelTestDependencies
+  val TransferModelDependencies: Seq[ModuleID] = TransferModelMainDependencies ++ TransferModelTestDependencies
 
   val DataaccessModelMainDependencies: Seq[ModuleID] = Seq(
     "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,

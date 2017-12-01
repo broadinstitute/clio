@@ -119,20 +119,21 @@ class ServerService private (
   }
 
   private[service] def shutdown(): Future[Unit] = {
-    serverStatusDAO.setStatus(ServerStatusInfo.ShuttingDown) transformWith {
-      _ =>
-        searchDAO.close() transformWith { _ =>
-          httpServerDAO.shutdown() transformWith { _ =>
-            serverStatusDAO.setStatus(ServerStatusInfo.ShutDown)
-          }
+    serverStatusDAO.setStatus(ServerStatusInfo.ShuttingDown) transformWith { _ =>
+      searchDAO.close() transformWith { _ =>
+        httpServerDAO.shutdown() transformWith { _ =>
+          serverStatusDAO.setStatus(ServerStatusInfo.ShutDown)
         }
+      }
     }
   }
 }
 
 object ServerService {
-  def apply(app: ClioApp)(implicit executionContext: ExecutionContext,
-                          mat: Materializer): ServerService = {
+
+  def apply(
+    app: ClioApp
+  )(implicit executionContext: ExecutionContext, mat: Materializer): ServerService = {
     new ServerService(
       app.serverStatusDAO,
       app.httpServerDAO,

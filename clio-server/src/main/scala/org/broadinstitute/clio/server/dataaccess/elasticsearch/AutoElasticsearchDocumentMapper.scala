@@ -19,7 +19,8 @@ import scala.reflect.ClassTag
   *                       https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
   */
 class AutoElasticsearchDocumentMapper[
-  ModelKey <: Product: ClassTag, ModelMetadata: ClassTag,
+  ModelKey <: Product: ClassTag,
+  ModelMetadata: ClassTag,
   Document <: ClioDocument: ClassTag
 ] private[elasticsearch] (genId: () => UpsertId)
     extends ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] {
@@ -40,8 +41,7 @@ class AutoElasticsearchDocumentMapper[
     document
   }
 
-  override def withMetadata(document: Document,
-                            metadata: ModelMetadata): Document = {
+  override def withMetadata(document: Document, metadata: ModelMetadata): Document = {
     // Copy all the metadata values except those that are `None`.
     val metadataVals = modelMetadataMapper vals metadata collect {
       case (name, value) if value != None => (name, value)
@@ -52,10 +52,12 @@ class AutoElasticsearchDocumentMapper[
 }
 
 object AutoElasticsearchDocumentMapper {
-  def apply[ModelKey <: Product: ClassTag,
-            ModelMetadata: ClassTag,
-            Document <: ClioDocument: ClassTag]
-    : ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] = {
+
+  def apply[
+    ModelKey <: Product: ClassTag,
+    ModelMetadata: ClassTag,
+    Document <: ClioDocument: ClassTag
+  ]: ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] = {
     new AutoElasticsearchDocumentMapper(UpsertId.nextId)
   }
 }

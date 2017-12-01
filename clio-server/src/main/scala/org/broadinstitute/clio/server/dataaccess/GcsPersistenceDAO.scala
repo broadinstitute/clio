@@ -14,8 +14,7 @@ import org.broadinstitute.clio.server.ClioServerConfig.Persistence
   * Uses Google's cloud-storage NIO FileSystem provider to
   * abstract over the fact that we're writing to the cloud.
   */
-class GcsPersistenceDAO(gcsConfig: Persistence.GcsConfig)
-    extends PersistenceDAO {
+class GcsPersistenceDAO(gcsConfig: Persistence.GcsConfig) extends PersistenceDAO {
 
   private lazy val storageOptions = {
     gcsConfig.account

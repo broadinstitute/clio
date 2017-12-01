@@ -80,9 +80,12 @@ class AkkaHttpServerDAO private (routes: Route)(
 }
 
 object AkkaHttpServerDAO {
-  def apply(routes: Route)(implicit system: ActorSystem,
-                           executionContext: ExecutionContext,
-                           materializer: Materializer): HttpServerDAO = {
+
+  def apply(routes: Route)(
+    implicit system: ActorSystem,
+    executionContext: ExecutionContext,
+    materializer: Materializer
+  ): HttpServerDAO = {
     new AkkaHttpServerDAO(routes)
   }
 }

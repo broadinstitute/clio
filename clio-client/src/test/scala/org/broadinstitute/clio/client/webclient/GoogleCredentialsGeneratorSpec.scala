@@ -51,6 +51,7 @@ class GoogleCredentialsGeneratorSpec extends FlatSpec with Matchers {
 }
 
 object GoogleCredentialsGeneratorSpec {
+
   class MockOAuth2Credentials(initToken: Option[AccessToken])
       extends OAuth2Credentials(initToken.orNull) {
 

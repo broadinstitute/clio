@@ -15,6 +15,7 @@ class MemorySearchDAO extends MockSearchDAO {
 
   val updateCalls: mutable.ArrayBuffer[(ClioDocument, ElasticsearchIndex[_])] =
     mutable.ArrayBuffer.empty
+
   val queryCalls: mutable.ArrayBuffer[QueryDefinition] =
     mutable.ArrayBuffer.empty
 

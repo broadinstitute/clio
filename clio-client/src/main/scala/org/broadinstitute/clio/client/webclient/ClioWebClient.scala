@@ -98,27 +98,25 @@ class ClioWebClient(
           })
           .runWith(Sink.head)
 
-        response
-          .andThen {
-            /*
-             * Side-effect on the result of the HTTP request to communicate the result
-             * back to the caller.
-             *
-             * Note: `Failure` here means a failure to send the request / process the
-             * result, not a failure by the server. `Success` might contain an `HttpResponse`
-             * with an error status code, and it's up to the caller to handle that.
-             */
-            case Success(r)  => promise.success(r)
-            case Failure(ex) => promise.failure(ex)
-          }
-          .transform { _ =>
-            /*
-             * Always return a `Success` to prevent the stream from closing on failures.
-             * The `andThen` above handles communicating the actual result back to the
-             * caller by side-effecting on the promise.
-             */
-            Success(Done)
-          }
+        response.andThen {
+          /*
+           * Side-effect on the result of the HTTP request to communicate the result
+           * back to the caller.
+           *
+           * Note: `Failure` here means a failure to send the request / process the
+           * result, not a failure by the server. `Success` might contain an `HttpResponse`
+           * with an error status code, and it's up to the caller to handle that.
+           */
+          case Success(r)  => promise.success(r)
+          case Failure(ex) => promise.failure(ex)
+        }.transform { _ =>
+          /*
+           * Always return a `Success` to prevent the stream from closing on failures.
+           * The `andThen` above handles communicating the actual result back to the
+           * caller by side-effecting on the promise.
+           */
+          Success(Done)
+        }
       }
     }
     /*
@@ -131,8 +129,10 @@ class ClioWebClient(
     .toMat(Sink.ignore)(Keep.left)
     .run()
 
-  def dispatchRequest(request: HttpRequest,
-                      includeAuth: Boolean = true): Future[HttpResponse] = {
+  def dispatchRequest(
+    request: HttpRequest,
+    includeAuth: Boolean = true
+  ): Future[HttpResponse] = {
     val responsePromise = Promise[HttpResponse]()
     val requestWithCreds = if (includeAuth) {
       request.addCredentials(tokenGenerator.generateCredentials())
@@ -140,30 +140,29 @@ class ClioWebClient(
       request
     }
 
-    requestStream.offer(requestWithCreds -> responsePromise).flatMap {
-      queueResult =>
-        queueResult match {
-          case QueueOfferResult.Enqueued => ()
-          case QueueOfferResult.Dropped => {
-            responsePromise.failure {
-              new RuntimeException(
-                s"Client queue was too full to add the request: $request"
-              )
-            }
+    requestStream.offer(requestWithCreds -> responsePromise).flatMap { queueResult =>
+      queueResult match {
+        case QueueOfferResult.Enqueued => ()
+        case QueueOfferResult.Dropped => {
+          responsePromise.failure {
+            new RuntimeException(
+              s"Client queue was too full to add the request: $request"
+            )
           }
-          case QueueOfferResult.Failure(ex) =>
-            responsePromise.failure(ex)
-          case QueueOfferResult.QueueClosed =>
-            responsePromise.failure {
-              new RuntimeException(
-                s"Client queue was closed while adding the request: $request"
-              )
-            }
         }
+        case QueueOfferResult.Failure(ex) =>
+          responsePromise.failure(ex)
+        case QueueOfferResult.QueueClosed =>
+          responsePromise.failure {
+            new RuntimeException(
+              s"Client queue was closed while adding the request: $request"
+            )
+          }
+      }
 
-        responsePromise.future
-          .logErrorMsg("Failed to send HTTP request to Clio server")
-          .flatMap(ensureOkResponse)
+      responsePromise.future
+        .logErrorMsg("Failed to send HTTP request to Clio server")
+        .flatMap(ensureOkResponse)
     }
   }
 

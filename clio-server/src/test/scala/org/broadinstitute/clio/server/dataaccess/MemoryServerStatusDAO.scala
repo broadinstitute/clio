@@ -6,6 +6,7 @@ import scala.collection.mutable
 import scala.concurrent.Future
 
 class MemoryServerStatusDAO extends MockServerStatusDAO {
+
   val setCalls: mutable.ArrayBuffer[ServerStatusInfo] =
     mutable.ArrayBuffer.empty
 

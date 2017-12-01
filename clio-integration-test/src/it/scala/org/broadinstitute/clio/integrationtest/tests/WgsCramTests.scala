@@ -25,8 +25,10 @@ import scala.concurrent.Future
 /** Tests of Clio's wgs-cram functionality. */
 trait WgsCramTests { self: BaseIntegrationSpec =>
 
-  def runUpsertCram(key: TransferWgsCramV1Key,
-                    metadata: TransferWgsCramV1Metadata): Future[UpsertId] = {
+  def runUpsertCram(
+    key: TransferWgsCramV1Key,
+    metadata: TransferWgsCramV1Metadata
+  ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addWgsCramName,
@@ -77,8 +79,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       sampleAlias = s"someAlias $randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
-      cramPath =
-        Some(URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}"))
+      cramPath = Some(URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}"))
     )
 
     /*
@@ -163,8 +164,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
       storedDocument1.copy(
         upsertId = upsertId2,
-        cramPath =
-          Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))
+        cramPath = Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))
       ) should be(storedDocument2)
     }
   }
@@ -178,8 +178,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     )
     val upsertData =
       TransferWgsCramV1Metadata(
-        cramPath =
-          Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
+        cramPath = Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
       )
 
     for {
@@ -381,8 +380,10 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testMoveCram(oldStyleCrai: Boolean = false,
-                   changeBasename: Boolean = false): Future[Assertion] = {
+  def testMoveCram(
+    oldStyleCrai: Boolean = false,
+    changeBasename: Boolean = false
+  ): Future[Assertion] = {
 
     val project = s"project$randomId"
     val sample = s"sample$randomId"
@@ -631,13 +632,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       Seq(cramPath, craiPath).foreach {
         Files.exists(_) should be(false)
       }
-      Seq((metrics1Path, metrics1Contents), (metrics2Path, metrics2Contents))
-        .foreach {
-          case (path, contents) => {
-            Files.exists(path) should be(true)
-            new String(Files.readAllBytes(path)) should be(contents)
-          }
+      Seq((metrics1Path, metrics1Contents), (metrics2Path, metrics2Contents)).foreach {
+        case (path, contents) => {
+          Files.exists(path) should be(true)
+          new String(Files.readAllBytes(path)) should be(contents)
         }
+      }
 
       outputs should have length 1
       val output = outputs.head

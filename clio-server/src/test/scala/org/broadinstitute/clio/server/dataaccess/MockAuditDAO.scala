@@ -8,12 +8,10 @@ class MockAuditDAO extends AuditDAO {
   override def auditRequest(request: ClioRequest): Future[Unit] =
     Future.successful(())
 
-  override def auditResponse(request: ClioRequest,
-                             response: ClioResponse): Future[Unit] =
+  override def auditResponse(request: ClioRequest, response: ClioResponse): Future[Unit] =
     Future.successful(())
 
-  override def auditException(request: ClioRequest,
-                              exception: Exception): Future[Unit] =
+  override def auditException(request: ClioRequest, exception: Exception): Future[Unit] =
     Future.successful(())
 }
 

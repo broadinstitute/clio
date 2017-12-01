@@ -6,10 +6,7 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.ClassUtil
-import org.broadinstitute.clio.util.generic.{
-  CaseClassMapper,
-  CaseClassTypeConverter
-}
+import org.broadinstitute.clio.util.generic.{CaseClassMapper, CaseClassTypeConverter}
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}

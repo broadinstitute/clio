@@ -9,13 +9,17 @@ class FailingAuditDAO extends MockAuditDAO {
     Future.failed(new FailingAuditDAO.AuditRequestFailure)
   }
 
-  override def auditResponse(request: ClioRequest,
-                             response: ClioResponse): Future[Unit] = {
+  override def auditResponse(
+    request: ClioRequest,
+    response: ClioResponse
+  ): Future[Unit] = {
     Future.failed(new FailingAuditDAO.AuditResponseFailure)
   }
 
-  override def auditException(request: ClioRequest,
-                              exception: Exception): Future[Unit] = {
+  override def auditException(
+    request: ClioRequest,
+    exception: Exception
+  ): Future[Unit] = {
     Future.failed(new FailingAuditDAO.AuditExceptionFailure)
   }
 }
@@ -23,10 +27,7 @@ class FailingAuditDAO extends MockAuditDAO {
 object FailingAuditDAO {
   // Define singleton exception instances for the mock to return so the tests that assert
   // failure can match on something more precise than RuntimeException.
-  class AuditRequestFailure
-      extends RuntimeException("Expected audit request failure")
-  class AuditResponseFailure
-      extends RuntimeException("Expected audit response failure")
-  class AuditExceptionFailure
-      extends RuntimeException("Expected audit exception failure")
+  class AuditRequestFailure extends RuntimeException("Expected audit request failure")
+  class AuditResponseFailure extends RuntimeException("Expected audit response failure")
+  class AuditExceptionFailure extends RuntimeException("Expected audit exception failure")
 }

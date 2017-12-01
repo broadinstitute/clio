@@ -5,17 +5,18 @@ import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.util.model.UpsertId
 
-case class DocumentMock(upsertId: UpsertId,
-                        entityId: Symbol,
-                        mockKeyLong: Long,
-                        mockKeyString: String,
-                        mockFieldDate: Option[OffsetDateTime] = None,
-                        mockFieldDouble: Option[Double] = None,
-                        mockFieldInt: Option[Int] = None,
-                        mockFileMd5: Option[Symbol] = None,
-                        mockFilePath: Option[URI] = None,
-                        mockFileSize: Option[Long] = None)
-    extends ClioDocument
+case class DocumentMock(
+  upsertId: UpsertId,
+  entityId: Symbol,
+  mockKeyLong: Long,
+  mockKeyString: String,
+  mockFieldDate: Option[OffsetDateTime] = None,
+  mockFieldDouble: Option[Double] = None,
+  mockFieldInt: Option[Int] = None,
+  mockFileMd5: Option[Symbol] = None,
+  mockFilePath: Option[URI] = None,
+  mockFileSize: Option[Long] = None
+) extends ClioDocument
 
 object DocumentMock extends Elastic4sAutoDerivation {
   import com.sksamuel.elastic4s.circe._

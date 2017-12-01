@@ -60,8 +60,10 @@ object JsonSchema {
     * @tparam A is a case class such as a QueryOutput
     * @return a new JSON schema representation for A
     */
-  def makeSchema[A](theRequired: Set[String],
-                    theProperties: Map[String, Json]): JsonSchema[A] =
+  def makeSchema[A](
+    theRequired: Set[String],
+    theProperties: Map[String, Json]
+  ): JsonSchema[A] =
     new JsonSchema[A] {
       override val required: Set[String] = theRequired
       override val properties: Map[String, Json] = theProperties

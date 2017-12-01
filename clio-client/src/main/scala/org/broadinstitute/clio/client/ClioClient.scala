@@ -208,12 +208,10 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
           _ <- messageIfAsked(usageMessage, commonParse.usage)
           _ <- wrapError(commonParse.baseOrError)
           _ <- checkRemainingArgs(commonArgs)
-          response <- maybeCommandParse
-            .map { commandParse =>
-              wrapError(commandParse)
-                .flatMap(commandMain)
-            }
-            .getOrElse(Left(ParsingError(Error.Other(usageMessage))))
+          response <- maybeCommandParse.map { commandParse =>
+            wrapError(commandParse)
+              .flatMap(commandMain)
+          }.getOrElse(Left(ParsingError(Error.Other(usageMessage))))
         } yield {
           response
         }
@@ -233,8 +231,10 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     * Utility for wrapping a help / usage message in our type
     * infrastructure, for cleaner use in for-comprehensions.
     */
-  private def messageIfAsked(message: String,
-                             asked: Boolean): Either[EarlyReturn, Unit] = {
+  private def messageIfAsked(
+    message: String,
+    asked: Boolean
+  ): Either[EarlyReturn, Unit] = {
     Either.cond(!asked, (), UsageOrHelpAsked(message))
   }
 

@@ -19,8 +19,10 @@ abstract class BaseClientSpec
     with Matchers
     with ModelAutoDerivation {
 
-  def succeedingDispatcher(ioUtil: IoUtil = new MockIoUtil,
-                           jsonToReturn: Option[URI] = None) =
+  def succeedingDispatcher(
+    ioUtil: IoUtil = new MockIoUtil,
+    jsonToReturn: Option[URI] = None
+  ) =
     new CommandDispatch(
       new MockClioWebClient(StatusCodes.OK, jsonToReturn),
       ioUtil

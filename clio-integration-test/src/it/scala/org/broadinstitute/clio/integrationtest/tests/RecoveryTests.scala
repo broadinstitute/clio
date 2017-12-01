@@ -29,8 +29,7 @@ trait RecoveryTests {
     val libraryName = s"library$randomId"
     DocumentWgsUbam(
       upsertId = UpsertId.nextId(),
-      entityId =
-        Symbol(s"$flowcellBarcode.$lane.$libraryName.${location.entryName}"),
+      entityId = Symbol(s"$flowcellBarcode.$lane.$libraryName.${location.entryName}"),
       flowcellBarcode = flowcellBarcode,
       lane = lane,
       libraryName = libraryName,
@@ -39,6 +38,7 @@ trait RecoveryTests {
       documentStatus = Some(DocumentStatus.Normal)
     )
   }
+
   val storedGvcfs = Seq.fill(documentCount) {
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
@@ -54,6 +54,7 @@ trait RecoveryTests {
       documentStatus = Some(DocumentStatus.Normal)
     )
   }
+
   val storedWgsCrams = Seq.fill(documentCount) {
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"

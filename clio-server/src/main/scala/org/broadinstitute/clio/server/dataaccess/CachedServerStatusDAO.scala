@@ -34,6 +34,7 @@ class CachedServerStatusDAO private () extends ServerStatusDAO {
 }
 
 object CachedServerStatusDAO {
+
   def apply(): CachedServerStatusDAO = {
     new CachedServerStatusDAO()
   }

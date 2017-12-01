@@ -52,10 +52,13 @@ class DeleteGvcfSpec extends BaseClientSpec {
 
   it should "throw an exception if Clio can't delete the cloud file" in {
     recoverToSucceededIf[Exception] {
-      succeedingDispatcher(new MockIoUtil {
-        override def deleteGoogleObject(path: URI): Int = 1
-        override def googleObjectExists(path: URI): Boolean = true
-      }, testGvcfLocation).dispatch(goodGvcfDeleteCommand)
+      succeedingDispatcher(
+        new MockIoUtil {
+          override def deleteGoogleObject(path: URI): Int = 1
+          override def googleObjectExists(path: URI): Boolean = true
+        },
+        testGvcfLocation
+      ).dispatch(goodGvcfDeleteCommand)
     }
   }
 

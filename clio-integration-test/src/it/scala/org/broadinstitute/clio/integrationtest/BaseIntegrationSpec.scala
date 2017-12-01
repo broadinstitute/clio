@@ -143,12 +143,15 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
     accountJSON
       .as[ServiceAccount]
-      .fold({ err =>
-        throw new RuntimeException(
-          s"Failed to decode service account JSON from Vault at $vaultPath",
-          err
-        )
-      }, identity)
+      .fold(
+        { err =>
+          throw new RuntimeException(
+            s"Failed to decode service account JSON from Vault at $vaultPath",
+            err
+          )
+        },
+        identity
+      )
   }
 
   /**
@@ -233,8 +236,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * Returns a failed future if the command exits early or if the
     * response cannot be converted to the given type.
     */
-  def runClientGetJsonAs[A: Decoder](command: String,
-                                     args: String*): Future[A] = {
+  def runClientGetJsonAs[A: Decoder](command: String, args: String*): Future[A] = {
     runClient(command, args: _*)
       .mapTo[Json]
       .map(_.as[A].fold(throw _, identity))
@@ -245,22 +247,20 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * instances into an [[com.sksamuel.elastic4s.http.index.mappings.IndexMappings]], for comparison.
     */
   def indexToMapping(index: ElasticsearchIndex[_]): IndexMappings = {
-    val fields = index.fields
-      .map { field =>
-        field.name -> {
-          val fType = field.`type`
-          if (fType == "text") {
-            // Text fields also have a keyword sub-field.
-            Map(
-              "type" -> fType,
-              "fields" -> Map("exact" -> Map("type" -> "keyword"))
-            )
-          } else {
-            Map("type" -> fType)
-          }
+    val fields = index.fields.map { field =>
+      field.name -> {
+        val fType = field.`type`
+        if (fType == "text") {
+          // Text fields also have a keyword sub-field.
+          Map(
+            "type" -> fType,
+            "fields" -> Map("exact" -> Map("type" -> "keyword"))
+          )
+        } else {
+          Map("type" -> fType)
         }
       }
-      .toMap[String, Any]
+    }.toMap[String, Any]
 
     IndexMappings(index.indexName, Map(index.indexType -> fields))
   }

@@ -1,9 +1,6 @@
 package org.broadinstitute.clio.server.webservice
 
-import akka.http.scaladsl.common.{
-  EntityStreamingSupport,
-  JsonEntityStreamingSupport
-}
+import akka.http.scaladsl.common.{EntityStreamingSupport, JsonEntityStreamingSupport}
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
@@ -11,9 +8,7 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
   * Utility trait containing settings / implicits used by web-service
   * classes to read / write JSON.
   */
-trait JsonWebService
-    extends ModelAutoDerivation
-    with ErrorAccumulatingCirceSupport {
+trait JsonWebService extends ModelAutoDerivation with ErrorAccumulatingCirceSupport {
 
   /**
     * Settings configuring how web-service classes will render JSON

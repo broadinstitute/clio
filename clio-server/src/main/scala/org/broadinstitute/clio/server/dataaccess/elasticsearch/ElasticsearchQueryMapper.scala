@@ -12,9 +12,7 @@ import com.sksamuel.elastic4s.searches.queries.QueryDefinition
   * @tparam ModelQueryOutput The type of the query output.
   * @tparam Document         The Elasticsearch documents being queried.
   */
-abstract class ElasticsearchQueryMapper[ModelQueryInput,
-                                        ModelQueryOutput,
-                                        Document] {
+abstract class ElasticsearchQueryMapper[ModelQueryInput, ModelQueryOutput, Document] {
 
   /**
     * Returns true if the client sent a query that doesn't contain any filters.
@@ -78,8 +76,7 @@ object ElasticsearchQueryMapper {
     * @param value The exact field value.
     * @return The query definition.
     */
-  private[dataaccess] def queryVal(name: String,
-                                   value: Any): QueryDefinition = {
+  private[dataaccess] def queryVal(name: String, value: Any): QueryDefinition = {
     queryStringQuery(s""""$value"""").defaultField(name)
   }
 }

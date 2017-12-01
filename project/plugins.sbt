@@ -46,6 +46,12 @@ scalacOptions ++= Seq(
   "-Xfatal-warnings"
 )
 
-scalafmtVersion in ThisBuild := ScalafmtVersion
-scalafmtOnCompile in ThisBuild := true
-ignoreErrors in (ThisBuild, scalafmt) := false
+inThisBuild(
+  Seq(
+    scalafmtVersion := ScalafmtVersion,
+    scalafmtOnCompile := true,
+    ignoreErrors in scalafmt := false,
+    // Use the scalafmt config in the root directory.
+    scalafmtConfig := baseDirectory(_.getParentFile / ".scalafmt.conf").value
+  )
+)

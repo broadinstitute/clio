@@ -31,11 +31,13 @@ val commonSettings: Seq[Setting[_]] = Seq(
   resourceGenerators in Compile += Versioning.writeVersionConfig.taskValue,
   fork in run := true
 )
+
 val commonDockerSettings: Seq[Setting[_]] = Seq(
   assemblyJarName in assembly := Versioning.assemblyName.value,
   imageNames in docker := Docker.imageNames.value,
   buildOptions in docker := Docker.buildOptions.value
 )
+
 val commonTestDockerSettings: Seq[Setting[_]] = Seq(
   resourceGenerators in Test += Docker.writeTestImagesConfig.taskValue
 )

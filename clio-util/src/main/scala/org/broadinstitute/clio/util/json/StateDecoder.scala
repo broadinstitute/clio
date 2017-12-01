@@ -73,18 +73,17 @@ object StateDecoder extends LowPriorityStateDecoder {
     */
   private def decodeFieldOption[A](k: String)(
     implicit d: Decoder[A]
-  ): StateT[Result, ACursor, Option[A]] = StateT[Result, ACursor, Option[A]] {
-    c =>
-      val field = c.downField(k)
+  ): StateT[Result, ACursor, Option[A]] = StateT[Result, ACursor, Option[A]] { c =>
+    val field = c.downField(k)
 
-      field.as[Option[A]] match {
-        // Found the field. Delete it, and return the modified cursor.
-        case Right(a @ Some(_)) => Right((field.delete, a))
-        // The field was not found. Return the original cursor.
-        case Right(None) => Right((c, None))
-        // A decoding error occurred.
-        case l @ Left(_) => l.asInstanceOf[Result[(ACursor, Option[A])]]
-      }
+    field.as[Option[A]] match {
+      // Found the field. Delete it, and return the modified cursor.
+      case Right(a @ Some(_)) => Right((field.delete, a))
+      // The field was not found. Return the original cursor.
+      case Right(None) => Right((c, None))
+      // A decoding error occurred.
+      case l @ Left(_) => l.asInstanceOf[Result[(ACursor, Option[A])]]
+    }
   }
 
   /**

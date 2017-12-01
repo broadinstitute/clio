@@ -8,6 +8,7 @@ class AutoElasticsearchDocumentMapperSpec extends FlatSpec with Matchers {
   behavior of "AutoElasticsearchDocumentMapper"
 
   val expectedId: UpsertId = UpsertId.nextId()
+
   val mapper = new AutoElasticsearchDocumentMapper[
     ModelMockKey,
     ModelMockMetadata,

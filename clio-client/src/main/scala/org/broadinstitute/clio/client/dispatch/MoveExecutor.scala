@@ -8,10 +8,7 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.ClassUtil
-import org.broadinstitute.clio.util.generic.{
-  CaseClassMapper,
-  CaseClassTypeConverter
-}
+import org.broadinstitute.clio.util.generic.{CaseClassMapper, CaseClassTypeConverter}
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -147,8 +144,9 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
          *   1. If the field exists pre-move, it will still exist post-move
          *   2. If the field is a URI pre-move, it will still be a URI post-move
          */
-        Some(path -> postMovePaths(fieldName))
-          .filterNot { case (oldPath, newPath) => oldPath.equals(newPath) }
+        Some(path -> postMovePaths(fieldName)).filterNot {
+          case (oldPath, newPath) => oldPath.equals(newPath)
+        }
       }
     }
 
@@ -215,9 +213,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     }
   }
 
-  private def copyGoogleObject(source: URI,
-                               destination: URI,
-                               ioUtil: IoUtil): Unit = {
+  private def copyGoogleObject(source: URI, destination: URI, ioUtil: IoUtil): Unit = {
     if (ioUtil.copyGoogleObject(source, destination) != 0) {
       throw new Exception(
         s"Copy files in the cloud failed from '$source' to '$destination'"

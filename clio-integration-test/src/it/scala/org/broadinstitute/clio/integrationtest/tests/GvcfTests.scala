@@ -30,8 +30,10 @@ import scala.concurrent.Future
 /** Tests of Clio's gvcf functionality. */
 trait GvcfTests { self: BaseIntegrationSpec =>
 
-  def runUpsertGvcf(key: TransferGvcfV1Key,
-                    metadata: TransferGvcfV1Metadata): Future[UpsertId] = {
+  def runUpsertGvcf(
+    key: TransferGvcfV1Key,
+    metadata: TransferGvcfV1Metadata
+  ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addGvcfName,
@@ -82,8 +84,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       sampleAlias = s"someAlias $randomId",
       version = 2,
       documentStatus = Some(DocumentStatus.Normal),
-      gvcfPath =
-        Some(URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"))
+      gvcfPath = Some(URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"))
     )
 
     /*
@@ -170,8 +171,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     )
     val upsertData =
       TransferGvcfV1Metadata(
-        gvcfPath =
-          Some(URI.create(s"gs://path/gvcf1${GvcfExtensions.GvcfExtension}"))
+        gvcfPath = Some(URI.create(s"gs://path/gvcf1${GvcfExtensions.GvcfExtension}"))
       )
 
     for {
@@ -421,8 +421,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
       version = 3,
-      gvcfPath =
-        Some(URI.create(s"gs://gvcf/$randomId${GvcfExtensions.GvcfExtension}")),
+      gvcfPath = Some(URI.create(s"gs://gvcf/$randomId${GvcfExtensions.GvcfExtension}")),
       regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics),
       documentStatus = Some(DocumentStatus.Normal)
     )
@@ -456,8 +455,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testMoveGvcf(srcIsDest: Boolean = false,
-                   gvcfInDest: Boolean = false): Future[Assertion] = {
+  def testMoveGvcf(
+    srcIsDest: Boolean = false,
+    gvcfInDest: Boolean = false
+  ): Future[Assertion] = {
 
     val project = s"project$randomId"
     val sample = s"sample$randomId"

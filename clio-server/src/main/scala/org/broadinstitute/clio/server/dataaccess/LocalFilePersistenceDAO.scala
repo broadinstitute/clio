@@ -8,8 +8,7 @@ import java.nio.file.{Files, Path}
   * Persistence DAO which writes to local disk, for running Clio locally
   * without thrashing GCS in the dev environment.
   */
-class LocalFilePersistenceDAO(config: Persistence.LocalConfig)
-    extends PersistenceDAO {
+class LocalFilePersistenceDAO(config: Persistence.LocalConfig) extends PersistenceDAO {
 
   override lazy val rootPath: Path = config.rootDir.getOrElse {
     val dir = Files.createTempDirectory("clio-persistence").toFile
