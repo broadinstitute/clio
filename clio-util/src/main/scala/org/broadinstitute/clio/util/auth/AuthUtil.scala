@@ -2,7 +2,7 @@ package org.broadinstitute.clio.util.auth
 
 import java.nio.file.{Files, Path}
 
-import com.google.auth.oauth2.OAuth2Credentials
+import com.google.auth.oauth2.{GoogleCredentials, OAuth2Credentials}
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.parser.decode
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
@@ -32,18 +32,22 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
       ExternalGCloudCredentials
     )
 
-    serviceAccountPath.fold(shellOutCreds) { jsonPath =>
-      loadServiceAccountJson(jsonPath).fold(
-        err => {
-          logger.warn(
-            s"Failed to load service account JSON at $jsonPath, falling back to gcloud",
-            err
-          )
-          shellOutCreds
-        },
-        getCredsFromServiceAccount
+    // Have to go from try to either since either doesn't have an 'orElse' method
+    Try(GoogleCredentials.getApplicationDefault)
+      .orElse(
+        serviceAccountPath
+          .fold(shellOutCreds) { jsonPath =>
+            loadServiceAccountJson(jsonPath).fold(err => {
+              logger.warn(
+                s"Failed to load service account JSON at $jsonPath, falling back to gcloud",
+                err
+              )
+              shellOutCreds
+            }, getCredsFromServiceAccount)
+          }
+          .toTry
       )
-    }
+      .toEither
   }
 
   /** Load JSON for a google service account. */

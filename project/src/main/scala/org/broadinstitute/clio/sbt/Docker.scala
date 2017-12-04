@@ -46,6 +46,23 @@ object Docker {
     }
   }
 
+  lazy val clientDockerFile: Initialize[Task[Dockerfile]] = Def.task {
+    val artifact = assembly.value
+    val artifactTargetPath = s"/app/${name.value}.jar"
+    new Dockerfile {
+      from("google/cloud-sdk:alpine")
+      run("apk", "--update", "add", "openjdk8-jre")
+      run("gcloud",
+          "components",
+          "install",
+          "--quiet",
+          "app-engine-java",
+          "kubectl")
+      label("CLIO_VERSION", version.value)
+      add(artifact, artifactTargetPath)
+    }
+  }
+
   /** Other customizations for sbt-docker. */
   lazy val buildOptions: Initialize[BuildOptions] = Def.setting {
     BuildOptions(
