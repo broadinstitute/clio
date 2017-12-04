@@ -52,12 +52,7 @@ object Docker {
     new Dockerfile {
       from("google/cloud-sdk:alpine")
       run("apk", "--update", "add", "openjdk8-jre")
-      run("gcloud",
-          "components",
-          "install",
-          "--quiet",
-          "app-engine-java",
-          "kubectl")
+      run("gcloud", "components", "install", "--quiet", "app-engine-java", "kubectl")
       label("CLIO_VERSION", version.value)
       add(artifact, artifactTargetPath)
     }
