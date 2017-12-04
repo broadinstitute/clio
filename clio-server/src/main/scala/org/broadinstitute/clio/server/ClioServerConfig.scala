@@ -26,9 +26,7 @@ object ClioServerConfig extends ConfigReaders {
       */
     sealed trait PersistenceConfig
     case class LocalConfig(rootDir: Option[Path]) extends PersistenceConfig
-    case class GcsConfig(projectId: String,
-                         bucket: String,
-                         account: ServiceAccount)
+    case class GcsConfig(projectId: String, bucket: String, account: ServiceAccount)
         extends PersistenceConfig
 
     private val persistence: Config =
@@ -78,6 +76,7 @@ object ClioServerConfig extends ConfigReaders {
     private val http = serverConfig.as[Config]("http-server")
     val interface: String = http.as[String]("interface")
     val port: Int = http.as[Int]("port")
+
     val shutdownTimeout: FiniteDuration =
       http.as[FiniteDuration]("shutdown-timeout")
   }
@@ -87,18 +86,24 @@ object ClioServerConfig extends ConfigReaders {
   }
 
   object Elasticsearch {
-    case class ElasticsearchHttpHost(hostname: String = "localhost",
-                                     port: Int = 9200,
-                                     scheme: String = "http")
+    case class ElasticsearchHttpHost(
+      hostname: String = "localhost",
+      port: Int = 9200,
+      scheme: String = "http"
+    )
 
     private val elasticsearch = serverConfig.as[Config]("elasticsearch")
+
     val replicateIndices: Boolean =
       elasticsearch.as[Boolean]("replicate-indices")
+
     val httpHosts: Seq[ElasticsearchHttpHost] =
       elasticsearch.as[Seq[ElasticsearchHttpHost]]("http-hosts")
+
     val readinessColors: Seq[String] =
       elasticsearch.as[Seq[String]]("readiness.colors")
     val readinessRetries: Int = elasticsearch.as[Int]("readiness.retries")
+
     val readinessPatience: FiniteDuration =
       elasticsearch.as[FiniteDuration]("readiness.patience")
 

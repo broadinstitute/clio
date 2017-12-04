@@ -29,8 +29,7 @@ class GvcfService(
     transferMetadata: TransferGvcfV1Metadata
   ): Future[UpsertId] = {
     val updatedTransferMetadata = transferMetadata.copy(
-      documentStatus =
-        transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
+      documentStatus = transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
     )
 
     persistenceService
@@ -71,9 +70,11 @@ object GvcfService {
       DocumentGvcf
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[TransferGvcfV1QueryInput,
-                                                 TransferGvcfV1QueryOutput,
-                                                 DocumentGvcf] =
+  val v1QueryConverter: ElasticsearchQueryMapper[
+    TransferGvcfV1QueryInput,
+    TransferGvcfV1QueryOutput,
+    DocumentGvcf
+  ] =
     AutoElasticsearchQueryMapper[
       TransferGvcfV1QueryInput,
       TransferGvcfV1QueryOutput,

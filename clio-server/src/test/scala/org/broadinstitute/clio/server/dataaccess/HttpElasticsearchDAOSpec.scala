@@ -156,11 +156,13 @@ class HttpElasticsearchDAOSpec
     }
   }
 
-  case class City(name: String,
-                  country: String,
-                  continent: String,
-                  status: String,
-                  slogan: Option[String])
+  case class City(
+    name: String,
+    country: String,
+    continent: String,
+    status: String,
+    slogan: Option[String]
+  )
 
   it should "perform various CRUD-like operations" in {
     val clusterHealthDefinition: ClusterHealthDefinition =

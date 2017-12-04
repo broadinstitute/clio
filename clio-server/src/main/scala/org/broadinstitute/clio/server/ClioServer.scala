@@ -48,9 +48,13 @@ object ClioServer
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
   private val innerRoutes: Route =
-    concat(swaggerRoutes, statusRoutes, pathPrefix("api") {
-      concat(wgsUbamRoutes, gvcfRoutes, wgsCramRoutes)
-    })
+    concat(
+      swaggerRoutes,
+      statusRoutes,
+      pathPrefix("api") {
+        concat(wgsUbamRoutes, gvcfRoutes, wgsCramRoutes)
+      }
+    )
   private val routes = wrapperDirectives(innerRoutes)
 
   private val serverStatusDAO = CachedServerStatusDAO()

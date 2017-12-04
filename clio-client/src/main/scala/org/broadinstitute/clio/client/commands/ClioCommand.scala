@@ -34,8 +34,7 @@ sealed trait RetrieveAndPrintCommand extends ClioCommand
 sealed abstract class GetSchemaCommand[TI <: TransferIndex](val index: TI)
     extends RetrieveAndPrintCommand
 
-sealed abstract class AddCommand[TI <: TransferIndex](val index: TI)
-    extends ClioCommand {
+sealed abstract class AddCommand[TI <: TransferIndex](val index: TI) extends ClioCommand {
   def key: index.KeyType
   def metadataLocation: URI
 }
@@ -73,20 +72,21 @@ case object GetServerVersion extends RetrieveAndPrintCommand
 case object GetSchemaWgsUbam extends GetSchemaCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.addWgsUbamName)
-final case class AddWgsUbam(@Recurse key: TransferWgsUbamV1Key,
-                            metadataLocation: URI)
+final case class AddWgsUbam(@Recurse key: TransferWgsUbamV1Key, metadataLocation: URI)
     extends AddCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.queryWgsUbamName)
-final case class QueryWgsUbam(@Recurse queryInput: TransferWgsUbamV1QueryInput,
-                              includeDeleted: Boolean = false)
-    extends QueryCommand(WgsUbamIndex)
+final case class QueryWgsUbam(
+  @Recurse queryInput: TransferWgsUbamV1QueryInput,
+  includeDeleted: Boolean = false
+) extends QueryCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.moveWgsUbamName)
-final case class MoveWgsUbam(@Recurse key: TransferWgsUbamV1Key,
-                             destination: URI,
-                             newBasename: Option[String] = None)
-    extends MoveCommand(WgsUbamIndex)
+final case class MoveWgsUbam(
+  @Recurse key: TransferWgsUbamV1Key,
+  destination: URI,
+  newBasename: Option[String] = None
+) extends MoveCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.deleteWgsUbamName)
 final case class DeleteWgsUbam(@Recurse key: TransferWgsUbamV1Key, note: String)
@@ -102,15 +102,17 @@ final case class AddGvcf(@Recurse key: TransferGvcfV1Key, metadataLocation: URI)
     extends AddCommand(GvcfIndex)
 
 @CommandName(ClioCommand.queryGvcfName)
-final case class QueryGvcf(@Recurse queryInput: TransferGvcfV1QueryInput,
-                           includeDeleted: Boolean = false)
-    extends QueryCommand(GvcfIndex)
+final case class QueryGvcf(
+  @Recurse queryInput: TransferGvcfV1QueryInput,
+  includeDeleted: Boolean = false
+) extends QueryCommand(GvcfIndex)
 
 @CommandName(ClioCommand.moveGvcfName)
-final case class MoveGvcf(@Recurse key: TransferGvcfV1Key,
-                          destination: URI,
-                          newBasename: Option[String] = None)
-    extends MoveCommand(GvcfIndex)
+final case class MoveGvcf(
+  @Recurse key: TransferGvcfV1Key,
+  destination: URI,
+  newBasename: Option[String] = None
+) extends MoveCommand(GvcfIndex)
 
 @CommandName(ClioCommand.deleteGvcfName)
 final case class DeleteGvcf(@Recurse key: TransferGvcfV1Key, note: String)
@@ -122,31 +124,33 @@ final case class DeleteGvcf(@Recurse key: TransferGvcfV1Key, note: String)
 case object GetSchemaWgsCram extends GetSchemaCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.addWgsCramName)
-final case class AddWgsCram(@Recurse key: TransferWgsCramV1Key,
-                            metadataLocation: URI)
+final case class AddWgsCram(@Recurse key: TransferWgsCramV1Key, metadataLocation: URI)
     extends AddCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.queryWgsCramName)
-final case class QueryWgsCram(@Recurse queryInput: TransferWgsCramV1QueryInput,
-                              includeDeleted: Boolean = false)
-    extends QueryCommand(WgsCramIndex)
+final case class QueryWgsCram(
+  @Recurse queryInput: TransferWgsCramV1QueryInput,
+  includeDeleted: Boolean = false
+) extends QueryCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.moveWgsCramName)
-final case class MoveWgsCram(@Recurse key: TransferWgsCramV1Key,
-                             destination: URI,
-                             newBasename: Option[String] = None)
-    extends MoveCommand(WgsCramIndex)
+final case class MoveWgsCram(
+  @Recurse key: TransferWgsCramV1Key,
+  destination: URI,
+  newBasename: Option[String] = None
+) extends MoveCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.deleteWgsCramName)
 final case class DeleteWgsCram(@Recurse key: TransferWgsCramV1Key, note: String)
     extends DeleteCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.deliverWgsCramName)
-final case class DeliverWgsCram(@Recurse key: TransferWgsCramV1Key,
-                                workspaceName: String,
-                                workspacePath: URI,
-                                samplePrefix: Option[String])
-    extends ClioCommand
+final case class DeliverWgsCram(
+  @Recurse key: TransferWgsCramV1Key,
+  workspaceName: String,
+  workspacePath: URI,
+  samplePrefix: Option[String]
+) extends ClioCommand
 
 object ClioCommand extends ClioParsers {
 

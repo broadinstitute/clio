@@ -25,8 +25,7 @@ import scala.concurrent.{ExecutionContext, Future}
   *   1. Writes the cram md5 value to file at the target path
   *   2. Records the workspace name in the metadata for the delivered cram
   */
-class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
-    extends Executor[UpsertId] {
+class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor[UpsertId] {
 
   import WgsCramIndex.implicits._
 
@@ -35,9 +34,8 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
   ): Future[UpsertId] = {
 
     val deliveredFileBasename: String =
-      deliverCommand.samplePrefix.fold(deliverCommand.key.sampleAlias) {
-        prefix =>
-          s"$prefix${deliverCommand.key.sampleAlias}"
+      deliverCommand.samplePrefix.fold(deliverCommand.key.sampleAlias) { prefix =>
+        s"$prefix${deliverCommand.key.sampleAlias}"
       }
     val moveCommand = MoveWgsCram(
       deliverCommand.key,

@@ -144,8 +144,7 @@ trait PersistenceDAO extends LazyLogging {
   private def getAllAfter[D <: ClioDocument: Decoder](
     rootDir: Path,
     lastToIgnore: Option[Path]
-  )(implicit ec: ExecutionContext,
-    materializer: Materializer): Source[D, NotUsed] = {
+  )(implicit ec: ExecutionContext, materializer: Materializer): Source[D, NotUsed] = {
 
     val dayFilter = lastToIgnore.fold((_: Path) => true) {
       /*
@@ -157,9 +156,8 @@ trait PersistenceDAO extends LazyLogging {
         last.getParent.toString >= dir.toString
     }
 
-    val docFilter = lastToIgnore.fold((_: Path) => false) {
-      last => (path: Path) =>
-        last.toString >= path.toString
+    val docFilter = lastToIgnore.fold((_: Path) => false) { last => (path: Path) =>
+      last.toString >= path.toString
     }
 
     getPathsOrderedBy(rootDir, pathOrdering, dayFilter)
@@ -183,8 +181,7 @@ trait PersistenceDAO extends LazyLogging {
   def getAllSince[D <: ClioDocument: Decoder](
     mostRecentDocument: Option[ClioDocument],
     index: ElasticsearchIndex[D]
-  )(implicit ec: ExecutionContext,
-    materializer: Materializer): Source[D, NotUsed] = {
+  )(implicit ec: ExecutionContext, materializer: Materializer): Source[D, NotUsed] = {
     val rootDir = rootPath.resolve(index.rootDir)
 
     mostRecentDocument.fold(

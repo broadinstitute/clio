@@ -5,10 +5,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import org.broadinstitute.clio.transfer.model.TransferMetadata
-import org.broadinstitute.clio.util.model.{
-  DocumentStatus,
-  RegulatoryDesignation
-}
+import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
 case class TransferWgsCramV1Metadata(
   documentStatus: Option[DocumentStatus] = None,
@@ -83,8 +80,7 @@ case class TransferWgsCramV1Metadata(
       // DSDEGP-1715: We've settled on '.cram.crai' as the extension and
       // want to fixup files with just '.crai' when possible.
       craiPath = movedCram.map(
-        cramUri =>
-          URI.create(s"$cramUri${WgsCramExtensions.CraiExtensionAddition}")
+        cramUri => URI.create(s"$cramUri${WgsCramExtensions.CraiExtensionAddition}")
       )
     )
   }

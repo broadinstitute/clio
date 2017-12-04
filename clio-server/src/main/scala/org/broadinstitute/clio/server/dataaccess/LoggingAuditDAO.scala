@@ -15,8 +15,10 @@ class LoggingAuditDAO private (implicit executionContext: ExecutionContext)
     }
   }
 
-  override def auditResponse(request: ClioRequest,
-                             response: ClioResponse): Future[Unit] = {
+  override def auditResponse(
+    request: ClioRequest,
+    response: ClioResponse
+  ): Future[Unit] = {
     Future {
       logger.info(
         LoggingAuditDAO.AuditMarker,
@@ -25,8 +27,10 @@ class LoggingAuditDAO private (implicit executionContext: ExecutionContext)
     }
   }
 
-  override def auditException(request: ClioRequest,
-                              exception: Exception): Future[Unit] = {
+  override def auditException(
+    request: ClioRequest,
+    exception: Exception
+  ): Future[Unit] = {
     Future {
       logger.error(
         LoggingAuditDAO.AuditMarker,
@@ -38,6 +42,7 @@ class LoggingAuditDAO private (implicit executionContext: ExecutionContext)
 }
 
 object LoggingAuditDAO {
+
   def apply()(implicit executionContext: ExecutionContext): AuditDAO = {
     new LoggingAuditDAO
   }

@@ -42,6 +42,7 @@ class SearchService private (searchDAO: SearchDAO) {
 }
 
 object SearchService {
+
   def apply(app: ClioApp): SearchService = {
     new SearchService(app.searchDAO)
   }

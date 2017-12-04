@@ -22,6 +22,7 @@ object TestContainers {
 
   object DockerImages {
     private val docker = config.as[Config]("clio.docker")
+
     val elasticsearch: String = findRealImageName(
       docker.as[String]("elasticsearch")
     )

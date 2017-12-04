@@ -3,22 +3,17 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import org.scalatest.{FlatSpec, Matchers}
 
-class ElasticsearchIndexSpec
-    extends FlatSpec
-    with Matchers
-    with Elastic4sAutoDerivation {
+class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDerivation {
   import com.sksamuel.elastic4s.circe._
 
   Map(
     "ElasticsearchIndex" ->
       (
-        (version: Int) =>
-          ElasticsearchIndex.indexDocument[DocumentMock](version)
+        (version: Int) => ElasticsearchIndex.indexDocument[DocumentMock](version)
       ),
     "AutoElasticsearchIndex" ->
       (
-        (version: Int) =>
-          new AutoElasticsearchIndex[DocumentMock]("mock", version)
+        (version: Int) => new AutoElasticsearchIndex[DocumentMock]("mock", version)
       )
   ).foreach {
     case (description, index) => {
@@ -40,10 +35,9 @@ class ElasticsearchIndexSpec
     it should "fields for v1 document" in {
       // Snake-case-ify the bookkeeping fields.
       val bookkeeping =
-        Seq(ClioDocument.UpsertIdFieldName, ClioDocument.EntityIdFieldName)
-          .map { name =>
-            keywordField(name.replaceAll("([A-Z])", "_$1").toLowerCase)
-          }
+        Seq(ClioDocument.UpsertIdFieldName, ClioDocument.EntityIdFieldName).map { name =>
+          keywordField(name.replaceAll("([A-Z])", "_$1").toLowerCase)
+        }
 
       index.fields should contain theSameElementsAs bookkeeping ++ Seq(
         dateField("mock_field_date"),
@@ -70,10 +64,9 @@ class ElasticsearchIndexSpec
     it should "fields for v2 document" in {
       // Snake-case-ify the bookkeeping fields.
       val bookkeeping =
-        Seq(ClioDocument.UpsertIdFieldName, ClioDocument.EntityIdFieldName)
-          .map { name =>
-            keywordField(name.replaceAll("([A-Z])", "_$1").toLowerCase)
-          }
+        Seq(ClioDocument.UpsertIdFieldName, ClioDocument.EntityIdFieldName).map { name =>
+          keywordField(name.replaceAll("([A-Z])", "_$1").toLowerCase)
+        }
 
       index.fields should contain theSameElementsAs bookkeeping ++ Seq(
         dateField("mock_field_date"),

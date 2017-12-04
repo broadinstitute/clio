@@ -29,8 +29,7 @@ class WgsCramService(
     transferMetadata: TransferWgsCramV1Metadata
   ): Future[UpsertId] = {
     val updatedTransferMetadata = transferMetadata.copy(
-      documentStatus =
-        transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
+      documentStatus = transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
     )
 
     persistenceService
@@ -71,9 +70,11 @@ object WgsCramService {
       DocumentWgsCram
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[TransferWgsCramV1QueryInput,
-                                                 TransferWgsCramV1QueryOutput,
-                                                 DocumentWgsCram] =
+  val v1QueryConverter: ElasticsearchQueryMapper[
+    TransferWgsCramV1QueryInput,
+    TransferWgsCramV1QueryOutput,
+    DocumentWgsCram
+  ] =
     AutoElasticsearchQueryMapper[
       TransferWgsCramV1QueryInput,
       TransferWgsCramV1QueryOutput,

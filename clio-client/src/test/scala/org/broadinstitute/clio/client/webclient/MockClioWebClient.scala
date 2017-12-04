@@ -95,6 +95,7 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
 }
 
 object MockClioWebClient {
+
   def failingToUpsert(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, None) {
       override def upsert[TI <: TransferIndex](transferIndex: TI)(

@@ -3,10 +3,7 @@ package org.broadinstitute.clio.integrationtest.tests
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, StatusCodes}
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.integrationtest.{
-  BaseIntegrationSpec,
-  ClioBuildInfo
-}
+import org.broadinstitute.clio.integrationtest.{BaseIntegrationSpec, ClioBuildInfo}
 import org.broadinstitute.clio.status.model.{
   ServerStatusInfo,
   StatusInfo,

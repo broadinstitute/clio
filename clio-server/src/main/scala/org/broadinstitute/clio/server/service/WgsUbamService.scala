@@ -29,8 +29,7 @@ class WgsUbamService(
     transferMetadata: TransferWgsUbamV1Metadata
   ): Future[UpsertId] = {
     val updatedTransferMetadata = transferMetadata.copy(
-      documentStatus =
-        transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
+      documentStatus = transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
     )
 
     persistenceService
@@ -71,9 +70,11 @@ object WgsUbamService {
       DocumentWgsUbam
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[TransferWgsUbamV1QueryInput,
-                                                 TransferWgsUbamV1QueryOutput,
-                                                 DocumentWgsUbam] =
+  val v1QueryConverter: ElasticsearchQueryMapper[
+    TransferWgsUbamV1QueryInput,
+    TransferWgsUbamV1QueryOutput,
+    DocumentWgsUbam
+  ] =
     AutoElasticsearchQueryMapper[
       TransferWgsUbamV1QueryInput,
       TransferWgsUbamV1QueryOutput,

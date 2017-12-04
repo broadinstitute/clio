@@ -121,10 +121,12 @@ class AutoElasticsearchQueryMapper[
 }
 
 object AutoElasticsearchQueryMapper {
-  def apply[QueryInput: ClassTag: FieldMapper,
-            QueryOutput: ClassTag,
-            Document <: ClioDocument: ClassTag]
-    : ElasticsearchQueryMapper[QueryInput, QueryOutput, Document] = {
+
+  def apply[
+    QueryInput: ClassTag: FieldMapper,
+    QueryOutput: ClassTag,
+    Document <: ClioDocument: ClassTag
+  ]: ElasticsearchQueryMapper[QueryInput, QueryOutput, Document] = {
     new AutoElasticsearchQueryMapper
   }
 }

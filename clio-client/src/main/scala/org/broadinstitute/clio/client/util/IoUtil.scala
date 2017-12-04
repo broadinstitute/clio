@@ -47,8 +47,10 @@ trait IoUtil {
             FileVisitResult.CONTINUE
           }
 
-          override def postVisitDirectory(dir: Path,
-                                          exc: IOException): FileVisitResult = {
+          override def postVisitDirectory(
+            dir: Path,
+            exc: IOException
+          ): FileVisitResult = {
             Option(exc).fold({
               Files.delete(dir)
               FileVisitResult.CONTINUE

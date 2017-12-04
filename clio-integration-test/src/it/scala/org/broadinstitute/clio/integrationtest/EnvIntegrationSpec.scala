@@ -51,17 +51,13 @@ abstract class EnvIntegrationSpec(env: String)
 }
 
 /** The integration spec that runs against Clio in dev. */
-class DevEnvIntegrationSpec
-    extends EnvIntegrationSpec("dev")
-    with IntegrationSuite
+class DevEnvIntegrationSpec extends EnvIntegrationSpec("dev") with IntegrationSuite
 
 /**
   * Integration spec checking that auth tokens properly refresh in the client.
   * Only meaningful if run against a deployed Clio with a running proxy.
   */
-class AuthIntegrationSpec
-    extends EnvIntegrationSpec("dev")
-    with AuthRefreshTests
+class AuthIntegrationSpec extends EnvIntegrationSpec("dev") with AuthRefreshTests
 
 /** The integration spec that runs against Clio in staging. */
 class StagingEnvIntegrationSpec

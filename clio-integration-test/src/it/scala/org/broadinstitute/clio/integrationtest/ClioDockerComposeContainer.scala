@@ -137,13 +137,12 @@ class ClioDockerComposeContainer(
     */
   override def finished()(implicit description: Description): Unit = {
     super.finished()
-    Seq(ClioBuildInfo.logDir, ClioBuildInfo.persistenceDir).foreach {
-      dirPrefix =>
-        val target = Paths.get(s"$dirPrefix-${description.getDisplayName}")
-        if (Files.exists(target)) {
-          IoUtil.deleteDirectoryRecursively(target)
-        }
-        val _ = Files.move(Paths.get(dirPrefix), target)
+    Seq(ClioBuildInfo.logDir, ClioBuildInfo.persistenceDir).foreach { dirPrefix =>
+      val target = Paths.get(s"$dirPrefix-${description.getDisplayName}")
+      if (Files.exists(target)) {
+        IoUtil.deleteDirectoryRecursively(target)
+      }
+      val _ = Files.move(Paths.get(dirPrefix), target)
     }
   }
 

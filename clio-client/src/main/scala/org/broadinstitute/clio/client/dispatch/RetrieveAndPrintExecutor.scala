@@ -11,8 +11,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Executor for all commands that retrieve some data from the
   * clio-server and then print it as JSON.
   */
-class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand)
-    extends Executor[Json] {
+class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand) extends Executor[Json] {
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[Json] = {

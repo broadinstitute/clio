@@ -81,16 +81,14 @@ abstract class DockerIntegrationSpec(name: String)
     logger.info(
       s"Waiting up to ${waitTime.toString} for Clio to log startup message..."
     )
-    val logStream = clioLogLines
-      .map { line =>
-        if (line.contains("INFO") ||
-            line.contains("WARN") ||
-            line.contains("ERROR")) {
-          println(line)
-        }
-        line
+    val logStream = clioLogLines.map { line =>
+      if (line.contains("INFO") ||
+          line.contains("WARN") ||
+          line.contains("ERROR")) {
+        println(line)
       }
-      .takeWhile(line => !line.contains(DockerIntegrationSpec.clioReadyMessage))
+      line
+    }.takeWhile(line => !line.contains(DockerIntegrationSpec.clioReadyMessage))
       .runWith(Sink.ignore)
     val _ = Await.result(logStream, waitTime)
     logger.info("Clio ready!")
@@ -108,9 +106,7 @@ class RecoveryIntegrationSpec
     with RecoveryTests
 
 /** Load tests. Should only be run against Docker. */
-class LoadIntegrationSpec
-    extends DockerIntegrationSpec("Clio under load")
-    with LoadTests
+class LoadIntegrationSpec extends DockerIntegrationSpec("Clio under load") with LoadTests
 
 /**
   * Container for constants for setting up / connecting into the docker-compose environment.

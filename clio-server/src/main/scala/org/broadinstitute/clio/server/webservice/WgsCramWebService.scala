@@ -22,8 +22,7 @@ trait WgsCramWebService { self: JsonWebService =>
     }
   }
 
-  private[webservice] val cramPathPrefixKey
-    : Directive1[TransferWgsCramV1Key] = {
+  private[webservice] val cramPathPrefixKey: Directive1[TransferWgsCramV1Key] = {
     for {
       location <- pathPrefix(Location.namesToValuesMap)
       project <- pathPrefix(Segment)

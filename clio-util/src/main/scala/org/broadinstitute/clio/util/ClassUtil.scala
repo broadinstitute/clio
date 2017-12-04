@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.util
 
 object ClassUtil {
+
   def formatFields(key: Object): String = {
     key.getClass.getDeclaredFields
       .map(field => {

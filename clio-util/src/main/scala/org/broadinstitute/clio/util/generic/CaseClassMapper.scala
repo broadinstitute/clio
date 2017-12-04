@@ -67,8 +67,10 @@ class CaseClassMapper[T: ClassTag] {
     * @param defaultValue Retrieves a value for some field name and type if a field value isn't in vals.
     * @return The new instance of T.
     */
-  private def newInstance(vals: Map[String, _],
-                          defaultValue: (String, Class[_]) => Any): T = {
+  private def newInstance(
+    vals: Map[String, _],
+    defaultValue: (String, Class[_]) => Any
+  ): T = {
     val unknownVals = vals.filterKeys(key => !names.contains(key))
     if (unknownVals.nonEmpty)
       throw new IllegalArgumentException(

@@ -17,16 +17,18 @@ import java.net.URI
   * Circe will complain about leftover fields during decoding if
   * we don't.
   */
-case class ServiceAccount(authProviderX509CertUrl: URI,
-                          authUri: URI,
-                          clientEmail: String,
-                          clientId: String,
-                          clientX509CertUrl: URI,
-                          privateKey: String,
-                          privateKeyId: String,
-                          projectId: String,
-                          tokenUri: URI,
-                          `type`: String) {
+case class ServiceAccount(
+  authProviderX509CertUrl: URI,
+  authUri: URI,
+  clientEmail: String,
+  clientId: String,
+  clientX509CertUrl: URI,
+  privateKey: String,
+  privateKeyId: String,
+  projectId: String,
+  tokenUri: URI,
+  `type`: String
+) {
 
   assert(`type` == "service_account")
 

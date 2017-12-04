@@ -5,10 +5,7 @@ import java.net.URI
 import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.server.dataaccess.{
-  MemoryPersistenceDAO,
-  MemorySearchDAO
-}
+import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.transfer.model.gvcf.{
   GvcfExtensions,
   TransferGvcfV1Key,

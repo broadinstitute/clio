@@ -1,9 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.model.{
-  ModelMockQueryInput,
-  ModelMockQueryOutput
-}
+import org.broadinstitute.clio.server.model.{ModelMockQueryInput, ModelMockQueryOutput}
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import org.scalatest.{FlatSpec, Matchers}

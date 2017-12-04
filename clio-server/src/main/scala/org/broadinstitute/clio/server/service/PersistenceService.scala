@@ -18,8 +18,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Updates are written to storage to serve as the system of record for Clio,
   * allowing for update playback during disaster recovery.
   */
-class PersistenceService private (persistenceDAO: PersistenceDAO,
-                                  searchDAO: SearchDAO) {
+class PersistenceService private (persistenceDAO: PersistenceDAO, searchDAO: SearchDAO) {
 
   /**
     * Update-or-insert (upsert) metadata for a given key.
@@ -51,6 +50,7 @@ class PersistenceService private (persistenceDAO: PersistenceDAO,
 }
 
 object PersistenceService {
+
   def apply(app: ClioApp): PersistenceService = {
     new PersistenceService(app.persistenceDAO, app.searchDAO)
   }

@@ -4,10 +4,7 @@ import java.net.URI
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.transfer.model.TransferMetadata
-import org.broadinstitute.clio.util.model.{
-  DocumentStatus,
-  RegulatoryDesignation
-}
+import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
 case class TransferWgsUbamV1Metadata(
   analysisType: Option[String] = None,

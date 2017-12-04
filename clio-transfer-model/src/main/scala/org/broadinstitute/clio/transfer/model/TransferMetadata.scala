@@ -71,10 +71,12 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
     * extension. Rather than make dangerous guesses, we require that the code calling
     * the move operation provide the file extension to retain during the move operation.
     */
-  protected def moveIntoDirectory(source: URI,
-                                  destination: URI,
-                                  extension: String,
-                                  newBasename: Option[String] = None): URI = {
+  protected def moveIntoDirectory(
+    source: URI,
+    destination: URI,
+    extension: String,
+    newBasename: Option[String] = None
+  ): URI = {
     // TODO: Rewrite this using a Path-based API.
     val srcName = new File(source.getPath).getName
     val srcBase = srcName.take(srcName.toLowerCase.lastIndexOf(extension))

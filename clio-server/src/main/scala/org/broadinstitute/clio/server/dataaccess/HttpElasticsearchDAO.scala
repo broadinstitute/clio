@@ -153,6 +153,7 @@ class HttpElasticsearchDAO private[dataaccess] (
 }
 
 object HttpElasticsearchDAO extends StrictLogging {
+
   def apply()(implicit system: ActorSystem): SearchDAO = {
     val httpHosts = ClioServerConfig.Elasticsearch.httpHosts.map(toHttpHost)
     new HttpElasticsearchDAO(httpHosts)

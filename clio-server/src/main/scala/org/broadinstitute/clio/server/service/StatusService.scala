@@ -6,11 +6,7 @@ import org.broadinstitute.clio.server.dataaccess.{
   SearchDAO,
   ServerStatusDAO
 }
-import org.broadinstitute.clio.status.model.{
-  StatusInfo,
-  SystemStatusInfo,
-  VersionInfo
-}
+import org.broadinstitute.clio.status.model.{StatusInfo, SystemStatusInfo, VersionInfo}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
@@ -20,6 +16,7 @@ class StatusService private (
   httpServerDAO: HttpServerDAO,
   searchDAO: SearchDAO
 )(implicit executionContext: ExecutionContext) {
+
   def getStatus: Future[StatusInfo] = {
     for {
       serverStatus <- serverStatusDAO.getStatus
@@ -33,6 +30,7 @@ class StatusService private (
 }
 
 object StatusService {
+
   def apply(
     app: ClioApp
   )(implicit executionContext: ExecutionContext): StatusService = {

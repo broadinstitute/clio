@@ -33,13 +33,16 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     )
 
     serviceAccountPath.fold(shellOutCreds) { jsonPath =>
-      loadServiceAccountJson(jsonPath).fold(err => {
-        logger.warn(
-          s"Failed to load service account JSON at $jsonPath, falling back to gcloud",
-          err
-        )
-        shellOutCreds
-      }, getCredsFromServiceAccount)
+      loadServiceAccountJson(jsonPath).fold(
+        err => {
+          logger.warn(
+            s"Failed to load service account JSON at $jsonPath, falling back to gcloud",
+            err
+          )
+          shellOutCreds
+        },
+        getCredsFromServiceAccount
+      )
     }
   }
 

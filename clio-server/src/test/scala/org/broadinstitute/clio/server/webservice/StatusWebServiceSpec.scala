@@ -1,14 +1,7 @@
 package org.broadinstitute.clio.server.webservice
 
-import org.broadinstitute.clio.server.dataaccess.{
-  MockHttpServerDAO,
-  MockServerStatusDAO
-}
-import org.broadinstitute.clio.status.model.{
-  StatusInfo,
-  SystemStatusInfo,
-  VersionInfo
-}
+import org.broadinstitute.clio.server.dataaccess.{MockHttpServerDAO, MockServerStatusDAO}
+import org.broadinstitute.clio.status.model.{StatusInfo, SystemStatusInfo, VersionInfo}
 
 class StatusWebServiceSpec extends BaseWebserviceSpec {
   behavior of "StatusWebService"

@@ -11,8 +11,7 @@ import scala.reflect.runtime.universe.Type
   *           https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
   * @see [[FieldMapper]]
   */
-class CaseClassMapperWithTypes[T: ClassTag: FieldMapper]
-    extends CaseClassMapper[T] {
+class CaseClassMapperWithTypes[T: ClassTag: FieldMapper] extends CaseClassMapper[T] {
 
   /** The scala reflection types for each field. */
   val types: Map[String, Type] = FieldMapper[T].fields

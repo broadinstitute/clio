@@ -35,12 +35,15 @@ abstract class AbstractElasticsearchDAOSpec(actorSystemName: String)
 
   protected def initialize(): Future[Assertion] = {
     // Set *all* existing index replicas to 0, including elasticsearch's internal indexes
-    val entity = new NStringEntity("""|{
+    val entity = new NStringEntity(
+      """|{
          |  "index" : {
          |    "number_of_replicas" : 0
          |  }
          |}
-         |""".stripMargin, ContentType.APPLICATION_JSON)
+         |""".stripMargin,
+      ContentType.APPLICATION_JSON
+    )
 
     val params = java.util.Collections.emptyMap[String, String]()
 
