@@ -24,7 +24,10 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
   ): Either[Throwable, OAuth2Credentials] = {
     accessToken
       .map(new GoogleCredentials(_))
-      .fold(getOAuth2Credentials(serviceAccountJson))((a: GoogleCredentials) => Right(a))
+      .fold(getOAuth2Credentials(serviceAccountJson)){ creds =>
+        logger.info("Using provided access token as authentication")
+        Right(creds)
+      }
   }
 
   /**
@@ -88,6 +91,7 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
   def getCredsFromServiceAccount(
     serviceAccount: ServiceAccount
   ): Either[Throwable, OAuth2Credentials] = {
+    logger.info("Getting credentials from provided service-account-json")
     serviceAccount.credentialForScopes(authScopes).toEither
   }
 }
