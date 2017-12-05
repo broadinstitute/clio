@@ -47,6 +47,10 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
 
     // Have to go from try to either since either doesn't have an 'orElse' method
     Try(GoogleCredentials.getApplicationDefault)
+        .map { gc =>
+          logger.info("Using application default credentials")
+          gc
+        }
       .orElse(
         serviceAccountPath
           .fold(shellOutCreds) { jsonPath =>
