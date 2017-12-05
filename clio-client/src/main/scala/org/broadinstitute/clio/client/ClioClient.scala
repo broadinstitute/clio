@@ -5,7 +5,6 @@ import caseapp.core.help.{Help, WithHelp}
 import caseapp.core.parser.Parser
 import caseapp.core.{Error, RemainingArgs}
 import cats.syntax.either._
-import com.google.auth.oauth2.GoogleCredentials
 import com.typesafe.scalalogging.LazyLogging
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.dispatch.CommandDispatch
@@ -57,14 +56,12 @@ object ClioClient extends LazyLogging {
     sys.addShutdownHook({ val _ = system.terminate() })
 
     val dispatchFutureOrErr = for {
-      credentials <- ClioClientConfig.accessToken
-        .map(new GoogleCredentials(_))
-        .toRight(new RuntimeException("This should never happen"))
-        .orElse(
-          AuthUtil
-            .getOAuth2Credentials(ClioClientConfig.serviceAccountJson)
-            .leftMap(AuthError.apply)
+      credentials <- AuthUtil
+        .getCredentials(
+          ClioClientConfig.accessToken,
+          ClioClientConfig.serviceAccountJson
         )
+        .leftMap(AuthError.apply)
 
       webClient = new ClioWebClient(
         ClioClientConfig.ClioServer.clioServerHostName,

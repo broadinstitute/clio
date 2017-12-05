@@ -2,7 +2,7 @@ package org.broadinstitute.clio.util.auth
 
 import java.nio.file.{Files, Path}
 
-import com.google.auth.oauth2.{GoogleCredentials, OAuth2Credentials}
+import com.google.auth.oauth2.{AccessToken, GoogleCredentials, OAuth2Credentials}
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.parser.decode
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
@@ -17,6 +17,15 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     "https://www.googleapis.com/auth/userinfo.profile",
     "https://www.googleapis.com/auth/userinfo.email"
   )
+
+  def getCredentials(
+    accessToken: Option[AccessToken],
+    serviceAccountJson: Option[Path]
+  ): Either[Throwable, OAuth2Credentials] = {
+    accessToken
+      .map(new GoogleCredentials(_))
+      .fold(getOAuth2Credentials(serviceAccountJson))((a: GoogleCredentials) => Right(a))
+  }
 
   /**
     * Get OAuth2 credentials either from the service account json or
