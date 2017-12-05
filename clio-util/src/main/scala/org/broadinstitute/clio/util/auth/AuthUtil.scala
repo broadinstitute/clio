@@ -18,16 +18,27 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     "https://www.googleapis.com/auth/userinfo.email"
   )
 
+  private val shellOutCreds: Either[Throwable, OAuth2Credentials] = {
+    logger.debug("Shelling out to gcloud to get credentials")
+    Right(ExternalGCloudCredentials)
+  }
+
   def getCredentials(
     accessToken: Option[AccessToken],
     serviceAccountJson: Option[Path]
   ): Either[Throwable, OAuth2Credentials] = {
-    accessToken
-      .map(new GoogleCredentials(_))
-      .fold(getOAuth2Credentials(serviceAccountJson)) { creds =>
-        logger.info("Using provided access token as authentication")
-        Right(creds)
-      }
+    if (accessToken.isEmpty && serviceAccountJson.isEmpty) {
+      Try(GoogleCredentials.getApplicationDefault).recoverWith {
+        case _ => shellOutCreds.toTry
+      }.toEither
+    } else {
+      accessToken
+        .map(new GoogleCredentials(_))
+        .fold(getOAuth2Credentials(serviceAccountJson)) { creds =>
+          logger.debug("Using provided access token as authentication")
+          Right(creds)
+        }
+    }
   }
 
   /**
@@ -40,34 +51,19 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     serviceAccountPath: Option[Path]
   ): Either[Throwable, OAuth2Credentials] = {
 
-    val shellOutCreds: Either[Throwable, OAuth2Credentials] = {
-      logger.info("Shelling out to gcloud to get credentials")
-      Right(ExternalGCloudCredentials)
-    }
-
-    // Have to go from try to either since either doesn't have an 'orElse' method
-    Try(GoogleCredentials.getApplicationDefault)
-        .map { gc =>
-          logger.info("Using application default credentials")
-          gc
-        }
-      .orElse(
-        serviceAccountPath
-          .fold(shellOutCreds) { jsonPath =>
-            loadServiceAccountJson(jsonPath).fold(
-              err => {
-                logger.warn(
-                  s"Failed to load service account JSON at $jsonPath, falling back to gcloud",
-                  err
-                )
-                shellOutCreds
-              },
-              getCredsFromServiceAccount
+    serviceAccountPath
+      .fold(shellOutCreds) { jsonPath =>
+        loadServiceAccountJson(jsonPath).fold(
+          err => {
+            logger.warn(
+              s"Failed to load service account JSON at $jsonPath, falling back to gcloud",
+              err
             )
-          }
-          .toTry
-      )
-      .toEither
+            shellOutCreds
+          },
+          getCredsFromServiceAccount
+        )
+      }
   }
 
   /** Load JSON for a google service account. */
@@ -79,7 +75,7 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
         Files.exists(serviceAccountPath),
         serviceAccountPath, {
           val message = s"Could not find service account JSON at $serviceAccountPath"
-          logger.error(message)
+          logger.warn(message)
           new RuntimeException(message)
         }
       )
@@ -97,7 +93,7 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
   def getCredsFromServiceAccount(
     serviceAccount: ServiceAccount
   ): Either[Throwable, OAuth2Credentials] = {
-    logger.info("Getting credentials from provided service-account-json")
+    logger.debug("Getting credentials from provided service-account-json")
     serviceAccount.credentialForScopes(authScopes).toEither
   }
 }
