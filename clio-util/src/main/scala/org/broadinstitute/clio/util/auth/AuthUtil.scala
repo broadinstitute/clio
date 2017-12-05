@@ -73,10 +73,11 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     for {
       jsonPath <- Either.cond(
         Files.exists(serviceAccountPath),
-        serviceAccountPath,
-        new RuntimeException(
-          s"Could not find service account JSON at $serviceAccountPath"
-        )
+        serviceAccountPath, {
+          val message = s"Could not find service account JSON at $serviceAccountPath"
+          logger.error(message)
+          new RuntimeException(message)
+        }
       )
       jsonBytes <- Try(Files.readAllBytes(jsonPath)).toEither
       account <- decode[ServiceAccount](new String(jsonBytes).stripMargin)
