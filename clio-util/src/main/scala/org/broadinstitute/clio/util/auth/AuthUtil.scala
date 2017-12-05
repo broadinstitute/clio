@@ -24,7 +24,7 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
   ): Either[Throwable, OAuth2Credentials] = {
     accessToken
       .map(new GoogleCredentials(_))
-      .fold(getOAuth2Credentials(serviceAccountJson)){ creds =>
+      .fold(getOAuth2Credentials(serviceAccountJson)) { creds =>
         logger.info("Using provided access token as authentication")
         Right(creds)
       }
@@ -40,9 +40,10 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     serviceAccountPath: Option[Path]
   ): Either[Throwable, OAuth2Credentials] = {
 
-    val shellOutCreds: Either[Throwable, OAuth2Credentials] = Right(
-      ExternalGCloudCredentials
-    )
+    val shellOutCreds: Either[Throwable, OAuth2Credentials] = {
+      logger.info("Shelling out to gcloud to get credentials")
+      Right(ExternalGCloudCredentials)
+    }
 
     // Have to go from try to either since either doesn't have an 'orElse' method
     Try(GoogleCredentials.getApplicationDefault)
