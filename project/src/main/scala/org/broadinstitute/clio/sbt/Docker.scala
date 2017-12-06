@@ -52,9 +52,7 @@ object Docker {
     new Dockerfile {
       from("google/cloud-sdk:alpine")
       run("apk", "--update", "add", "openjdk8-jre")
-      // This is needed for application default authentication on GCE
-      run("gcloud", "components", "install", "--quiet", "app-engine-java", "kubectl")
-      label("CLIO_VERSION", version.value)
+      label("CLIO_CLIENT_VERSION", version.value)
       add(artifact, artifactTargetPath)
     }
   }
