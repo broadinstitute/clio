@@ -33,14 +33,10 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor[Up
     implicit ec: ExecutionContext
   ): Future[UpsertId] = {
 
-    val deliveredFileBasename: String =
-      deliverCommand.samplePrefix.fold(deliverCommand.key.sampleAlias) { prefix =>
-        s"$prefix${deliverCommand.key.sampleAlias}"
-      }
     val moveCommand = MoveWgsCram(
       deliverCommand.key,
       deliverCommand.workspacePath,
-      Some(deliveredFileBasename)
+      deliverCommand.newBasename
     )
 
     val moveExecutor = new MoveExecutor(moveCommand)

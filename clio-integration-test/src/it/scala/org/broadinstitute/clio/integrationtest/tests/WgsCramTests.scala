@@ -686,7 +686,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
-    val samplePrefix = "sample_prefix_"
 
     val cramContents = s"$randomId --- I am a dummy cram --- $randomId"
     val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
@@ -701,10 +700,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val cramSource = rootSource.resolve(cramName)
     val craiSource = rootSource.resolve(craiName)
 
+    val prefix = "new_basename_"
+    val newBasename = s"$prefix$sample"
     val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
-    val cramDestination = rootDestination.resolve(s"$samplePrefix$cramName")
-    val craiDestination = rootDestination.resolve(s"$samplePrefix$craiName")
-    val md5Destination = rootDestination.resolve(s"$samplePrefix$md5Name")
+    val cramDestination = rootDestination.resolve(s"$prefix$cramName")
+    val craiDestination = rootDestination.resolve(s"$prefix$craiName")
+    val md5Destination = rootDestination.resolve(s"$prefix$md5Name")
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata = TransferWgsCramV1Metadata(
@@ -734,8 +735,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         workspaceName,
         "--workspace-path",
         rootDestination.toUri.toString,
-        "--sample-prefix",
-        samplePrefix
+        "--new-basename",
+        newBasename
       )
       outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
