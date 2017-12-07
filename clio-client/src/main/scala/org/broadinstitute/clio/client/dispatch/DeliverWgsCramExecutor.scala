@@ -18,7 +18,7 @@ import org.broadinstitute.clio.util.model.UpsertId
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
-  * Special-purpose CLP for delivering crams to Firecloud workspaces.
+  * Special-purpose CLP for delivering crams to FireCloud workspaces.
   *
   * Wraps the move CLP with extra IO / upsert logic:
   *
