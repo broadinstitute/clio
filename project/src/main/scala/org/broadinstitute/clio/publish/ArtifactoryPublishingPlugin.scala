@@ -2,6 +2,7 @@ package org.broadinstitute.clio.publish
 
 import sbt._
 import sbt.Keys._
+import sbt.plugins.JvmPlugin
 
 /**
   * A plugin for adding the settings required for clio subprojects to Artifactory.
@@ -10,12 +11,19 @@ import sbt.Keys._
   */
 object ArtifactoryPublishingPlugin extends AutoPlugin {
 
+  override def requires = JvmPlugin
+
   private def buildTimestamp = System.currentTimeMillis() / 1000
 
+  val ArtifactoryRealm = "Artifactory Realm"
+
   private val artifactoryHost = "broadinstitute.jfrog.io"
-  private val artifactoryRealm = "Artifactory Realm"
-  private val artifactoryResolver =
-    artifactoryRealm at s"https://$artifactoryHost/broadinstitute/libs-release-local;build.timestamp=$buildTimestamp"
+
+  val ArtifactoryUrl =
+    s"https://$artifactoryHost/broadinstitute/libs-release-local;build.timestamp=$buildTimestamp"
+
+  /** For maven-style publishing (the default). */
+  private val mavenArtifactoryResolver = ArtifactoryRealm at ArtifactoryUrl
 
   private val artifactoryUsernameVar = "ARTIFACTORY_USERNAME"
   private val artifactoryPasswordVar = "ARTIFACTORY_PASSWORD"
@@ -26,7 +34,7 @@ object ArtifactoryPublishingPlugin extends AutoPlugin {
         username <- sys.env.get(artifactoryUsernameVar)
         password <- sys.env.get(artifactoryPasswordVar)
       } yield {
-        Credentials(artifactoryRealm, artifactoryHost, username, password)
+        Credentials(ArtifactoryRealm, artifactoryHost, username, password)
       }
 
       cred.orElse {
@@ -39,7 +47,7 @@ object ArtifactoryPublishingPlugin extends AutoPlugin {
     }
 
   override def projectSettings: Seq[Def.Setting[_]] = Seq(
-    publishTo := Some(artifactoryResolver)
+    publishTo := Some(mavenArtifactoryResolver)
   )
 
   override def buildSettings: Seq[Def.Setting[_]] = Seq(
