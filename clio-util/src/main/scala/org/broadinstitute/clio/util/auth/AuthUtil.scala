@@ -7,6 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.circe.parser.decode
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.ServiceAccount
+import cats.syntax.either._
 
 import scala.util.Try
 
@@ -27,18 +28,10 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     accessToken: Option[AccessToken],
     serviceAccountJson: Option[Path]
   ): Either[Throwable, OAuth2Credentials] = {
-    if (accessToken.isEmpty && serviceAccountJson.isEmpty) {
-      Try(GoogleCredentials.getApplicationDefault).recoverWith {
-        case _ => shellOutCreds.toTry
-      }.toEither
-    } else {
-      accessToken
-        .map(new GoogleCredentials(_))
-        .fold(getOAuth2Credentials(serviceAccountJson)) { creds =>
-          logger.debug("Using provided access token as authentication")
-          Right(creds)
-        }
-    }
+    accessToken
+      .map(token => Either.catchNonFatal(new GoogleCredentials(token)))
+      .orElse(Option(getOAuth2Credentials(serviceAccountJson)))
+      .getOrElse(Either.catchNonFatal(GoogleCredentials.getApplicationDefault))
   }
 
   /**
@@ -74,9 +67,9 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
       jsonPath <- Either.cond(
         Files.exists(serviceAccountPath),
         serviceAccountPath, {
-          val message = s"Could not find service account JSON at $serviceAccountPath"
-          logger.warn(message)
-          new RuntimeException(message)
+          new RuntimeException(
+            s"Could not find service account JSON at $serviceAccountPath"
+          )
         }
       )
       jsonBytes <- Try(Files.readAllBytes(jsonPath)).toEither
@@ -93,7 +86,9 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
   def getCredsFromServiceAccount(
     serviceAccount: ServiceAccount
   ): Either[Throwable, OAuth2Credentials] = {
-    logger.debug("Getting credentials from provided service-account-json")
+    logger.debug(
+      "Getting credentials from the command-line provided service-account-json"
+    )
     serviceAccount.credentialForScopes(authScopes).toEither
   }
 }
