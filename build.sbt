@@ -118,30 +118,21 @@ lazy val `clio-server` = project
   */
 lazy val `clio-client` = project
   .dependsOn(`clio-transfer-model`)
-  .enablePlugins(ArtifactoryPublishingPlugin)
+  .enablePlugins(ArtifactoryPublishingPlugin, ArtifactoryFatJarPublishingPlugin)
   .settings(libraryDependencies ++= Dependencies.ClientDependencies)
   .settings(commonSettings)
   .settings(commonTestDockerSettings)
-
-/**
-  * Synthetic project for publishing the clio-client assembly jar.
-  *
-  * Used to isolate the ivy config, so we can produce a trutly stand-alone artifact.
-  */
-lazy val `clio-client-assembly` = project
-  .in(file("clio-client"))
-  .enablePlugins(ArtifactoryFatJarPublishingPlugin)
-  .disablePlugins(AssemblyPlugin, ScalafmtPlugin)
   .settings(
-    target := target.value / "assembly-publish",
-    inConfig(Publish) {
+    inConfig(FatJar) {
       addArtifact(
-        Artifact("clio-client", "jar", "jar").copy(configurations = Seq(Default)),
-        assembly in `clio-client`
+        Artifact("clio-client", "jar", "jar").copy(
+          configurations = Seq(Default),
+          classifier = Some("assembly")
+        ),
+        assembly
       )
     }
   )
-
 
 /**
   * Integration tests for the clio-server and the clio-client.

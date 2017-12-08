@@ -10,17 +10,17 @@ object ArtifactoryFatJarPublishingPlugin extends AutoPlugin {
   object autoImport {
 
     /**
-      * Ivy configuration used for isolating tasks related to publishing.
+      * Ivy configuration used for isolating tasks related to publishing fat jars.
       *
       * All of sbt's built-in ivy logic is catered towards publishing libraries, so if you
       * want to publish stand-alone artifacts you have to jump through hoops to strip out
       * the auto-generated dependency & configuration sections of the ivy XML.
       *
       * Rather than figure out which settings should be overridden in the default `Compile` scope,
-      * we make this isolated `Publish` scope to hold all the ivy settings needed for publishing
+      * we make this isolated `FatJar` scope to hold all the ivy settings needed for publishing
       * our fat artifacts.
       */
-    lazy val Publish = config("publish")
+    lazy val FatJar = config("fat-jar")
   }
 
   import autoImport._
@@ -41,13 +41,14 @@ object ArtifactoryFatJarPublishingPlugin extends AutoPlugin {
     new URL(ArtifactoryPublishingPlugin.ArtifactoryUrl)
   )(ivyArtifactoryPatterns)
 
-  /** Initialization settings for publishing via ivy, scoped to the new `Publish` configuration. */
-  private lazy val basePublishSettings = inConfig(Publish) {
+  override def projectSettings: Seq[Def.Setting[_]] = inConfig(FatJar) {
     Seq.concat(
       Classpaths.ivyBaseSettings,
       Classpaths.jvmPublishSettings,
       Classpaths.ivyPublishSettings,
       Seq(
+        publishTo := Some(ivyArtifactoryResolver),
+        publishMavenStyle := false,
         isSnapshot := true,
         moduleSettings := InlineConfigurationWithExcludes(
           projectID.value,
@@ -58,29 +59,4 @@ object ArtifactoryFatJarPublishingPlugin extends AutoPlugin {
       )
     )
   }
-
-  override def projectSettings: Seq[Def.Setting[_]] = Seq.concat(
-    basePublishSettings,
-    Seq(
-      publishTo := Some(ivyArtifactoryResolver),
-      publishMavenStyle := false,
-      /*
-       * Disable publishing of library-style artifacts.
-       * Individual sub-projects must re-enable publishing of
-       * whatever "fat" artifact(s) they produce.
-       */
-      publishArtifact in (Compile, packageBin) := false,
-      publishArtifact in (Compile, packageDoc) := false,
-      publishArtifact in (Compile, packageSrc) := false,
-      /*
-       * Redirect the top-level ivy-delivery and publishing tasks to
-       * point at the same tasks scoped to the `Publish` configuration,
-       * to avoid accidentally publishing library-style artifacts.
-       */
-      deliverLocal := (deliverLocal in Publish).value,
-      deliver := (deliver in Publish).value,
-      publishLocal := (publishLocal in Publish).value,
-      publish := (publish in Publish).value
-    )
-  )
 }
