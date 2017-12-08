@@ -118,10 +118,21 @@ lazy val `clio-server` = project
   */
 lazy val `clio-client` = project
   .dependsOn(`clio-transfer-model`)
-  .enablePlugins(ArtifactoryPublishingPlugin)
+  .enablePlugins(ArtifactoryPublishingPlugin, ArtifactoryFatJarPublishingPlugin)
   .settings(libraryDependencies ++= Dependencies.ClientDependencies)
   .settings(commonSettings)
   .settings(commonTestDockerSettings)
+  .settings(
+    inConfig(FatJar) {
+      addArtifact(
+        Artifact("clio-client", "jar", "jar").copy(
+          configurations = Seq(Default),
+          classifier = Some("assembly")
+        ),
+        assembly
+      )
+    }
+  )
 
 /**
   * Integration tests for the clio-server and the clio-client.
