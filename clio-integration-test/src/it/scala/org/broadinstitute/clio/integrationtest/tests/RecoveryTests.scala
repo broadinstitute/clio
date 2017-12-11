@@ -11,7 +11,7 @@ import org.broadinstitute.clio.integrationtest.{
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
 import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1QueryOutput
-import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1QueryOutput
+import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1QueryOutput
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 
 import scala.util.Random
@@ -87,7 +87,7 @@ trait RecoveryTests {
 
   it should "recover wgs-ubam metadata on startup" in {
     for {
-      ubams <- runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
+      ubams <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--location",
         location.entryName

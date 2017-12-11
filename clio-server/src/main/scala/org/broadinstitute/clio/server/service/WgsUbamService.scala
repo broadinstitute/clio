@@ -5,11 +5,11 @@ import akka.stream.scaladsl.Source
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.wgsubam.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput,
-  TransferWgsUbamV1QueryOutput
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata,
+  TransferUbamV1QueryInput,
+  TransferUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
@@ -25,8 +25,8 @@ class WgsUbamService(
 )(implicit executionContext: ExecutionContext) {
 
   def upsertMetadata(
-    transferKey: TransferWgsUbamV1Key,
-    transferMetadata: TransferWgsUbamV1Metadata
+    transferKey: TransferUbamV1Key,
+    transferMetadata: TransferUbamV1Metadata
   ): Future[UpsertId] = {
     val updatedTransferMetadata = transferMetadata.copy(
       documentStatus = transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
@@ -42,16 +42,16 @@ class WgsUbamService(
   }
 
   def queryMetadata(
-    transferInput: TransferWgsUbamV1QueryInput
-  ): Source[TransferWgsUbamV1QueryOutput, NotUsed] = {
+    transferInput: TransferUbamV1QueryInput
+  ): Source[TransferUbamV1QueryOutput, NotUsed] = {
     val transferInputNew =
       transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
     queryAllMetadata(transferInputNew)
   }
 
   def queryAllMetadata(
-    transferInput: TransferWgsUbamV1QueryInput
-  ): Source[TransferWgsUbamV1QueryOutput, NotUsed] = {
+    transferInput: TransferUbamV1QueryInput
+  ): Source[TransferUbamV1QueryOutput, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
       ElasticsearchIndex.WgsUbam,
@@ -65,19 +65,19 @@ class WgsUbamService(
 object WgsUbamService {
   private[service] val v1DocumentConverter =
     AutoElasticsearchDocumentMapper[
-      TransferWgsUbamV1Key,
-      TransferWgsUbamV1Metadata,
+      TransferUbamV1Key,
+      TransferUbamV1Metadata,
       DocumentWgsUbam
     ]
 
   val v1QueryConverter: ElasticsearchQueryMapper[
-    TransferWgsUbamV1QueryInput,
-    TransferWgsUbamV1QueryOutput,
+    TransferUbamV1QueryInput,
+    TransferUbamV1QueryOutput,
     DocumentWgsUbam
   ] =
     AutoElasticsearchQueryMapper[
-      TransferWgsUbamV1QueryInput,
-      TransferWgsUbamV1QueryOutput,
+      TransferUbamV1QueryInput,
+      TransferUbamV1QueryOutput,
       DocumentWgsUbam
     ]
 }

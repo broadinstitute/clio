@@ -7,7 +7,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.MoveWgsUbam
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1Key
+import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1Key
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 class MoveWgsUbamSpec extends BaseClientSpec {
@@ -70,7 +70,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   it should "throw an exception if given a non-GCP unmapped bam" in {
     recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsUbam(
-        key = TransferWgsUbamV1Key(
+        key = TransferUbamV1Key(
           flowcellBarcode = testFlowcell,
           lane = testLane,
           libraryName = testLibName,

@@ -10,7 +10,7 @@ import akka.stream.alpakka.file.scaladsl.FileTailSource
 import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.integrationtest.tests.{LoadTests, RecoveryTests}
+import org.broadinstitute.clio.integrationtest.tests._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -95,10 +95,19 @@ abstract class DockerIntegrationSpec(name: String)
   }
 }
 
-/** Dockerized version of the integration tests that also run against our deployed Clios. */
-class CoreDockerIntegrationSpec
+/** Dockerized versions of the integration tests that also run against our deployed Clios. */
+class CoreDockerBasicSpec
     extends DockerIntegrationSpec("Clio in Docker")
-    with IntegrationSuite
+    with BasicTests
+class CoreDockerUbamSpec
+    extends DockerIntegrationSpec("Clio in Docker")
+    with WgsUbamTests
+class CoreDockerCramSpec
+    extends DockerIntegrationSpec("Clio in Docker")
+    with WgsCramTests
+class CoreDockerGvcfSpec
+    extends DockerIntegrationSpec("Clio in Docker")
+    with GvcfTests
 
 /** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
 class RecoveryIntegrationSpec

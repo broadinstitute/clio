@@ -12,7 +12,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.WgsUbamService
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1QueryInput
+import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1QueryInput
 
 class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
   behavior of "WgsUbamWebService"
@@ -66,7 +66,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
     Post("/query", Map("project" -> "testProject1")) ~> webService.query ~> check {
       memorySearchDAO.queryCalls should be(
         Seq(
-          TransferWgsUbamV1QueryInput(
+          TransferUbamV1QueryInput(
             project = Some("testProject1"),
             documentStatus = Some(DocumentStatus.Normal)
           )
@@ -120,7 +120,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
     Post("/query", Map("flowcell_barcode" -> "FC123")) ~> webService.query ~> check {
       memorySearchDAO.queryCalls should be(
         Seq(
-          TransferWgsUbamV1QueryInput(
+          TransferUbamV1QueryInput(
             flowcellBarcode = Some("FC123"),
             documentStatus = Some(DocumentStatus.Normal)
           )
@@ -156,12 +156,12 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
       memorySearchDAO.queryCalls should be(
         Seq(
           // From /query call earlier in the test.
-          TransferWgsUbamV1QueryInput(
+          TransferUbamV1QueryInput(
             flowcellBarcode = Some("FC123"),
             documentStatus = Some(DocumentStatus.Normal)
           ),
           // No documentStatus restriction from /queryall
-          TransferWgsUbamV1QueryInput(flowcellBarcode = Some("FC123"))
+          TransferUbamV1QueryInput(flowcellBarcode = Some("FC123"))
         ).map(WgsUbamService.v1QueryConverter.buildQuery)
       )
     }

@@ -4,10 +4,10 @@ import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
-import org.broadinstitute.clio.transfer.model.wgsubam.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata,
+  TransferUbamV1QueryInput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -40,7 +40,7 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
     val wgsUbamService = new WgsUbamService(persistenceService, searchService)
 
     val transferInput =
-      TransferWgsUbamV1QueryInput(project = Option("testProject"))
+      TransferUbamV1QueryInput(project = Option("testProject"))
     for {
       _ <- wgsUbamService.queryMetadata(transferInput).runWith(Sink.seq)
     } yield {
@@ -70,9 +70,9 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
     val wgsUbamService = new WgsUbamService(persistenceService, searchService)
 
     val transferKey =
-      TransferWgsUbamV1Key(Location.GCP, "barcode1", 2, "library3")
+      TransferUbamV1Key(Location.GCP, "barcode1", 2, "library3")
     val transferMetadata =
-      TransferWgsUbamV1Metadata(
+      TransferUbamV1Metadata(
         project = Option("testProject"),
         notes = Option("notable update"),
         documentStatus = documentStatus

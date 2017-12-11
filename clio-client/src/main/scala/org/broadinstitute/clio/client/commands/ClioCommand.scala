@@ -14,9 +14,9 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1Key,
   TransferWgsCramV1QueryInput
 }
-import org.broadinstitute.clio.transfer.model.wgsubam.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1QueryInput
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1QueryInput
 }
 
 /**
@@ -72,24 +72,24 @@ case object GetServerVersion extends RetrieveAndPrintCommand
 case object GetSchemaWgsUbam extends GetSchemaCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.addWgsUbamName)
-final case class AddWgsUbam(@Recurse key: TransferWgsUbamV1Key, metadataLocation: URI)
+final case class AddWgsUbam(@Recurse key: TransferUbamV1Key, metadataLocation: URI)
     extends AddCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.queryWgsUbamName)
 final case class QueryWgsUbam(
-  @Recurse queryInput: TransferWgsUbamV1QueryInput,
-  includeDeleted: Boolean = false
+                               @Recurse queryInput: TransferUbamV1QueryInput,
+                               includeDeleted: Boolean = false
 ) extends QueryCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.moveWgsUbamName)
 final case class MoveWgsUbam(
-  @Recurse key: TransferWgsUbamV1Key,
+  @Recurse key: TransferUbamV1Key,
   destination: URI,
   newBasename: Option[String] = None
 ) extends MoveCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.deleteWgsUbamName)
-final case class DeleteWgsUbam(@Recurse key: TransferWgsUbamV1Key, note: String)
+final case class DeleteWgsUbam(@Recurse key: TransferUbamV1Key, note: String)
     extends DeleteCommand(WgsUbamIndex)
 
 // GVCF commands.
@@ -152,6 +152,32 @@ final case class DeliverWgsCram(
   newBasename: Option[String]
 ) extends ClioCommand
 
+// Hybsel-uBAM commands.
+
+@CommandName(ClioCommand.getHybselUbamSchemaName)
+case object GetSchemaHybselUbam extends GetSchemaCommand(HybselUbamIndex)
+
+@CommandName(ClioCommand.addHybselUbamName)
+final case class AddHybselUbam(@Recurse key: TransferUbamV1Key, metadataLocation: URI)
+  extends AddCommand(HybselUbamIndex)
+
+@CommandName(ClioCommand.queryHybselUbamName)
+final case class QueryHybselUbam(
+                                  @Recurse queryInput: TransferUbamV1QueryInput,
+                                  includeDeleted: Boolean = false
+                             ) extends QueryCommand(HybselUbamIndex)
+
+@CommandName(ClioCommand.moveHybselUbamName)
+final case class MoveHybselUbam(
+                              @Recurse key: TransferUbamV1Key,
+                              destination: URI,
+                              newBasename: Option[String] = None
+                            ) extends MoveCommand(HybselUbamIndex)
+
+@CommandName(ClioCommand.deleteHybselUbamName)
+final case class DeleteHybselUbam(@Recurse key: TransferUbamV1Key, note: String)
+  extends DeleteCommand(HybselUbamIndex)
+
 object ClioCommand extends ClioParsers {
 
   // Names for generic commands.
@@ -186,6 +212,13 @@ object ClioCommand extends ClioParsers {
   val moveWgsCramName: String = movePrefix + WgsCramIndex.commandName
   val deleteWgsCramName: String = deletePrefix + WgsCramIndex.commandName
   val deliverWgsCramName: String = deliverPrefix + WgsCramIndex.commandName
+
+  // Names for Hybsel uBAM commands.
+  val getHybselUbamSchemaName: String = getSchemaPrefix + HybselUbamIndex.commandName
+  val addHybselUbamName: String = addPrefix + HybselUbamIndex.commandName
+  val queryHybselUbamName: String = queryPrefix + HybselUbamIndex.commandName
+  val moveHybselUbamName: String = movePrefix + HybselUbamIndex.commandName
+  val deleteHybselUbamName: String = deletePrefix + HybselUbamIndex.commandName
 
   /** The caseapp parser to use for all Clio sub-commands. */
   val parser: CommandParser[ClioCommand] =

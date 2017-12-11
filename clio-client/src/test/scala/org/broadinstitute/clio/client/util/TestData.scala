@@ -16,10 +16,10 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1QueryInput,
   WgsCramExtensions
 }
-import org.broadinstitute.clio.transfer.model.wgsubam.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1QueryInput,
-  WgsUbamExtensions
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1QueryInput,
+  UbamExtensions
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -102,12 +102,12 @@ trait TestData {
 
   val testUbamCloudSourcePath: URI =
     URI.create(
-      s"gs://testProject/testSample/ubamPath1${WgsUbamExtensions.UbamExtension}"
+      s"gs://testProject/testSample/ubamPath1${UbamExtensions.UbamExtension}"
     )
 
   val testUbamCloudDestinationPath: URI =
     URI.create(
-      s"gs://testProject/testSample/ubamPath2${WgsUbamExtensions.UbamExtension}"
+      s"gs://testProject/testSample/ubamPath2${UbamExtensions.UbamExtension}"
     )
 
   val testGvcfCloudSourcePath: URI =
@@ -146,7 +146,7 @@ trait TestData {
   val testWgsMetricsCloudSourcePath: URI =
     URI.create("gs://testProject/testSample/cramPath1.wgs_metrics")
 
-  val testTransferV1Key = TransferWgsUbamV1Key(
+  val testTransferV1Key = TransferUbamV1Key(
     flowcellBarcode = testFlowcell,
     lane = testLane,
     libraryName = testLibName,
@@ -168,7 +168,7 @@ trait TestData {
   )
 
   val goodQueryCommand = QueryWgsUbam(
-    queryInput = TransferWgsUbamV1QueryInput()
+    queryInput = TransferUbamV1QueryInput()
   )
 
   val goodAddCommand =

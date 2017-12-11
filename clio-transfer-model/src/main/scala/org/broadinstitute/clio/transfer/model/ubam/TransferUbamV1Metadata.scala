@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.transfer.model.wgsubam
+package org.broadinstitute.clio.transfer.model.ubam
 
 import java.net.URI
 import java.time.OffsetDateTime
@@ -6,7 +6,7 @@ import java.time.OffsetDateTime
 import org.broadinstitute.clio.transfer.model.TransferMetadata
 import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
-case class TransferWgsUbamV1Metadata(
+case class TransferUbamV1Metadata(
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
   dataType: Option[String] = None,
@@ -40,18 +40,21 @@ case class TransferWgsUbamV1Metadata(
   ubamMd5: Option[Symbol] = None,
   ubamPath: Option[URI] = None,
   ubamSize: Option[Long] = None,
-  documentStatus: Option[DocumentStatus] = None
-) extends TransferMetadata[TransferWgsUbamV1Metadata] {
+  documentStatus: Option[DocumentStatus] = None,
+  baitSet: Option[String] = None,
+  baitSetName: Option[String] = None,
+  targetSet: Option[String] = None
+) extends TransferMetadata[TransferUbamV1Metadata] {
 
   override def pathsToDelete: Seq[URI] = ubamPath.toSeq
 
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
-  ): TransferWgsUbamV1Metadata = {
-    this.copy(ubamPath = pathMapper(ubamPath, WgsUbamExtensions.UbamExtension))
+  ): TransferUbamV1Metadata = {
+    this.copy(ubamPath = pathMapper(ubamPath, UbamExtensions.UbamExtension))
   }
 
-  override def markDeleted(deletionNote: String): TransferWgsUbamV1Metadata =
+  override def markDeleted(deletionNote: String): TransferUbamV1Metadata =
     this.copy(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)

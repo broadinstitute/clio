@@ -7,7 +7,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeleteWgsUbam
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.wgsubam.TransferWgsUbamV1Key
+import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1Key
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 class DeleteWgsUbamSpec extends BaseClientSpec {
@@ -18,7 +18,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   it should "throw an exception if the location is not GCP" in {
     recoverToSucceededIf[Exception] {
       val command = DeleteWgsUbam(
-        key = TransferWgsUbamV1Key(
+        key = TransferUbamV1Key(
           flowcellBarcode = testFlowcell,
           lane = testLane,
           libraryName = testLibName,

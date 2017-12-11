@@ -7,11 +7,11 @@ import com.dimafeng.testcontainers.ForAllTestContainer
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.wgsubam.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryOutput,
-  WgsUbamExtensions
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata,
+  TransferUbamV1QueryOutput,
+  UbamExtensions
 }
 import org.broadinstitute.clio.util.model.Location
 
@@ -28,7 +28,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
     val id = randomId
     val randInt = Random.nextInt(100)
 
-    val key = TransferWgsUbamV1Key(
+    val key = TransferUbamV1Key(
       location = location,
       flowcellBarcode = s"flowcell$id",
       lane = randInt,
@@ -36,9 +36,9 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
     )
     val ubamPath = Seq
       .fill(randInt)(id)
-      .mkString("gs://", "/", WgsUbamExtensions.UbamExtension)
+      .mkString("gs://", "/", UbamExtensions.UbamExtension)
 
-    val metadata = TransferWgsUbamV1Metadata(
+    val metadata = TransferUbamV1Metadata(
       ubamPath = Some(URI.create(ubamPath)),
       ubamSize = Some(randInt.toLong),
       analysisType = Some(id),
@@ -82,7 +82,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
       .runWith(Sink.ignore)
 
     val queries = immutable.Seq.fill(maxConcurrentRequests) { () =>
-      runClientGetJsonAs[Seq[TransferWgsUbamV1QueryOutput]](
+      runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--location",
         location.entryName
