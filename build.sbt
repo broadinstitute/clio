@@ -118,10 +118,16 @@ lazy val `clio-server` = project
   */
 lazy val `clio-client` = project
   .dependsOn(`clio-transfer-model`)
-  .enablePlugins(ArtifactoryPublishingPlugin, ArtifactoryFatJarPublishingPlugin)
+  .enablePlugins(
+    ArtifactoryPublishingPlugin,
+    ArtifactoryFatJarPublishingPlugin,
+    DockerPlugin
+  )
   .settings(libraryDependencies ++= Dependencies.ClientDependencies)
   .settings(commonSettings)
   .settings(commonTestDockerSettings)
+  .settings(commonDockerSettings)
+  .settings(dockerfile in docker := Docker.clientDockerFile.value)
   .settings(
     inConfig(FatJar) {
       addArtifact(

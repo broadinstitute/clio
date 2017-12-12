@@ -2,11 +2,12 @@ package org.broadinstitute.clio.util.auth
 
 import java.nio.file.{Files, Path}
 
-import com.google.auth.oauth2.OAuth2Credentials
+import com.google.auth.oauth2.{AccessToken, GoogleCredentials, OAuth2Credentials}
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.parser.decode
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.ServiceAccount
+import cats.syntax.either._
 
 import scala.util.Try
 
@@ -18,6 +19,21 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     "https://www.googleapis.com/auth/userinfo.email"
   )
 
+  private val shellOutCreds: Either[Throwable, OAuth2Credentials] = {
+    logger.debug("Shelling out to gcloud to get credentials")
+    Right(ExternalGCloudCredentials)
+  }
+
+  def getCredentials(
+    accessToken: Option[AccessToken],
+    serviceAccountJson: Option[Path]
+  ): Either[Throwable, OAuth2Credentials] = {
+    accessToken
+      .map(token => Either.catchNonFatal(new GoogleCredentials(token)))
+      .orElse(Option(getOAuth2Credentials(serviceAccountJson)))
+      .getOrElse(Either.catchNonFatal(GoogleCredentials.getApplicationDefault))
+  }
+
   /**
     * Get OAuth2 credentials either from the service account json or
     * from the user's default setup.
@@ -28,22 +44,19 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     serviceAccountPath: Option[Path]
   ): Either[Throwable, OAuth2Credentials] = {
 
-    val shellOutCreds: Either[Throwable, OAuth2Credentials] = Right(
-      ExternalGCloudCredentials
-    )
-
-    serviceAccountPath.fold(shellOutCreds) { jsonPath =>
-      loadServiceAccountJson(jsonPath).fold(
-        err => {
-          logger.warn(
-            s"Failed to load service account JSON at $jsonPath, falling back to gcloud",
-            err
-          )
-          shellOutCreds
-        },
-        getCredsFromServiceAccount
-      )
-    }
+    serviceAccountPath
+      .fold(shellOutCreds) { jsonPath =>
+        loadServiceAccountJson(jsonPath).fold(
+          err => {
+            logger.warn(
+              s"Failed to load service account JSON at $jsonPath, falling back to gcloud",
+              err
+            )
+            shellOutCreds
+          },
+          getCredsFromServiceAccount
+        )
+      }
   }
 
   /** Load JSON for a google service account. */
@@ -53,10 +66,11 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     for {
       jsonPath <- Either.cond(
         Files.exists(serviceAccountPath),
-        serviceAccountPath,
-        new RuntimeException(
-          s"Could not find service account JSON at $serviceAccountPath"
-        )
+        serviceAccountPath, {
+          new RuntimeException(
+            s"Could not find service account JSON at $serviceAccountPath"
+          )
+        }
       )
       jsonBytes <- Try(Files.readAllBytes(jsonPath)).toEither
       account <- decode[ServiceAccount](new String(jsonBytes).stripMargin)
@@ -72,6 +86,9 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
   def getCredsFromServiceAccount(
     serviceAccount: ServiceAccount
   ): Either[Throwable, OAuth2Credentials] = {
+    logger.debug(
+      "Getting credentials from the command-line provided service-account-json"
+    )
     serviceAccount.credentialForScopes(authScopes).toEither
   }
 }

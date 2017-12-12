@@ -57,7 +57,10 @@ object ClioClient extends LazyLogging {
 
     val dispatchFutureOrErr = for {
       credentials <- AuthUtil
-        .getOAuth2Credentials(ClioClientConfig.serviceAccountJson)
+        .getCredentials(
+          ClioClientConfig.accessToken,
+          ClioClientConfig.serviceAccountJson
+        )
         .leftMap(AuthError.apply)
 
       webClient = new ClioWebClient(
