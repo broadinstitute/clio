@@ -683,13 +683,13 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
   }
 
   it should "move files, generate an md5 file, and record the workspace name when delivering crams" in {
-    val project = s"project$randomId"
-    val sample = s"sample$randomId"
+    val id = randomId
+    val project = s"project$id"
+    val sample = s"sample$id"
     val version = 3
-    val samplePrefix = "sample_prefix_"
 
-    val cramContents = s"$randomId --- I am a dummy cram --- $randomId"
-    val craiContents = s"$randomId --- I am a dummy crai --- $randomId"
+    val cramContents = s"$id --- I am a dummy cram --- $id"
+    val craiContents = s"$id --- I am a dummy crai --- $id"
     val md5Contents = randomId
 
     val cramName = s"$sample${WgsCramExtensions.CramExtension}"
@@ -701,10 +701,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val cramSource = rootSource.resolve(cramName)
     val craiSource = rootSource.resolve(craiName)
 
-    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
-    val cramDestination = rootDestination.resolve(s"$samplePrefix$cramName")
-    val craiDestination = rootDestination.resolve(s"$samplePrefix$craiName")
-    val md5Destination = rootDestination.resolve(s"$samplePrefix$md5Name")
+    val prefix = "new_basename_"
+    val newBasename = s"$prefix$sample"
+    val rootDestination = rootSource.getParent.resolve(s"moved/$id/")
+    val cramDestination = rootDestination.resolve(s"$prefix$cramName")
+    val craiDestination = rootDestination.resolve(s"$prefix$craiName")
+    val md5Destination = rootDestination.resolve(s"$prefix$md5Name")
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata = TransferWgsCramV1Metadata(
@@ -713,7 +715,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       cramMd5 = Some(Symbol(md5Contents))
     )
 
-    val workspaceName = s"$randomId-TestWorkspace-$randomId"
+    val workspaceName = s"$id-TestWorkspace-$id"
 
     val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
       case (source, contents) => Files.write(source, contents.getBytes)
@@ -734,8 +736,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         workspaceName,
         "--workspace-path",
         rootDestination.toUri.toString,
-        "--sample-prefix",
-        samplePrefix
+        "--new-basename",
+        newBasename
       )
       outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,

@@ -149,7 +149,7 @@ final case class DeliverWgsCram(
   @Recurse key: TransferWgsCramV1Key,
   workspaceName: String,
   workspacePath: URI,
-  samplePrefix: Option[String]
+  newBasename: Option[String]
 ) extends ClioCommand
 
 object ClioCommand extends ClioParsers {
