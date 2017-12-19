@@ -37,7 +37,7 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
       .map(token => Either.catchNonFatal(new GoogleCredentials(token)))
       .orElse(Option(getOAuth2Credentials(serviceAccountJson)))
       .getOrElse {
-        logger.debug("Falling back to application default credentials")
+        logger.error("Falling back to application default credentials")
         Either.catchNonFatal(GoogleCredentials.getApplicationDefault)
       }
   }
