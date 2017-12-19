@@ -33,11 +33,12 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     accessToken: Option[AccessToken],
     serviceAccountJson: Option[Path]
   ): Either[Throwable, OAuth2Credentials] = {
-    accessToken
-      .map(token => Either.catchNonFatal(new GoogleCredentials(token)))
-      .orElse(Option(getOAuth2Credentials(serviceAccountJson)))
-      .getOrElse {
-        logger.error("Falling back to application default credentials")
+    Either
+      .fromOption(accessToken, new RuntimeException("No access token provided"))
+      .flatMap(token => Either.catchNonFatal(new GoogleCredentials(token)))
+      .orElse(getOAuth2Credentials(serviceAccountJson))
+      .orElse {
+        logger.debug("Falling back to application default credentials")
         Either.catchNonFatal(GoogleCredentials.getApplicationDefault)
       }
   }
