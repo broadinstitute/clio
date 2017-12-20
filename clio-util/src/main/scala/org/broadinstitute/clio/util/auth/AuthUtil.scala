@@ -9,7 +9,6 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.ServiceAccount
 import cats.syntax.either._
 
-import scala.sys.process.Process
 import scala.util.Try
 
 object AuthUtil extends ModelAutoDerivation with LazyLogging {
@@ -25,8 +24,10 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     // Need to test out the gcloud command here before we build the credentials
     // Since the access token is lazily evaluated.
     Either
-      .catchNonFatal(Process("gcloud", List("auth", "print-access-token")).!!.trim)
-      .map(_ => ExternalGCloudCredentials)
+      .catchNonFatal {
+        val _ = ExternalGCloudCredentials.refreshAccessToken()
+        ExternalGCloudCredentials
+      }
   }
 
   def getCredentials(
