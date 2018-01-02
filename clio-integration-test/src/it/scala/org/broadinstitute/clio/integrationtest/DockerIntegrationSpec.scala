@@ -96,18 +96,10 @@ abstract class DockerIntegrationSpec(name: String)
 }
 
 /** Dockerized versions of the integration tests that also run against our deployed Clios. */
-class CoreDockerBasicSpec
-    extends DockerIntegrationSpec("Clio in Docker")
-    with BasicTests
-class CoreDockerUbamSpec
-    extends DockerIntegrationSpec("Clio in Docker")
-    with WgsUbamTests
-class CoreDockerCramSpec
-    extends DockerIntegrationSpec("Clio in Docker")
-    with WgsCramTests
-class CoreDockerGvcfSpec
-    extends DockerIntegrationSpec("Clio in Docker")
-    with GvcfTests
+class CoreDockerBasicSpec extends DockerIntegrationSpec("Clio in Docker") with BasicTests
+class CoreDockerUbamSpec extends DockerIntegrationSpec("Clio in Docker") with UbamTests
+class CoreDockerCramSpec extends DockerIntegrationSpec("Clio in Docker") with WgsCramTests
+class CoreDockerGvcfSpec extends DockerIntegrationSpec("Clio in Docker") with GvcfTests
 
 /** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
 class RecoveryIntegrationSpec

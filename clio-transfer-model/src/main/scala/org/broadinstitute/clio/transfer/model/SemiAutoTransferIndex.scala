@@ -86,11 +86,11 @@ case object WgsCramIndex
 }
 
 case object HybselUbamIndex
-  extends SemiAutoTransferIndex[
-    TransferUbamV1Key,
-    TransferUbamV1Metadata,
-    TransferUbamV1QueryInput,
-    TransferUbamV1QueryOutput
+    extends SemiAutoTransferIndex[
+      TransferUbamV1Key,
+      TransferUbamV1Metadata,
+      TransferUbamV1QueryInput,
+      TransferUbamV1QueryOutput
     ] {
   override val urlSegment: String = "hybselubam"
   override val name: String = "HybselUbam"

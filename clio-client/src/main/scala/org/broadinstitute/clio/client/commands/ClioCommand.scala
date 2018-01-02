@@ -77,8 +77,8 @@ final case class AddWgsUbam(@Recurse key: TransferUbamV1Key, metadataLocation: U
 
 @CommandName(ClioCommand.queryWgsUbamName)
 final case class QueryWgsUbam(
-                               @Recurse queryInput: TransferUbamV1QueryInput,
-                               includeDeleted: Boolean = false
+  @Recurse queryInput: TransferUbamV1QueryInput,
+  includeDeleted: Boolean = false
 ) extends QueryCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.moveWgsUbamName)
@@ -159,24 +159,24 @@ case object GetSchemaHybselUbam extends GetSchemaCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.addHybselUbamName)
 final case class AddHybselUbam(@Recurse key: TransferUbamV1Key, metadataLocation: URI)
-  extends AddCommand(HybselUbamIndex)
+    extends AddCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.queryHybselUbamName)
 final case class QueryHybselUbam(
-                                  @Recurse queryInput: TransferUbamV1QueryInput,
-                                  includeDeleted: Boolean = false
-                             ) extends QueryCommand(HybselUbamIndex)
+  @Recurse queryInput: TransferUbamV1QueryInput,
+  includeDeleted: Boolean = false
+) extends QueryCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.moveHybselUbamName)
 final case class MoveHybselUbam(
-                              @Recurse key: TransferUbamV1Key,
-                              destination: URI,
-                              newBasename: Option[String] = None
-                            ) extends MoveCommand(HybselUbamIndex)
+  @Recurse key: TransferUbamV1Key,
+  destination: URI,
+  newBasename: Option[String] = None
+) extends MoveCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.deleteHybselUbamName)
 final case class DeleteHybselUbam(@Recurse key: TransferUbamV1Key, note: String)
-  extends DeleteCommand(HybselUbamIndex)
+    extends DeleteCommand(HybselUbamIndex)
 
 object ClioCommand extends ClioParsers {
 

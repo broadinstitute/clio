@@ -3,8 +3,10 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 import java.nio.file.Files
 
+import akka.http.scaladsl.model.StatusCode
 import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
+import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentWgsUbam,
@@ -24,11 +26,14 @@ import org.broadinstitute.clio.util.model.{
   UpsertId
 }
 import org.scalatest.Assertion
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.time.{Seconds, Span}
 
 import scala.concurrent.Future
 
 /** Tests of Clio's ubam functionality. */
-trait WgsUbamTests { self: BaseIntegrationSpec =>
+trait UbamTests { self: BaseIntegrationSpec =>
 
   trait UbamType
   case class WholeGenome() extends UbamType
@@ -41,7 +46,7 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     val command = ubamType match {
-      case WholeGenome() => ClioCommand.addWgsUbamName
+      case WholeGenome()     => ClioCommand.addWgsUbamName
       case HybridSelection() => ClioCommand.addHybselUbamName
     }
     runClient(
@@ -57,6 +62,35 @@ trait WgsUbamTests { self: BaseIntegrationSpec =>
       "--metadata-location",
       tmpMetadata.toString
     ).mapTo[UpsertId]
+  }
+
+  it should "throw a FailedResponse exception with status code 404 when adding hybsel ubams" in {
+    val key = TransferUbamV1Key(
+      Location.GCP,
+      "fake_barcode",
+      2,
+      "fake_library"
+    )
+    val tmpMetadata =
+      writeLocalTmpJson(TransferUbamV1Metadata(project = Some("fake_project")))
+    val responseFuture = runClient(
+      ClioCommand.addHybselUbamName,
+      "--flowcell-barcode",
+      key.flowcellBarcode,
+      "--lane",
+      key.lane.toString,
+      "--library-name",
+      key.libraryName,
+      "--location",
+      key.location.entryName,
+      "--metadata-location",
+      tmpMetadata.toString
+    )
+
+    ScalaFutures.whenReady(responseFuture.failed, Timeout(Span(5, Seconds))) { e =>
+      e shouldBe a[FailedResponse]
+      e.asInstanceOf[FailedResponse].statusCode should be(StatusCode.int2StatusCode(404))
+    }
   }
 
   it should "create the expected wgs-ubam mapping in elasticsearch" in {
