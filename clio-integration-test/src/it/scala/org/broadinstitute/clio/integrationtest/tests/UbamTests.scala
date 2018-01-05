@@ -8,23 +8,10 @@ import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentWgsUbam,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{DocumentWgsUbam, ElasticsearchIndex}
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1Metadata,
-  TransferUbamV1QueryOutput,
-  UbamExtensions
-}
-import org.broadinstitute.clio.util.model.{
-  DocumentStatus,
-  Location,
-  RegulatoryDesignation,
-  UpsertId
-}
+import org.broadinstitute.clio.transfer.model.ubam.{TransferUbamV1Key, TransferUbamV1Metadata, TransferUbamV1QueryOutput, UbamExtensions}
+import org.broadinstitute.clio.util.model._
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
@@ -32,19 +19,15 @@ import scala.concurrent.Future
 /** Tests of Clio's ubam functionality. */
 trait UbamTests { self: BaseIntegrationSpec =>
 
-  trait UbamType
-  case class WholeGenome() extends UbamType
-  case class HybridSelection() extends UbamType
-
   def runUpsertUbam(
     key: TransferUbamV1Key,
     metadata: TransferUbamV1Metadata,
-    ubamType: UbamType
+    sequencingType: SequencingType
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
-    val command = ubamType match {
-      case WholeGenome()     => ClioCommand.addWgsUbamName
-      case HybridSelection() => ClioCommand.addHybselUbamName
+    val command = sequencingType match {
+      case SequencingType.WholeGenome     => ClioCommand.addWgsUbamName
+      case SequencingType.HybridSelection => ClioCommand.addHybselUbamName
     }
     runClient(
       command,
@@ -61,16 +44,17 @@ trait UbamTests { self: BaseIntegrationSpec =>
     ).mapTo[UpsertId]
   }
 
-  def statusCodeShouldBe(code: Int): FailedResponse => Assertion = {
+  def statusCodeShouldBe(expectedStatusCode: StatusCode): FailedResponse => Assertion = {
     e: FailedResponse =>
-      val expectedStatusCode = StatusCode.int2StatusCode(code)
       e.statusCode should be(expectedStatusCode)
   }
+
+  val statusCode404 = StatusCode.int2StatusCode(404)
 
   it should "throw a FailedResponse 404 when running get schema command for hybsel ubams" in {
     val getSchemaResponseFuture = runClient(ClioCommand.getHybselUbamSchemaName)
     recoverToExceptionIf[FailedResponse](getSchemaResponseFuture)
-      .map(statusCodeShouldBe(404))
+      .map(statusCodeShouldBe(statusCode404))
   }
 
   val stubKey = TransferUbamV1Key(
@@ -98,7 +82,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       tmpMetadata.toString
     )
     recoverToExceptionIf[FailedResponse](addResponseFuture)
-      .map(statusCodeShouldBe(404))
+      .map(statusCodeShouldBe(statusCode404))
   }
 
   it should "throw a FailedResponse 404 when running query command for hybsel ubams" in {
@@ -108,7 +92,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       stubKey.flowcellBarcode
     )
     recoverToExceptionIf[FailedResponse](queryResponseFuture)
-      .map(statusCodeShouldBe(404))
+      .map(statusCodeShouldBe(statusCode404))
   }
 
   def messageShouldBe(expectedMessage: String): Exception => Assertion = {
@@ -202,7 +186,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         expected.libraryName
       ),
       TransferUbamV1Metadata(project = expected.project),
-      WholeGenome()
+      SequencingType.WholeGenome
     )
 
     it should s"handle upserts and queries for wgs-ubam location $location" in {
@@ -241,12 +225,12 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertUbam(
         upsertKey,
         TransferUbamV1Metadata(project = Some("testProject1")),
-        WholeGenome()
+        SequencingType.WholeGenome
       )
       upsertId2 <- runUpsertUbam(
         upsertKey,
         TransferUbamV1Metadata(project = Some("testProject2")),
-        WholeGenome()
+        SequencingType.WholeGenome
       )
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
@@ -273,7 +257,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       s"library$randomId"
     )
     val metadata = TransferUbamV1Metadata(project = Some("testProject1"))
-    val ubamType = WholeGenome()
+    val ubamType = SequencingType.WholeGenome
 
     for {
       upsertId1 <- runUpsertUbam(upsertKey, metadata, ubamType)
@@ -312,7 +296,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
             sampleAlias = Some(sample),
             researchProjectId = Some(researchProjectId)
           )
-          runUpsertUbam(key, metadata, WholeGenome())
+          runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       }
     }
 
@@ -378,19 +362,19 @@ trait UbamTests { self: BaseIntegrationSpec =>
     )
 
     for {
-      _ <- runUpsertUbam(key, upsertData, WholeGenome())
+      _ <- runUpsertUbam(key, upsertData, SequencingType.WholeGenome)
       original <- query
       _ = original.sampleAlias should be(metadata.sampleAlias)
       _ = original.notes should be(None)
       upsertData2 = upsertData.copy(notes = metadata.notes)
-      _ <- runUpsertUbam(key, upsertData2, WholeGenome())
+      _ <- runUpsertUbam(key, upsertData2, SequencingType.WholeGenome)
       withNotes <- query
       _ = withNotes.sampleAlias should be(metadata.sampleAlias)
       _ = withNotes.notes should be(metadata.notes)
       _ <- runUpsertUbam(
         key,
         upsertData2.copy(sampleAlias = Some("sampleAlias2"), notes = Some("")),
-        WholeGenome()
+        SequencingType.WholeGenome
       )
       emptyNotes <- query
     } yield {
@@ -421,7 +405,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     val upserts = Future.sequence {
       keysWithMetadata.map {
-        case (key, metadata) => runUpsertUbam(key, metadata, WholeGenome())
+        case (key, metadata) => runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       }
     }
 
@@ -451,7 +435,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       _ <- runUpsertUbam(
         deleteKey,
         deleteData.copy(documentStatus = Some(DocumentStatus.Deleted)),
-        WholeGenome()
+        SequencingType.WholeGenome
       )
       _ <- checkQuery(expectedLength = 2)
 
@@ -509,7 +493,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     // Clio needs the metadata to be added before it can be moved.
     val _ = Files.write(sourceUbam, fileContents.getBytes)
     val result = for {
-      _ <- runUpsertUbam(key, metadata, WholeGenome())
+      _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       _ <- runClient(
         ClioCommand.moveWgsUbamName,
         "--flowcell-barcode",
@@ -579,7 +563,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       TransferUbamV1Metadata(ubamPath = Some(cloudPath.toUri))
 
     val result = for {
-      _ <- runUpsertUbam(key, metadata, WholeGenome())
+      _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       _ <- recoverToSucceededIf[Exception] {
         runClient(
           ClioCommand.moveWgsUbamName,
@@ -644,7 +628,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       }
     }
     for {
-      upsert <- runUpsertUbam(upsertKey, metadata, WholeGenome())
+      upsert <- runUpsertUbam(upsertKey, metadata, SequencingType.WholeGenome)
       queried <- query
     } yield {
       queried.regulatoryDesignation should be(regulatoryDesignation)
@@ -673,7 +657,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     // Clio needs the metadata to be added before it can be deleted.
     val _ = Files.write(cloudPath, fileContents.getBytes)
     val result = for {
-      _ <- runUpsertUbam(key, metadata, WholeGenome())
+      _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       _ <- runClient(
         ClioCommand.deleteWgsUbamName,
         "--flowcell-barcode",
