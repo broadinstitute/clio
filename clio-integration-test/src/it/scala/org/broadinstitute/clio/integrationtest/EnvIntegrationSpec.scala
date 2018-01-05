@@ -7,7 +7,7 @@ import org.broadinstitute.clio.client.webclient.{
   ClioWebClient,
   GoogleCredentialsGenerator
 }
-import org.broadinstitute.clio.integrationtest.tests.AuthRefreshTests
+import org.broadinstitute.clio.integrationtest.tests._
 import org.broadinstitute.clio.util.auth.AuthUtil
 
 /**
@@ -50,8 +50,11 @@ abstract class EnvIntegrationSpec(env: String)
     rootPathForBucketInEnv(env, storageScopes)
 }
 
-/** The integration spec that runs against Clio in dev. */
-class DevEnvIntegrationSpec extends EnvIntegrationSpec("dev") with IntegrationSuite
+/** The integration specs that run against Clio in dev. */
+class DevEnvBasicSpec extends EnvIntegrationSpec("dev") with BasicTests
+class DevEnvUbamSpec extends EnvIntegrationSpec("dev") with UbamTests
+class DevEnvCramSpec extends EnvIntegrationSpec("dev") with WgsCramTests
+class DevEnvGvcfSpec extends EnvIntegrationSpec("dev") with GvcfTests
 
 /**
   * Integration spec checking that auth tokens properly refresh in the client.
@@ -59,7 +62,8 @@ class DevEnvIntegrationSpec extends EnvIntegrationSpec("dev") with IntegrationSu
   */
 class AuthIntegrationSpec extends EnvIntegrationSpec("dev") with AuthRefreshTests
 
-/** The integration spec that runs against Clio in staging. */
-class StagingEnvIntegrationSpec
-    extends EnvIntegrationSpec("staging")
-    with IntegrationSuite
+/** The integration specs that run against Clio in staging. */
+class StagingEnvBasicSpec extends EnvIntegrationSpec("staging") with BasicTests
+class StagingEnvUbamSpec extends EnvIntegrationSpec("staging") with UbamTests
+class StagingEnvCramSpec extends EnvIntegrationSpec("staging") with WgsCramTests
+class StagingEnvGvcfSpec extends EnvIntegrationSpec("staging") with GvcfTests

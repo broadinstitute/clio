@@ -1,9 +1,9 @@
-package org.broadinstitute.clio.transfer.model.wgsubam
+package org.broadinstitute.clio.transfer.model.ubam
 
 import org.broadinstitute.clio.transfer.model.TransferKey
 import org.broadinstitute.clio.util.model.Location
 
-case class TransferWgsUbamV1Key(
+case class TransferUbamV1Key(
   location: Location,
   flowcellBarcode: String,
   lane: Int,

@@ -13,11 +13,11 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1QueryInput,
   TransferWgsCramV1QueryOutput
 }
-import org.broadinstitute.clio.transfer.model.wgsubam.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata,
-  TransferWgsUbamV1QueryInput,
-  TransferWgsUbamV1QueryOutput
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata,
+  TransferUbamV1QueryInput,
+  TransferUbamV1QueryOutput
 }
 import org.broadinstitute.clio.util.json.JsonSchema
 import org.broadinstitute.clio.util.json.ModelAutoDerivation._
@@ -63,10 +63,10 @@ case object GvcfIndex
 
 case object WgsUbamIndex
     extends SemiAutoTransferIndex[
-      TransferWgsUbamV1Key,
-      TransferWgsUbamV1Metadata,
-      TransferWgsUbamV1QueryInput,
-      TransferWgsUbamV1QueryOutput
+      TransferUbamV1Key,
+      TransferUbamV1Metadata,
+      TransferUbamV1QueryInput,
+      TransferUbamV1QueryOutput
     ] {
   override val urlSegment: String = "wgsubam"
   override val name: String = "WgsUbam"
@@ -83,4 +83,16 @@ case object WgsCramIndex
   override val urlSegment: String = "wgscram"
   override val name: String = "WgsCram"
   override val commandName: String = "wgs-cram"
+}
+
+case object HybselUbamIndex
+    extends SemiAutoTransferIndex[
+      TransferUbamV1Key,
+      TransferUbamV1Metadata,
+      TransferUbamV1QueryInput,
+      TransferUbamV1QueryOutput
+    ] {
+  override val urlSegment: String = "hybselubam"
+  override val name: String = "HybselUbam"
+  override val commandName: String = "hybsel-ubam"
 }

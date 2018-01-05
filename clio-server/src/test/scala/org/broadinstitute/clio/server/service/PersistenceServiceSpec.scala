@@ -7,17 +7,17 @@ import org.broadinstitute.clio.server.dataaccess.{
   MemorySearchDAO
 }
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
-import org.broadinstitute.clio.transfer.model.wgsubam.{
-  TransferWgsUbamV1Key,
-  TransferWgsUbamV1Metadata
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata
 }
 import org.broadinstitute.clio.util.model.Location
 
 class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
   behavior of "PersistenceService"
 
-  val mockKey = TransferWgsUbamV1Key(Location.OnPrem, "barcode", 1, "library")
-  val mockMetadata = TransferWgsUbamV1Metadata()
+  val mockKey = TransferUbamV1Key(Location.OnPrem, "barcode", 1, "library")
+  val mockMetadata = TransferUbamV1Metadata()
 
   it should "upsertMetadata" in {
     val persistenceDAO = new MemoryPersistenceDAO()

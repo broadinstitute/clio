@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.transfer.model.wgsubam
+package org.broadinstitute.clio.transfer.model.ubam
 
 import java.net.URI
 import java.time.OffsetDateTime
@@ -9,7 +9,7 @@ import org.broadinstitute.clio.util.model.{
   RegulatoryDesignation
 }
 
-case class TransferWgsUbamV1QueryOutput(
+case class TransferUbamV1QueryOutput(
   flowcellBarcode: String,
   lane: Int,
   libraryName: String,
@@ -47,5 +47,8 @@ case class TransferWgsUbamV1QueryOutput(
   ubamMd5: Option[Symbol] = None,
   ubamPath: Option[URI] = None,
   ubamSize: Option[Long] = None,
-  documentStatus: Option[DocumentStatus] = None
+  documentStatus: Option[DocumentStatus] = None,
+  baitSet: Option[String] = None,
+  baitSetName: Option[String] = None,
+  targetSet: Option[String] = None
 )
