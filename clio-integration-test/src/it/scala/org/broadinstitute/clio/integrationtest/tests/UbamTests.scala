@@ -26,9 +26,6 @@ import org.broadinstitute.clio.util.model.{
   UpsertId
 }
 import org.scalatest.Assertion
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.{Seconds, Span}
 
 import scala.concurrent.Future
 
@@ -64,33 +61,95 @@ trait UbamTests { self: BaseIntegrationSpec =>
     ).mapTo[UpsertId]
   }
 
-  it should "throw a FailedResponse exception with status code 404 when adding hybsel ubams" in {
-    val key = TransferUbamV1Key(
-      Location.GCP,
-      "fake_barcode",
-      2,
-      "fake_library"
-    )
+  def statusCodeShouldBe(code: Int): FailedResponse => Assertion = {
+    e: FailedResponse =>
+      val expectedStatusCode = StatusCode.int2StatusCode(code)
+      e.statusCode should be(expectedStatusCode)
+  }
+
+  it should "throw a FailedResponse 404 when running get schema command for hybsel ubams" in {
+    val getSchemaResponseFuture = runClient(ClioCommand.getHybselUbamSchemaName)
+    recoverToExceptionIf[FailedResponse](getSchemaResponseFuture)
+      .map(statusCodeShouldBe(404))
+  }
+
+  val stubKey = TransferUbamV1Key(
+    Location.GCP,
+    "fake_barcode",
+    2,
+    "fake_library"
+  )
+
+  it should "throw a FailedResponse 404 when running add command for hybsel ubams" in {
     val tmpMetadata =
       writeLocalTmpJson(TransferUbamV1Metadata(project = Some("fake_project")))
-    val responseFuture = runClient(
+
+    val addResponseFuture = runClient(
       ClioCommand.addHybselUbamName,
       "--flowcell-barcode",
-      key.flowcellBarcode,
+      stubKey.flowcellBarcode,
       "--lane",
-      key.lane.toString,
+      stubKey.lane.toString,
       "--library-name",
-      key.libraryName,
+      stubKey.libraryName,
       "--location",
-      key.location.entryName,
+      stubKey.location.entryName,
       "--metadata-location",
       tmpMetadata.toString
     )
+    recoverToExceptionIf[FailedResponse](addResponseFuture)
+      .map(statusCodeShouldBe(404))
+  }
 
-    ScalaFutures.whenReady(responseFuture.failed, Timeout(Span(5, Seconds))) { e =>
-      e shouldBe a[FailedResponse]
-      e.asInstanceOf[FailedResponse].statusCode should be(StatusCode.int2StatusCode(404))
-    }
+  it should "throw a FailedResponse 404 when running query command for hybsel ubams" in {
+    val queryResponseFuture = runClient(
+      ClioCommand.queryHybselUbamName,
+      "--flowcell-barcode",
+      stubKey.flowcellBarcode
+    )
+    recoverToExceptionIf[FailedResponse](queryResponseFuture)
+      .map(statusCodeShouldBe(404))
+  }
+
+  def messageShouldBe(expectedMessage: String): Exception => Assertion = {
+    e: Exception =>
+      e.getMessage should be(expectedMessage)
+  }
+
+  it should "throw a FailedResponse 404 when running move command for hybsel ubams" in {
+    val moveResponseFuture = runClient(
+      ClioCommand.moveHybselUbamName,
+      "--flowcell-barcode",
+      stubKey.flowcellBarcode,
+      "--lane",
+      stubKey.lane.toString,
+      "--library-name",
+      stubKey.libraryName,
+      "--location",
+      stubKey.location.entryName,
+      "--destination",
+      "gs://fake-path/"
+    )
+    recoverToExceptionIf[Exception](moveResponseFuture)
+      .map(messageShouldBe("Could not query the HybselUbam. No files have been moved."))
+  }
+
+  it should "throw a FailedResponse 404 when running delete command for hybsel ubams" in {
+    val deleteResponseFuture = runClient(
+      ClioCommand.deleteHybselUbamName,
+      "--flowcell-barcode",
+      stubKey.flowcellBarcode,
+      "--lane",
+      stubKey.lane.toString,
+      "--library-name",
+      stubKey.libraryName,
+      "--location",
+      stubKey.location.entryName,
+      "--note",
+      "note"
+    )
+    recoverToExceptionIf[Exception](deleteResponseFuture)
+      .map(messageShouldBe("Could not query the HybselUbam. No files have been deleted."))
   }
 
   it should "create the expected wgs-ubam mapping in elasticsearch" in {
