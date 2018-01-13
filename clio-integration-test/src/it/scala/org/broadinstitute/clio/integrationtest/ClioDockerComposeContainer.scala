@@ -14,6 +14,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex
 }
 import org.junit.runner.Description
+import org.testcontainers.utility.Base58
 
 import scala.collection.JavaConverters._
 
@@ -27,7 +28,11 @@ class ClioDockerComposeContainer(
   elasticsearchHostname: String,
   exposedServices: Map[String, Int],
   seededDocuments: Map[ElasticsearchIndex[_], Seq[ClioDocument]] = Map.empty
-) extends DockerComposeContainer(composeFile, exposedServices) {
+) extends DockerComposeContainer(
+      Seq(composeFile),
+      exposedServices,
+      Base58.randomString(6).toLowerCase()
+    ) {
 
   /** Log files to mount into the Elasticsearch containers. */
   private val esLogs = for {

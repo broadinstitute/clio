@@ -8,7 +8,8 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentWgsCram,
-  ElasticsearchIndex
+  ElasticsearchIndex,
+  ElasticsearchUtil
 }
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram._
@@ -52,8 +53,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val getRequest =
       getMapping(IndexAndType(expected.indexName, expected.indexType))
 
-    elasticsearchClient.execute(getRequest).map {
-      _ should be(Seq(indexToMapping(expected)))
+    elasticsearchClient.execute(getRequest).map { response =>
+      ElasticsearchUtil.unpackResponse(response) should be(Seq(indexToMapping(expected)))
     }
   }
 

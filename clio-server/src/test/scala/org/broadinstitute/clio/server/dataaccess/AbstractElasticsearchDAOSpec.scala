@@ -1,10 +1,8 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import com.sksamuel.elastic4s.http.HttpEntity
 import io.circe.parser._
 import org.apache.http.HttpHost
-import org.apache.http.entity.ContentType
-import org.apache.http.nio.entity.NStringEntity
-import org.apache.http.util.EntityUtils
 import org.broadinstitute.clio.server.TestKitSuite
 import org.scalatest._
 
@@ -35,17 +33,15 @@ abstract class AbstractElasticsearchDAOSpec(actorSystemName: String)
 
   protected def initialize(): Future[Assertion] = {
     // Set *all* existing index replicas to 0, including elasticsearch's internal indexes
-    val entity = new NStringEntity(
+    val entity = HttpEntity(
       """|{
          |  "index" : {
          |    "number_of_replicas" : 0
          |  }
-         |}
-         |""".stripMargin,
-      ContentType.APPLICATION_JSON
+         |}""".stripMargin
     )
 
-    val params = java.util.Collections.emptyMap[String, String]()
+    val params = Map.empty[String, String]
 
     /**
       * Use the internal Elasticsearch REST client to make a call to settings and disable all of index replication.
@@ -55,22 +51,17 @@ abstract class AbstractElasticsearchDAOSpec(actorSystemName: String)
       * @return A Unit if the disabling was successful, or an error.
       */
     def performDisableReplicas(): Future[Unit] = {
-      val futureResponse = Future(
-        httpElasticsearchDAO.httpClient.rest
-          .performRequest("PUT", "/_settings", params, entity)
-      )
+      val futureResponse =
+        httpElasticsearchDAO.httpClient.client.async("PUT", "/_settings", params, entity)
       futureResponse map { response =>
-        val json = EntityUtils.toString(response.getEntity)
+        val json =
+          response.entity.fold(fail("No JSON returned from Elasticsearch"))(_.content)
         val jsonDecode = decode[Map[String, Boolean]](json)
         val jsonMap = jsonDecode.right.getOrElse(
-          throw new RuntimeException(
-            s"Unexpected response to setting replicas to 0: $json"
-          )
+          fail(s"Unexpected response to setting replicas to 0: $json")
         )
         if (!jsonMap("acknowledged"))
-          throw new RuntimeException(
-            "Setting replicas to 0 was not acknowledged"
-          )
+          fail("Setting replicas to 0 was not acknowledged")
       }
     }
 

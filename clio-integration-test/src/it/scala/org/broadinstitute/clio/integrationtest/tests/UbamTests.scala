@@ -3,14 +3,23 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 import java.nio.file.Files
 
-import akka.http.scaladsl.model.StatusCode
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{DocumentWgsUbam, ElasticsearchIndex}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  DocumentWgsUbam,
+  ElasticsearchIndex,
+  ElasticsearchUtil
+}
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.ubam.{TransferUbamV1Key, TransferUbamV1Metadata, TransferUbamV1QueryOutput, UbamExtensions}
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata,
+  TransferUbamV1QueryOutput,
+  UbamExtensions
+}
 import org.broadinstitute.clio.util.model._
 import org.scalatest.Assertion
 
@@ -49,7 +58,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       e.statusCode should be(expectedStatusCode)
   }
 
-  val statusCode404 = StatusCode.int2StatusCode(404)
+  val statusCode404: StatusCode = StatusCodes.NotFound
 
   it should "throw a FailedResponse 404 when running get schema command for hybsel ubams" in {
     val getSchemaResponseFuture = runClient(ClioCommand.getHybselUbamSchemaName)
@@ -95,9 +104,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
       .map(statusCodeShouldBe(statusCode404))
   }
 
-  def messageShouldBe(expectedMessage: String): Exception => Assertion = {
-    e: Exception =>
-      e.getMessage should be(expectedMessage)
+  def messageShouldBe(expectedMessage: String): Exception => Assertion = { e: Exception =>
+    e.getMessage should be(expectedMessage)
   }
 
   it should "throw a FailedResponse 404 when running move command for hybsel ubams" in {
@@ -143,8 +151,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val getRequest =
       getMapping(IndexAndType(expected.indexName, expected.indexType))
 
-    elasticsearchClient.execute(getRequest).map {
-      _ should be(Seq(indexToMapping(expected)))
+    elasticsearchClient.execute(getRequest).map { response =>
+      ElasticsearchUtil.unpackResponse(response) should be(Seq(indexToMapping(expected)))
     }
   }
 

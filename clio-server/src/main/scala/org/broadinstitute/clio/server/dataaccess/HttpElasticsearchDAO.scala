@@ -3,7 +3,7 @@ package org.broadinstitute.clio.server.dataaccess
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
-import com.sksamuel.elastic4s.{HitReader, Indexable}
+import com.sksamuel.elastic4s.{HitReader, Indexable, RefreshPolicy}
 import com.sksamuel.elastic4s.bulk.BulkCompatibleDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
@@ -16,7 +16,6 @@ import org.apache.http.HttpHost
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
 import org.elasticsearch.client.RestClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -56,7 +55,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   ): Source[D, NotUsed] = {
     implicit val hitReader: HitReader[D] = index.hitReader
 
-    val searchDefinition = search(index.indexName / index.indexType)
+    val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
       .size(HttpElasticsearchDAO.DocumentScrollSize)
       .sortByFieldAsc(HttpElasticsearchDAO.DocumentScrollSort)
@@ -71,19 +70,19 @@ class HttpElasticsearchDAO private[dataaccess] (
   ): Future[Option[D]] = {
     implicit val hitReader: HitReader[D] = index.hitReader
 
-    val searchDefinition = search(index.indexName / index.indexType)
+    val searchDefinition = searchWithType(index.indexName / index.indexType)
       .size(1)
       .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
     for {
-      searchResponse <- httpClient execute searchDefinition
+      searchResponse <- httpClient.execute(searchDefinition)
     } yield {
-      searchResponse.to[D].headOption
+      ElasticsearchUtil.unpackResponse(searchResponse).to[D].headOption
     }
   }
 
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {
     val clusterHealthDefinition = clusterHealth()
-    httpClient execute clusterHealthDefinition
+    httpClient.execute(clusterHealthDefinition).map(ElasticsearchUtil.unpackResponse)
   }
 
   private[dataaccess] def closeClient(): Unit = {
@@ -94,7 +93,9 @@ class HttpElasticsearchDAO private[dataaccess] (
     index: ElasticsearchIndex[_]
   ): Future[Boolean] = {
     val indexExistsDefinition = indexExists(index.indexName)
-    httpClient.execute(indexExistsDefinition).map(_.exists)
+    httpClient
+      .execute(indexExistsDefinition)
+      .map(ElasticsearchUtil.unpackResponse(_).exists)
   }
 
   private[dataaccess] def createIndexType(
@@ -107,8 +108,9 @@ class HttpElasticsearchDAO private[dataaccess] (
       if (ClioServerConfig.Elasticsearch.replicateIndices)
         createIndexDefinition
       else createIndexDefinition.replicas(0)
-    httpClient.execute(replicatedIndexDefinition) map { response =>
-      if (!response.acknowledged || !response.shards_acknowledged)
+    httpClient.execute(replicatedIndexDefinition).map { response =>
+      val unpacked = ElasticsearchUtil.unpackResponse(response)
+      if (!unpacked.acknowledged || !unpacked.shards_acknowledged)
         throw new RuntimeException(s"""|Bad response:
                                        |$replicatedIndexDefinition
                                        |$response""".stripMargin)
@@ -121,8 +123,8 @@ class HttpElasticsearchDAO private[dataaccess] (
   ): Future[Unit] = {
     val putMappingDefinition =
       putMapping(index.indexName / index.indexType) dynamic DynamicMapping.False as (index.fields: _*)
-    httpClient.execute(putMappingDefinition) map { response =>
-      if (!response.acknowledged)
+    httpClient.execute(putMappingDefinition).map { response =>
+      if (!ElasticsearchUtil.unpackResponse(response).acknowledged)
         throw new RuntimeException(s"""|Bad response:
                                        |$putMappingDefinition
                                        |$response""".stripMargin)
@@ -134,8 +136,9 @@ class HttpElasticsearchDAO private[dataaccess] (
     definitions: BulkCompatibleDefinition*
   ): Future[Unit] = {
     val bulkDefinition = bulk(definitions) refresh RefreshPolicy.WAIT_UNTIL
-    httpClient.execute(bulkDefinition) map { response =>
-      if (response.errors || response.hasFailures)
+    httpClient.execute(bulkDefinition).map { response =>
+      val unpacked = ElasticsearchUtil.unpackResponse(response)
+      if (unpacked.errors || unpacked.hasFailures)
         throw new RuntimeException(s"""|Bad response:
               |$bulkDefinition
               |$response""".stripMargin)
@@ -148,7 +151,7 @@ class HttpElasticsearchDAO private[dataaccess] (
     document: D
   ): BulkCompatibleDefinition = {
     implicit val indexable: Indexable[D] = index.indexable
-    update(document.entityId) in index.indexName / index.indexType docAsUpsert document
+    update(document.entityId.name) in index.indexName / index.indexType docAsUpsert document
   }
 }
 

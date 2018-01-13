@@ -23,11 +23,10 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     logger.debug("Shelling out to gcloud to get credentials")
     // Need to test out the gcloud command here before we build the credentials
     // Since the access token is lazily evaluated.
-    Either
-      .catchNonFatal {
-        val _ = ExternalGCloudCredentials.refreshAccessToken()
-        ExternalGCloudCredentials
-      }
+    Either.catchNonFatal {
+      val _ = ExternalGCloudCredentials.refreshAccessToken()
+      ExternalGCloudCredentials
+    }
   }
 
   def getCredentials(
@@ -36,7 +35,7 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
   ): Either[Throwable, OAuth2Credentials] = {
     Either
       .fromOption(accessToken, new RuntimeException("No access token provided"))
-      .flatMap(token => Either.catchNonFatal(new GoogleCredentials(token)))
+      .flatMap(token => Either.catchNonFatal(GoogleCredentials.create(token)))
       .orElse(getOAuth2Credentials(serviceAccountJson))
       .orElse {
         logger.debug("Falling back to application default credentials")

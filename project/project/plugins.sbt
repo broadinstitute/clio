@@ -1,3 +1,3 @@
-val ScalafmtVersion = "1.14"
+val ScalafmtVersion = "1.15"
 
 addSbtPlugin("com.lucidchart" % "sbt-scalafmt" % ScalafmtVersion)
