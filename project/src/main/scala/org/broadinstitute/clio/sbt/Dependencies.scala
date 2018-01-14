@@ -10,6 +10,7 @@ object Dependencies {
   private val AkkaHttpCirceVersion = "1.19.0"
   private val AkkaHttpVersion = "10.0.11"
   private val AlpakkaVersion = "0.16"
+  private val ApacheHttpClientVersion = "4.5.4"
   private val CaseAppVersion = "2.0.0-M1"
   private val CirceVersion = "0.9.0"
   private val Elastic4sVersion = "6.1.2"
@@ -115,6 +116,7 @@ object Dependencies {
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-generic-extras" % CirceVersion,
     "net.s_mach" %% "string" % S_machStringVersion,
+    "org.apache.httpcomponents" % "httpclient" % ApacheHttpClientVersion,
     "org.scala-lang" % "scala-reflect" % ScalaVersion
   )
   private val UtilTestDependencies: Seq[ModuleID] = Seq(
