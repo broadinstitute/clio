@@ -101,8 +101,8 @@ class HttpElasticsearchDAO private[dataaccess] (
   private[dataaccess] def createIndexType(
     index: ElasticsearchIndex[_]
   ): Future[Unit] = {
-    val createIndexDefinition = createIndex(index.indexName) mappings mapping(
-      index.indexType
+    val createIndexDefinition = createIndex(index.indexName).mappings(
+      mapping(index.indexType)
     )
     val replicatedIndexDefinition =
       if (ClioServerConfig.Elasticsearch.replicateIndices)
@@ -110,10 +110,13 @@ class HttpElasticsearchDAO private[dataaccess] (
       else createIndexDefinition.replicas(0)
     httpClient.execute(replicatedIndexDefinition).map { response =>
       val unpacked = ElasticsearchUtil.unpackResponse(response)
-      if (!unpacked.acknowledged || !unpacked.shards_acknowledged)
-        throw new RuntimeException(s"""|Bad response:
-                                       |$replicatedIndexDefinition
-                                       |$response""".stripMargin)
+      if (!unpacked.acknowledged || !unpacked.shards_acknowledged) {
+        throw new RuntimeException(
+          s"""|Bad response:
+              |$replicatedIndexDefinition
+              |$response""".stripMargin
+        )
+      }
       ()
     }
   }
@@ -122,12 +125,17 @@ class HttpElasticsearchDAO private[dataaccess] (
     index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     val putMappingDefinition =
-      putMapping(index.indexName / index.indexType) dynamic DynamicMapping.False as (index.fields: _*)
+      putMapping(index.indexName / index.indexType)
+        .dynamic(DynamicMapping.False)
+        .as(index.fields: _*)
     httpClient.execute(putMappingDefinition).map { response =>
-      if (!ElasticsearchUtil.unpackResponse(response).acknowledged)
-        throw new RuntimeException(s"""|Bad response:
-                                       |$putMappingDefinition
-                                       |$response""".stripMargin)
+      if (!ElasticsearchUtil.unpackResponse(response).acknowledged) {
+        throw new RuntimeException(
+          s"""|Bad response:
+              |$putMappingDefinition
+              |$response""".stripMargin
+        )
+      }
       ()
     }
   }
@@ -135,13 +143,16 @@ class HttpElasticsearchDAO private[dataaccess] (
   private[dataaccess] def bulkUpdate(
     definitions: BulkCompatibleDefinition*
   ): Future[Unit] = {
-    val bulkDefinition = bulk(definitions) refresh RefreshPolicy.WAIT_UNTIL
+    val bulkDefinition = bulk(definitions).refresh(RefreshPolicy.WAIT_UNTIL)
     httpClient.execute(bulkDefinition).map { response =>
       val unpacked = ElasticsearchUtil.unpackResponse(response)
-      if (unpacked.errors || unpacked.hasFailures)
-        throw new RuntimeException(s"""|Bad response:
+      if (unpacked.errors || unpacked.hasFailures) {
+        throw new RuntimeException(
+          s"""|Bad response:
               |$bulkDefinition
-              |$response""".stripMargin)
+              |$response""".stripMargin
+        )
+      }
       ()
     }
   }
@@ -151,7 +162,9 @@ class HttpElasticsearchDAO private[dataaccess] (
     document: D
   ): BulkCompatibleDefinition = {
     implicit val indexable: Indexable[D] = index.indexable
-    update(document.entityId.name) in index.indexName / index.indexType docAsUpsert document
+    update(document.entityId.name)
+      .in(index.indexName / index.indexType)
+      .docAsUpsert(document)
   }
 }
 
