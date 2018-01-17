@@ -51,7 +51,8 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
       memorySearchDAO.queryCalls should be(
         Seq(
           GvcfService.v1QueryConverter.buildQuery(
-            transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
+            transferInput.copy(documentStatus = Option(DocumentStatus.Normal)),
+            ElasticsearchIndex.Gvcf.mappingsVersion
           )
         )
       )

@@ -51,7 +51,8 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
       memorySearchDAO.queryCalls should be(
         Seq(
           WgsCramService.v1QueryConverter.buildQuery(
-            transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
+            transferInput.copy(documentStatus = Option(DocumentStatus.Normal)),
+            ElasticsearchIndex.WgsCram.mappingsVersion
           )
         )
       )

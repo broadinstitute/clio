@@ -7,7 +7,10 @@ import akka.http.scaladsl.server.Route
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsUbam
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  DocumentWgsUbam,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.WgsUbamService
@@ -70,7 +73,10 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
             project = Some("testProject1"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(WgsUbamService.v1QueryConverter.buildQuery)
+        ).map(
+          WgsUbamService.v1QueryConverter
+            .buildQuery(_, ElasticsearchIndex.WgsUbam.mappingsVersion)
+        )
       )
     }
 
@@ -124,7 +130,10 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
             flowcellBarcode = Some("FC123"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(WgsUbamService.v1QueryConverter.buildQuery)
+        ).map(
+          WgsUbamService.v1QueryConverter
+            .buildQuery(_, ElasticsearchIndex.WgsUbam.mappingsVersion)
+        )
       )
     }
 
@@ -162,7 +171,10 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
           ),
           // No documentStatus restriction from /queryall
           TransferUbamV1QueryInput(flowcellBarcode = Some("FC123"))
-        ).map(WgsUbamService.v1QueryConverter.buildQuery)
+        ).map(
+          WgsUbamService.v1QueryConverter
+            .buildQuery(_, ElasticsearchIndex.WgsUbam.mappingsVersion)
+        )
       )
     }
   }

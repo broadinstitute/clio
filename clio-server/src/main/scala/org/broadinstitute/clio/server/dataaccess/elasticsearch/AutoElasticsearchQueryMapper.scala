@@ -43,9 +43,12 @@ class AutoElasticsearchQueryMapper[
     flattenVals(queryInput).isEmpty
   }
 
-  override def buildQuery(queryInput: ModelQueryInput): QueryDefinition = {
+  override def buildQuery(
+    queryInput: ModelQueryInput,
+    indexVersion: Int
+  ): QueryDefinition = {
     val queries = flattenVals(queryInput) map {
-      case (name, value) => build(name, value)
+      case (name, value) => build(name, value, indexVersion)
     }
     boolQuery must queries
   }
@@ -65,9 +68,11 @@ class AutoElasticsearchQueryMapper[
     *
     * @param name  The field name.
     * @param value The field value, already unwrapped from an option.
+    * @param indexVersion The version of the Elasticsearch index the
+    *                     query will be run against.
     * @return The query definition.
     */
-  private def build(name: String, value: Any): QueryDefinition = {
+  private def build(name: String, value: Any, indexVersion: Int): QueryDefinition = {
     import ElasticsearchQueryMapper._
 
     import scala.reflect.runtime.universe.typeOf
@@ -84,6 +89,7 @@ class AutoElasticsearchQueryMapper[
           esName.stripSuffix("_start"),
           value.asInstanceOf[OffsetDateTime]
         )
+
       case tpe
           if tpe =:= typeOf[Option[OffsetDateTime]] && esName.endsWith(
             "_end"
@@ -92,6 +98,14 @@ class AutoElasticsearchQueryMapper[
           esName.stripSuffix("_end"),
           value.asInstanceOf[OffsetDateTime]
         )
+
+      case tpe
+          if indexVersion > 1 &&
+            (tpe =:= typeOf[String] ||
+              tpe =:= typeOf[Option[String]] ||
+              tpe <:< typeOf[Option[Seq[String]]]) =>
+        queryVal(s"$esName.${ElasticsearchIndex.TextExactMatchFieldName}", value)
+
       case _ => queryVal(esName, value)
     }
   }

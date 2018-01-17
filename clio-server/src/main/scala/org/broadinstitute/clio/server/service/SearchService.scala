@@ -35,7 +35,10 @@ class SearchService private (searchDAO: SearchDAO) {
       Source.empty[TO]
     } else {
       searchDAO
-        .queryMetadata(queryMapper.buildQuery(transferInput), index)
+        .queryMetadata(
+          queryMapper.buildQuery(transferInput, index.mappingsVersion),
+          index
+        )
         .map(queryMapper.toQueryOutput)
     }
   }

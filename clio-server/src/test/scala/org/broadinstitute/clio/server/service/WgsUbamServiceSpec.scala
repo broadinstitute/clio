@@ -48,7 +48,8 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
       memorySearchDAO.queryCalls should be(
         Seq(
           WgsUbamService.v1QueryConverter.buildQuery(
-            transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
+            transferInput.copy(documentStatus = Option(DocumentStatus.Normal)),
+            ElasticsearchIndex.WgsUbam.mappingsVersion
           )
         )
       )

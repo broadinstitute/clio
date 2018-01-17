@@ -17,19 +17,19 @@ import scala.reflect.runtime.universe.Type
   * Builds an ElasticsearchIndex using shapeless and reflection.
   *
   * @param name The base name of the index.
-  * @param version The mapping version to use for the index.
+  * @param mappingsVersion The mapping version to use for the index.
   * @tparam Document The document being indexed.
   */
 class AutoElasticsearchIndex[Document: FieldMapper: Indexable: HitReader] private[dataaccess] (
   name: String,
-  private[elasticsearch] val version: Int
+  override val mappingsVersion: Int
 ) extends ElasticsearchIndex[Document] {
   override val indexName: String =
-    if (version == 1) {
+    if (mappingsVersion == 1) {
       // We started out with no version suffix, so keep it that way for v1.
       name
     } else {
-      s"${name}_v$version"
+      s"${name}_v$mappingsVersion"
     }
 
   override val indexable: Indexable[Document] = implicitly[Indexable[Document]]
@@ -37,7 +37,7 @@ class AutoElasticsearchIndex[Document: FieldMapper: Indexable: HitReader] privat
   override val hitReader: HitReader[Document] = implicitly[HitReader[Document]]
 
   override def fields: Seq[FieldDefinition] =
-    AutoElasticsearchIndex.getFieldDefinitions[Document](version)
+    AutoElasticsearchIndex.getFieldDefinitions[Document](mappingsVersion)
 }
 
 object AutoElasticsearchIndex {
@@ -105,7 +105,8 @@ object AutoElasticsearchIndex {
      * with a nested keyword field for sorting / aggregations.
      */
     val textFieldWithKeyword =
-      textField(_: String).fields(keywordField("exact"))
+      textField(_: String)
+        .fields(keywordField(ElasticsearchIndex.TextExactMatchFieldName))
 
     fieldType match {
       case tpe if tpe =:= typeOf[String]              => textFieldWithKeyword

@@ -19,6 +19,9 @@ abstract class ElasticsearchIndex[Document] {
   /** The name of the index. */
   def indexName: String
 
+  /** The version of the mappings used to generate the index. */
+  def mappingsVersion: Int
+
   /** Typeclass used to convert `Document` instances into JSON. */
   def indexable: Indexable[Document]
 
@@ -64,6 +67,12 @@ object ElasticsearchIndex extends Elastic4sAutoDerivation {
 
   val WgsCram: ElasticsearchIndex[DocumentWgsCram] =
     indexDocument[DocumentWgsCram](version = 2)
+
+  /**
+    * Name to assign to a nested keyword field under every text field,
+    * to support exact matching.
+    */
+  val TextExactMatchFieldName: String = "exact"
 
   /**
     * Format the directory path for the indexed meta-data files.
