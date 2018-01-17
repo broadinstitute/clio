@@ -244,6 +244,46 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "only return exact matches for string queries" in {
+    val location = Location.GCP
+    val project = s"testProject$randomId"
+
+    val prefix = s"testSample$randomId"
+    val suffix = s"${randomId}testSample"
+    val samples = Seq(prefix, suffix, s"$prefix-$suffix")
+
+    val upserts = Future.sequence {
+      samples.zip(1 to 3).map {
+        case (sample, version) =>
+          val key = TransferWgsCramV1Key(location, project, sample, version)
+          val data = TransferWgsCramV1Metadata(
+            cramPath = Some(
+              URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
+            ),
+            cramSize = Some(1000L)
+          )
+          runUpsertCram(key, data)
+      }
+    }
+
+    for {
+      _ <- upserts
+      prefixResults <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+        ClioCommand.queryWgsCramName,
+        "--sample-alias",
+        prefix
+      )
+      suffixResults <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+        ClioCommand.queryWgsCramName,
+        "--sample-alias",
+        suffix
+      )
+    } yield {
+      prefixResults should have length 1
+      suffixResults should have length 1
+    }
+  }
+
   it should "handle updates to wgs-cram metadata" in {
     val project = s"testProject$randomId"
     val key =
