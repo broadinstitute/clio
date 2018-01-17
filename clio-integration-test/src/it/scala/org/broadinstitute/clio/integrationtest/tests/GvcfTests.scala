@@ -8,7 +8,8 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentGvcf,
-  ElasticsearchIndex
+  ElasticsearchIndex,
+  ElasticsearchUtil
 }
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
@@ -52,12 +53,13 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
   it should "create the expected gvcf mapping in elasticsearch" in {
     import com.sksamuel.elastic4s.http.ElasticDsl._
+    import ElasticsearchUtil.HttpClientOps
 
     val expected = ElasticsearchIndex.Gvcf
     val getRequest =
       getMapping(IndexAndType(expected.indexName, expected.indexType))
 
-    elasticsearchClient.execute(getRequest).map {
+    elasticsearchClient.executeAndUnpack(getRequest).map {
       _ should be(Seq(indexToMapping(expected)))
     }
   }

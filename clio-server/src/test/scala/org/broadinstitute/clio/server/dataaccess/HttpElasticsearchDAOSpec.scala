@@ -2,6 +2,7 @@ package org.broadinstitute.clio.server.dataaccess
 
 import java.util.UUID
 
+import com.sksamuel.elastic4s.RefreshPolicy
 import com.sksamuel.elastic4s.analyzers._
 import com.sksamuel.elastic4s.bulk.BulkDefinition
 import com.sksamuel.elastic4s.cluster.ClusterHealthDefinition
@@ -9,17 +10,9 @@ import com.sksamuel.elastic4s.delete.DeleteByIdDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.CreateIndexDefinition
 import com.sksamuel.elastic4s.searches.SearchDefinition
-import io.circe.parser
-import org.apache.http.util.EntityUtils
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  AutoElasticsearchIndex,
-  ClioDocument,
-  Elastic4sAutoDerivation,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.RequestException
+import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.util.model.UpsertId
-import org.elasticsearch.action.support.WriteRequest.RefreshPolicy
-import org.elasticsearch.client.ResponseException
 import org.scalatest._
 
 import scala.concurrent.Future
@@ -31,6 +24,7 @@ class HttpElasticsearchDAOSpec
     with EitherValues
     with Elastic4sAutoDerivation {
   import com.sksamuel.elastic4s.circe._
+  import ElasticsearchUtil.HttpClientOps
 
   behavior of "HttpElasticsearch"
 
@@ -69,18 +63,13 @@ class HttpElasticsearchDAOSpec
 
     for {
       _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
-      exception <- recoverToExceptionIf[ResponseException] {
+      exception <- recoverToExceptionIf[RequestException] {
         httpElasticsearchDAO.createIndexType(indexVersion2)
       }
       _ = {
-        val json = EntityUtils.toString(exception.getResponse.getEntity)
-        val doc = parser.parse(json).right.value
-        val cursor = doc.hcursor
-        val error = cursor.downField("error")
-        val errorType = error.get[String]("type").right.value
-        val errorReason = error.get[String]("reason").right.value
-        errorType should be("index_already_exists_exception")
-        errorReason should fullyMatch regex """index \[test_index_fail_recreate/.*\] already exists"""
+        val error = exception.requestFailure.error
+        error.`type` should be("index_already_exists_exception")
+        error.reason should fullyMatch regex """index \[test_index_fail_recreate/.*\] already exists"""
       }
     } yield succeed
   }
@@ -102,18 +91,13 @@ class HttpElasticsearchDAOSpec
     for {
       _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
       _ <- httpElasticsearchDAO.updateFieldDefinitions(indexVersion1)
-      exception <- recoverToExceptionIf[ResponseException] {
+      exception <- recoverToExceptionIf[RequestException] {
         httpElasticsearchDAO.updateFieldDefinitions(indexVersion2)
       }
       _ = {
-        val json = EntityUtils.toString(exception.getResponse.getEntity)
-        val doc = parser.parse(json).right.value
-        val cursor = doc.hcursor
-        val error = cursor.downField("error")
-        val errorType = error.get[String]("type").right.value
-        val errorReason = error.get[String]("reason").right.value
-        errorType should be("illegal_argument_exception")
-        errorReason should be(
+        val error = exception.requestFailure.error
+        error.`type` should be("illegal_argument_exception")
+        error.reason should be(
           "mapper [foo] of different type, current_type [keyword], merged_type [long]"
         )
       }
@@ -206,7 +190,7 @@ class HttpElasticsearchDAOSpec
       ).refresh(RefreshPolicy.WAIT_UNTIL)
 
     val searchDefinition: SearchDefinition =
-      search("places" / "cities") scroll "1m" size 10 query {
+      searchWithType("places" / "cities") scroll "1m" size 10 query {
         boolQuery must (
           queryStringQuery(""""London"""").defaultField("name"),
           queryStringQuery(""""Europe"""").defaultField("continent")
@@ -219,13 +203,13 @@ class HttpElasticsearchDAOSpec
     lazy val httpClient = httpElasticsearchDAO.httpClient
 
     for {
-      health <- httpClient execute clusterHealthDefinition
+      health <- httpClient.executeAndUnpack(clusterHealthDefinition)
       _ = health.status should be("green")
-      indexCreation <- httpClient execute indexCreationDefinition
+      indexCreation <- httpClient.executeAndUnpack(indexCreationDefinition)
       _ = indexCreation.acknowledged should be(true)
-      populate <- httpClient execute populateDefinition
+      populate <- httpClient.executeAndUnpack(populateDefinition)
       _ = populate.errors should be(false)
-      search <- httpClient execute searchDefinition
+      search <- httpClient.executeAndUnpack(searchDefinition)
       _ = {
         search.hits.total should be(1)
         // Example using circe HitReader
@@ -235,12 +219,12 @@ class HttpElasticsearchDAOSpec
         city.continent should be("Europe")
         city.status should be("Awesome")
       }
-
-      delete <- httpClient execute deleteDefinition
-      _ = delete.found should be(true)
-      delete <- httpClient execute deleteDefinition
-      _ = delete.found should be(false)
-    } yield succeed
+      delete1 <- httpClient.executeAndUnpack(deleteDefinition)
+      delete2 <- httpClient.executeAndUnpack(deleteDefinition)
+    } yield {
+      delete1.result should be("deleted")
+      delete2.result shouldNot be("deleted")
+    }
   }
 }
 

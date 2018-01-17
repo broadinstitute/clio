@@ -7,26 +7,27 @@ import sbt._
   */
 object Dependencies {
   // The version numbers of each main and test dependency.
-  private val AkkaHttpCirceVersion = "1.17.0"
-  private val AkkaHttpVersion = "10.0.10"
-  private val AlpakkaVersion = "0.14"
+  private val AkkaHttpCirceVersion = "1.19.0"
+  private val AkkaHttpVersion = "10.0.11"
+  private val AlpakkaVersion = "0.16"
+  private val ApacheHttpClientVersion = "4.5.4"
   private val CaseAppVersion = "2.0.0-M1"
-  private val CirceVersion = "0.8.0"
-  private val Elastic4sVersion = "5.4.13"
+  private val CirceVersion = "0.9.0"
+  private val Elastic4sVersion = "6.1.3"
   private val EnumeratumVersion = "1.5.12"
-  private val EnumeratumCirceVersion = "1.5.14"
+  private val EnumeratumCirceVersion = "1.5.15"
   private val FicusVersion = "1.4.3"
-  private val GoogleAuthHttpVersion = "0.7.1"
-  private val GoogleCloudNioVersion = "0.26.0-alpha"
+  private val GoogleAuthHttpVersion = "0.9.0"
+  private val GoogleCloudNioVersion = "0.32.0-alpha"
   private val JimfsVersion = "1.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
   private val ScalaLoggingVersion = "3.7.2"
   private val ScalaTestVersion = "3.0.4"
-  private val ShapelessVersion = "2.3.2"
+  private val ShapelessVersion = "2.3.3"
   private val Slf4jVersion = "1.7.25"
   private val SwaggerUi = "3.1.5"
-  private val TestContainersScalaVersion = "0.7.0"
+  private val TestContainersScalaVersion = "0.13.0"
   private val TypesafeConfigVersion = "1.3.2"
   private val VaultJavaDriverVersion = "3.0.0"
 
@@ -38,7 +39,7 @@ object Dependencies {
     * Declared separately from the other dependencies because it's
     * added through the `scalafmtVersion` key, not `libraryDependencies`.
     */
-  val ScalafmtVersion = "1.3.0"
+  val ScalafmtVersion = "1.4.0"
 
   /** Version of our Elasticsearch Docker image to use during integration tests. */
   val ElasticsearchVersion = "5.4.0_6"
@@ -115,6 +116,7 @@ object Dependencies {
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-generic-extras" % CirceVersion,
     "net.s_mach" %% "string" % S_machStringVersion,
+    "org.apache.httpcomponents" % "httpclient" % ApacheHttpClientVersion,
     "org.scala-lang" % "scala-reflect" % ScalaVersion
   )
   private val UtilTestDependencies: Seq[ModuleID] = Seq(

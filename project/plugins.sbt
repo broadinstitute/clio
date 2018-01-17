@@ -1,12 +1,12 @@
 // For more info on these plugins, see https://broadinstitute.atlassian.net/wiki/pages/viewpage.action?pageId=114531509
 
-val SbtAssemblyVersion = "0.14.5"
+val SbtAssemblyVersion = "0.14.6"
 val SbtBuildInfoVersion = "0.7.0"
 val SbtGitVersion = "0.9.3"
 val SbtDockerVersion = "1.4.1"
-val SbtScalafmtVersion = "1.14"
+val SbtScalafmtVersion = "1.15"
 val SbtScoverageVersion = "1.5.0"
-val ScalafmtVersion = "1.3.0"
+val ScalafmtVersion = "1.4.0"
 val Slf4jVersion = "1.7.25"
 val TypesafeConfigVersion = "1.3.2"
 

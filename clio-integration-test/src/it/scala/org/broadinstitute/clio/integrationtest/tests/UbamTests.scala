@@ -3,14 +3,23 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 import java.nio.file.Files
 
-import akka.http.scaladsl.model.StatusCode
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{DocumentWgsUbam, ElasticsearchIndex}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  DocumentWgsUbam,
+  ElasticsearchIndex,
+  ElasticsearchUtil
+}
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.ubam.{TransferUbamV1Key, TransferUbamV1Metadata, TransferUbamV1QueryOutput, UbamExtensions}
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata,
+  TransferUbamV1QueryOutput,
+  UbamExtensions
+}
 import org.broadinstitute.clio.util.model._
 import org.scalatest.Assertion
 
@@ -49,12 +58,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
       e.statusCode should be(expectedStatusCode)
   }
 
-  val statusCode404 = StatusCode.int2StatusCode(404)
-
   it should "throw a FailedResponse 404 when running get schema command for hybsel ubams" in {
     val getSchemaResponseFuture = runClient(ClioCommand.getHybselUbamSchemaName)
     recoverToExceptionIf[FailedResponse](getSchemaResponseFuture)
-      .map(statusCodeShouldBe(statusCode404))
+      .map(statusCodeShouldBe(StatusCodes.NotFound))
   }
 
   val stubKey = TransferUbamV1Key(
@@ -82,7 +89,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       tmpMetadata.toString
     )
     recoverToExceptionIf[FailedResponse](addResponseFuture)
-      .map(statusCodeShouldBe(statusCode404))
+      .map(statusCodeShouldBe(StatusCodes.NotFound))
   }
 
   it should "throw a FailedResponse 404 when running query command for hybsel ubams" in {
@@ -92,12 +99,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
       stubKey.flowcellBarcode
     )
     recoverToExceptionIf[FailedResponse](queryResponseFuture)
-      .map(statusCodeShouldBe(statusCode404))
+      .map(statusCodeShouldBe(StatusCodes.NotFound))
   }
 
-  def messageShouldBe(expectedMessage: String): Exception => Assertion = {
-    e: Exception =>
-      e.getMessage should be(expectedMessage)
+  def messageShouldBe(expectedMessage: String): Exception => Assertion = { e: Exception =>
+    e.getMessage should be(expectedMessage)
   }
 
   it should "throw a FailedResponse 404 when running move command for hybsel ubams" in {
@@ -138,12 +144,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   it should "create the expected wgs-ubam mapping in elasticsearch" in {
     import com.sksamuel.elastic4s.http.ElasticDsl._
+    import ElasticsearchUtil.HttpClientOps
 
     val expected = ElasticsearchIndex.WgsUbam
     val getRequest =
       getMapping(IndexAndType(expected.indexName, expected.indexType))
 
-    elasticsearchClient.execute(getRequest).map {
+    elasticsearchClient.executeAndUnpack(getRequest).map {
       _ should be(Seq(indexToMapping(expected)))
     }
   }

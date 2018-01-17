@@ -108,7 +108,7 @@ object StateDecoder extends LowPriorityStateDecoder {
     configuration: Configuration = Configuration.default
   ): StateDecoder[FieldType[K, Option[H]] :: T] = {
     val symbol = witness.value
-    val name = configuration.transformKeys(symbol.name)
+    val name = configuration.transformMemberNames(symbol.name)
     createDecoder {
       for {
         head <- decodeFieldOption[H](name)
@@ -187,7 +187,7 @@ trait LowPriorityStateDecoder {
     configuration: Configuration = Configuration.default
   ): StateDecoder[FieldType[K, H] :: T] = {
     val symbol = witness.value
-    val name = configuration.transformKeys(symbol.name)
+    val name = configuration.transformMemberNames(symbol.name)
     createDecoder {
       for {
         head <- Decoder.state.decodeField[H](name)
