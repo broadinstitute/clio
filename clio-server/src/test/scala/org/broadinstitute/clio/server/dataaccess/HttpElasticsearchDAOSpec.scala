@@ -24,6 +24,7 @@ class HttpElasticsearchDAOSpec
     with EitherValues
     with Elastic4sAutoDerivation {
   import com.sksamuel.elastic4s.circe._
+  import ElasticsearchUtil.HttpClientOps
 
   behavior of "HttpElasticsearch"
 
@@ -202,17 +203,13 @@ class HttpElasticsearchDAOSpec
     lazy val httpClient = httpElasticsearchDAO.httpClient
 
     for {
-      response <- httpClient.execute(clusterHealthDefinition)
-      health = ElasticsearchUtil.unpackResponse(response)
+      health <- httpClient.executeAndUnpack(clusterHealthDefinition)
       _ = health.status should be("green")
-      response <- httpClient.execute(indexCreationDefinition)
-      indexCreation = ElasticsearchUtil.unpackResponse(response)
+      indexCreation <- httpClient.executeAndUnpack(indexCreationDefinition)
       _ = indexCreation.acknowledged should be(true)
-      response <- httpClient.execute(populateDefinition)
-      populate = ElasticsearchUtil.unpackResponse(response)
+      populate <- httpClient.executeAndUnpack(populateDefinition)
       _ = populate.errors should be(false)
-      response <- httpClient.execute(searchDefinition)
-      search = ElasticsearchUtil.unpackResponse(response)
+      search <- httpClient.executeAndUnpack(searchDefinition)
       _ = {
         search.hits.total should be(1)
         // Example using circe HitReader
@@ -222,13 +219,12 @@ class HttpElasticsearchDAOSpec
         city.continent should be("Europe")
         city.status should be("Awesome")
       }
-      response <- httpClient.execute(deleteDefinition)
-      delete = ElasticsearchUtil.unpackResponse(response)
-      _ = delete.result should be("deleted")
-      response <- httpClient.execute(deleteDefinition)
-      delete = ElasticsearchUtil.unpackResponse(response)
-      _ = delete.result shouldNot be("deleted")
-    } yield succeed
+      delete1 <- httpClient.executeAndUnpack(deleteDefinition)
+      delete2 <- httpClient.executeAndUnpack(deleteDefinition)
+    } yield {
+      delete1.result should be("deleted")
+      delete2.result shouldNot be("deleted")
+    }
   }
 }
 

@@ -6,6 +6,7 @@ import java.util.Date
 import com.google.auth.oauth2.{AccessToken, OAuth2Credentials}
 import org.scalatest.{FlatSpec, Matchers}
 
+import scala.concurrent.duration._
 import scala.util.Random
 
 class GoogleCredentialsGeneratorSpec extends FlatSpec with Matchers {
@@ -25,8 +26,8 @@ class GoogleCredentialsGeneratorSpec extends FlatSpec with Matchers {
   }
 
   it should "refresh expired OAuth2Credentials" in {
-    // Negative duration so each refresh produces an already-expired token.
-    val mockCreds = new MockOAuth2Credentials(-1)
+    // Zero duration so each refresh produces an instantly-expired token.
+    val mockCreds = new MockOAuth2Credentials(Duration.Zero)
     val generator = new GoogleCredentialsGenerator(mockCreds)
 
     val token1 = generator.generateCredentials()
@@ -37,7 +38,7 @@ class GoogleCredentialsGeneratorSpec extends FlatSpec with Matchers {
   }
 
   it should "not refresh unexpired OAuth2Credentials" in {
-    val mockCreds = new MockOAuth2Credentials(100)
+    val mockCreds = new MockOAuth2Credentials(100.seconds)
     val generator = new GoogleCredentialsGenerator(mockCreds)
 
     val token1 = generator.generateCredentials()
@@ -49,12 +50,13 @@ class GoogleCredentialsGeneratorSpec extends FlatSpec with Matchers {
 
 object GoogleCredentialsGeneratorSpec {
 
-  class MockOAuth2Credentials(tokenDurationSeconds: Int = 1) extends OAuth2Credentials {
+  class MockOAuth2Credentials(tokenDuration: FiniteDuration = 1.second)
+      extends OAuth2Credentials {
 
     override def refreshAccessToken(): AccessToken = {
       val newToken = Random.nextString(20)
       val newExpiration =
-        Date.from(OffsetDateTime.now().plusSeconds(tokenDurationSeconds.toLong).toInstant)
+        Date.from(OffsetDateTime.now().plusNanos(tokenDuration.toNanos).toInstant)
 
       new AccessToken(newToken, newExpiration)
     }

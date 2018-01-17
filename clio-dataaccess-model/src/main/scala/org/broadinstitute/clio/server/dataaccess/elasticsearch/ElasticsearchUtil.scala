@@ -2,9 +2,11 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import java.io.IOException
 
-import com.sksamuel.elastic4s.http.{RequestFailure, RequestSuccess}
+import com.sksamuel.elastic4s.http.{HttpClient, HttpExecutable, RequestFailure}
 import org.broadinstitute.clio.util.generic.CirceEquivalentCamelCaseLexer
 import s_mach.string._
+
+import scala.concurrent.{ExecutionContext, Future}
 
 object ElasticsearchUtil {
 
@@ -21,7 +23,23 @@ object ElasticsearchUtil {
   class RequestException(val requestFailure: RequestFailure)
       extends IOException(s"Error in Elasticsearch request: ${requestFailure.error}")
 
-  def unpackResponse[T](response: Either[RequestFailure, RequestSuccess[T]]): T = {
-    response.fold(failure => throw new RequestException(failure), _.result)
+  /**
+    * Wrapper for elastic4's [[HttpClient]], used to add common patterns as extension methods.
+    */
+  implicit class HttpClientOps(val httpClient: HttpClient) extends AnyVal {
+
+    /**
+      * Send an HTTP request to Elasticsearch, and fold away the nested `Either`
+      * provided by elastic4s in the response.
+      */
+    def executeAndUnpack[T, U](request: T)(
+      implicit exec: HttpExecutable[T, U],
+      executionContext: ExecutionContext
+    ): Future[U] = {
+      httpClient
+        .execute(request)
+        .map(_.fold(failure => throw new RequestException(failure), _.result))
+    }
+
   }
 }

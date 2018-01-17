@@ -48,13 +48,14 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
   it should "create the expected wgs-cram mapping in elasticsearch" in {
     import com.sksamuel.elastic4s.http.ElasticDsl._
+    import ElasticsearchUtil.HttpClientOps
 
     val expected = ElasticsearchIndex.WgsCram
     val getRequest =
       getMapping(IndexAndType(expected.indexName, expected.indexType))
 
-    elasticsearchClient.execute(getRequest).map { response =>
-      ElasticsearchUtil.unpackResponse(response) should be(Seq(indexToMapping(expected)))
+    elasticsearchClient.executeAndUnpack(getRequest).map {
+      _ should be(Seq(indexToMapping(expected)))
     }
   }
 

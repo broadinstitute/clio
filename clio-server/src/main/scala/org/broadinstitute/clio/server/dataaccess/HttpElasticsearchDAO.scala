@@ -27,6 +27,8 @@ class HttpElasticsearchDAO private[dataaccess] (
     with SystemElasticsearchDAO
     with StrictLogging {
 
+  import ElasticsearchUtil.HttpClientOps
+
   implicit val ec: ExecutionContext = system.dispatcher
 
   private[dataaccess] val httpClient = {
@@ -73,16 +75,12 @@ class HttpElasticsearchDAO private[dataaccess] (
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .size(1)
       .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
-    for {
-      searchResponse <- httpClient.execute(searchDefinition)
-    } yield {
-      ElasticsearchUtil.unpackResponse(searchResponse).to[D].headOption
-    }
+    httpClient.executeAndUnpack(searchDefinition).map(_.to[D].headOption)
   }
 
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {
     val clusterHealthDefinition = clusterHealth()
-    httpClient.execute(clusterHealthDefinition).map(ElasticsearchUtil.unpackResponse)
+    httpClient.executeAndUnpack(clusterHealthDefinition)
   }
 
   private[dataaccess] def closeClient(): Unit = {
@@ -93,9 +91,7 @@ class HttpElasticsearchDAO private[dataaccess] (
     index: ElasticsearchIndex[_]
   ): Future[Boolean] = {
     val indexExistsDefinition = indexExists(index.indexName)
-    httpClient
-      .execute(indexExistsDefinition)
-      .map(ElasticsearchUtil.unpackResponse(_).exists)
+    httpClient.executeAndUnpack(indexExistsDefinition).map(_.exists)
   }
 
   private[dataaccess] def createIndexType(
@@ -108,9 +104,8 @@ class HttpElasticsearchDAO private[dataaccess] (
       if (ClioServerConfig.Elasticsearch.replicateIndices)
         createIndexDefinition
       else createIndexDefinition.replicas(0)
-    httpClient.execute(replicatedIndexDefinition).map { response =>
-      val unpacked = ElasticsearchUtil.unpackResponse(response)
-      if (!unpacked.acknowledged || !unpacked.shards_acknowledged) {
+    httpClient.executeAndUnpack(replicatedIndexDefinition).map { response =>
+      if (!response.acknowledged || !response.shards_acknowledged) {
         throw new RuntimeException(
           s"""|Bad response:
               |$replicatedIndexDefinition
@@ -128,8 +123,8 @@ class HttpElasticsearchDAO private[dataaccess] (
       putMapping(index.indexName / index.indexType)
         .dynamic(DynamicMapping.False)
         .as(index.fields: _*)
-    httpClient.execute(putMappingDefinition).map { response =>
-      if (!ElasticsearchUtil.unpackResponse(response).acknowledged) {
+    httpClient.executeAndUnpack(putMappingDefinition).map { response =>
+      if (!response.acknowledged) {
         throw new RuntimeException(
           s"""|Bad response:
               |$putMappingDefinition
@@ -144,9 +139,8 @@ class HttpElasticsearchDAO private[dataaccess] (
     definitions: BulkCompatibleDefinition*
   ): Future[Unit] = {
     val bulkDefinition = bulk(definitions).refresh(RefreshPolicy.WAIT_UNTIL)
-    httpClient.execute(bulkDefinition).map { response =>
-      val unpacked = ElasticsearchUtil.unpackResponse(response)
-      if (unpacked.errors || unpacked.hasFailures) {
+    httpClient.executeAndUnpack(bulkDefinition).map { response =>
+      if (response.errors || response.hasFailures) {
         throw new RuntimeException(
           s"""|Bad response:
               |$bulkDefinition

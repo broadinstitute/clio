@@ -13,7 +13,7 @@ object Dependencies {
   private val ApacheHttpClientVersion = "4.5.4"
   private val CaseAppVersion = "2.0.0-M1"
   private val CirceVersion = "0.9.0"
-  private val Elastic4sVersion = "6.1.2"
+  private val Elastic4sVersion = "6.1.3"
   private val EnumeratumVersion = "1.5.12"
   private val EnumeratumCirceVersion = "1.5.15"
   private val FicusVersion = "1.4.3"
