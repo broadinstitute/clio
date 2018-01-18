@@ -8,7 +8,6 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentGvcf,
-  ElasticsearchIndex,
   ElasticsearchUtil
 }
 import org.broadinstitute.clio.transfer.model.GvcfIndex
@@ -55,9 +54,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
-    val expected = ElasticsearchIndex.Gvcf
-    val getRequest =
-      getMapping(IndexAndType(expected.indexName, expected.indexType))
+    val expected = DocumentGvcf.elasticsearchIndex
+    val getRequest = getMapping(IndexAndType(expected.indexName, expected.indexType))
 
     elasticsearchClient.executeAndUnpack(getRequest).map {
       _ should be(Seq(indexToMapping(expected)))
@@ -114,8 +112,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       } yield {
         outputs should be(Seq(expected))
 
-        val storedDocument =
-          getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, returnedUpsertId)
+        val storedDocument = getJsonFrom[DocumentGvcf](returnedUpsertId)
         storedDocument.location should be(expected.location)
         storedDocument.project should be(expected.project)
         storedDocument.sampleAlias should be(expected.sampleAlias)
@@ -151,11 +148,11 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
-        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId1)
+        getJsonFrom[DocumentGvcf](upsertId1)
       storedDocument1.gvcfPath should be(gvcfUri1)
 
       val storedDocument2 =
-        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId2)
+        getJsonFrom[DocumentGvcf](upsertId2)
       storedDocument2.gvcfPath should be(gvcfUri2)
 
       storedDocument1.copy(upsertId = upsertId2, gvcfPath = gvcfUri2) should be(
@@ -182,10 +179,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 =
-        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId1)
-      val storedDocument2 =
-        getJsonFrom[DocumentGvcf](ElasticsearchIndex.Gvcf, upsertId2)
+      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
+      val storedDocument2 = getJsonFrom[DocumentGvcf](upsertId2)
       storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
     }
   }

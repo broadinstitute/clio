@@ -19,24 +19,23 @@ class MemorySearchDAO extends MockSearchDAO {
   val queryCalls: mutable.ArrayBuffer[QueryDefinition] =
     mutable.ArrayBuffer.empty
 
-  override def updateMetadata[D <: ClioDocument](
-    document: D,
-    index: ElasticsearchIndex[D]
+  override def updateMetadata[D <: ClioDocument](document: D)(
+    implicit index: ElasticsearchIndex[D]
   ): Future[Unit] = {
     updateCalls += ((document, index))
-    super.updateMetadata(document, index)
+    super.updateMetadata(document)
   }
 
-  override def queryMetadata[D](
-    queryDefinition: QueryDefinition,
+  override def queryMetadata[D](queryDefinition: QueryDefinition)(
+    implicit
     index: ElasticsearchIndex[D]
   ): Source[D, NotUsed] = {
     queryCalls += queryDefinition
-    super.queryMetadata(queryDefinition, index)
+    super.queryMetadata(queryDefinition)
   }
 
   override def getMostRecentDocument[D <: ClioDocument](
-    index: ElasticsearchIndex[D]
+    implicit index: ElasticsearchIndex[D]
   ): Future[Option[D]] = {
     Future.successful(updateCalls.lastOption.map(_._1.asInstanceOf[D]))
   }

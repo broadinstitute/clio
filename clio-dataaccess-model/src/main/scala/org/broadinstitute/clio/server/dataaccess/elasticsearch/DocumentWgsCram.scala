@@ -67,3 +67,10 @@ case class DocumentWgsCram(
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   readgroupLevelMetricsFiles: Option[List[URI]] = None
 ) extends ClioDocument
+
+object DocumentWgsCram extends Elastic4sAutoDerivation {
+  import com.sksamuel.elastic4s.circe._
+
+  implicit val elasticsearchIndex: ElasticsearchIndex[DocumentWgsCram] =
+    ElasticsearchIndex(ElasticsearchFieldMapper.StringsAsTextVersion)
+}

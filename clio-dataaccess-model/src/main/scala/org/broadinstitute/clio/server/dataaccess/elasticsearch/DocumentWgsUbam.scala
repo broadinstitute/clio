@@ -52,3 +52,10 @@ case class DocumentWgsUbam(
   ubamSize: Option[Long] = None,
   documentStatus: Option[DocumentStatus] = None
 ) extends ClioDocument
+
+object DocumentWgsUbam extends Elastic4sAutoDerivation {
+  import com.sksamuel.elastic4s.circe._
+
+  implicit val elasticsearchIndex: ElasticsearchIndex[DocumentWgsUbam] =
+    ElasticsearchIndex(ElasticsearchFieldMapper.InitVersion)
+}

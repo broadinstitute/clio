@@ -1,11 +1,10 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.server.model.{ModelMockQueryInput, ModelMockQueryOutput}
+import java.time.OffsetDateTime
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
+import org.broadinstitute.clio.server.model.{ModelMockQueryInput, ModelMockQueryOutput}
 import org.scalatest.{FlatSpec, Matchers}
-
-import java.time.OffsetDateTime
 
 class AutoElasticsearchQueryMapperSpec extends FlatSpec with Matchers {
   behavior of "AutoElasticsearchQueryMapper"
@@ -60,18 +59,20 @@ class AutoElasticsearchQueryMapperSpec extends FlatSpec with Matchers {
       mockKeyLong = None,
       mockKeyString = Option("hello")
     )
-    mapper.buildQuery(input, 1) should be(
+    mapper.buildQuery(input)(DocumentMock.elasticsearchIndex) should be(
       boolQuery must (
-        rangeQuery("mock_field_date") lte endDate.toString,
-        rangeQuery("mock_field_date") gte startDate.toString,
-        queryStringQuery(""""hello"""") defaultField "mock_key_string"
+        rangeQuery("mock_field_date").lte(endDate.toString),
+        rangeQuery("mock_field_date").gte(startDate.toString),
+        queryStringQuery(""""hello"""").defaultField("mock_key_string")
       )
     )
-    mapper.buildQuery(input, 2) should be(
+    mapper.buildQuery(input)(DocumentMock.elasticsearchIndexWithText) should be(
       boolQuery must (
-        rangeQuery("mock_field_date") lte endDate.toString,
-        rangeQuery("mock_field_date") gte startDate.toString,
-        queryStringQuery(""""hello"""") defaultField s"mock_key_string.${ElasticsearchIndex.TextExactMatchFieldName}"
+        rangeQuery("mock_field_date").lte(endDate.toString),
+        rangeQuery("mock_field_date").gte(startDate.toString),
+        queryStringQuery(""""hello"""").defaultField(
+          s"mock_key_string.${ElasticsearchIndex.TextExactMatchFieldName}"
+        )
       )
     )
   }

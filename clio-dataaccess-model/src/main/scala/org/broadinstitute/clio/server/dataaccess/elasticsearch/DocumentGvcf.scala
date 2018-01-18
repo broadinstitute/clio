@@ -30,3 +30,10 @@ case class DocumentGvcf(
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   notes: Option[String] = None
 ) extends ClioDocument
+
+object DocumentGvcf extends Elastic4sAutoDerivation {
+  import com.sksamuel.elastic4s.circe._
+
+  implicit val elasticsearchIndex: ElasticsearchIndex[DocumentGvcf] =
+    ElasticsearchIndex(ElasticsearchFieldMapper.StringsAsTextVersion)
+}

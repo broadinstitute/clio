@@ -273,9 +273,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * load its contents as JSON, and check that the loaded ID
     * matches the given ID.
     */
-  def getJsonFrom[Document <: ClioDocument: Decoder](
-    index: ElasticsearchIndex[Document],
-    expectedId: UpsertId
+  def getJsonFrom[Document <: ClioDocument: Decoder](expectedId: UpsertId)(
+    implicit index: ElasticsearchIndex[Document]
   ): Document = {
     val expectedPath = rootPersistenceDir
       .resolve(index.currentPersistenceDir)

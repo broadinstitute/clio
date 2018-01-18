@@ -36,7 +36,6 @@ class WgsUbamService(
       .upsertMetadata(
         transferKey,
         updatedTransferMetadata,
-        ElasticsearchIndex.WgsUbam,
         WgsUbamService.v1DocumentConverter
       )
   }
@@ -54,7 +53,6 @@ class WgsUbamService(
   ): Source[TransferUbamV1QueryOutput, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
-      ElasticsearchIndex.WgsUbam,
       WgsUbamService.v1QueryConverter
     )
   }

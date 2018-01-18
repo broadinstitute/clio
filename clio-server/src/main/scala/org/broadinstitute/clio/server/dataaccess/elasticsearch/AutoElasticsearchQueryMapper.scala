@@ -44,11 +44,10 @@ class AutoElasticsearchQueryMapper[
   }
 
   override def buildQuery(
-    queryInput: ModelQueryInput,
-    indexVersion: Int
-  ): QueryDefinition = {
+    queryInput: ModelQueryInput
+  )(implicit index: ElasticsearchIndex[Document]): QueryDefinition = {
     val queries = flattenVals(queryInput) map {
-      case (name, value) => build(name, value, indexVersion)
+      case (name, value) => build(name, value, index.fieldMapper)
     }
     boolQuery must queries
   }
@@ -68,11 +67,13 @@ class AutoElasticsearchQueryMapper[
     *
     * @param name  The field name.
     * @param value The field value, already unwrapped from an option.
-    * @param indexVersion The version of the Elasticsearch index the
-    *                     query will be run against.
     * @return The query definition.
     */
-  private def build(name: String, value: Any, indexVersion: Int): QueryDefinition = {
+  private def build(
+    name: String,
+    value: Any,
+    fieldMapper: ElasticsearchFieldMapper
+  ): QueryDefinition = {
     import ElasticsearchQueryMapper._
 
     import scala.reflect.runtime.universe.typeOf
@@ -100,7 +101,7 @@ class AutoElasticsearchQueryMapper[
         )
 
       case tpe
-          if indexVersion > 1 &&
+          if fieldMapper.value > ElasticsearchFieldMapper.InitVersion.value &&
             (tpe =:= typeOf[String] ||
               tpe =:= typeOf[Option[String]] ||
               tpe <:< typeOf[Option[Seq[String]]]) =>

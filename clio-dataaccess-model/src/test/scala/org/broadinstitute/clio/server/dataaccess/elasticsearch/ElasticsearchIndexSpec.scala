@@ -4,26 +4,18 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import org.scalatest.{FlatSpec, Matchers}
 
 class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDerivation {
+  behavior of "ElasticsearchIndex"
+
   import com.sksamuel.elastic4s.circe._
 
-  Map(
-    "ElasticsearchIndex" ->
-      (
-        (version: Int) => ElasticsearchIndex.indexDocument[DocumentMock](version)
-      ),
-    "AutoElasticsearchIndex" ->
-      (
-        (version: Int) => new AutoElasticsearchIndex[DocumentMock]("mock", version)
-      )
-  ).foreach {
-    case (description, index) => {
-      behavior of description
-      it should behave like aV1Index(index(1))
-      it should behave like aV2Index(index(2))
-    }
-  }
+  it should behave like aV1Index(
+    ElasticsearchIndex[DocumentMock](ElasticsearchFieldMapper.InitVersion)
+  )
+  it should behave like aV2Index(
+    ElasticsearchIndex[DocumentMock](ElasticsearchFieldMapper.StringsAsTextVersion)
+  )
 
-  def aV1Index[D](index: ElasticsearchIndex[D]): Unit = {
+  def aV1Index(index: ElasticsearchIndex[DocumentMock]): Unit = {
     it should "indexName for v1 document" in {
       index.indexName should be("mock")
     }
@@ -52,7 +44,7 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDe
     }
   }
 
-  def aV2Index[D](index: ElasticsearchIndex[D]): Unit = {
+  def aV2Index(index: ElasticsearchIndex[DocumentMock]): Unit = {
     it should "indexName for v2 document" in {
       index.indexName should be("mock_v2")
     }

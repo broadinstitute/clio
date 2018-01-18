@@ -8,10 +8,7 @@ import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentWgsCram,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsCram
 import org.broadinstitute.clio.server.service.WgsCramService
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{
@@ -79,10 +76,7 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
             project = Some("proj0"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(
-          WgsCramService.v1QueryConverter
-            .buildQuery(_, ElasticsearchIndex.WgsCram.mappingsVersion)
-        )
+        ).map(WgsCramService.v1QueryConverter.buildQuery)
       )
     }
 
@@ -138,10 +132,7 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
             location = Some(Location.GCP),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(
-          WgsCramService.v1QueryConverter
-            .buildQuery(_, ElasticsearchIndex.WgsCram.mappingsVersion)
-        )
+        ).map(WgsCramService.v1QueryConverter.buildQuery)
       )
     }
 
@@ -179,10 +170,7 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
           ),
           // No documentStatus restriction from /queryall
           TransferWgsCramV1QueryInput(location = Some(Location.GCP))
-        ).map(
-          WgsCramService.v1QueryConverter
-            .buildQuery(_, ElasticsearchIndex.WgsCram.mappingsVersion)
-        )
+        ).map(WgsCramService.v1QueryConverter.buildQuery)
       )
     }
   }

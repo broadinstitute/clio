@@ -26,11 +26,11 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput, ModelQueryOutput, Docum
     * Builds an elastic4s query definition from the query input.
     *
     * @param queryInput The query input.
-    * @param indexVersion The version of the type mappings used to generate the
-    *                     Elasticsearch index which `queryInput` will run against.
     * @return An elastic4s query definition from the query input.
     */
-  def buildQuery(queryInput: ModelQueryInput, indexVersion: Int): QueryDefinition
+  def buildQuery(queryInput: ModelQueryInput)(
+    implicit index: ElasticsearchIndex[Document]
+  ): QueryDefinition
 
   /**
     * Converts the query result document to a query output.

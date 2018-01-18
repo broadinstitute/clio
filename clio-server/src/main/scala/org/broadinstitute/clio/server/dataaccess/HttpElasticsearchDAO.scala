@@ -44,16 +44,14 @@ class HttpElasticsearchDAO private[dataaccess] (
     HttpClient.fromRestClient(restClient)
   }
 
-  override def updateMetadata[D <: ClioDocument](
-    document: D,
-    index: ElasticsearchIndex[D]
+  override def updateMetadata[D <: ClioDocument](document: D)(
+    implicit index: ElasticsearchIndex[D]
   ): Future[Unit] = {
     bulkUpdate(updatePartialDocument(index, document))
   }
 
-  override def queryMetadata[D <: ClioDocument](
-    queryDefinition: QueryDefinition,
-    index: ElasticsearchIndex[D]
+  override def queryMetadata[D <: ClioDocument](queryDefinition: QueryDefinition)(
+    implicit index: ElasticsearchIndex[D]
   ): Source[D, NotUsed] = {
     implicit val hitReader: HitReader[D] = index.hitReader
 
@@ -68,7 +66,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   override def getMostRecentDocument[D <: ClioDocument](
-    index: ElasticsearchIndex[D]
+    implicit index: ElasticsearchIndex[D]
   ): Future[Option[D]] = {
     implicit val hitReader: HitReader[D] = index.hitReader
 

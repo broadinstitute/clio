@@ -7,10 +7,7 @@ import akka.http.scaladsl.server.Route
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentGvcf,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentGvcf
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.service.GvcfService
@@ -79,10 +76,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
             project = Some("proj0"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(
-          GvcfService.v1QueryConverter
-            .buildQuery(_, ElasticsearchIndex.Gvcf.mappingsVersion)
-        )
+        ).map(GvcfService.v1QueryConverter.buildQuery)
       )
     }
 
@@ -138,10 +132,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
             location = Some(Location.GCP),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(
-          GvcfService.v1QueryConverter
-            .buildQuery(_, ElasticsearchIndex.Gvcf.mappingsVersion)
-        )
+        ).map(GvcfService.v1QueryConverter.buildQuery)
       )
     }
 
@@ -179,10 +170,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
           ),
           // No documentStatus restriction from /queryall
           TransferGvcfV1QueryInput(location = Some(Location.GCP))
-        ).map(
-          GvcfService.v1QueryConverter
-            .buildQuery(_, ElasticsearchIndex.Gvcf.mappingsVersion)
-        )
+        ).map(GvcfService.v1QueryConverter.buildQuery)
       )
     }
   }

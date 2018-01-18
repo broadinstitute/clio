@@ -3,8 +3,8 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
-import com.sksamuel.elastic4s.{HitReader, Indexable}
 import com.sksamuel.elastic4s.mappings.FieldDefinition
+import com.sksamuel.elastic4s.{HitReader, Indexable}
 import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.{ClassTag, classTag}
@@ -12,21 +12,20 @@ import scala.reflect.{ClassTag, classTag}
 /**
   * An index for an Elasticsearch document.
   *
+  * @param indexName The name of the index in Elasticsearch.
+  * @param fieldMapper The version of the mapping used to generate the index.
+  * @param indexable Typeclass used to convert `Document` instances into JSON.
+  * @param hitReader Typeclass used to convert ES search hits back to `Document` instances.
   * @tparam Document The type of the Elasticsearch document.
   */
-abstract class ElasticsearchIndex[Document] {
-
-  /** The name of the index. */
-  def indexName: String
-
-  /** The version of the mappings used to generate the index. */
-  def mappingsVersion: Int
-
-  /** Typeclass used to convert `Document` instances into JSON. */
-  def indexable: Indexable[Document]
-
-  /** Typeclass used to convert ES search hits back to `Document` instances. */
-  def hitReader: HitReader[Document]
+class ElasticsearchIndex[Document: FieldMapper](
+  val indexName: String,
+  private[dataaccess] val fieldMapper: ElasticsearchFieldMapper
+)(
+  implicit
+  private[clio] val indexable: Indexable[Document],
+  private[clio] val hitReader: HitReader[Document]
+) {
 
   /**
     * The root directory to use when persisting updates of this index to storage.
@@ -53,32 +52,28 @@ abstract class ElasticsearchIndex[Document] {
   final val indexType: String = "default"
 
   /** The fields for the index. */
-  def fields: Seq[FieldDefinition]
+  def fields: Seq[FieldDefinition] =
+    FieldMapper[Document].fields.toSeq.sortBy {
+      case (name, _) => name
+    } map {
+      case (name, value) =>
+        fieldMapper.stringToDefinition(value)(
+          ElasticsearchUtil.toElasticsearchName(name)
+        )
+    }
 }
 
-object ElasticsearchIndex extends Elastic4sAutoDerivation {
-  import com.sksamuel.elastic4s.circe._
+object ElasticsearchIndex {
 
-  val WgsUbam: ElasticsearchIndex[DocumentWgsUbam] =
-    indexDocument[DocumentWgsUbam](version = 1)
-
-  val Gvcf: ElasticsearchIndex[DocumentGvcf] =
-    indexDocument[DocumentGvcf](version = 2)
-
-  val WgsCram: ElasticsearchIndex[DocumentWgsCram] =
-    indexDocument[DocumentWgsCram](version = 2)
+  /** Format the directory path for the indexed meta-data files. */
+  lazy val dateTimeFormatter: DateTimeFormatter =
+    DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
   /**
     * Name to assign to a nested keyword field under every text field,
     * to support exact matching.
     */
-  val TextExactMatchFieldName: String = "exact"
-
-  /**
-    * Format the directory path for the indexed meta-data files.
-    */
-  lazy val dateTimeFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy/MM/dd")
+  private[dataaccess] val TextExactMatchFieldName: String = "exact"
 
   /**
     * Creates an index using shapeless and reflection.
@@ -89,13 +84,17 @@ object ElasticsearchIndex extends Elastic4sAutoDerivation {
     *                  https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
     * @return The index.
     */
-  private[dataaccess] def indexDocument[
+  private[dataaccess] def apply[
     Document: ClassTag: FieldMapper: Indexable: HitReader
-  ](version: Int): ElasticsearchIndex[Document] = {
+  ](fieldMapper: ElasticsearchFieldMapper): ElasticsearchIndex[Document] = {
     val esName =
       ElasticsearchUtil
         .toElasticsearchName(classTag[Document].runtimeClass.getSimpleName)
         .stripPrefix("document_")
-    new AutoElasticsearchIndex[Document](esName, version)
+
+    // We started without a version suffix, so we keep it that way to avoid breaking things.
+    val versionSuffix = if (fieldMapper.value == 1) "" else s"_v${fieldMapper.value}"
+
+    new ElasticsearchIndex[Document](s"$esName$versionSuffix", fieldMapper)
   }
 }

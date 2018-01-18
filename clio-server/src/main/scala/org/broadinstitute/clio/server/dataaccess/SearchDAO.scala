@@ -39,9 +39,8 @@ trait SearchDAO {
     * @param index    The index in which to update the document.
     * @tparam D The type of the document.
     */
-  def updateMetadata[D <: ClioDocument](
-    document: D,
-    index: ElasticsearchIndex[D]
+  def updateMetadata[D <: ClioDocument](document: D)(
+    implicit index: ElasticsearchIndex[D]
   ): Future[Unit]
 
   /**
@@ -51,9 +50,8 @@ trait SearchDAO {
     * @param index       The index to run the query against.
     * @tparam D          The type of the document to query.
     */
-  def queryMetadata[D <: ClioDocument](
-    queryDefinition: QueryDefinition,
-    index: ElasticsearchIndex[D]
+  def queryMetadata[D <: ClioDocument](queryDefinition: QueryDefinition)(
+    implicit index: ElasticsearchIndex[D]
   ): Source[D, NotUsed]
 
   /**
@@ -66,6 +64,6 @@ trait SearchDAO {
     * @return the most recent document for this index, if any
     */
   def getMostRecentDocument[D <: ClioDocument](
-    index: ElasticsearchIndex[D]
+    implicit index: ElasticsearchIndex[D]
   ): Future[Option[D]]
 }

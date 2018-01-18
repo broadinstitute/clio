@@ -30,17 +30,16 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       uuid <- persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
-        ElasticsearchIndex.WgsUbam,
         WgsUbamService.v1DocumentConverter
       )
     } yield {
       val expectedDocument =
         WgsUbamService.v1DocumentConverter.empty(mockKey).copy(upsertId = uuid)
       persistenceDAO.writeCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
+        Seq((expectedDocument, DocumentWgsUbam.elasticsearchIndex))
       )
       searchDAO.updateCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
+        Seq((expectedDocument, DocumentWgsUbam.elasticsearchIndex))
       )
     }
   }
@@ -56,7 +55,6 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
-        ElasticsearchIndex.WgsUbam,
         WgsUbamService.v1DocumentConverter
       )
     }.map { _ =>
