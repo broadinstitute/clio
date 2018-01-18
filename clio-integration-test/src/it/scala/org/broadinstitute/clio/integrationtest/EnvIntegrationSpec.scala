@@ -32,6 +32,8 @@ abstract class EnvIntegrationSpec(env: String)
     )
 
   override val clioWebClient: ClioWebClient = new ClioWebClient(
+    // TODO: Change this to point at a DNS, so it'll track whatever Clio
+    // is in use in the environment.
     s"clio101.gotc-$env.broadinstitute.org",
     443,
     useHttps = true,
@@ -42,8 +44,12 @@ abstract class EnvIntegrationSpec(env: String)
     new GoogleCredentialsGenerator(googleCredential)
   )
 
+  /*
+   * TODO: After the new dev cluster is up and running behind elasticsearch1,
+   * change this URL back so it'll track whatever cluster is in use in the environment.
+   */
   override val elasticsearchUri: Uri = Uri(
-    s"http://elasticsearch1.gotc-$env.broadinstitute.org:9200"
+    s"http://elasticsearch101.gotc-$env.broadinstitute.org:9200"
   )
 
   override lazy val rootPersistenceDir: Path =
