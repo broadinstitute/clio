@@ -43,7 +43,7 @@ abstract class EnvIntegrationSpec(env: String)
   )
 
   override val elasticsearchUri: Uri = Uri(
-    s"http://elasticsearch1.gotc-$env.broadinstitute.org:9200"
+    s"http://elasticsearch101.gotc-$env.broadinstitute.org:9200"
   )
 
   override lazy val rootPersistenceDir: Path =

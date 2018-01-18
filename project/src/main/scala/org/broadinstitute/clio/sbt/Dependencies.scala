@@ -18,7 +18,8 @@ object Dependencies {
   private val EnumeratumCirceVersion = "1.5.15"
   private val FicusVersion = "1.4.3"
   private val GoogleAuthHttpVersion = "0.9.0"
-  private val GoogleCloudNioVersion = "0.32.0-alpha"
+  private val GoogleCloudNioVersion = "0.33.0-alpha"
+  private val JacksonVersion = "2.9.3"
   private val JimfsVersion = "1.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
@@ -107,6 +108,8 @@ object Dependencies {
     "com.beachape" %% "enumeratum" % EnumeratumVersion,
     "com.beachape" %% "enumeratum-circe" % EnumeratumCirceVersion,
     "com.chuusai" %% "shapeless" % ShapelessVersion,
+    "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,
+    "com.fasterxml.jackson.core" % "jackson-databind" % JacksonVersion,
     "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.typesafe" % "config" % TypesafeConfigVersion,
