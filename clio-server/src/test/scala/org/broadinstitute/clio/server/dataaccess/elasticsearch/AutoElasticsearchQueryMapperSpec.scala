@@ -71,7 +71,7 @@ class AutoElasticsearchQueryMapperSpec extends FlatSpec with Matchers {
         rangeQuery("mock_field_date").lte(endDate.toString),
         rangeQuery("mock_field_date").gte(startDate.toString),
         queryStringQuery(""""hello"""").defaultField(
-          s"mock_key_string.${ElasticsearchIndex.TextExactMatchFieldName}"
+          s"mock_key_string.${ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords.TextExactMatchFieldName}"
         )
       )
     )

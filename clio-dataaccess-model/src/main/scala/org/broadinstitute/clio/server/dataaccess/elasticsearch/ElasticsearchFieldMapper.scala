@@ -5,20 +5,21 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import com.sksamuel.elastic4s.mappings.FieldDefinition
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import enumeratum.EnumEntry
 import enumeratum.values.{IntEnum, IntEnumEntry}
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex.TextExactMatchFieldName
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.collection.immutable
-import scala.reflect.runtime.universe
-import scala.reflect.runtime.universe.Type
+import scala.reflect.runtime.universe.{Type, typeOf}
 
 private[dataaccess] sealed abstract class ElasticsearchFieldMapper(
   override val value: Int
 ) extends IntEnumEntry {
 
-  def stringToDefinition(fieldType: Type): (String => FieldDefinition)
+  def stringToDefinition(fieldType: Type): String => FieldDefinition
+
+  def valueToQuery(fieldName: String, fieldType: Type): Any => QueryDefinition
 }
 
 private[dataaccess] object ElasticsearchFieldMapper
@@ -29,11 +30,7 @@ private[dataaccess] object ElasticsearchFieldMapper
 
   case object NumericBooleanDateAndKeywordFields extends ElasticsearchFieldMapper(1) {
 
-    override def stringToDefinition(
-      fieldType: universe.Type
-    ): String => FieldDefinition = {
-      import scala.reflect.runtime.universe.typeOf
-
+    override def stringToDefinition(fieldType: Type): String => FieldDefinition = {
       fieldType match {
         case tpe if tpe =:= typeOf[Boolean]           => booleanField
         case tpe if tpe =:= typeOf[Int]               => intField
@@ -70,15 +67,39 @@ private[dataaccess] object ElasticsearchFieldMapper
             )
       }
     }
+
+    private def isDate(tpe: Type): Boolean =
+      tpe =:= typeOf[OffsetDateTime] || tpe =:= typeOf[Option[OffsetDateTime]]
+
+    override def valueToQuery(
+      fieldName: String,
+      fieldType: Type
+    ): Any => QueryDefinition = {
+      fieldType match {
+        case tpe if isDate(tpe) && fieldName.endsWith("_start") =>
+          value =>
+            rangeQuery(fieldName.stripSuffix("_start"))
+              .gte(value.asInstanceOf[OffsetDateTime].toString)
+        case tpe if isDate(tpe) && fieldName.endsWith("_end") =>
+          value =>
+            rangeQuery(fieldName.stripSuffix("_end"))
+              .lte(value.asInstanceOf[OffsetDateTime].toString)
+        case _ =>
+          value =>
+            queryStringQuery(s""""$value"""").defaultField(fieldName)
+      }
+    }
   }
 
   case object StringsToTextFieldsWithSubKeywords extends ElasticsearchFieldMapper(2) {
 
-    override def stringToDefinition(
-      fieldType: universe.Type
-    ): String => FieldDefinition = {
-      import scala.reflect.runtime.universe.typeOf
+    /**
+      * Name to assign to a nested keyword field under every text field,
+      * to support exact matching.
+      */
+    private[elasticsearch] val TextExactMatchFieldName: String = "exact"
 
+    override def stringToDefinition(fieldType: Type): String => FieldDefinition = {
       /*
        * For Strings, create a top-level text field for searches,
        * with a nested keyword field for sorting / aggregations.
@@ -91,6 +112,25 @@ private[dataaccess] object ElasticsearchFieldMapper
         case tpe if tpe =:= typeOf[Option[String]]      => textFieldWithKeyword
         case tpe if tpe <:< typeOf[Option[Seq[String]]] => textFieldWithKeyword
         case tpe                                        => NumericBooleanDateAndKeywordFields.stringToDefinition(tpe)
+      }
+    }
+
+    private def isString(tpe: Type): Boolean =
+      tpe =:= typeOf[String] || tpe =:= typeOf[Option[String]] || tpe <:< typeOf[Option[
+        Seq[String]
+      ]]
+
+    override def valueToQuery(
+      fieldName: String,
+      fieldType: Type
+    ): Any => QueryDefinition = {
+      fieldType match {
+        case tpe if isString(tpe) =>
+          NumericBooleanDateAndKeywordFields.valueToQuery(
+            s"$fieldName.$TextExactMatchFieldName",
+            tpe
+          )
+        case tpe => NumericBooleanDateAndKeywordFields.valueToQuery(fieldName, tpe)
       }
     }
   }

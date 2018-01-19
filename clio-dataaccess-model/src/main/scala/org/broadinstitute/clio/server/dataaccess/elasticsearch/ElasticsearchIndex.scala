@@ -71,12 +71,6 @@ object ElasticsearchIndex extends Elastic4sAutoDerivation {
     DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
   /**
-    * Name to assign to a nested keyword field under every text field,
-    * to support exact matching.
-    */
-  private[elasticsearch] val TextExactMatchFieldName: String = "exact"
-
-  /**
     * Creates an index using shapeless and reflection.
     *
     * @param fieldMapper The object defining how the Scala types of the fields in `Document` should be translated

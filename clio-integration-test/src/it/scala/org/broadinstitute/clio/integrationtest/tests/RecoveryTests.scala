@@ -11,7 +11,8 @@ import org.broadinstitute.clio.integrationtest.{
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentGvcf,
   DocumentWgsCram,
-  DocumentWgsUbam
+  DocumentWgsUbam,
+  ElasticsearchIndex
 }
 import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
 import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1QueryOutput
@@ -83,9 +84,9 @@ trait RecoveryTests {
       esFullName -> DockerIntegrationSpec.elasticsearchServicePort
     ),
     Map(
-      DocumentWgsUbam.elasticsearchIndex -> storedUbams,
-      DocumentGvcf.elasticsearchIndex -> storedGvcfs,
-      DocumentWgsCram.elasticsearchIndex -> storedWgsCrams
+      ElasticsearchIndex[DocumentWgsUbam] -> storedUbams,
+      ElasticsearchIndex[DocumentGvcf] -> storedGvcfs,
+      ElasticsearchIndex[DocumentWgsCram] -> storedWgsCrams
     )
   )
 
