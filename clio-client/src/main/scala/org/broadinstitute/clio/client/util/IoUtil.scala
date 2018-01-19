@@ -146,7 +146,7 @@ object IoUtil extends IoUtil {
     }
 
     def rm(path: String): Int = {
-      runGsUtilAndGetExitCode(Seq("rm", path))
+      runGsUtilAndGetExitCode(Seq("rm", "-a", path))
     }
 
     def cat(objectLocation: String): String = {
