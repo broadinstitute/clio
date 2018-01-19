@@ -17,9 +17,9 @@ class MockPersistenceDAO extends PersistenceDAO {
   )(implicit ec: ExecutionContext): Future[Unit] =
     Future.successful(())
 
-  override def writeUpdate[D <: ClioDocument](
-    document: D,
+  override def writeUpdate[D <: ClioDocument](document: D)(
+    implicit ec: ExecutionContext,
     index: ElasticsearchIndex[D]
-  )(implicit ec: ExecutionContext): Future[Unit] =
+  ): Future[Unit] =
     Future.successful(())
 }

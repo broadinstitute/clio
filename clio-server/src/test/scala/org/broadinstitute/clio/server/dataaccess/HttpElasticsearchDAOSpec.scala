@@ -12,9 +12,9 @@ import com.sksamuel.elastic4s.searches.SearchDefinition
 import io.circe.parser
 import org.apache.http.util.EntityUtils
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  AutoElasticsearchIndex,
   ClioDocument,
   Elastic4sAutoDerivation,
+  ElasticsearchFieldMapper,
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.util.model.UpsertId
@@ -43,9 +43,15 @@ class HttpElasticsearchDAOSpec
     case class IndexVersion2(foo: Long, bar: String)
 
     val indexVersion1: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion1]("test_index_update_type", 1)
+      new ElasticsearchIndex[IndexVersion1](
+        "test_index_update_type",
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
+      )
     val indexVersion2: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion2]("test_index_update_type", 1)
+      new ElasticsearchIndex[IndexVersion2](
+        "test_index_update_type",
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
+      )
 
     for {
       _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
@@ -63,9 +69,15 @@ class HttpElasticsearchDAOSpec
     case class IndexVersion2(foo: Long, bar: String)
 
     val indexVersion1: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion1]("test_index_fail_recreate", 1)
+      new ElasticsearchIndex[IndexVersion1](
+        "test_index_fail_recreate",
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
+      )
     val indexVersion2: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion2]("test_index_fail_recreate", 1)
+      new ElasticsearchIndex[IndexVersion2](
+        "test_index_fail_recreate",
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
+      )
 
     for {
       _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
@@ -90,14 +102,14 @@ class HttpElasticsearchDAOSpec
     case class IndexVersion2(foo: Long)
 
     val indexVersion1: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion1](
+      new ElasticsearchIndex[IndexVersion1](
         "test_index_fail_change_types",
-        1
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
-      new AutoElasticsearchIndex[IndexVersion2](
+      new ElasticsearchIndex[IndexVersion2](
         "test_index_fail_change_types",
-        1
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     for {
       _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
@@ -124,8 +136,10 @@ class HttpElasticsearchDAOSpec
     import HttpElasticsearchDAOSpec._
     import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 
-    val index =
-      new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID(), 1)
+    val index = new ElasticsearchIndex[Document](
+      "docs-" + UUID.randomUUID(),
+      ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
+    )
 
     val documents =
       (1 to 4)
@@ -135,7 +149,7 @@ class HttpElasticsearchDAOSpec
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
       _ <- Future.sequence(
-        documents.map(httpElasticsearchDAO.updateMetadata(_, index))
+        documents.map(httpElasticsearchDAO.updateMetadata(_)(index))
       )
       document <- httpElasticsearchDAO.getMostRecentDocument(index)
     } yield document should be(documents.lastOption)
@@ -145,8 +159,10 @@ class HttpElasticsearchDAOSpec
     import HttpElasticsearchDAOSpec._
     import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 
-    val index =
-      new AutoElasticsearchIndex[Document]("docs-" + UUID.randomUUID(), 1)
+    val index = new ElasticsearchIndex[Document](
+      "docs-" + UUID.randomUUID(),
+      ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
+    )
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
