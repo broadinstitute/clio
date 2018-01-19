@@ -26,23 +26,21 @@ class MockSearchDAO extends SearchDAO {
     Future.successful(())
   }
 
-  override def updateMetadata[D <: ClioDocument](
-    document: D,
-    index: ElasticsearchIndex[D]
+  override def updateMetadata[D <: ClioDocument](document: D)(
+    implicit index: ElasticsearchIndex[D]
   ): Future[Unit] = {
     Future.successful(())
   }
 
-  override def queryMetadata[D](
-    queryDefinition: QueryDefinition,
-    index: ElasticsearchIndex[D]
+  override def queryMetadata[D](queryDefinition: QueryDefinition)(
+    implicit index: ElasticsearchIndex[D]
   ): Source[D, NotUsed] = {
     Source.empty[D]
   }
 
   // Not implemented on purpose; there's nothing sensible to return here.
   override def getMostRecentDocument[D <: ClioDocument](
-    index: ElasticsearchIndex[D]
+    implicit index: ElasticsearchIndex[D]
   ): Future[Option[D]] = {
     Future.successful(None)
   }

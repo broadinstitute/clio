@@ -71,8 +71,9 @@ trait PersistenceDAO extends LazyLogging {
     * @param index    Typeclass providing information on where to persist the
     *                 metadata update.
     */
-  def writeUpdate[D <: ClioDocument](document: D, index: ElasticsearchIndex[D])(
-    implicit ec: ExecutionContext
+  def writeUpdate[D <: ClioDocument](document: D)(
+    implicit ec: ExecutionContext,
+    index: ElasticsearchIndex[D]
   ): Future[Unit] =
     Future {
       val writePath =
@@ -178,10 +179,11 @@ trait PersistenceDAO extends LazyLogging {
     * @tparam D is a ClioDocument type with a JSON Decoder
     * @return a Future Seq of ClioDocument
     */
-  def getAllSince[D <: ClioDocument: Decoder](
-    mostRecentDocument: Option[ClioDocument],
+  def getAllSince[D <: ClioDocument: Decoder](mostRecentDocument: Option[ClioDocument])(
+    implicit ec: ExecutionContext,
+    materializer: Materializer,
     index: ElasticsearchIndex[D]
-  )(implicit ec: ExecutionContext, materializer: Materializer): Source[D, NotUsed] = {
+  ): Source[D, NotUsed] = {
     val rootDir = rootPath.resolve(index.rootDir)
 
     mostRecentDocument.fold(

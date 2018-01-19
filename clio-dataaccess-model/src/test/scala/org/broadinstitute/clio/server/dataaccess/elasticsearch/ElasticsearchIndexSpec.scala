@@ -4,26 +4,22 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import org.scalatest.{FlatSpec, Matchers}
 
 class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDerivation {
+  behavior of "ElasticsearchIndex"
+
   import com.sksamuel.elastic4s.circe._
 
-  Map(
-    "ElasticsearchIndex" ->
-      (
-        (version: Int) => ElasticsearchIndex.indexDocument[DocumentMock](version)
-      ),
-    "AutoElasticsearchIndex" ->
-      (
-        (version: Int) => new AutoElasticsearchIndex[DocumentMock]("mock", version)
-      )
-  ).foreach {
-    case (description, index) => {
-      behavior of description
-      it should behave like aV1Index(index(1))
-      it should behave like aV2Index(index(2))
-    }
-  }
+  it should behave like aV1Index(
+    ElasticsearchIndex[DocumentMock](
+      ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
+    )
+  )
+  it should behave like aV2Index(
+    ElasticsearchIndex[DocumentMock](
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+    )
+  )
 
-  def aV1Index[D](index: ElasticsearchIndex[D]): Unit = {
+  def aV1Index(index: ElasticsearchIndex[DocumentMock]): Unit = {
     it should "indexName for v1 document" in {
       index.indexName should be("mock")
     }
@@ -47,12 +43,14 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDe
         keywordField("mock_file_path"),
         longField("mock_file_size"),
         longField("mock_key_long"),
-        keywordField("mock_key_string")
+        keywordField("mock_key_string"),
+        keywordField("mock_string_array"),
+        keywordField("mock_path_array")
       )
     }
   }
 
-  def aV2Index[D](index: ElasticsearchIndex[D]): Unit = {
+  def aV2Index(index: ElasticsearchIndex[DocumentMock]): Unit = {
     it should "indexName for v2 document" in {
       index.indexName should be("mock_v2")
     }
@@ -65,8 +63,10 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDe
       // Snake-case-ify the bookkeeping fields.
       val bookkeeping =
         Seq(ClioDocument.UpsertIdFieldName, ClioDocument.EntityIdFieldName).map { name =>
-          keywordField(name.replaceAll("([A-Z])", "_$1").toLowerCase)
+          keywordField(ElasticsearchUtil.toElasticsearchName(name))
         }
+
+      import ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords.TextExactMatchFieldName
 
       index.fields should contain theSameElementsAs bookkeeping ++ Seq(
         dateField("mock_field_date"),
@@ -76,7 +76,9 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDe
         keywordField("mock_file_path"),
         longField("mock_file_size"),
         longField("mock_key_long"),
-        textField("mock_key_string").fields(keywordField("exact"))
+        textField("mock_key_string").fields(keywordField(TextExactMatchFieldName)),
+        textField("mock_string_array").fields(keywordField(TextExactMatchFieldName)),
+        keywordField("mock_path_array")
       )
     }
   }

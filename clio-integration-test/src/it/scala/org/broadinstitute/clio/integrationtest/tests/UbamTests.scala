@@ -146,9 +146,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
-    val expected = ElasticsearchIndex.WgsUbam
-    val getRequest =
-      getMapping(IndexAndType(expected.indexName, expected.indexType))
+    val expected = ElasticsearchIndex[DocumentWgsUbam]
+    val getRequest = getMapping(IndexAndType(expected.indexName, expected.indexType))
 
     elasticsearchClient.executeAndUnpack(getRequest).map {
       _ should be(Seq(indexToMapping(expected)))
@@ -207,10 +206,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       } yield {
         queryResponse should be(Seq(expected))
 
-        val storedDocument = getJsonFrom[DocumentWgsUbam](
-          ElasticsearchIndex.WgsUbam,
-          returnedUpsertId
-        )
+        val storedDocument = getJsonFrom[DocumentWgsUbam](returnedUpsertId)
         storedDocument.flowcellBarcode should be(expected.flowcellBarcode)
         storedDocument.lane should be(expected.lane)
         storedDocument.libraryName should be(expected.libraryName)
@@ -243,11 +239,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
-        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId1)
+        getJsonFrom[DocumentWgsUbam](upsertId1)
       storedDocument1.project should be(Some("testProject1"))
 
       val storedDocument2 =
-        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId2)
+        getJsonFrom[DocumentWgsUbam](upsertId2)
       storedDocument2.project should be(Some("testProject2"))
 
       storedDocument1.copy(upsertId = upsertId2, project = Some("testProject2")) should be(
@@ -273,9 +269,9 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 =
-        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId1)
+        getJsonFrom[DocumentWgsUbam](upsertId1)
       val storedDocument2 =
-        getJsonFrom[DocumentWgsUbam](ElasticsearchIndex.WgsUbam, upsertId2)
+        getJsonFrom[DocumentWgsUbam](upsertId2)
       storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
     }
   }

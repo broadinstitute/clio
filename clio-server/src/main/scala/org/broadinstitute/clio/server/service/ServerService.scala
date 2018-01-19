@@ -5,10 +5,7 @@ import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
 import org.broadinstitute.clio.server.ClioApp
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.dataaccess.{
   HttpServerDAO,
   PersistenceDAO,
@@ -53,15 +50,15 @@ class ServerService private (
     *
     * Returns the number of updates pulled & applied on success.
     */
-  private[service] def recoverMetadata[D <: ClioDocument: Decoder](
-    index: ElasticsearchIndex[D]
-  ): Future[Int] = {
-    searchDAO.getMostRecentDocument(index).flatMap { mostRecent =>
+  private[service] def recoverMetadata[
+    D <: ClioDocument: Decoder: ElasticsearchIndex
+  ](): Future[Int] = {
+    searchDAO.getMostRecentDocument.flatMap { mostRecent =>
       persistenceDAO
-        .getAllSince(mostRecent, index)
+        .getAllSince[D](mostRecent)
         .runWith(Sink.foldAsync(0) { (count, doc) =>
           logger.debug(s"Recovering document with ID ${doc.upsertId}")
-          searchDAO.updateMetadata(doc, index).map(_ => count + 1)
+          searchDAO.updateMetadata(doc).map(_ => count + 1)
         })
     }
   }
@@ -91,9 +88,9 @@ class ServerService private (
   private[service] def startup(): Future[Unit] = {
 
     val indexes = immutable.Seq(
-      ElasticsearchIndex.WgsUbam,
-      ElasticsearchIndex.Gvcf,
-      ElasticsearchIndex.WgsCram
+      ElasticsearchIndex[DocumentWgsUbam],
+      ElasticsearchIndex[DocumentGvcf],
+      ElasticsearchIndex[DocumentWgsCram]
     )
 
     for {
@@ -104,9 +101,9 @@ class ServerService private (
       Seq(recoveredUbamCount, recoveredGvcfCount, recoveredCramCount) <- Future
         .sequence(
           Seq(
-            recoverMetadata(ElasticsearchIndex.WgsUbam),
-            recoverMetadata(ElasticsearchIndex.Gvcf),
-            recoverMetadata(ElasticsearchIndex.WgsCram)
+            recoverMetadata[DocumentWgsUbam](),
+            recoverMetadata[DocumentGvcf](),
+            recoverMetadata[DocumentWgsCram]()
           )
         )
       _ = logger.info(s"Recovered $recoveredUbamCount wgs-ubams from storage")

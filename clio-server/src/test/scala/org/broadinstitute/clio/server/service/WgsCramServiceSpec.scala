@@ -3,7 +3,10 @@ package org.broadinstitute.clio.server.service
 import java.net.URI
 
 import akka.stream.scaladsl.Sink
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  DocumentWgsCram,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.transfer.model.wgscram.{
@@ -96,10 +99,10 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
         .copy(upsertId = returnedUpsertId)
 
       memoryPersistenceDAO.writeCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.WgsCram))
+        Seq((expectedDocument, ElasticsearchIndex[DocumentWgsCram]))
       )
       memorySearchDAO.updateCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.WgsCram))
+        Seq((expectedDocument, ElasticsearchIndex[DocumentWgsCram]))
       )
       memorySearchDAO.queryCalls should be(empty)
     }
