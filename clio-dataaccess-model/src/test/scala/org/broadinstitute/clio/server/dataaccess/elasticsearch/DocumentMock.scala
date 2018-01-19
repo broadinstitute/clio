@@ -30,9 +30,13 @@ object DocumentMock extends Elastic4sAutoDerivation {
     mockFilePath = Some(URI.create("gs://the-bucket/the-path.file"))
   )
 
-  implicit val elasticsearchIndex: ElasticsearchIndex[DocumentMock] =
-    ElasticsearchIndex[DocumentMock](ElasticsearchFieldMapper.InitVersion)
+  implicit val index: ElasticsearchIndex[DocumentMock] =
+    ElasticsearchIndex[DocumentMock](
+      ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
+    )
 
-  val elasticsearchIndexWithText: ElasticsearchIndex[DocumentMock] =
-    ElasticsearchIndex[DocumentMock](ElasticsearchFieldMapper.StringsAsTextVersion)
+  val indexWithTextFields: ElasticsearchIndex[DocumentMock] =
+    ElasticsearchIndex[DocumentMock](
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+    )
 }

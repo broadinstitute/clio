@@ -101,7 +101,7 @@ class AutoElasticsearchQueryMapper[
         )
 
       case tpe
-          if fieldMapper.value > ElasticsearchFieldMapper.InitVersion.value &&
+          if fieldMapper.value > ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields.value &&
             (tpe =:= typeOf[String] ||
               tpe =:= typeOf[Option[String]] ||
               tpe <:< typeOf[Option[Seq[String]]]) =>

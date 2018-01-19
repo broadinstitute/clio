@@ -59,14 +59,14 @@ class AutoElasticsearchQueryMapperSpec extends FlatSpec with Matchers {
       mockKeyLong = None,
       mockKeyString = Option("hello")
     )
-    mapper.buildQuery(input)(DocumentMock.elasticsearchIndex) should be(
+    mapper.buildQuery(input)(DocumentMock.index) should be(
       boolQuery must (
         rangeQuery("mock_field_date").lte(endDate.toString),
         rangeQuery("mock_field_date").gte(startDate.toString),
         queryStringQuery(""""hello"""").defaultField("mock_key_string")
       )
     )
-    mapper.buildQuery(input)(DocumentMock.elasticsearchIndexWithText) should be(
+    mapper.buildQuery(input)(DocumentMock.indexWithTextFields) should be(
       boolQuery must (
         rangeQuery("mock_field_date").lte(endDate.toString),
         rangeQuery("mock_field_date").gte(startDate.toString),

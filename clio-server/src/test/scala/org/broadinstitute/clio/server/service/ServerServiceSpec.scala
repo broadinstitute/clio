@@ -100,7 +100,7 @@ class ServerServiceSpec
     val initSearchDocuments = initStoredDocuments.take(initInSearch)
 
     for {
-      _ <- persistenceDAO.initialize(Seq(DocumentMock.elasticsearchIndex))
+      _ <- persistenceDAO.initialize(Seq(DocumentMock.index))
       _ <- Future.sequence(
         initStoredDocuments.map(persistenceDAO.writeUpdate[DocumentMock])
       )
@@ -111,7 +111,7 @@ class ServerServiceSpec
     } yield {
       numRestored should be(numDocs - initInSearch)
       searchDAO.updateCalls should be(
-        initStoredDocuments.map((_, DocumentMock.elasticsearchIndex))
+        initStoredDocuments.map((_, DocumentMock.index))
       )
     }
   }

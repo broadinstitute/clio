@@ -27,8 +27,7 @@ private[dataaccess] object ElasticsearchFieldMapper
 
   override val values: immutable.IndexedSeq[ElasticsearchFieldMapper] = findValues
 
-  /** All non-numeric, non-date members mapped to keywords. */
-  case object InitVersion extends ElasticsearchFieldMapper(1) {
+  case object NumericBooleanDateAndKeywordFields extends ElasticsearchFieldMapper(1) {
 
     override def stringToDefinition(
       fieldType: universe.Type
@@ -73,8 +72,7 @@ private[dataaccess] object ElasticsearchFieldMapper
     }
   }
 
-  /** String members to text fields, others (non-numeric, non-date) mapped to keywords. */
-  case object StringsAsTextVersion extends ElasticsearchFieldMapper(2) {
+  case object StringsToTextFieldsWithSubKeywords extends ElasticsearchFieldMapper(2) {
 
     override def stringToDefinition(
       fieldType: universe.Type
@@ -92,7 +90,7 @@ private[dataaccess] object ElasticsearchFieldMapper
         case tpe if tpe =:= typeOf[String]              => textFieldWithKeyword
         case tpe if tpe =:= typeOf[Option[String]]      => textFieldWithKeyword
         case tpe if tpe <:< typeOf[Option[Seq[String]]] => textFieldWithKeyword
-        case tpe                                        => InitVersion.stringToDefinition(tpe)
+        case tpe                                        => NumericBooleanDateAndKeywordFields.stringToDefinition(tpe)
       }
     }
   }

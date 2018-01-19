@@ -20,7 +20,7 @@ import scala.reflect.{ClassTag, classTag}
   */
 class ElasticsearchIndex[Document: FieldMapper](
   val indexName: String,
-  private[dataaccess] val fieldMapper: ElasticsearchFieldMapper
+  private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper
 )(
   implicit
   private[clio] val indexable: Indexable[Document],
@@ -63,7 +63,8 @@ class ElasticsearchIndex[Document: FieldMapper](
     }
 }
 
-object ElasticsearchIndex {
+object ElasticsearchIndex extends Elastic4sAutoDerivation {
+  import com.sksamuel.elastic4s.circe._
 
   /** Format the directory path for the indexed meta-data files. */
   lazy val dateTimeFormatter: DateTimeFormatter =
@@ -73,19 +74,21 @@ object ElasticsearchIndex {
     * Name to assign to a nested keyword field under every text field,
     * to support exact matching.
     */
-  private[dataaccess] val TextExactMatchFieldName: String = "exact"
+  private[elasticsearch] val TextExactMatchFieldName: String = "exact"
 
   /**
     * Creates an index using shapeless and reflection.
     *
+    * @param fieldMapper The object defining how the Scala types of the fields in `Document` should be translated
+    *                    into Elasticsearch field types.
     * @tparam Document The type of the Elasticsearch document, with a context bound also specifying that both an
     *                  `implicit ctag: ClassTag[Document]` exists, plus an
     *                  `implicit fieldMapper: FieldMapper[Document]` exists.
     *                  https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
     * @return The index.
     */
-  private[dataaccess] def apply[
-    Document: ClassTag: FieldMapper: Indexable: HitReader
+  private[elasticsearch] def apply[
+    Document <: ClioDocument: ClassTag: FieldMapper: Indexable: HitReader
   ](fieldMapper: ElasticsearchFieldMapper): ElasticsearchIndex[Document] = {
     val esName =
       ElasticsearchUtil
@@ -97,4 +100,17 @@ object ElasticsearchIndex {
 
     new ElasticsearchIndex[Document](s"$esName$versionSuffix", fieldMapper)
   }
+
+  /** Implicit summoner, for convenience. */
+  def apply[Document: ElasticsearchIndex]: ElasticsearchIndex[Document] =
+    implicitly[ElasticsearchIndex[Document]]
+
+  implicit val WgsUbam: ElasticsearchIndex[DocumentWgsUbam] =
+    ElasticsearchIndex(ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields)
+
+  implicit val Gvcf: ElasticsearchIndex[DocumentGvcf] =
+    ElasticsearchIndex(ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords)
+
+  implicit val WgsCram: ElasticsearchIndex[DocumentWgsCram] =
+    ElasticsearchIndex(ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords)
 }

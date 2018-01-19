@@ -22,7 +22,7 @@ class PersistenceDAOSpec
     with Elastic4sAutoDerivation {
   behavior of "PersistenceDAO"
 
-  implicit val index: ElasticsearchIndex[DocumentMock] = DocumentMock.elasticsearchIndex
+  implicit val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
 
   it should "initialize top-level storage for indexed documents" in {
     val dao = new MemoryPersistenceDAO()

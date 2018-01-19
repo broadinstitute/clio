@@ -1,6 +1,9 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  DocumentWgsUbam,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.server.dataaccess.{
   FailingPersistenceDAO,
   MemoryPersistenceDAO,
@@ -36,10 +39,10 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       val expectedDocument =
         WgsUbamService.v1DocumentConverter.empty(mockKey).copy(upsertId = uuid)
       persistenceDAO.writeCalls should be(
-        Seq((expectedDocument, DocumentWgsUbam.elasticsearchIndex))
+        Seq((expectedDocument, ElasticsearchIndex[DocumentWgsUbam]))
       )
       searchDAO.updateCalls should be(
-        Seq((expectedDocument, DocumentWgsUbam.elasticsearchIndex))
+        Seq((expectedDocument, ElasticsearchIndex[DocumentWgsUbam]))
       )
     }
   }

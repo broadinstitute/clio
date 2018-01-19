@@ -39,12 +39,12 @@ class HttpElasticsearchDAOSpec
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[IndexVersion1](
         "test_index_update_type",
-        ElasticsearchFieldMapper.InitVersion
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[IndexVersion2](
         "test_index_update_type",
-        ElasticsearchFieldMapper.InitVersion
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
     for {
@@ -65,12 +65,12 @@ class HttpElasticsearchDAOSpec
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[IndexVersion1](
         "test_index_fail_recreate",
-        ElasticsearchFieldMapper.InitVersion
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[IndexVersion2](
         "test_index_fail_recreate",
-        ElasticsearchFieldMapper.InitVersion
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
     for {
@@ -93,12 +93,12 @@ class HttpElasticsearchDAOSpec
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[IndexVersion1](
         "test_index_fail_change_types",
-        ElasticsearchFieldMapper.InitVersion
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[IndexVersion2](
         "test_index_fail_change_types",
-        ElasticsearchFieldMapper.InitVersion
+        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     for {
       _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
@@ -122,7 +122,7 @@ class HttpElasticsearchDAOSpec
 
     val index = new ElasticsearchIndex[Document](
       "docs-" + UUID.randomUUID(),
-      ElasticsearchFieldMapper.InitVersion
+      ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
     val documents =
@@ -145,7 +145,7 @@ class HttpElasticsearchDAOSpec
 
     val index = new ElasticsearchIndex[Document](
       "docs-" + UUID.randomUUID(),
-      ElasticsearchFieldMapper.InitVersion
+      ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
     for {
