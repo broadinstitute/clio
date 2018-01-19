@@ -43,7 +43,9 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDe
         keywordField("mock_file_path"),
         longField("mock_file_size"),
         longField("mock_key_long"),
-        keywordField("mock_key_string")
+        keywordField("mock_key_string"),
+        keywordField("mock_string_array"),
+        keywordField("mock_path_array")
       )
     }
   }
@@ -61,8 +63,10 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDe
       // Snake-case-ify the bookkeeping fields.
       val bookkeeping =
         Seq(ClioDocument.UpsertIdFieldName, ClioDocument.EntityIdFieldName).map { name =>
-          keywordField(name.replaceAll("([A-Z])", "_$1").toLowerCase)
+          keywordField(ElasticsearchUtil.toElasticsearchName(name))
         }
+
+      import ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords.TextExactMatchFieldName
 
       index.fields should contain theSameElementsAs bookkeeping ++ Seq(
         dateField("mock_field_date"),
@@ -72,7 +76,9 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDe
         keywordField("mock_file_path"),
         longField("mock_file_size"),
         longField("mock_key_long"),
-        textField("mock_key_string").fields(keywordField("exact"))
+        textField("mock_key_string").fields(keywordField(TextExactMatchFieldName)),
+        textField("mock_string_array").fields(keywordField(TextExactMatchFieldName)),
+        keywordField("mock_path_array")
       )
     }
   }

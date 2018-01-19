@@ -15,7 +15,9 @@ case class DocumentMock(
   mockFieldInt: Option[Int] = None,
   mockFileMd5: Option[Symbol] = None,
   mockFilePath: Option[URI] = None,
-  mockFileSize: Option[Long] = None
+  mockFileSize: Option[Long] = None,
+  mockStringArray: Option[Seq[String]] = None,
+  mockPathArray: Option[Seq[URI]] = None
 ) extends ClioDocument
 
 object DocumentMock extends Elastic4sAutoDerivation {
@@ -27,7 +29,9 @@ object DocumentMock extends Elastic4sAutoDerivation {
     mockKeyLong = 1234L,
     mockKeyString = "the-string",
     mockFileMd5 = Some(Symbol("12345abcdefg")),
-    mockFilePath = Some(URI.create("gs://the-bucket/the-path.file"))
+    mockFilePath = Some(URI.create("gs://the-bucket/the-path.file")),
+    mockStringArray = Some(Seq.empty),
+    mockPathArray = Some(Seq.empty)
   )
 
   implicit val index: ElasticsearchIndex[DocumentMock] =
