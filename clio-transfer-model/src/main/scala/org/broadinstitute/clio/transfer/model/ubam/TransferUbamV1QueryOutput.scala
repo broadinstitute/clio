@@ -16,6 +16,7 @@ case class TransferUbamV1QueryOutput(
   location: Location,
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
+  baitSet: Option[String] = None,
   dataType: Option[String] = None,
   individualAlias: Option[String] = None,
   initiative: Option[String] = None,
@@ -47,8 +48,5 @@ case class TransferUbamV1QueryOutput(
   ubamMd5: Option[Symbol] = None,
   ubamPath: Option[URI] = None,
   ubamSize: Option[Long] = None,
-  documentStatus: Option[DocumentStatus] = None,
-  baitSet: Option[String] = None,
-  baitSetName: Option[String] = None,
-  targetSet: Option[String] = None
+  documentStatus: Option[DocumentStatus] = None
 )
