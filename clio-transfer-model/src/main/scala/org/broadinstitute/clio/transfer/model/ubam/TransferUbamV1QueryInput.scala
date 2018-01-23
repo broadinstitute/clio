@@ -22,6 +22,6 @@ case class TransferUbamV1QueryInput(
   sampleAlias: Option[String] = None,
   documentStatus: Option[DocumentStatus] = None,
   baitSet: Option[String] = None,
-  baitSetName: Option[String] = None,
-  targetSet: Option[String] = None
+  baitIntervals: Option[String] = None,
+  targetIntervals: Option[String] = None
 )

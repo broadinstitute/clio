@@ -9,6 +9,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation
 case class TransferUbamV1Metadata(
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
+  baitSet: Option[String] = None,
   dataType: Option[String] = None,
   individualAlias: Option[String] = None,
   initiative: Option[String] = None,
@@ -40,10 +41,7 @@ case class TransferUbamV1Metadata(
   ubamMd5: Option[Symbol] = None,
   ubamPath: Option[URI] = None,
   ubamSize: Option[Long] = None,
-  documentStatus: Option[DocumentStatus] = None,
-  baitSet: Option[String] = None,
-  baitSetName: Option[String] = None,
-  targetSet: Option[String] = None
+  documentStatus: Option[DocumentStatus] = None
 ) extends TransferMetadata[TransferUbamV1Metadata] {
 
   override def pathsToDelete: Seq[URI] = ubamPath.toSeq
