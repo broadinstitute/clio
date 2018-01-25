@@ -16,6 +16,7 @@ case class TransferWgsUbamV1QueryOutput(
   location: Location,
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
+  baitSet: Option[String] = None,
   dataType: Option[String] = None,
   individualAlias: Option[String] = None,
   initiative: Option[String] = None,

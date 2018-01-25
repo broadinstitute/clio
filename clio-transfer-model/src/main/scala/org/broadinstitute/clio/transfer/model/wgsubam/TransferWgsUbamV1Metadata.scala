@@ -9,6 +9,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation
 case class TransferWgsUbamV1Metadata(
   analysisType: Option[String] = None,
   baitIntervals: Option[String] = None,
+  baitSet: Option[String] = None,
   dataType: Option[String] = None,
   individualAlias: Option[String] = None,
   initiative: Option[String] = None,
