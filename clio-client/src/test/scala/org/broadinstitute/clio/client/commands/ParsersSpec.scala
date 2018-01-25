@@ -117,4 +117,26 @@ class ParsersSpec extends BaseClientSpec {
     }
     ignoreDeleted should be(true)
   }
+
+  it should "quotes in String inputs should cause an error" in {
+    val parsed =
+      parse(Array(ClioCommand.queryWgsUbamName, "--sample-alias", "\"sampleAlias\""))
+    val errorMessage = parsed match {
+      case Right((_, _, optCmd)) =>
+        optCmd map {
+          case Right((_, query, _)) =>
+            query.asInstanceOf[QueryWgsUbam].queryInput.sampleAlias
+          case Left(error) => error
+        }
+      case Left(_) => fail("Could not parse outer command.")
+    }
+    errorMessage should be(
+      Some(
+        Error.MalformedValue(
+          "string",
+          "Quotes are not allowed at the beginning or end of inputs"
+        )
+      )
+    )
+  }
 }
