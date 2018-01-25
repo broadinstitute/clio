@@ -18,7 +18,7 @@ services:
 
   proxy:
     image: broadinstitute/openidc-proxy:latest
-    hostname: {{env "CLIO_HOST"}}
+    hostname: {{env "CLIO_DOMAIN_NAME"}}
     links:
       - app:app
       - logger
@@ -35,11 +35,11 @@ services:
       - logger
     restart: always
     environment:
-      CALLBACK_URI: https://{{env "CLIO_HOST"}}/oauth2callback
+      CALLBACK_URI: https://{{env "CLIO_DOMAIN_NAME"}}/oauth2callback
       LOG_LEVEL: warn
       PROXY_PATH: /
       PROXY_URL: http://app:{{env "CONTAINER_CLIO_PORT"}}/
-      SERVER_NAME: {{env "CLIO_HOST"}}
+      SERVER_NAME: {{env "CLIO_DOMAIN_NAME"}}
       AUTH_TYPE: AuthType None
       OIDC_CLAIM: Require all granted
       PROXY_PATH2: /api
