@@ -1,7 +1,5 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import java.time.OffsetDateTime
-
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import org.broadinstitute.clio.util.generic.{
@@ -43,9 +41,16 @@ class AutoElasticsearchQueryMapper[
     flattenVals(queryInput).isEmpty
   }
 
-  override def buildQuery(queryInput: ModelQueryInput): QueryDefinition = {
+  override def buildQuery(
+    queryInput: ModelQueryInput
+  )(implicit index: ElasticsearchIndex[Document]): QueryDefinition = {
     val queries = flattenVals(queryInput) map {
-      case (name, value) => build(name, value)
+      case (name, value) => {
+        index.fieldMapper.valueToQuery(
+          ElasticsearchUtil.toElasticsearchName(name),
+          inputMapper.types(name)
+        )(value)
+      }
     }
     boolQuery must queries
   }
@@ -58,42 +63,6 @@ class AutoElasticsearchQueryMapper[
         ClioDocument.EntityIdFieldName
       )
     )
-  }
-
-  /**
-    * Builds a query definition from a field name and a field value.
-    *
-    * @param name  The field name.
-    * @param value The field value, already unwrapped from an option.
-    * @return The query definition.
-    */
-  private def build(name: String, value: Any): QueryDefinition = {
-    import ElasticsearchQueryMapper._
-
-    import scala.reflect.runtime.universe.typeOf
-
-    val esName = ElasticsearchUtil.toElasticsearchName(name)
-
-    // Get the scala Type of the field and match the types. All filter fields are wrapped in an Option.
-    inputMapper.types(name) match {
-      case tpe
-          if tpe =:= typeOf[Option[OffsetDateTime]] && esName.endsWith(
-            "_start"
-          ) =>
-        queryOnOrAfter(
-          esName.stripSuffix("_start"),
-          value.asInstanceOf[OffsetDateTime]
-        )
-      case tpe
-          if tpe =:= typeOf[Option[OffsetDateTime]] && esName.endsWith(
-            "_end"
-          ) =>
-        queryOnOrBefore(
-          esName.stripSuffix("_end"),
-          value.asInstanceOf[OffsetDateTime]
-        )
-      case _ => queryVal(esName, value)
-    }
   }
 
   /**

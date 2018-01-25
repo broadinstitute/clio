@@ -36,7 +36,6 @@ class WgsCramService(
       .upsertMetadata(
         transferKey,
         updatedTransferMetadata,
-        ElasticsearchIndex.WgsCram,
         WgsCramService.v1DocumentConverter
       )
   }
@@ -54,7 +53,6 @@ class WgsCramService(
   ): Source[TransferWgsCramV1QueryOutput, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
-      ElasticsearchIndex.WgsCram,
       WgsCramService.v1QueryConverter
     )
   }

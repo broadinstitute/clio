@@ -36,7 +36,6 @@ class GvcfService(
       .upsertMetadata(
         transferKey,
         updatedTransferMetadata,
-        ElasticsearchIndex.Gvcf,
         GvcfService.v1DocumentConverter
       )
   }
@@ -54,7 +53,6 @@ class GvcfService(
   ): Source[TransferGvcfV1QueryOutput, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
-      ElasticsearchIndex.Gvcf,
       GvcfService.v1QueryConverter
     )
   }

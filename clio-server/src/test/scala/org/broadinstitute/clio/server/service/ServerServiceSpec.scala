@@ -102,13 +102,12 @@ class ServerServiceSpec
     for {
       _ <- persistenceDAO.initialize(Seq(DocumentMock.index))
       _ <- Future.sequence(
-        initStoredDocuments
-          .map(persistenceDAO.writeUpdate(_, DocumentMock.index))
+        initStoredDocuments.map(persistenceDAO.writeUpdate[DocumentMock])
       )
       _ <- Future.sequence(
-        initSearchDocuments.map(searchDAO.updateMetadata(_, DocumentMock.index))
+        initSearchDocuments.map(searchDAO.updateMetadata[DocumentMock])
       )
-      numRestored <- serverService.recoverMetadata(DocumentMock.index)
+      numRestored <- serverService.recoverMetadata[DocumentMock]()
     } yield {
       numRestored should be(numDocs - initInSearch)
       searchDAO.updateCalls should be(

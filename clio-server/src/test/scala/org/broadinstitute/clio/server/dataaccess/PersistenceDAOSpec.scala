@@ -22,7 +22,7 @@ class PersistenceDAOSpec
     with Elastic4sAutoDerivation {
   behavior of "PersistenceDAO"
 
-  val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
+  implicit val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
 
   it should "initialize top-level storage for indexed documents" in {
     val dao = new MemoryPersistenceDAO()
@@ -49,8 +49,8 @@ class PersistenceDAOSpec
 
     for {
       _ <- dao.initialize(Seq(index))
-      _ <- dao.writeUpdate(document, index)
-      _ <- dao.writeUpdate(document2, index)
+      _ <- dao.writeUpdate(document)
+      _ <- dao.writeUpdate(document2)
     } yield {
       Seq(document, document2).foreach { doc =>
         val expectedPath =
@@ -85,8 +85,8 @@ class PersistenceDAOSpec
     val expected = documents.drop(half)
     for {
       _ <- dao.initialize(Seq(index))
-      _ <- Future.sequence(documents.map(dao.writeUpdate(_, index)))
-      result <- dao.getAllSince(expected.headOption, index).runWith(Sink.seq)
+      _ <- Future.sequence(documents.map(dao.writeUpdate[DocumentMock]))
+      result <- dao.getAllSince[DocumentMock](expected.headOption).runWith(Sink.seq)
     } yield {
       result should be(expected.tail)
     }
@@ -105,8 +105,8 @@ class PersistenceDAOSpec
     val expected = documents
     for {
       _ <- dao.initialize(Seq(index))
-      _ <- Future.sequence(documents.map(dao.writeUpdate(_, index)))
-      result <- dao.getAllSince(None, index).runWith(Sink.seq)
+      _ <- Future.sequence(documents.map(dao.writeUpdate[DocumentMock]))
+      result <- dao.getAllSince[DocumentMock](None).runWith(Sink.seq)
     } yield {
       result should be(expected)
     }
@@ -133,7 +133,7 @@ class PersistenceDAOSpec
           indexable.json(document).getBytes
         )
       }
-      result <- dao.getAllSince(Some(document), index).runWith(Sink.seq)
+      result <- dao.getAllSince[DocumentMock](Some(document)).runWith(Sink.seq)
     } yield {
       result shouldBe empty
     }
@@ -146,7 +146,7 @@ class PersistenceDAOSpec
     for {
       _ <- dao.initialize(Seq(index))
       result <- recoverToSucceededIf[NoSuchElementException] {
-        dao.getAllSince(Some(document), index).runWith(Sink.seq)
+        dao.getAllSince[DocumentMock](Some(document)).runWith(Sink.seq)
       }
     } yield {
       result

@@ -1,8 +1,11 @@
 package org.broadinstitute.clio.server.service
 
 import akka.stream.scaladsl.Sink
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  DocumentWgsUbam,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.transfer.model.wgsubam.{
   TransferWgsUbamV1Key,
@@ -91,10 +94,10 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
         .copy(upsertId = returnedUpsertId)
 
       memoryPersistenceDAO.writeCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
+        Seq((expectedDocument, ElasticsearchIndex[DocumentWgsUbam]))
       )
       memorySearchDAO.updateCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex.WgsUbam))
+        Seq((expectedDocument, ElasticsearchIndex[DocumentWgsUbam]))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

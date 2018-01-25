@@ -8,7 +8,9 @@ case class ModelMockKey(mockKeyLong: Long, mockKeyString: String)
 case class ModelMockMetadata(
   mockFieldDouble: Option[Double],
   mockFieldInt: Option[Int],
-  mockFieldDate: Option[OffsetDateTime]
+  mockFieldDate: Option[OffsetDateTime],
+  mockStringArray: Option[Seq[String]] = None,
+  mockPathArray: Option[Seq[URI]] = None
 )
 
 case class ModelMockQueryInput(
@@ -28,5 +30,7 @@ case class ModelMockQueryOutput(
   mockFieldDate: Option[OffsetDateTime],
   mockFileMd5: Option[Symbol],
   mockFilePath: Option[URI],
-  mockFileSize: Option[Long]
+  mockFileSize: Option[Long],
+  mockStringArray: Option[Seq[String]] = None,
+  mockPathArray: Option[Seq[URI]] = None
 )
