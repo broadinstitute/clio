@@ -110,7 +110,7 @@ render_ctmpls() {
     # This line of bash-fu is used to avoid tediously listing out an `echo "UPPER_CASE_NAME=${lower_case_name}"`
     # command for each variable we want to pass along to the templates.
     #
-    # ${var^^} substitutes to the uppercase form of the value stored in `var`. Ex:
+    # In bash 4.X, ${var^^} substitutes to the uppercase form of the value stored in `var`. Ex:
     #
     #   var=some_variable
     #   echo "${var^^}" # Echoes "SOME_VARIABLE"
