@@ -5,6 +5,11 @@ set -ex
 declare -r PROG_NAME=$(basename $0)
 declare -r CLIO_DIR=$(cd $(dirname $(dirname $0)) && pwd)
 
+declare -r -a VAULT_TOKEN_FILE_OPTIONS=(/etc/vault-token-dsde ${HOME}/.vault-token)
+
+# Shamelessly ripped from StackOverflow: https://stackoverflow.com/a/17841619
+join_by() { local d=$1; shift; echo -n "$1"; shift; printf "%s" "${@/#/$d}"; }
+
 usage() {
   cat <<EOF >&2
 USAGE: ENV=<env> CLIO_HOST_NAME=<hostname> $PROG_NAME
@@ -25,8 +30,7 @@ Note: requires the following ENV vars to be set to non-null values:
 
 Also requires that a file containing a vault token be placed at one of the following paths:
 
-  /etc/vault-token-dsde
-  ${HOME}/.vault-token
+  $(join_by $'\n  ' ${VAULT_TOKEN_FILE_OPTIONS[@]})
 EOF
 }
 
@@ -38,7 +42,7 @@ check_env_args() {
     ret=1
   else
     case "$ENV" in
-      "dev"|"staging"|"prod")
+      dev|staging|prod)
         ;;
       *)
         >&2 echo "Error: Invalid environment '$ENV'!"
@@ -59,7 +63,7 @@ check_env_args() {
 }
 
 render_ctmpls() {
-  local -r docker_tag=$1 clio_domain_name=$2 tmp=$3 app_dir=$4 host_log_dir=$5 pos_log_dir=$6
+  local -r docker_tag=$1 clio_fqdn=$2 tmp=$3 app_dir=$4 host_log_dir=$5 pos_log_dir=$6
 
   local -r ctmpl_dir="${CLIO_DIR}/clio-server/config"
   local vault_token_file
@@ -70,12 +74,14 @@ render_ctmpls() {
   fi
 
   # Try to find the vault token location.
-  if [ -f /etc/vault-token-dsde ]; then
-    vault_token_file=/etc/vault-token-dsde
-  elif [ -f ${HOME}/.vault-token ]; then
-    vault_token_file=${HOME}/.vault-token
-  else
-    >&2 echo "Error: Vault token file not found at /etc/vault-token-dsde or ${HOME}/.vault-token"
+  for token_location in ${VAULT_TOKEN_FILE_OPTIONS[@]}; do
+    if [ -f $token_location ]; then
+      vault_token_file=$token_location
+    fi
+  done
+
+  if [ -z "$vault_token_file" ]; then
+    >&2 echo "Error: Vault token file not found at any of $(join_by ', ' ${VAULT_TOKEN_FILE_OPTIONS[@]})"
     exit 1
   fi
 
@@ -96,7 +102,26 @@ render_ctmpls() {
 
   # Populate an env file with variables for rendering configs.
   local -r ctmpl_env_file="${tmp}/env-vars.txt"
-  for var in ENV clio_domain_name docker_tag app_dir clio_conf_dir host_log_dir clio_log_dir pos_log_dir clio_app_conf clio_logback_conf clio_service_account_json container_clio_port; do
+  for var in ENV clio_fqdn docker_tag app_dir clio_conf_dir host_log_dir clio_log_dir pos_log_dir clio_app_conf clio_logback_conf clio_service_account_json container_clio_port; do
+    # We use lower_snake_case for local variables in our script here, but our templates expect UPPER_SNAKE_CASE
+    # (the script originally shared the same convention, and I haven't changed all the configs because I feel
+    #  that uppercase makes the parts which should be filled in with an env variable more obvious).
+    #
+    # This line of bash-fu is used to avoid tediously listing out an `echo "UPPER_CASE_NAME=${lower_case_name}"`
+    # command for each variable we want to pass along to the templates.
+    #
+    # ${var^^} substitutes to the uppercase form of the value stored in `var`. Ex:
+    #
+    #   var=some_variable
+    #   echo "${var^^}" # Echoes "SOME_VARIABLE"
+    #
+    # ${!var} performs a double-substitution: first it substitutes `var` for its current value,
+    # then it substitutes that value for its own current value. Ex:
+    #
+    #   some_variable=foo
+    #   var=some_variable
+    #   echo "${!var}" # Echoes "foo"
+    #
     echo "${var^^}=${!var}" >> ${ctmpl_env_file}
   done
 
@@ -138,7 +163,7 @@ start_containers() {
 }
 
 deploy_containers() {
-  local -r ssh_user=$1 clio_domain_name=$2 ssh_cmd=$3 scp_cmd=$4 tmp=$5 app_dir=$6 log_init_path=$7
+  local -r ssh_user=$1 clio_fqdn=$2 ssh_cmd=$3 scp_cmd=$4 tmp=$5 app_dir=$6 log_init_path=$7
 
   local -r new_app_staging_dir="${app_dir}.new"
   local -r previous_app_dir="${app_dir}.old"
@@ -153,7 +178,7 @@ deploy_containers() {
 EOF
 
   # Copy rendered configs to the staging directory.
-  ${scp_cmd} -r ${tmp}/* ${ssh_user}@${clio_domain_name}:${new_app_staging_dir}
+  ${scp_cmd} -r ${tmp}/* ${ssh_user}@${clio_fqdn}:${new_app_staging_dir}
 
   # Stop anything that's running.
   stop_containers "${ssh_cmd}" ${tmp}
@@ -171,7 +196,7 @@ EOF
 }
 
 poll_clio_health() {
-  local -r clio_domain_name=$1 docker_tag=$2
+  local -r clio_fqdn=$1 docker_tag=$2
 
   local status
   local reported_version
@@ -184,8 +209,8 @@ poll_clio_health() {
     if [ ${attempts} -le 540 ]; then
       sleep 20
       echo "Attempt $attempts"
-      status=$(curl -fs "https://${clio_domain_name}/health" | jq -r .search)
-      reported_version=$(curl -fs "https://${clio_domain_name}/version" | jq -r .version)
+      status=$(curl -fs "https://${clio_fqdn}/health" | jq -r .search)
+      reported_version=$(curl -fs "https://${clio_fqdn}/version" | jq -r .version)
       attempts=$((attempts + 1))
     else
       return 1
@@ -207,10 +232,10 @@ main() {
   local -r docker_tag="${base_version}-g${short_sha}-SNAP"
 
   # SSH options.
-  local -r clio_domain_name="${CLIO_HOST_NAME}.gotc-${ENV}.broadinstitute.org"
+  local -r clio_fqdn="${CLIO_HOST_NAME}.gotc-${ENV}.broadinstitute.org"
   local -r ssh_user=jenkins
   local -r ssh_opts='-o UserKnownHostsFile=/dev/null -o CheckHostIP=no -o StrictHostKeyChecking=no'
-  local -r ssh_cmd="ssh $ssh_opts ${ssh_user}@${clio_domain_name}"
+  local -r ssh_cmd="ssh $ssh_opts ${ssh_user}@${clio_fqdn}"
   local -r scp_cmd="scp $ssh_opts"
 
   # Location on host where configs should be copied.
@@ -224,11 +249,11 @@ main() {
   local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
   trap "rm -r ${tmpdir}" ERR EXIT HUP INT TERM
 
-  render_ctmpls ${docker_tag} ${clio_domain_name} ${tmpdir} ${app_dir} ${host_log_dir} ${pos_log_dir}
+  render_ctmpls ${docker_tag} ${clio_fqdn} ${tmpdir} ${app_dir} ${host_log_dir} ${pos_log_dir}
 
-  deploy_containers ${ssh_user} ${clio_domain_name} "${ssh_cmd}" "${scp_cmd}" ${tmpdir} ${app_dir} "${host_log_dir}/${pos_log_dir}"
+  deploy_containers ${ssh_user} ${clio_fqdn} "${ssh_cmd}" "${scp_cmd}" ${tmpdir} ${app_dir} "${host_log_dir}/${pos_log_dir}"
 
-  if poll_clio_health ${clio_domain_name} ${docker_tag}; then
+  if poll_clio_health ${clio_fqdn} ${docker_tag}; then
     ${ssh_cmd} "sudo rm -r ${app_dir}.old.old"
   else
     >&2 echo "Error: Clio failed to report expected health / version, rolling back deploy!"
