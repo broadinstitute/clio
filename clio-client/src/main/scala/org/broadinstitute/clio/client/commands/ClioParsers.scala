@@ -62,11 +62,11 @@ trait ClioParsers {
 
   implicit val stringParser: ArgParser[String] =
     SimpleArgParser.from[String]("string") { str =>
-      if (str.startsWith("\"") || str.endsWith("\"")) {
+      if (str contains "\"") {
         Left(
           Error.MalformedValue(
             "string",
-            "Quotes are not allowed at the beginning or end of inputs"
+            "Quotes are not allowed in inputs"
           )
         )
       } else {
