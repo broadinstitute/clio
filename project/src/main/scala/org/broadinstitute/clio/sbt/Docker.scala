@@ -35,7 +35,17 @@ object Docker {
     new Dockerfile {
       from("openjdk:8")
       label("CLIO_VERSION", version.value)
-      expose(8080)
+      runRaw(
+        "wget -q https://download-keycdn.ej-technologies.com/jprofiler/jprofiler_linux_9_2_1.tar.gz -P /tmp/ &&" +
+          " tar -xzf /tmp/jprofiler_linux_9_2_1.tar.gz -C /usr/local &&" +
+          " rm /tmp/jprofiler_linux_9_2_1.tar.gz"
+      )
+      env(
+        "JPAGENT_PATH",
+        "-agentpath:/usr/local/jprofiler9/bin/linux-x64/libjprofilerti.so=nowait"
+      )
+
+      expose(8080, 31757)
       add(artifact, artifactTargetPath)
       /*
        * We need to use `entryPointShell` here to allow the environment variable to be substituted.
