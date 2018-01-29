@@ -9,9 +9,9 @@ import io.circe.syntax._
 import io.circe.Json
 import org.broadinstitute.clio.client.util.{IoUtil, TestData}
 import org.broadinstitute.clio.status.model.{
-  ServerStatusInfo,
+  ClioStatus,
   StatusInfo,
-  SystemStatusInfo,
+  SearchStatus,
   VersionInfo
 }
 import org.broadinstitute.clio.transfer.model._
@@ -35,7 +35,7 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     with TestData
     with ModelAutoDerivation {
 
-  val health = StatusInfo(ServerStatusInfo.Started, SystemStatusInfo.OK)
+  val health = StatusInfo(ClioStatus.Started, SearchStatus.OK)
   val version = VersionInfo("0.0.1")
 
   val json: Option[Json] = metadataLocationOption.map(

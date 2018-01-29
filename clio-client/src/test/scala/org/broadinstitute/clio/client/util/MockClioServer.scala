@@ -11,9 +11,9 @@ import akka.pattern.after
 import akka.stream.ActorMaterializer
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import org.broadinstitute.clio.status.model.{
-  ServerStatusInfo,
+  ClioStatus,
   StatusInfo,
-  SystemStatusInfo,
+  SearchStatus,
   VersionInfo
 }
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
@@ -45,7 +45,7 @@ class MockClioServer(implicit system: ActorSystem)
         val slowResult =
           after(testRequestTimeout + 1.second, system.scheduler) {
             Future.successful(
-              StatusInfo(ServerStatusInfo.Started, SystemStatusInfo.OK)
+              StatusInfo(ClioStatus.Started, SearchStatus.OK)
             )
           }
         complete(slowResult)

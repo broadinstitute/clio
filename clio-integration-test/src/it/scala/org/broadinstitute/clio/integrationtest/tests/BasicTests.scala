@@ -5,9 +5,9 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.integrationtest.{BaseIntegrationSpec, ClioBuildInfo}
 import org.broadinstitute.clio.status.model.{
-  ServerStatusInfo,
+  ClioStatus,
   StatusInfo,
-  SystemStatusInfo,
+  SearchStatus,
   VersionInfo
 }
 
@@ -17,7 +17,7 @@ trait BasicTests { self: BaseIntegrationSpec =>
   it should "report health information at /health" in {
     runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName)
       .map(
-        _ should be(StatusInfo(ServerStatusInfo.Started, SystemStatusInfo.OK))
+        _ should be(StatusInfo(ClioStatus.Started, SearchStatus.OK))
       )
   }
 

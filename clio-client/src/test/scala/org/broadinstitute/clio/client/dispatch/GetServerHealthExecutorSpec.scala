@@ -4,11 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import io.circe.Json
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.GetServerHealth
-import org.broadinstitute.clio.status.model.{
-  ServerStatusInfo,
-  StatusInfo,
-  SystemStatusInfo
-}
+import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, SearchStatus}
 
 class GetServerHealthExecutorSpec extends BaseClientSpec {
   behavior of "GetServerHealth"
@@ -27,7 +23,7 @@ class GetServerHealthExecutorSpec extends BaseClientSpec {
       .map {
         case json: Json =>
           json.as[StatusInfo] should be(
-            Right(StatusInfo(ServerStatusInfo.Started, SystemStatusInfo.OK))
+            Right(StatusInfo(ClioStatus.Started, SearchStatus.OK))
           )
         case other => fail(s"Expected json, got $other")
       }

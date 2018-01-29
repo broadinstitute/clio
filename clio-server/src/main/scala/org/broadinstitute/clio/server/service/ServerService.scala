@@ -12,7 +12,7 @@ import org.broadinstitute.clio.server.dataaccess.{
   SearchDAO,
   ServerStatusDAO
 }
-import org.broadinstitute.clio.status.model.ServerStatusInfo
+import org.broadinstitute.clio.status.model.ClioStatus
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.collection.immutable
@@ -94,9 +94,11 @@ class ServerService private (
     )
 
     for {
-      _ <- serverStatusDAO.setStatus(ServerStatusInfo.Starting)
+      _ <- serverStatusDAO.setStatus(ClioStatus.Starting)
       _ <- persistenceDAO.initialize(indexes)
       _ <- searchDAO.initialize(indexes)
+      _ <- httpServerDAO.startup()
+      _ <- serverStatusDAO.setStatus(ClioStatus.Recovering)
       _ = logger.info("Recovering metadata from storage...")
       Seq(recoveredUbamCount, recoveredGvcfCount, recoveredCramCount) <- Future
         .sequence(
@@ -109,17 +111,17 @@ class ServerService private (
       _ = logger.info(s"Recovered $recoveredUbamCount wgs-ubams from storage")
       _ = logger.info(s"Recovered $recoveredGvcfCount gvcfs from storage")
       _ = logger.info(s"Recovered $recoveredCramCount wgs-crams from storage")
-      _ <- httpServerDAO.startup()
-      _ <- serverStatusDAO.setStatus(ServerStatusInfo.Started)
+      _ <- httpServerDAO.enableApi()
+      _ <- serverStatusDAO.setStatus(ClioStatus.Started)
       _ = logger.info("Server started")
     } yield ()
   }
 
   private[service] def shutdown(): Future[Unit] = {
-    serverStatusDAO.setStatus(ServerStatusInfo.ShuttingDown) transformWith { _ =>
+    serverStatusDAO.setStatus(ClioStatus.ShuttingDown) transformWith { _ =>
       searchDAO.close() transformWith { _ =>
         httpServerDAO.shutdown() transformWith { _ =>
-          serverStatusDAO.setStatus(ServerStatusInfo.ShutDown)
+          serverStatusDAO.setStatus(ClioStatus.ShutDown)
         }
       }
     }
