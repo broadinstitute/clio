@@ -63,7 +63,7 @@ class IoUtilSpec extends FlatSpec with Matchers with TestData {
     }
 
     new IoUtil { override val gsUtil: GsUtil = mockGsUtil }
-      .getGoogleObjectInfo(uri) should be(Some(expectedSize -> Some(expectedMd5Hash)))
+      .getGoogleObjectInfo(uri) should be(expectedSize -> Some(expectedMd5Hash))
   }
 
   it should "not fail when 'gsutil stat' doesn't output an md5 hash" in {
@@ -84,17 +84,7 @@ class IoUtilSpec extends FlatSpec with Matchers with TestData {
     }
 
     new IoUtil { override val gsUtil: GsUtil = mockGsUtil }
-      .getGoogleObjectInfo(uri) should be(Some(expectedSize -> None))
-  }
-
-  it should "return None for object info when 'gsutil stat' fails" in {
-
-    val mockGsUtil = new GsUtil {
-      override def stat(path: String): String = sys.error("Nonzero retcode")
-    }
-
-    new IoUtil { override val gsUtil: GsUtil = mockGsUtil }
-      .getGoogleObjectInfo(uri) should be(None)
+      .getGoogleObjectInfo(uri) should be(expectedSize -> None)
   }
 
 }
