@@ -118,7 +118,7 @@ class ParsersSpec extends BaseClientSpec {
     ignoreDeleted should be(true)
   }
 
-  it should "double quotes on the ends of String inputs should cause an error" in {
+  it should "error out when there are double quotes on the ends of String inputs" in {
     val parsed =
       parse(Array(ClioCommand.queryWgsUbamName, "--sample-alias", "\"sampleAlias\""))
     val errorMessage = parsed match {
@@ -140,7 +140,7 @@ class ParsersSpec extends BaseClientSpec {
     )
   }
 
-  it should "double quotes in the middle of String inputs should cause an error" in {
+  it should "error out when there are double quotes in the middle of String inputs" in {
     val parsed =
       parse(
         Array(
@@ -168,7 +168,7 @@ class ParsersSpec extends BaseClientSpec {
     )
   }
 
-  it should "single quotes in String inputs should not cause an error" in {
+  it should "parse single quotes in String inputs without error" in {
     val parsed =
       parse(
         Array(

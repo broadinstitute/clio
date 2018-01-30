@@ -62,15 +62,10 @@ trait ClioParsers {
 
   implicit val stringParser: ArgParser[String] =
     SimpleArgParser.from[String]("string") { str =>
-      if (str contains "\"") {
-        Left(
-          Error.MalformedValue(
-            "string",
-            "Quotes are not allowed in inputs"
-          )
-        )
-      } else {
-        Right(str)
-      }
+      Either.cond(
+        !str.contains("\""),
+        str,
+        Error.MalformedValue("string", "Quotes are not allowed in inputs")
+      )
     }
 }
