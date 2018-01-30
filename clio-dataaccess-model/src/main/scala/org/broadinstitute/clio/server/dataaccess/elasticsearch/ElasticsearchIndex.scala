@@ -100,7 +100,7 @@ object ElasticsearchIndex extends Elastic4sAutoDerivation {
     implicitly[ElasticsearchIndex[Document]]
 
   implicit val WgsUbam: ElasticsearchIndex[DocumentWgsUbam] =
-    ElasticsearchIndex(ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields)
+    ElasticsearchIndex(ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords)
 
   implicit val Gvcf: ElasticsearchIndex[DocumentGvcf] =
     ElasticsearchIndex(ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords)

@@ -73,7 +73,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   it should "throw a FailedResponse 404 when running add command for hybsel ubams" in {
     val tmpMetadata =
-      writeLocalTmpJson(TransferUbamV1Metadata(project = Some("fake_project")))
+      writeLocalTmpJson(TransferUbamV1Metadata(project = Some('fake_project)))
 
     val addResponseFuture = runClient(
       ClioCommand.addHybselUbamName,
@@ -175,7 +175,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       lane = 2,
       libraryName = s"library $randomId",
       location = location,
-      project = Some("test project"),
+      project = Some(Symbol("test project")),
       documentStatus = Some(DocumentStatus.Normal)
     )
 
@@ -227,12 +227,12 @@ trait UbamTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertUbam(
         upsertKey,
-        TransferUbamV1Metadata(project = Some("testProject1")),
+        TransferUbamV1Metadata(project = Some('testProject1)),
         SequencingType.WholeGenome
       )
       upsertId2 <- runUpsertUbam(
         upsertKey,
-        TransferUbamV1Metadata(project = Some("testProject2")),
+        TransferUbamV1Metadata(project = Some('testProject2)),
         SequencingType.WholeGenome
       )
     } yield {
@@ -240,13 +240,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
       val storedDocument1 =
         getJsonFrom[DocumentWgsUbam](upsertId1)
-      storedDocument1.project should be(Some("testProject1"))
+      storedDocument1.project should be(Some('testProject1))
 
       val storedDocument2 =
         getJsonFrom[DocumentWgsUbam](upsertId2)
-      storedDocument2.project should be(Some("testProject2"))
+      storedDocument2.project should be(Some('testProject2))
 
-      storedDocument1.copy(upsertId = upsertId2, project = Some("testProject2")) should be(
+      storedDocument1.copy(upsertId = upsertId2, project = Some('testProject2)) should be(
         storedDocument2
       )
     }
@@ -259,7 +259,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       2,
       s"library$randomId"
     )
-    val metadata = TransferUbamV1Metadata(project = Some("testProject1"))
+    val metadata = TransferUbamV1Metadata(project = Some('testProject1))
     val ubamType = SequencingType.WholeGenome
 
     for {
@@ -295,9 +295,9 @@ trait UbamTests { self: BaseIntegrationSpec =>
           val key =
             TransferUbamV1Key(location, flowcellBarcode, lane, library)
           val metadata = TransferUbamV1Metadata(
-            project = Some(project),
+            project = Some(Symbol(project)),
             sampleAlias = Some(sample),
-            researchProjectId = Some(researchProjectId)
+            researchProjectId = Some(Symbol(researchProjectId))
           )
           runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       }
@@ -323,7 +323,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
-        result.project should be(Some(project))
+        result.project should be(Some(Symbol(project)))
       }
       sampleResults should have length 2
       sampleResults.foldLeft(succeed) { (_, result) =>
@@ -331,7 +331,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       }
       rpIdResults should have length 1
       rpIdResults.headOption.flatMap(_.researchProjectId) should be(
-        researchProjectIds.lastOption
+        Some(Symbol(researchProjectIds.last))
       )
     }
   }
@@ -341,7 +341,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       TransferUbamV1Key(Location.GCP, "barcode2", 2, s"library$randomId")
     val project = s"testProject$randomId"
     val metadata = TransferUbamV1Metadata(
-      project = Some(project),
+      project = Some(Symbol(project)),
       sampleAlias = Some("sampleAlias1"),
       notes = Some("Breaking news")
     )
@@ -360,8 +360,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
 
     val upsertData = TransferUbamV1Metadata(
-      sampleAlias = metadata.sampleAlias,
-      project = metadata.project
+      project = metadata.project,
+      sampleAlias = metadata.sampleAlias
     )
 
     for {
@@ -398,7 +398,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         location = Location.GCP
       )
       val upsertMetadata = TransferUbamV1Metadata(
-        project = Some(project),
+        project = Some(Symbol(project)),
         sampleAlias = Some(sample),
         ubamPath = Some(URI.create(s"gs://ubam/$sample.$lane"))
       )
@@ -424,7 +424,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       } yield {
         results.length should be(expectedLength)
         results.foreach { result =>
-          result.project should be(Some(project))
+          result.project should be(Some(Symbol(project)))
           result.sampleAlias should be(Some(sample))
           result.documentStatus should be(Some(DocumentStatus.Normal))
         }
@@ -453,7 +453,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       results.length should be(keysWithMetadata.length)
       results.foldLeft(succeed) { (_, result) =>
-        result.project should be(Some(project))
+        result.project should be(Some(Symbol(project)))
         result.sampleAlias should be(Some(sample))
 
         val resultKey = TransferUbamV1Key(
@@ -614,7 +614,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val upsertKey =
       TransferUbamV1Key(Location.GCP, flowcellBarcode, lane, library)
     val metadata = TransferUbamV1Metadata(
-      project = Some("testProject1"),
+      project = Some('testProject1),
       regulatoryDesignation = regulatoryDesignation
     )
 
@@ -652,10 +652,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     )
 
     val key = TransferUbamV1Key(Location.GCP, barcode, lane, library)
-    val metadata = TransferUbamV1Metadata(
-      ubamPath = Some(cloudPath.toUri),
-      notes = existingNote
-    )
+    val metadata =
+      TransferUbamV1Metadata(notes = existingNote, ubamPath = Some(cloudPath.toUri))
 
     // Clio needs the metadata to be added before it can be deleted.
     val _ = Files.write(cloudPath, fileContents.getBytes)

@@ -71,6 +71,9 @@ private[dataaccess] object ElasticsearchFieldMapper
     private def isDate(tpe: Type): Boolean =
       tpe =:= typeOf[OffsetDateTime] || tpe =:= typeOf[Option[OffsetDateTime]]
 
+    private def isSymbol(tpe: Type): Boolean =
+      tpe =:= typeOf[Symbol] || tpe =:= typeOf[Option[Symbol]]
+
     override def valueToQuery(
       fieldName: String,
       fieldType: Type
@@ -84,6 +87,10 @@ private[dataaccess] object ElasticsearchFieldMapper
           value =>
             rangeQuery(fieldName.stripSuffix("_end"))
               .lte(value.asInstanceOf[OffsetDateTime].toString)
+        case tpe if isSymbol(tpe) =>
+          value =>
+            queryStringQuery(s""""${value.asInstanceOf[Symbol].name}"""")
+              .defaultField(fieldName)
         case _ =>
           value =>
             queryStringQuery(s""""$value"""").defaultField(fieldName)

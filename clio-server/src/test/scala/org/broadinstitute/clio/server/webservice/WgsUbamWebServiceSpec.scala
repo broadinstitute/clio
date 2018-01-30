@@ -67,7 +67,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
       memorySearchDAO.queryCalls should be(
         Seq(
           TransferUbamV1QueryInput(
-            project = Some("testProject1"),
+            project = Some('testProject1),
             documentStatus = Some(DocumentStatus.Normal)
           )
         ).map(WgsUbamService.v1QueryConverter.buildQuery)
@@ -109,7 +109,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
         .asInstanceOf[DocumentWgsUbam]
 
       firstUpdate.upsertId should be(responseAs[UpsertId])
-      firstUpdate.project should be(Some("G123"))
+      firstUpdate.project should be(Some('G123))
       firstUpdate.sampleAlias should be(Some("sample1"))
       firstUpdate.ubamPath should be(Some(URI.create("gs://path/ubam.bam")))
     }
@@ -143,7 +143,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
         .map(_._1)
         .apply(1)
         .asInstanceOf[DocumentWgsUbam]
-      secondUpdate.project should be(Some("G123"))
+      secondUpdate.project should be(Some('G123))
       secondUpdate.sampleAlias should be(Some("sample1"))
       secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))
       secondUpdate.ubamPath should be(Some(URI.create("")))
