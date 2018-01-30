@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server
 
+import java.time.OffsetDateTime
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
@@ -27,6 +29,8 @@ object ClioServer
     with RejectionDirectives
     with SwaggerDirectives
     with StrictLogging {
+
+  override val serverStartTime: OffsetDateTime = OffsetDateTime.now()
 
   private implicit val system: ActorSystem = ActorSystem("clio")
 

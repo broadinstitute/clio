@@ -1,13 +1,22 @@
 package org.broadinstitute.clio.server.webservice
 
+import java.time.OffsetDateTime
+
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import io.circe.syntax._
-import org.broadinstitute.clio.server.model.{ApiNotReadyRejection, RejectionResult}
+import org.broadinstitute.clio.server.model.{
+  ApiNotReadyRejection,
+  ApiNotReadyResult,
+  RejectionResult
+}
 
 /** Rejection translation into json. */
 trait RejectionDirectives { self: JsonWebService =>
+
+  def serverStartTime: OffsetDateTime
+
   lazy val mapRejectionsToJson: Directive0 = {
     handleRejections(mapRejectionsToJsonHandler)
   }
@@ -18,7 +27,10 @@ trait RejectionDirectives { self: JsonWebService =>
       .handle {
         case ApiNotReadyRejection => {
           complete(
-            StatusCodes.ServiceUnavailable -> "Clio is rebuilding search index, try again later"
+            StatusCodes.ServiceUnavailable -> ApiNotReadyResult(
+              "Clio is rebuilding search index, try again later",
+              serverStartTime
+            )
           )
         }
       }

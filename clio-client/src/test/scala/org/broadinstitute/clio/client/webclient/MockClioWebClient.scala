@@ -8,12 +8,7 @@ import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.Json
 import org.broadinstitute.clio.client.util.{IoUtil, TestData}
-import org.broadinstitute.clio.status.model.{
-  ClioStatus,
-  StatusInfo,
-  SearchStatus,
-  VersionInfo
-}
+import org.broadinstitute.clio.status.model.{StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
@@ -35,7 +30,7 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     with TestData
     with ModelAutoDerivation {
 
-  val health = StatusInfo(ClioStatus.Started, SearchStatus.OK)
+  val health = StatusInfo.Running
   val version = VersionInfo("0.0.1")
 
   val json: Option[Json] = metadataLocationOption.map(

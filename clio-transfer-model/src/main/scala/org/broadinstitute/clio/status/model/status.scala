@@ -36,4 +36,8 @@ object SearchStatus extends Enum[SearchStatus] {
 
 case class StatusInfo(clio: ClioStatus, search: SearchStatus)
 
+object StatusInfo {
+  val Running = StatusInfo(ClioStatus.Started, SearchStatus.OK)
+}
+
 case class VersionInfo(version: String)
