@@ -43,4 +43,48 @@ class IoUtilSpec extends FlatSpec with Matchers with TestData {
       .getMd5HashOfGoogleObject(uri) should be(None)
   }
 
+  it should "parse object size and hash out of 'gsutil stat' output" in {
+    val expectedSize = 123412L
+    val expectedMd5Hash = Symbol("d41d8cd98f00b204e9800998ecf8427e")
+
+    val mockGsUtil = new GsUtil {
+      override def stat(path: String): String =
+        s"""    Creation time:          Wed, 24 Jan 2018 23:00:14 GMT
+           |    Update time:            Wed, 24 Jan 2018 23:00:14 GMT
+           |    Storage class:          STANDARD
+           |    Content-Length:         $expectedSize
+           |    Content-Type:           application/octet-stream
+           |    Hash (crc32c):          AAAAAA==
+           |    Hash (md5):             1B2M2Y8AsgTpgAmY7PhCfg==
+           |    ETag:                   CKCYzILa8dgCEAE=
+           |    Generation:             1516834814888992
+           |    Metageneration:         1
+         """.stripMargin
+    }
+
+    new IoUtil { override val gsUtil: GsUtil = mockGsUtil }
+      .getGoogleObjectInfo(uri) should be(expectedSize -> Some(expectedMd5Hash))
+  }
+
+  it should "not fail when 'gsutil stat' doesn't output an md5 hash" in {
+    val expectedSize = 123412L
+
+    val mockGsUtil = new GsUtil {
+      override def stat(path: String): String =
+        s"""    Creation time:          Wed, 24 Jan 2018 23:00:14 GMT
+           |    Update time:            Wed, 24 Jan 2018 23:00:14 GMT
+           |    Storage class:          STANDARD
+           |    Content-Length:         $expectedSize
+           |    Content-Type:           application/octet-stream
+           |    Hash (crc32c):          AAAAAA==
+           |    ETag:                   CKCYzILa8dgCEAE=
+           |    Generation:             1516834814888992
+           |    Metageneration:         1
+         """.stripMargin
+    }
+
+    new IoUtil { override val gsUtil: GsUtil = mockGsUtil }
+      .getGoogleObjectInfo(uri) should be(expectedSize -> None)
+  }
+
 }
