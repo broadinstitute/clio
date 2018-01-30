@@ -213,9 +213,7 @@ EOF
   start_containers ${clio_fqdn}
 }
 
-# Poll the Clio server every 20 seconds for 3 hours (540 times).
-# TODO: The server could be smarter about reporting recovery vs. error,
-# allowing us to shrink this polling time.
+# Poll the Clio server every 20 seconds for 5 minutes (15 times).
 poll_clio_health() {
   local -r clio_fqdn=$1 docker_tag=$2
 
@@ -223,18 +221,27 @@ poll_clio_health() {
   local reported_version
   local attempts=1
 
-  while [ ${attempts} -le 540 ]; do
+  while [ ${attempts} -le 15 ]; do
     sleep 20
-    echo Attempt ${attempts}
-    status=$(curl -fs https://${clio_fqdn}/health | jq -r .search)
+    echo Checking Clio status...
+    status=$(curl -fs https://${clio_fqdn}/health | jq -r .clio)
     reported_version=$(curl -fs https://${clio_fqdn}/version | jq -r .version)
 
     echo Got status: ${status}, version: ${reported_version}
-    if [ ${status} = OK ] && [ ${reported_version} = ${docker_tag} ]; then
-      return 0
-    else
-      attempts=$((attempts + 1))
-    fi
+    case ${status} in
+      Recovering)
+        ;;
+      Started)
+        if [ "${reported_version}" = ${docker_tag} ]; then
+          return 0
+        else
+          return 1
+        fi
+        ;;
+      *)
+        attempts=$((attempts + 1))
+        ;;
+    esac
   done
 
   return 1

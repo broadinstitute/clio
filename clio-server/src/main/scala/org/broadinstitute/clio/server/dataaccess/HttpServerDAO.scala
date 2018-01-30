@@ -8,9 +8,15 @@ import scala.concurrent.Future
 trait HttpServerDAO {
 
   /**
-    * Starts the web server.
+    * Starts the web server, exposing health and version
+    * endpoints but not the upsert or query APIs.
     */
   def startup(): Future[Unit]
+
+  /**
+    * Exposes the upsert and query endpoints.
+    */
+  def enableApi(): Future[Unit]
 
   /**
     * Returns the server version.
