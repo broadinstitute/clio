@@ -117,4 +117,79 @@ class ParsersSpec extends BaseClientSpec {
     }
     ignoreDeleted should be(true)
   }
+
+  it should "error out when there are double quotes on the ends of String inputs" in {
+    val parsed =
+      parse(Array(ClioCommand.queryWgsUbamName, "--sample-alias", "\"sampleAlias\""))
+    val errorMessage = parsed match {
+      case Right((_, _, optCmd)) =>
+        optCmd map {
+          case Right((_, query, _)) =>
+            query.asInstanceOf[QueryWgsUbam].queryInput.sampleAlias
+          case Left(error) => error
+        }
+      case Left(_) => fail("Could not parse outer command.")
+    }
+    errorMessage should be(
+      Some(
+        Error.MalformedValue(
+          "string",
+          "Quotes are not allowed in inputs"
+        )
+      )
+    )
+  }
+
+  it should "error out when there are double quotes in the middle of String inputs" in {
+    val parsed =
+      parse(
+        Array(
+          ClioCommand.queryWgsUbamName,
+          "--sample-alias",
+          "someone said \"something\" at some point in time"
+        )
+      )
+    val errorMessage = parsed match {
+      case Right((_, _, optCmd)) =>
+        optCmd map {
+          case Right((_, query, _)) =>
+            query.asInstanceOf[QueryWgsUbam].queryInput.sampleAlias
+          case Left(error) => error
+        }
+      case Left(_) => fail("Could not parse outer command.")
+    }
+    errorMessage should be(
+      Some(
+        Error.MalformedValue(
+          "string",
+          "Quotes are not allowed in inputs"
+        )
+      )
+    )
+  }
+
+  it should "parse single quotes in String inputs without error" in {
+    val parsed =
+      parse(
+        Array(
+          ClioCommand.queryWgsUbamName,
+          "--sample-alias",
+          "I can\'t let you do that, Dave"
+        )
+      )
+    val sampleAlias: Option[String] = (parsed match {
+      case Right((_, _, optCmd)) =>
+        optCmd map {
+          case Right((_, query, _)) =>
+            query
+              .asInstanceOf[QueryWgsUbam]
+              .queryInput
+              .sampleAlias
+          case Left(_) => fail("Could not parse subcommand.")
+        }
+      case Left(_) => fail("Could not parse outer command.")
+    }).flatten
+
+    sampleAlias should be(Some("I can\'t let you do that, Dave"))
+  }
 }
