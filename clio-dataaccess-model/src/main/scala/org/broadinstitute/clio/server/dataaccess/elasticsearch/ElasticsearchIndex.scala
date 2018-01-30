@@ -68,29 +68,25 @@ object ElasticsearchIndex extends Elastic4sAutoDerivation {
   lazy val dateTimeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
-  private val wgsUbamEsName = "wgs-ubam"
-  private val gvcfEsName = "gvcf-v2"
-  private val wgsCramEsName = "wgs-cram-v2"
-
   /** Implicit summoner, for convenience. */
   def apply[Document: ElasticsearchIndex]: ElasticsearchIndex[Document] =
     implicitly[ElasticsearchIndex[Document]]
 
   implicit val WgsUbam: ElasticsearchIndex[DocumentWgsUbam] =
     new ElasticsearchIndex[DocumentWgsUbam](
-      wgsUbamEsName,
+      "wgs-ubam",
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
   implicit val Gvcf: ElasticsearchIndex[DocumentGvcf] =
     new ElasticsearchIndex[DocumentGvcf](
-      gvcfEsName,
+      "gvcf-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
   implicit val WgsCram: ElasticsearchIndex[DocumentWgsCram] =
     new ElasticsearchIndex[DocumentWgsCram](
-      wgsCramEsName,
+      "wgs-cram-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 }
