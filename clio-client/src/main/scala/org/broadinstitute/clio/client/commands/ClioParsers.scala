@@ -59,4 +59,13 @@ trait ClioParsers {
   implicit val pathParser: ArgParser[Path] = parseWith("path", Paths.get(_))
 
   implicit val uuidParser: ArgParser[UUID] = parseWith("uuid", UUID.fromString)
+
+  implicit val stringParser: ArgParser[String] =
+    SimpleArgParser.from[String]("string") { str =>
+      Either.cond(
+        !str.contains("\""),
+        str,
+        Error.MalformedValue("string", "Quotes are not allowed in inputs")
+      )
+    }
 }
