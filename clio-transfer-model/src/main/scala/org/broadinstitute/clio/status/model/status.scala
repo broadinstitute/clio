@@ -4,34 +4,40 @@ import enumeratum._
 
 import scala.collection.immutable.IndexedSeq
 
-sealed trait ServerStatusInfo extends EnumEntry
+sealed abstract class ClioStatus(val level: Int) extends EnumEntry
 
-object ServerStatusInfo extends Enum[ServerStatusInfo] {
-  override val values: IndexedSeq[ServerStatusInfo] = findValues
+object ClioStatus extends Enum[ClioStatus] {
+  override val values: IndexedSeq[ClioStatus] = findValues
 
-  case object NotStarted extends ServerStatusInfo
+  case object NotStarted extends ClioStatus(0)
 
-  case object Starting extends ServerStatusInfo
+  case object Starting extends ClioStatus(1)
 
-  case object Started extends ServerStatusInfo
+  case object Recovering extends ClioStatus(2)
 
-  case object ShuttingDown extends ServerStatusInfo
+  case object Started extends ClioStatus(3)
 
-  case object ShutDown extends ServerStatusInfo
+  case object ShuttingDown extends ClioStatus(4)
 
-}
-
-sealed trait SystemStatusInfo extends EnumEntry
-
-object SystemStatusInfo extends Enum[SystemStatusInfo] {
-  override val values: IndexedSeq[SystemStatusInfo] = findValues
-
-  case object OK extends SystemStatusInfo
-
-  case object Error extends SystemStatusInfo
+  case object ShutDown extends ClioStatus(5)
 
 }
 
-case class StatusInfo(clio: ServerStatusInfo, search: SystemStatusInfo)
+sealed trait SearchStatus extends EnumEntry
+
+object SearchStatus extends Enum[SearchStatus] {
+  override val values: IndexedSeq[SearchStatus] = findValues
+
+  case object OK extends SearchStatus
+
+  case object Error extends SearchStatus
+
+}
+
+case class StatusInfo(clio: ClioStatus, search: SearchStatus)
+
+object StatusInfo {
+  val Running = StatusInfo(ClioStatus.Started, SearchStatus.OK)
+}
 
 case class VersionInfo(version: String)

@@ -1,11 +1,11 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.status.model.ServerStatusInfo
+import org.broadinstitute.clio.status.model.ClioStatus
 
 import scala.concurrent.Future
 
 trait ServerStatusDAO {
-  def setStatus(status: ServerStatusInfo): Future[Unit]
+  def setStatus(status: ClioStatus): Future[Unit]
 
-  def getStatus: Future[ServerStatusInfo]
+  def getStatus: Future[ClioStatus]
 }
