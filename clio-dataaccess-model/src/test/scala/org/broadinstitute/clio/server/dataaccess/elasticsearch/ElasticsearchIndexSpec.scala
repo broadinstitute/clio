@@ -9,12 +9,14 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDe
   import com.sksamuel.elastic4s.circe._
 
   it should behave like aV1Index(
-    ElasticsearchIndex[DocumentMock](
+    new ElasticsearchIndex[DocumentMock](
+      "mock",
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
   )
   it should behave like aV2Index(
-    ElasticsearchIndex[DocumentMock](
+    new ElasticsearchIndex[DocumentMock](
+      "mock_v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
   )
