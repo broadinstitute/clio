@@ -33,7 +33,7 @@ case class DocumentWgsUbam(
   productName: Option[Symbol] = None,
   productOrderId: Option[Symbol] = None,
   productPartNumber: Option[Symbol] = None,
-  project: Option[Symbol] = None,
+  project: Option[String] = None,
   readStructure: Option[Symbol] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   researchProjectId: Option[Symbol] = None,

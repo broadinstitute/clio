@@ -73,7 +73,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   it should "throw a FailedResponse 404 when running add command for hybsel ubams" in {
     val tmpMetadata =
-      writeLocalTmpJson(TransferUbamV1Metadata(project = Some('fake_project)))
+      writeLocalTmpJson(TransferUbamV1Metadata(project = Some("fake_project")))
 
     val addResponseFuture = runClient(
       ClioCommand.addHybselUbamName,
@@ -175,7 +175,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       lane = 2,
       libraryName = s"library $randomId",
       location = location,
-      project = Some(Symbol("test project")),
+      project = Some("test project"),
       documentStatus = Some(DocumentStatus.Normal)
     )
 
@@ -227,12 +227,12 @@ trait UbamTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertUbam(
         upsertKey,
-        TransferUbamV1Metadata(project = Some('testProject1)),
+        TransferUbamV1Metadata(project = Some("testProject1")),
         SequencingType.WholeGenome
       )
       upsertId2 <- runUpsertUbam(
         upsertKey,
-        TransferUbamV1Metadata(project = Some('testProject2)),
+        TransferUbamV1Metadata(project = Some("testProject2")),
         SequencingType.WholeGenome
       )
     } yield {
@@ -240,13 +240,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
       val storedDocument1 =
         getJsonFrom[DocumentWgsUbam](upsertId1)
-      storedDocument1.project should be(Some('testProject1))
+      storedDocument1.project should be(Some("testProject1"))
 
       val storedDocument2 =
         getJsonFrom[DocumentWgsUbam](upsertId2)
-      storedDocument2.project should be(Some('testProject2))
+      storedDocument2.project should be(Some("testProject2"))
 
-      storedDocument1.copy(upsertId = upsertId2, project = Some('testProject2)) should be(
+      storedDocument1.copy(upsertId = upsertId2, project = Some("testProject2")) should be(
         storedDocument2
       )
     }
@@ -259,7 +259,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       2,
       s"library$randomId"
     )
-    val metadata = TransferUbamV1Metadata(project = Some('testProject1))
+    val metadata = TransferUbamV1Metadata(project = Some("testProject1"))
     val ubamType = SequencingType.WholeGenome
 
     for {
@@ -295,7 +295,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           val key =
             TransferUbamV1Key(location, flowcellBarcode, lane, library)
           val metadata = TransferUbamV1Metadata(
-            project = Some(Symbol(project)),
+            project = Some(project),
             sampleAlias = Some(sample),
             researchProjectId = Some(Symbol(researchProjectId))
           )
@@ -341,7 +341,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       TransferUbamV1Key(Location.GCP, "barcode2", 2, s"library$randomId")
     val project = s"testProject$randomId"
     val metadata = TransferUbamV1Metadata(
-      project = Some(Symbol(project)),
+      project = Some(project),
       sampleAlias = Some("sampleAlias1"),
       notes = Some("Breaking news")
     )
@@ -398,7 +398,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         location = Location.GCP
       )
       val upsertMetadata = TransferUbamV1Metadata(
-        project = Some(Symbol(project)),
+        project = Some(project),
         sampleAlias = Some(sample),
         ubamPath = Some(URI.create(s"gs://ubam/$sample.$lane"))
       )
@@ -614,7 +614,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val upsertKey =
       TransferUbamV1Key(Location.GCP, flowcellBarcode, lane, library)
     val metadata = TransferUbamV1Metadata(
-      project = Some('testProject1),
+      project = Some("testProject1"),
       regulatoryDesignation = regulatoryDesignation
     )
 

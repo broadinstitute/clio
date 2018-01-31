@@ -14,7 +14,7 @@ case class TransferUbamV1QueryInput(
   libraryName: Option[String] = None,
   location: Option[Location] = None,
   lcSet: Option[Symbol] = None,
-  project: Option[Symbol] = None,
+  project: Option[String] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   researchProjectId: Option[Symbol] = None,
   runDateEnd: Option[OffsetDateTime] = None,

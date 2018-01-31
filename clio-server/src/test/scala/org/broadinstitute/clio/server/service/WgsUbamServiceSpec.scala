@@ -43,7 +43,7 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
     val wgsUbamService = new WgsUbamService(persistenceService, searchService)
 
     val transferInput =
-      TransferUbamV1QueryInput(project = Option('testProject))
+      TransferUbamV1QueryInput(project = Option("testProject"))
     for {
       _ <- wgsUbamService.queryMetadata(transferInput).runWith(Sink.seq)
     } yield {
@@ -76,7 +76,7 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
       TransferUbamV1Key(Location.GCP, "barcode1", 2, "library3")
     val transferMetadata =
       TransferUbamV1Metadata(
-        project = Option('testProject),
+        project = Option("testProject"),
         notes = Option("notable update"),
         documentStatus = documentStatus
       )
