@@ -26,7 +26,7 @@ private[dataaccess] sealed abstract class ElasticsearchFieldMapper(
      * Elasticsearch has no notion of an array field; instead, any
      * field can hold 1+ values of the same type.
      */
-    tpe =:= typeOf[A] || tpe =:= typeOf[Option[A]] || tpe =:= typeOf[Seq[A]] || tpe =:= typeOf[
+    tpe =:= typeOf[A] || tpe =:= typeOf[Option[A]] || tpe <:< typeOf[Seq[A]] || tpe <:< typeOf[
       Option[Seq[A]]
     ]
   }
