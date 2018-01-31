@@ -331,7 +331,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       }
       rpIdResults should have length 1
       rpIdResults.headOption.flatMap(_.researchProjectId) should be(
-        Some(researchProjectIds.last)
+        Some(researchProjectIds.lastOption)
       )
     }
   }
