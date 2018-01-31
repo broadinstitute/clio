@@ -14,6 +14,8 @@ object Docker {
   /** The name of docker organization. */
   private val DockerOrganization = "broadinstitute"
 
+  private val JProfilerVersion = "jprofiler_linux_9_2_1"
+
   /** The list of docker images to publish. */
   lazy val imageNames: Initialize[Task[Seq[ImageName]]] = Def.task {
     Seq(
@@ -36,9 +38,9 @@ object Docker {
       from("openjdk:8")
       label("CLIO_VERSION", version.value)
       runRaw(
-        "wget -q https://download-keycdn.ej-technologies.com/jprofiler/jprofiler_linux_9_2_1.tar.gz -P /tmp/ &&" +
-          " tar -xzf /tmp/jprofiler_linux_9_2_1.tar.gz -C /usr/local &&" +
-          " rm /tmp/jprofiler_linux_9_2_1.tar.gz"
+        s"wget -q https://download-keycdn.ej-technologies.com/jprofiler/$JProfilerVersion.tar.gz -P /tmp/ && " +
+          s"tar -xzf /tmp/$JProfilerVersion.tar.gz -C /usr/local &&" +
+          s" rm /tmp/$JProfilerVersion.tar.gz"
       )
       env(
         "JPAGENT_PATH",
