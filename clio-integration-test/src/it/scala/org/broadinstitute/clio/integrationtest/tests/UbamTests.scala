@@ -297,7 +297,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           val metadata = TransferUbamV1Metadata(
             project = Some(project),
             sampleAlias = Some(sample),
-            researchProjectId = Some(Symbol(researchProjectId))
+            researchProjectId = Some(researchProjectId)
           )
           runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       }
@@ -323,7 +323,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
-        result.project should be(Some(Symbol(project)))
+        result.project should be(Some(project))
       }
       sampleResults should have length 2
       sampleResults.foldLeft(succeed) { (_, result) =>
@@ -331,7 +331,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       }
       rpIdResults should have length 1
       rpIdResults.headOption.flatMap(_.researchProjectId) should be(
-        Some(Symbol(researchProjectIds.last))
+        Some(researchProjectIds.last)
       )
     }
   }
@@ -424,7 +424,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       } yield {
         results.length should be(expectedLength)
         results.foreach { result =>
-          result.project should be(Some(Symbol(project)))
+          result.project should be(Some(project))
           result.sampleAlias should be(Some(sample))
           result.documentStatus should be(Some(DocumentStatus.Normal))
         }
@@ -453,7 +453,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       results.length should be(keysWithMetadata.length)
       results.foldLeft(succeed) { (_, result) =>
-        result.project should be(Some(Symbol(project)))
+        result.project should be(Some(project))
         result.sampleAlias should be(Some(sample))
 
         val resultKey = TransferUbamV1Key(

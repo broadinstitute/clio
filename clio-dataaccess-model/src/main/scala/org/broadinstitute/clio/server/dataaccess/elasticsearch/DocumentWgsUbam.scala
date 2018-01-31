@@ -36,7 +36,7 @@ case class DocumentWgsUbam(
   project: Option[String] = None,
   readStructure: Option[Symbol] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
-  researchProjectId: Option[Symbol] = None,
+  researchProjectId: Option[String] = None,
   researchProjectName: Option[String] = None,
   rootSampleId: Option[Symbol] = None,
   runDate: Option[OffsetDateTime] = None,

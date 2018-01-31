@@ -16,7 +16,7 @@ case class TransferUbamV1QueryInput(
   lcSet: Option[Symbol] = None,
   project: Option[String] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
-  researchProjectId: Option[Symbol] = None,
+  researchProjectId: Option[String] = None,
   runDateEnd: Option[OffsetDateTime] = None,
   runDateStart: Option[OffsetDateTime] = None,
   sampleAlias: Option[String] = None,
