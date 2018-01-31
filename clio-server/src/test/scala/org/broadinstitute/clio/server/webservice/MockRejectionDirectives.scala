@@ -1,3 +1,7 @@
 package org.broadinstitute.clio.server.webservice
 
-object MockRejectionDirectives extends JsonWebService with RejectionDirectives
+import java.time.OffsetDateTime
+
+object MockRejectionDirectives extends JsonWebService with RejectionDirectives {
+  override val serverStartTime: OffsetDateTime = OffsetDateTime.MIN
+}

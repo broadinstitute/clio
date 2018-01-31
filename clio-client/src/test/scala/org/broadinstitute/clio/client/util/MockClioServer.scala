@@ -10,12 +10,7 @@ import akka.http.scaladsl.server.Route
 import akka.pattern.after
 import akka.stream.ActorMaterializer
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import org.broadinstitute.clio.status.model.{
-  ServerStatusInfo,
-  StatusInfo,
-  SystemStatusInfo,
-  VersionInfo
-}
+import org.broadinstitute.clio.status.model.{StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
@@ -44,9 +39,7 @@ class MockClioServer(implicit system: ActorSystem)
          */
         val slowResult =
           after(testRequestTimeout + 1.second, system.scheduler) {
-            Future.successful(
-              StatusInfo(ServerStatusInfo.Started, SystemStatusInfo.OK)
-            )
+            Future.successful(StatusInfo.Running)
           }
         complete(slowResult)
       }

@@ -6,7 +6,7 @@ import org.broadinstitute.clio.server.dataaccess.{
   SearchDAO,
   ServerStatusDAO
 }
-import org.broadinstitute.clio.status.model.{StatusInfo, SystemStatusInfo, VersionInfo}
+import org.broadinstitute.clio.status.model.{StatusInfo, SearchStatus, VersionInfo}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
@@ -37,10 +37,10 @@ object StatusService {
     new StatusService(app.serverStatusDAO, app.httpServerDAO, app.searchDAO)
   }
 
-  private def toSystemStatusInfo(status: Try[_]): Try[SystemStatusInfo] = {
+  private def toSystemStatusInfo(status: Try[_]): Try[SearchStatus] = {
     status.transform(
-      _ => Success(SystemStatusInfo.OK),
-      _ => Success(SystemStatusInfo.Error)
+      _ => Success(SearchStatus.OK),
+      _ => Success(SearchStatus.Error)
     )
   }
 }

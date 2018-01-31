@@ -24,8 +24,10 @@ import scala.concurrent.duration._
   * docker-compose file when forking to run integration tests.
   * @see `ClioIntegrationTestSettings` in the build
   */
-abstract class DockerIntegrationSpec(name: String)
-    extends BaseIntegrationSpec(name)
+abstract class DockerIntegrationSpec(
+  name: String,
+  startupMessage: String = DockerIntegrationSpec.clioReadyMessage
+) extends BaseIntegrationSpec(name)
     with ForAllTestContainer {
 
   // Docker-compose appends "_<instance #>" to service names.
@@ -64,18 +66,18 @@ abstract class DockerIntegrationSpec(name: String)
   override val rootPersistenceDir: Path =
     Paths.get(ClioBuildInfo.persistenceDir)
 
+  /*
+   * Testcontainers doesn't provide a way to wait on a docker-compose
+   * container to reach a ready state, so we roll our own here.
+   */
+  val clioLogLines: Source[String, NotUsed] = FileTailSource.lines(
+    path = ClioDockerComposeContainer.clioLog,
+    maxLineSize = 8192,
+    pollingInterval = 250.millis
+  )
+
   override def beforeAll(): Unit = {
     super.beforeAll()
-
-    /*
-     * Testcontainers doesn't provide a way to wait on a docker-compose
-     * container to reach a ready state, so we roll our own here.
-     */
-    val clioLogLines: Source[String, NotUsed] = FileTailSource.lines(
-      path = ClioDockerComposeContainer.clioLog,
-      maxLineSize = 8192,
-      pollingInterval = 250.millis
-    )
 
     val waitTime = 90.seconds
     logger.info(
@@ -88,7 +90,7 @@ abstract class DockerIntegrationSpec(name: String)
         println(line)
       }
       line
-    }.takeWhile(line => !line.contains(DockerIntegrationSpec.clioReadyMessage))
+    }.takeWhile(!_.contains(startupMessage))
       .runWith(Sink.ignore)
     val _ = Await.result(logStream, waitTime)
     logger.info("Clio ready!")
@@ -100,11 +102,6 @@ class CoreDockerBasicSpec extends DockerIntegrationSpec("Clio in Docker") with B
 class CoreDockerUbamSpec extends DockerIntegrationSpec("Clio in Docker") with UbamTests
 class CoreDockerCramSpec extends DockerIntegrationSpec("Clio in Docker") with WgsCramTests
 class CoreDockerGvcfSpec extends DockerIntegrationSpec("Clio in Docker") with GvcfTests
-
-/** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
-class RecoveryIntegrationSpec
-    extends DockerIntegrationSpec("Clio in recovery")
-    with RecoveryTests
 
 /** Load tests. Should only be run against Docker. */
 class LoadIntegrationSpec extends DockerIntegrationSpec("Clio under load") with LoadTests

@@ -1,17 +1,17 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.status.model.ServerStatusInfo
+import org.broadinstitute.clio.status.model.ClioStatus
 
 import scala.concurrent.Future
 
 class MockServerStatusDAO extends ServerStatusDAO {
-  override def setStatus(status: ServerStatusInfo): Future[Unit] =
+  override def setStatus(status: ClioStatus): Future[Unit] =
     Future.successful(())
 
-  override def getStatus: Future[ServerStatusInfo] =
+  override def getStatus: Future[ClioStatus] =
     Future.successful(MockServerStatusDAO.StatusMock)
 }
 
 object MockServerStatusDAO {
-  val StatusMock = ServerStatusInfo.Started
+  val StatusMock = ClioStatus.Started
 }
