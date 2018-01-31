@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server
 
+import java.time.OffsetDateTime
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.{Directive0, Route}
@@ -28,6 +30,8 @@ object ClioServer
     with SwaggerDirectives
     with StrictLogging {
 
+  override val serverStartTime: OffsetDateTime = OffsetDateTime.now()
+
   private implicit val system: ActorSystem = ActorSystem("clio")
 
   private implicit lazy val executionContext: ExecutionContext =
@@ -47,19 +51,12 @@ object ClioServer
   private val wrapperDirectives: Directive0 = {
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
-  private val innerRoutes: Route =
-    concat(
-      swaggerRoutes,
-      statusRoutes,
-      pathPrefix("api") {
-        concat(wgsUbamRoutes, gvcfRoutes, wgsCramRoutes)
-      }
-    )
-  private val routes = wrapperDirectives(innerRoutes)
+  private val infoRoutes: Route = concat(swaggerRoutes, statusRoutes)
+  private val apiRoutes: Route = concat(wgsUbamRoutes, gvcfRoutes, wgsCramRoutes)
 
   private val serverStatusDAO = CachedServerStatusDAO()
   private val auditDAO = LoggingAuditDAO()
-  private val httpServerDAO = AkkaHttpServerDAO(routes)
+  private val httpServerDAO = AkkaHttpServerDAO(wrapperDirectives, infoRoutes, apiRoutes)
   private val searchDAO = HttpElasticsearchDAO()
   private val persistenceDAO = PersistenceDAO(
     ClioServerConfig.Persistence.config

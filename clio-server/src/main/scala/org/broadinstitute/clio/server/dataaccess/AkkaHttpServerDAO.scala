@@ -2,39 +2,54 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.actor.{ActorSystem, Terminated}
 import akka.http.scaladsl._
-import akka.http.scaladsl.server.Route
+import akka.http.scaladsl.server.{Directive0, Route, RouteConcatenation}
+import akka.http.scaladsl.server.Directives._
 import akka.stream.Materializer
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.server.ClioServerConfig
+import org.broadinstitute.clio.server.model.ApiNotReadyRejection
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class AkkaHttpServerDAO private (routes: Route)(
+class AkkaHttpServerDAO private[dataaccess] (
+  wrapperDirectives: Directive0,
+  infoRoutes: Route,
+  realApiRoutes: Route,
+  interface: String,
+  port: Int,
+  version: String,
+  shutdownTimeout: FiniteDuration
+)(
   implicit system: ActorSystem,
   executionContext: ExecutionContext,
   materializer: Materializer
 ) extends HttpServerDAO
+    with RouteConcatenation
     with StrictLogging {
 
   private var bindingFutureOption: Option[Future[Http.ServerBinding]] = None
 
+  private var currentApiRoutes: Route = reject(ApiNotReadyRejection)
+
+  private def apiRoutes: Route = pathPrefix("api")(currentApiRoutes)
+
   override def startup(): Future[Unit] = {
     val bindingFuture = Http().bindAndHandle(
-      routes,
-      ClioServerConfig.HttpServer.interface,
-      ClioServerConfig.HttpServer.port
+      wrapperDirectives(concat(infoRoutes, apiRoutes)),
+      interface,
+      port
     )
 
     bindingFuture onComplete {
       case Success(_) =>
         logger.info(
           s"Server v{} online at http://{}:{}/",
-          ClioServerConfig.Version.value,
-          ClioServerConfig.HttpServer.interface,
-          Int.box(ClioServerConfig.HttpServer.port)
+          version,
+          interface,
+          Int.box(port)
         )
       case Failure(_) => system.terminate()
     }
@@ -44,8 +59,13 @@ class AkkaHttpServerDAO private (routes: Route)(
     bindingFuture.void
   }
 
+  override def enableApi(): Future[Unit] = {
+    currentApiRoutes = realApiRoutes
+    Future.unit
+  }
+
   override def getVersion: Future[String] =
-    Future.successful(ClioServerConfig.Version.value)
+    Future.successful(version)
 
   override def shutdown(): Future[Unit] = {
     val terminateFuture: Future[Terminated] =
@@ -70,7 +90,7 @@ class AkkaHttpServerDAO private (routes: Route)(
   override def awaitShutdown(): Unit = {
     Await.result(
       system.whenTerminated.void,
-      ClioServerConfig.HttpServer.shutdownTimeout
+      shutdownTimeout
     )
   }
 
@@ -81,11 +101,19 @@ class AkkaHttpServerDAO private (routes: Route)(
 
 object AkkaHttpServerDAO {
 
-  def apply(routes: Route)(
+  def apply(wrapperDirectives: Directive0, infoRoutes: Route, apiRoutes: Route)(
     implicit system: ActorSystem,
     executionContext: ExecutionContext,
     materializer: Materializer
   ): HttpServerDAO = {
-    new AkkaHttpServerDAO(routes)
+    new AkkaHttpServerDAO(
+      wrapperDirectives,
+      infoRoutes,
+      apiRoutes,
+      ClioServerConfig.HttpServer.interface,
+      ClioServerConfig.HttpServer.port,
+      ClioServerConfig.Version.value,
+      ClioServerConfig.HttpServer.shutdownTimeout
+    )
   }
 }
