@@ -21,7 +21,7 @@ private[dataaccess] sealed abstract class ElasticsearchFieldMapper(
 
   def valueToQuery(fieldName: String, fieldType: Type): Any => QueryDefinition
 
-  private def is[A: TypeTag](tpe: Type): Boolean = {
+  protected def is[A: TypeTag](tpe: Type): Boolean = {
     /*
      * Elasticsearch has no notion of an array field; instead, any
      * field can hold 1+ values of the same type.
@@ -42,18 +42,18 @@ private[dataaccess] object ElasticsearchFieldMapper
 
     override def stringToDefinition(fieldType: Type): String => FieldDefinition = {
       fieldType match {
-        case tpe if super.is[Boolean](tpe)        => booleanField
-        case tpe if super.is[Int](tpe)            => intField
-        case tpe if super.is[Long](tpe)           => longField
-        case tpe if super.is[Float](tpe)          => floatField
-        case tpe if super.is[Double](tpe)         => doubleField
-        case tpe if super.is[String](tpe)         => keywordField
-        case tpe if super.is[Symbol](tpe)         => keywordField
-        case tpe if super.is[EnumEntry](tpe)      => keywordField
-        case tpe if super.is[OffsetDateTime](tpe) => dateField
-        case tpe if super.is[UpsertId](tpe)       => keywordField
-        case tpe if super.is[UUID](tpe)           => keywordField
-        case tpe if super.is[URI](tpe)            => keywordField
+        case tpe if is[Boolean](tpe)        => booleanField
+        case tpe if is[Int](tpe)            => intField
+        case tpe if is[Long](tpe)           => longField
+        case tpe if is[Float](tpe)          => floatField
+        case tpe if is[Double](tpe)         => doubleField
+        case tpe if is[String](tpe)         => keywordField
+        case tpe if is[Symbol](tpe)         => keywordField
+        case tpe if is[EnumEntry](tpe)      => keywordField
+        case tpe if is[OffsetDateTime](tpe) => dateField
+        case tpe if is[UpsertId](tpe)       => keywordField
+        case tpe if is[UUID](tpe)           => keywordField
+        case tpe if is[URI](tpe)            => keywordField
         case _ =>
           (fieldName: String) =>
             throw new IllegalArgumentException(
@@ -67,15 +67,15 @@ private[dataaccess] object ElasticsearchFieldMapper
       fieldType: Type
     ): Any => QueryDefinition = {
       fieldType match {
-        case tpe if super.is[OffsetDateTime](tpe) && fieldName.endsWith("_start") =>
+        case tpe if is[OffsetDateTime](tpe) && fieldName.endsWith("_start") =>
           value =>
             rangeQuery(fieldName.stripSuffix("_start"))
               .gte(value.asInstanceOf[OffsetDateTime].toString)
-        case tpe if super.is[OffsetDateTime](tpe) && fieldName.endsWith("_end") =>
+        case tpe if is[OffsetDateTime](tpe) && fieldName.endsWith("_end") =>
           value =>
             rangeQuery(fieldName.stripSuffix("_end"))
               .lte(value.asInstanceOf[OffsetDateTime].toString)
-        case tpe if super.is[Symbol](tpe) =>
+        case tpe if is[Symbol](tpe) =>
           value =>
             queryStringQuery(s""""${value.asInstanceOf[Symbol].name}"""")
               .defaultField(fieldName)
@@ -103,8 +103,8 @@ private[dataaccess] object ElasticsearchFieldMapper
         textField(_: String).fields(keywordField(TextExactMatchFieldName))
 
       fieldType match {
-        case tpe if super.is[String](tpe) => textFieldWithKeyword
-        case tpe                          => NumericBooleanDateAndKeywordFields.stringToDefinition(tpe)
+        case tpe if is[String](tpe) => textFieldWithKeyword
+        case tpe                    => NumericBooleanDateAndKeywordFields.stringToDefinition(tpe)
       }
     }
 
@@ -113,7 +113,7 @@ private[dataaccess] object ElasticsearchFieldMapper
       fieldType: Type
     ): Any => QueryDefinition = {
       fieldType match {
-        case tpe if super.is[String](tpe) =>
+        case tpe if is[String](tpe) =>
           NumericBooleanDateAndKeywordFields.valueToQuery(
             s"$fieldName.$TextExactMatchFieldName",
             tpe
