@@ -50,10 +50,10 @@ private[dataaccess] object ElasticsearchFieldMapper
         case tpe if is[String](tpe)         => keywordField
         case tpe if is[Symbol](tpe)         => keywordField
         case tpe if is[EnumEntry](tpe)      => keywordField
-        case tpe if is[OffsetDateTime](tpe) => dateField
         case tpe if is[UpsertId](tpe)       => keywordField
         case tpe if is[UUID](tpe)           => keywordField
         case tpe if is[URI](tpe)            => keywordField
+        case tpe if is[OffsetDateTime](tpe) => dateField
         case _ =>
           (fieldName: String) =>
             throw new IllegalArgumentException(
