@@ -79,12 +79,14 @@ object ElasticsearchIndex extends Elastic4sAutoDerivation {
     )
 
   implicit val Gvcf: ElasticsearchIndex[DocumentGvcf] =
+    // despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS
     new ElasticsearchIndex[DocumentGvcf](
       "gvcf-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
   implicit val WgsCram: ElasticsearchIndex[DocumentWgsCram] =
+    // despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS
     new ElasticsearchIndex[DocumentWgsCram](
       "wgs-cram-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
