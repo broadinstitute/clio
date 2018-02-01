@@ -140,6 +140,8 @@ render_ctmpls() {
   env_map[CLIO_SERVICE_ACCOUNT_JSON]=clio-service-account.json
   # Port to expose for Clio in the container.
   env_map[CONTAINER_CLIO_PORT]=8080
+  # JProfiler config
+  env_map[CONTAINER_JPROFILER_CONF]=clio-profile.xml
 
   # Populate an env file with variables for rendering configs.
   local -r ctmpl_env_file=${config_dir}/env-vars.txt
