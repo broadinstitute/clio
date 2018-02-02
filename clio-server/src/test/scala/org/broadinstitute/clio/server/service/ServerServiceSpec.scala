@@ -6,7 +6,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
-import org.broadinstitute.clio.status.model.ServerStatusInfo
+import org.broadinstitute.clio.status.model.ClioStatus
 
 import scala.concurrent.Future
 
@@ -51,7 +51,7 @@ class ServerServiceSpec
     val serverService = ServerService(app)
     serverService.startup().map { _ =>
       statusDAO.setCalls should be(
-        Seq(ServerStatusInfo.Starting, ServerStatusInfo.Started)
+        Seq(ClioStatus.Starting, ClioStatus.Recovering, ClioStatus.Started)
       )
     }
   }
@@ -67,7 +67,7 @@ class ServerServiceSpec
     recoverToSucceededIf[Exception] {
       serverService.startup()
     }.map { _ =>
-      statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
+      statusDAO.setCalls should be(Seq(ClioStatus.Starting))
     }
   }
 
@@ -82,7 +82,7 @@ class ServerServiceSpec
     recoverToSucceededIf[Exception] {
       serverService.startup()
     }.map { _ =>
-      statusDAO.setCalls should be(Seq(ServerStatusInfo.Starting))
+      statusDAO.setCalls should be(Seq(ClioStatus.Starting))
     }
   }
 

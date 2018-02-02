@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.{MockHttpServerDAO, MockServerStatusDAO}
-import org.broadinstitute.clio.status.model.{StatusInfo, SystemStatusInfo, VersionInfo}
+import org.broadinstitute.clio.status.model.{StatusInfo, SearchStatus, VersionInfo}
 
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
@@ -24,7 +24,7 @@ class StatusServiceSpec extends AsyncFlatSpec with Matchers {
     for {
       status <- statusService.getStatus
       _ = status should be(
-        StatusInfo(MockServerStatusDAO.StatusMock, SystemStatusInfo.OK)
+        StatusInfo(MockServerStatusDAO.StatusMock, SearchStatus.OK)
       )
     } yield succeed
   }

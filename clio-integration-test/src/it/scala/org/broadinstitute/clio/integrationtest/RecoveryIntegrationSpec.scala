@@ -1,29 +1,39 @@
-package org.broadinstitute.clio.integrationtest.tests
+package org.broadinstitute.clio.integrationtest
 
 import java.io.File
 import java.net.URI
 
+import akka.Done
+import akka.http.scaladsl.model.StatusCodes
+import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.client.commands.ClioCommand
-import org.broadinstitute.clio.integrationtest.{
-  ClioDockerComposeContainer,
-  DockerIntegrationSpec
-}
+import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentGvcf,
   DocumentWgsCram,
   DocumentWgsUbam,
   ElasticsearchIndex
 }
+import org.broadinstitute.clio.status.model.{
+  ClioStatus,
+  SearchStatus,
+  StatusInfo,
+  VersionInfo
+}
 import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Metadata,
+  TransferUbamV1QueryOutput
+}
 import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1QueryOutput
-import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1QueryOutput
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 
+import scala.concurrent.Future
 import scala.util.Random
 
-/** Tests of Clio's recovery mechanisms. */
-trait RecoveryTests {
-  self: DockerIntegrationSpec =>
+/** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
+class RecoveryIntegrationSpec
+    extends DockerIntegrationSpec("Clio in recovery", "Recovering metadata") {
 
   val documentCount = 50
   val location = Location.GCP
@@ -90,8 +100,63 @@ trait RecoveryTests {
     )
   )
 
+  lazy val recoveryDoneFuture: Future[Done] = clioLogLines
+    .takeWhile(!_.contains(DockerIntegrationSpec.clioReadyMessage))
+    .runWith(Sink.ignore)
+
+  it should "accept health checks before recovery is complete" in {
+    runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName).map(
+      _ should be(StatusInfo(ClioStatus.Recovering, SearchStatus.OK))
+    )
+  }
+
+  it should "accept version checks before recovery is complete" in {
+    runClientGetJsonAs[VersionInfo](ClioCommand.getServerVersionName).map(
+      _ should be(VersionInfo(ClioBuildInfo.version))
+    )
+  }
+
+  it should "reject upserts before recovery is complete" in {
+    val tmpMetadata = writeLocalTmpJson(TransferUbamV1Metadata())
+    recoverToExceptionIf[FailedResponse] {
+      runClient(
+        ClioCommand.addWgsUbamName,
+        "--flowcell-barcode",
+        "some-barcode",
+        "--lane",
+        "1",
+        "--library-name",
+        "some-library",
+        "--location",
+        Location.GCP.entryName,
+        "--metadata-location",
+        tmpMetadata.toString
+      )
+    }.map { err =>
+      err.statusCode should be(StatusCodes.ServiceUnavailable)
+    }
+  }
+
+  it should "reject queries before recovery is complete" in {
+    recoverToExceptionIf[FailedResponse] {
+      runClient(ClioCommand.queryWgsCramName)
+    }.map { err =>
+      err.statusCode should be(StatusCodes.ServiceUnavailable)
+    }
+  }
+
+  it should "signal via status update when recovery is complete" in {
+    for {
+      _ <- recoveryDoneFuture
+      status <- runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName)
+    } yield {
+      status should be(StatusInfo.Running)
+    }
+  }
+
   it should "recover wgs-ubam metadata on startup" in {
     for {
+      _ <- recoveryDoneFuture
       ubams <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--location",
@@ -107,6 +172,7 @@ trait RecoveryTests {
 
   it should "recover gvcf metadata on startup" in {
     for {
+      _ <- recoveryDoneFuture
       gvcfs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
         ClioCommand.queryGvcfName,
         "--location",
@@ -122,6 +188,7 @@ trait RecoveryTests {
 
   it should "recover wgs-cram metadata on startup" in {
     for {
+      _ <- recoveryDoneFuture
       crams <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
         "--location",

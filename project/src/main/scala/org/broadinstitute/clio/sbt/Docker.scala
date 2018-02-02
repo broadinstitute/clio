@@ -14,6 +14,8 @@ object Docker {
   /** The name of docker organization. */
   private val DockerOrganization = "broadinstitute"
 
+  private val JProfilerVersion = "jprofiler_linux_9_2_1"
+
   /** The list of docker images to publish. */
   lazy val imageNames: Initialize[Task[Seq[ImageName]]] = Def.task {
     Seq(
@@ -35,7 +37,17 @@ object Docker {
     new Dockerfile {
       from("openjdk:8")
       label("CLIO_VERSION", version.value)
-      expose(8080)
+      runRaw(
+        s"wget -q https://download-keycdn.ej-technologies.com/jprofiler/$JProfilerVersion.tar.gz -P /tmp/ && " +
+          s"tar -xzf /tmp/$JProfilerVersion.tar.gz -C /usr/local &&" +
+          s" rm /tmp/$JProfilerVersion.tar.gz"
+      )
+      env(
+        "JPAGENT_PATH",
+        "-agentpath:/usr/local/jprofiler9/bin/linux-x64/libjprofilerti.so=nowait"
+      )
+
+      expose(8080, 31757)
       add(artifact, artifactTargetPath)
       /*
        * We need to use `entryPointShell` here to allow the environment variable to be substituted.

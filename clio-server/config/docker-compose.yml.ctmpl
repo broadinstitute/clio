@@ -10,6 +10,7 @@ services:
       - {{$app_dir}}/{{env "CLIO_APP_CONF"}}:{{$conf_dir}}/{{env "CLIO_APP_CONF"}}:ro
       - {{$app_dir}}/{{env "CLIO_LOGBACK_CONF"}}:{{$conf_dir}}/{{env "CLIO_LOGBACK_CONF"}}:ro
       - {{$app_dir}}/{{env "CLIO_SERVICE_ACCOUNT_JSON"}}:{{$conf_dir}}/{{env "CLIO_SERVICE_ACCOUNT_JSON"}}:ro
+      - {{$app_dir}}/{{env "CONTAINER_JPROFILER_CONF"}}:{{$conf_dir}}/{{env "CONTAINER_JPROFILER_CONF"}}:ro
     restart: always
     links:
       - logger
@@ -18,7 +19,7 @@ services:
 
   proxy:
     image: broadinstitute/openidc-proxy:latest
-    hostname: {{env "CLIO_HOST"}}
+    hostname: {{env "CLIO_FQDN"}}
     links:
       - app:app
       - logger
@@ -35,11 +36,11 @@ services:
       - logger
     restart: always
     environment:
-      CALLBACK_URI: https://{{env "CLIO_HOST"}}/oauth2callback
+      CALLBACK_URI: https://{{env "CLIO_FQDN"}}/oauth2callback
       LOG_LEVEL: warn
       PROXY_PATH: /
       PROXY_URL: http://app:{{env "CONTAINER_CLIO_PORT"}}/
-      SERVER_NAME: {{env "CLIO_HOST"}}
+      SERVER_NAME: {{env "CLIO_FQDN"}}
       AUTH_TYPE: AuthType None
       OIDC_CLAIM: Require all granted
       PROXY_PATH2: /api

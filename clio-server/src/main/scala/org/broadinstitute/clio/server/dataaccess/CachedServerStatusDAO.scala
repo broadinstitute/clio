@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import org.broadinstitute.clio.status.model.ServerStatusInfo
+import org.broadinstitute.clio.status.model.ClioStatus
 
 import scala.concurrent.Future
 import scala.util.Try
@@ -10,21 +10,20 @@ import scala.util.Try
   */
 class CachedServerStatusDAO private () extends ServerStatusDAO {
   private val mutex = new Object()
-  private var currentStatus: ServerStatusInfo = ServerStatusInfo.NotStarted
+  private var currentStatus: ClioStatus = ClioStatus.NotStarted
 
-  override def setStatus(status: ServerStatusInfo): Future[Unit] = {
+  override def setStatus(status: ClioStatus): Future[Unit] = {
     Future.fromTry {
       Try {
         mutex synchronized {
-          import CachedServerStatusDAO.level
-          if (level(currentStatus) < level(status))
+          if (currentStatus.level < status.level)
             currentStatus = status
         }
       }
     }
   }
 
-  override def getStatus: Future[ServerStatusInfo] = {
+  override def getStatus: Future[ClioStatus] = {
     Future.fromTry {
       Try {
         mutex synchronized currentStatus
@@ -37,16 +36,5 @@ object CachedServerStatusDAO {
 
   def apply(): CachedServerStatusDAO = {
     new CachedServerStatusDAO()
-  }
-
-  private def level(status: ServerStatusInfo): Int = {
-    status match {
-      case ServerStatusInfo.NotStarted   => 0
-      case ServerStatusInfo.Starting     => 1
-      case ServerStatusInfo.Started      => 2
-      case ServerStatusInfo.ShuttingDown => 3
-      case ServerStatusInfo.ShutDown     => 4
-      case unknown                       => throw new RuntimeException(s"unknown status $unknown")
-    }
   }
 }
