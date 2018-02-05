@@ -23,12 +23,11 @@ private[dataaccess] sealed abstract class ElasticsearchFieldMapper(
 
   protected def is[A: TypeTag](tpe: Type): Boolean = {
     /*
-     * Elasticsearch has no notion of an array field; instead, any
-     * field can hold 1+ values of the same type.
+     * Elasticsearch has no notion of required or array fields; instead, any
+     * field can hold 0+ values of the same type.
      */
-    tpe =:= typeOf[A] || tpe =:= typeOf[Option[A]] || tpe <:< typeOf[Seq[A]] || tpe <:< typeOf[
-      Option[Seq[A]]
-    ]
+    Seq(typeOf[A], typeOf[Option[A]], typeOf[Seq[A]], typeOf[Option[Seq[A]]])
+      .exists(tpe <:< _)
   }
 }
 
