@@ -35,12 +35,14 @@ object DocumentMock extends Elastic4sAutoDerivation {
   )
 
   implicit val index: ElasticsearchIndex[DocumentMock] =
-    ElasticsearchIndex[DocumentMock](
+    new ElasticsearchIndex[DocumentMock](
+      "mock",
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
   val indexWithTextFields: ElasticsearchIndex[DocumentMock] =
-    ElasticsearchIndex[DocumentMock](
+    new ElasticsearchIndex[DocumentMock](
+      "mock",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 }
