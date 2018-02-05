@@ -14,12 +14,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentWgsUbam,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.status.model.{
-  ClioStatus,
-  SearchStatus,
-  StatusInfo,
-  VersionInfo
-}
+import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
 import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1Metadata,
@@ -105,15 +100,13 @@ class RecoveryIntegrationSpec
     .runWith(Sink.ignore)
 
   it should "accept health checks before recovery is complete" in {
-    runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName).map(
-      _ should be(StatusInfo(ClioStatus.Recovering, SearchStatus.OK))
-    )
+    runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName)
+      .map(_.clio should be(ClioStatus.Recovering))
   }
 
   it should "accept version checks before recovery is complete" in {
-    runClientGetJsonAs[VersionInfo](ClioCommand.getServerVersionName).map(
-      _ should be(VersionInfo(ClioBuildInfo.version))
-    )
+    runClientGetJsonAs[VersionInfo](ClioCommand.getServerVersionName)
+      .map(_.version should be(ClioBuildInfo.version))
   }
 
   it should "reject upserts before recovery is complete" in {
