@@ -13,7 +13,7 @@ case class TransferUbamV1QueryInput(
   lane: Option[Int] = None,
   libraryName: Option[String] = None,
   location: Option[Location] = None,
-  lcSet: Option[String] = None,
+  lcSet: Option[Symbol] = None,
   project: Option[String] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   researchProjectId: Option[String] = None,
@@ -21,7 +21,7 @@ case class TransferUbamV1QueryInput(
   runDateStart: Option[OffsetDateTime] = None,
   sampleAlias: Option[String] = None,
   documentStatus: Option[DocumentStatus] = None,
-  baitSet: Option[String] = None,
-  baitIntervals: Option[String] = None,
-  targetIntervals: Option[String] = None
+  baitSet: Option[Symbol] = None,
+  baitIntervals: Option[Symbol] = None,
+  targetIntervals: Option[Symbol] = None
 )

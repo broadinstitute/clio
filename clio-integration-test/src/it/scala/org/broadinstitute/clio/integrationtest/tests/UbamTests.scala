@@ -360,8 +360,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
 
     val upsertData = TransferUbamV1Metadata(
-      sampleAlias = metadata.sampleAlias,
-      project = metadata.project
+      project = metadata.project,
+      sampleAlias = metadata.sampleAlias
     )
 
     for {
@@ -652,10 +652,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     )
 
     val key = TransferUbamV1Key(Location.GCP, barcode, lane, library)
-    val metadata = TransferUbamV1Metadata(
-      ubamPath = Some(cloudPath.toUri),
-      notes = existingNote
-    )
+    val metadata =
+      TransferUbamV1Metadata(notes = existingNote, ubamPath = Some(cloudPath.toUri))
 
     // Clio needs the metadata to be added before it can be deleted.
     val _ = Files.write(cloudPath, fileContents.getBytes)

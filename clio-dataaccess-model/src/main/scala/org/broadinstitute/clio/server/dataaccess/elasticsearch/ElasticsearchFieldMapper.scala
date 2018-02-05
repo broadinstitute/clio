@@ -11,7 +11,7 @@ import enumeratum.values.{IntEnum, IntEnumEntry}
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.collection.immutable
-import scala.reflect.runtime.universe.{Type, typeOf}
+import scala.reflect.runtime.universe.{Type, TypeTag, typeOf}
 
 private[dataaccess] sealed abstract class ElasticsearchFieldMapper(
   override val value: Int
@@ -20,6 +20,16 @@ private[dataaccess] sealed abstract class ElasticsearchFieldMapper(
   def stringToDefinition(fieldType: Type): String => FieldDefinition
 
   def valueToQuery(fieldName: String, fieldType: Type): Any => QueryDefinition
+
+  protected def is[A: TypeTag](tpe: Type): Boolean = {
+    /*
+     * Elasticsearch has no notion of an array field; instead, any
+     * field can hold 1+ values of the same type.
+     */
+    tpe =:= typeOf[A] || tpe =:= typeOf[Option[A]] || tpe <:< typeOf[Seq[A]] || tpe <:< typeOf[
+      Option[Seq[A]]
+    ]
+  }
 }
 
 private[dataaccess] object ElasticsearchFieldMapper
@@ -32,34 +42,18 @@ private[dataaccess] object ElasticsearchFieldMapper
 
     override def stringToDefinition(fieldType: Type): String => FieldDefinition = {
       fieldType match {
-        case tpe if tpe =:= typeOf[Boolean]           => booleanField
-        case tpe if tpe =:= typeOf[Int]               => intField
-        case tpe if tpe =:= typeOf[Long]              => longField
-        case tpe if tpe =:= typeOf[Float]             => floatField
-        case tpe if tpe =:= typeOf[Double]            => doubleField
-        case tpe if tpe =:= typeOf[String]            => keywordField
-        case tpe if tpe =:= typeOf[Symbol]            => keywordField
-        case tpe if tpe <:< typeOf[EnumEntry]         => keywordField
-        case tpe if tpe =:= typeOf[OffsetDateTime]    => dateField
-        case tpe if tpe =:= typeOf[UpsertId]          => keywordField
-        case tpe if tpe =:= typeOf[Option[Boolean]]   => booleanField
-        case tpe if tpe =:= typeOf[Option[Int]]       => intField
-        case tpe if tpe =:= typeOf[Option[Long]]      => longField
-        case tpe if tpe =:= typeOf[Option[Float]]     => floatField
-        case tpe if tpe =:= typeOf[Option[Double]]    => doubleField
-        case tpe if tpe =:= typeOf[Option[String]]    => keywordField
-        case tpe if tpe =:= typeOf[Option[Symbol]]    => keywordField
-        case tpe if tpe <:< typeOf[Option[EnumEntry]] => keywordField
-        case tpe if tpe =:= typeOf[Option[UUID]]      => keywordField
-        case tpe if tpe =:= typeOf[Option[URI]]       => keywordField
-        case tpe if tpe =:= typeOf[Option[OffsetDateTime]] =>
-          dateField
-        /*
-         * Elasticsearch has no notion of an array field; instead, any
-         * field can hold 1+ values of the same type.
-         */
-        case tpe if tpe <:< typeOf[Option[Seq[String]]] => keywordField
-        case tpe if tpe <:< typeOf[Option[Seq[URI]]]    => keywordField
+        case tpe if is[Boolean](tpe)        => booleanField
+        case tpe if is[Int](tpe)            => intField
+        case tpe if is[Long](tpe)           => longField
+        case tpe if is[Float](tpe)          => floatField
+        case tpe if is[Double](tpe)         => doubleField
+        case tpe if is[String](tpe)         => keywordField
+        case tpe if is[Symbol](tpe)         => keywordField
+        case tpe if is[EnumEntry](tpe)      => keywordField
+        case tpe if is[UpsertId](tpe)       => keywordField
+        case tpe if is[UUID](tpe)           => keywordField
+        case tpe if is[URI](tpe)            => keywordField
+        case tpe if is[OffsetDateTime](tpe) => dateField
         case _ =>
           (fieldName: String) =>
             throw new IllegalArgumentException(
@@ -68,22 +62,23 @@ private[dataaccess] object ElasticsearchFieldMapper
       }
     }
 
-    private def isDate(tpe: Type): Boolean =
-      tpe =:= typeOf[OffsetDateTime] || tpe =:= typeOf[Option[OffsetDateTime]]
-
     override def valueToQuery(
       fieldName: String,
       fieldType: Type
     ): Any => QueryDefinition = {
       fieldType match {
-        case tpe if isDate(tpe) && fieldName.endsWith("_start") =>
+        case tpe if is[OffsetDateTime](tpe) && fieldName.endsWith("_start") =>
           value =>
             rangeQuery(fieldName.stripSuffix("_start"))
               .gte(value.asInstanceOf[OffsetDateTime].toString)
-        case tpe if isDate(tpe) && fieldName.endsWith("_end") =>
+        case tpe if is[OffsetDateTime](tpe) && fieldName.endsWith("_end") =>
           value =>
             rangeQuery(fieldName.stripSuffix("_end"))
               .lte(value.asInstanceOf[OffsetDateTime].toString)
+        case tpe if is[Symbol](tpe) =>
+          value =>
+            queryStringQuery(s""""${value.asInstanceOf[Symbol].name}"""")
+              .defaultField(fieldName)
         case _ =>
           value =>
             queryStringQuery(s""""$value"""").defaultField(fieldName)
@@ -108,24 +103,17 @@ private[dataaccess] object ElasticsearchFieldMapper
         textField(_: String).fields(keywordField(TextExactMatchFieldName))
 
       fieldType match {
-        case tpe if tpe =:= typeOf[String]              => textFieldWithKeyword
-        case tpe if tpe =:= typeOf[Option[String]]      => textFieldWithKeyword
-        case tpe if tpe <:< typeOf[Option[Seq[String]]] => textFieldWithKeyword
-        case tpe                                        => NumericBooleanDateAndKeywordFields.stringToDefinition(tpe)
+        case tpe if is[String](tpe) => textFieldWithKeyword
+        case tpe                    => NumericBooleanDateAndKeywordFields.stringToDefinition(tpe)
       }
     }
-
-    private def isString(tpe: Type): Boolean =
-      tpe =:= typeOf[String] || tpe =:= typeOf[Option[String]] || tpe <:< typeOf[Option[
-        Seq[String]
-      ]]
 
     override def valueToQuery(
       fieldName: String,
       fieldType: Type
     ): Any => QueryDefinition = {
       fieldType match {
-        case tpe if isString(tpe) =>
+        case tpe if is[String](tpe) =>
           NumericBooleanDateAndKeywordFields.valueToQuery(
             s"$fieldName.$TextExactMatchFieldName",
             tpe
