@@ -3,6 +3,8 @@ package org.broadinstitute.clio.server.model
 import java.net.URI
 import java.time.OffsetDateTime
 
+import org.broadinstitute.clio.util.model.DocumentStatus
+
 case class ModelMockKey(mockKeyLong: Long, mockKeyString: String)
 
 case class ModelMockMetadata(
@@ -10,7 +12,8 @@ case class ModelMockMetadata(
   mockFieldInt: Option[Int],
   mockFieldDate: Option[OffsetDateTime],
   mockStringArray: Option[Seq[String]] = None,
-  mockPathArray: Option[Seq[URI]] = None
+  mockPathArray: Option[Seq[URI]] = None,
+  mockDocumentStatus: Option[DocumentStatus] = None
 )
 
 case class ModelMockQueryInput(
@@ -32,5 +35,6 @@ case class ModelMockQueryOutput(
   mockFilePath: Option[URI],
   mockFileSize: Option[Long],
   mockStringArray: Option[Seq[String]] = None,
-  mockPathArray: Option[Seq[URI]] = None
+  mockPathArray: Option[Seq[URI]] = None,
+  mockDocumentStatus: Option[DocumentStatus] = None
 )

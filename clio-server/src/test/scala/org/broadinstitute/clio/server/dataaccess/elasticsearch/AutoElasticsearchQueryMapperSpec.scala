@@ -95,7 +95,8 @@ class AutoElasticsearchQueryMapperSpec extends FlatSpec with Matchers {
         mockKeyLong = output.mockKeyLong,
         mockKeyString = output.mockKeyString,
         mockStringArray = output.mockStringArray,
-        mockPathArray = output.mockPathArray
+        mockPathArray = output.mockPathArray,
+        mockDocumentStatus = output.mockDocumentStatus
       )
     )
   }
