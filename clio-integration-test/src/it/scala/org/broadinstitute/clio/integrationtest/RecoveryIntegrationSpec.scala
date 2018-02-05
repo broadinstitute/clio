@@ -143,7 +143,7 @@ class RecoveryIntegrationSpec
       _ <- recoveryDoneFuture
       status <- runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName)
     } yield {
-      status should be(StatusInfo.Running)
+      status.clio should be(ClioStatus.Started)
     }
   }
 
