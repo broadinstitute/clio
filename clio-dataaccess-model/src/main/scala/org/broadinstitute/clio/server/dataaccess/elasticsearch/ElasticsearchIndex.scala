@@ -7,8 +7,6 @@ import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.{HitReader, Indexable}
 import org.broadinstitute.clio.util.generic.FieldMapper
 
-import scala.reflect.{ClassTag, classTag}
-
 /**
   * An index for an Elasticsearch document.
   *
@@ -34,7 +32,7 @@ class ElasticsearchIndex[Document: FieldMapper](
     * addition, but in GCS's filesystem adapter it's the only indication that this
     * should be treated as a directory, not a file.
     */
-  lazy val rootDir: String = indexName.replaceAll("_", "-") + "/"
+  lazy val rootDir: String = indexName + "/"
 
   /**
     * The source-of-truth directory in which updates to this index
@@ -70,41 +68,29 @@ object ElasticsearchIndex extends Elastic4sAutoDerivation {
   lazy val dateTimeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
-  /**
-    * Creates an index using shapeless and reflection.
-    *
-    * @param fieldMapper The object defining how the Scala types of the fields in `Document` should be translated
-    *                    into Elasticsearch field types.
-    * @tparam Document The type of the Elasticsearch document, with a context bound also specifying that both an
-    *                  `implicit ctag: ClassTag[Document]` exists, plus an
-    *                  `implicit fieldMapper: FieldMapper[Document]` exists.
-    *                  https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
-    * @return The index.
-    */
-  private[elasticsearch] def apply[
-    Document <: ClioDocument: ClassTag: FieldMapper: Indexable: HitReader
-  ](fieldMapper: ElasticsearchFieldMapper): ElasticsearchIndex[Document] = {
-    val esName =
-      ElasticsearchUtil
-        .toElasticsearchName(classTag[Document].runtimeClass.getSimpleName)
-        .stripPrefix("document_")
-
-    // We started without a version suffix, so we keep it that way to avoid breaking things.
-    val versionSuffix = if (fieldMapper.value == 1) "" else s"_v${fieldMapper.value}"
-
-    new ElasticsearchIndex[Document](s"$esName$versionSuffix", fieldMapper)
-  }
-
   /** Implicit summoner, for convenience. */
   def apply[Document: ElasticsearchIndex]: ElasticsearchIndex[Document] =
     implicitly[ElasticsearchIndex[Document]]
 
   implicit val WgsUbam: ElasticsearchIndex[DocumentWgsUbam] =
-    ElasticsearchIndex(ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords)
+    new ElasticsearchIndex[DocumentWgsUbam](
+      "wgs-ubam",
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+    )
 
   implicit val Gvcf: ElasticsearchIndex[DocumentGvcf] =
-    ElasticsearchIndex(ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords)
+    // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
+    // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
+    new ElasticsearchIndex[DocumentGvcf](
+      "gvcf-v2",
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+    )
 
   implicit val WgsCram: ElasticsearchIndex[DocumentWgsCram] =
-    ElasticsearchIndex(ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords)
+    // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
+    // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
+    new ElasticsearchIndex[DocumentWgsCram](
+      "wgs-cram-v2",
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+    )
 }
