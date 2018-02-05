@@ -15,7 +15,7 @@ clio.server {
   elasticsearch.http-hosts: [
     {{range $i := loop 3}}
     {
-      hostname: "elasticsearch10{{add 1 $i}}-priv.gotc-{{env "ENV"}}.broadinstitute.org",
+      hostname: "elasticsearch{{add 1 $i}}-priv.gotc-{{env "ENV"}}.broadinstitute.org",
       port: 9200,
       scheme: http
     },{{end}}

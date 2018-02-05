@@ -32,7 +32,7 @@ abstract class EnvIntegrationSpec(env: String)
     )
 
   override val clioWebClient: ClioWebClient = new ClioWebClient(
-    s"clio101.gotc-$env.broadinstitute.org",
+    s"clio.gotc-$env.broadinstitute.org",
     443,
     useHttps = true,
     maxQueuedRequests,
@@ -43,7 +43,7 @@ abstract class EnvIntegrationSpec(env: String)
   )
 
   override val elasticsearchUri: Uri = Uri(
-    s"http://elasticsearch101.gotc-$env.broadinstitute.org:9200"
+    s"http://elasticsearch1.gotc-$env.broadinstitute.org:9200"
   )
 
   override lazy val rootPersistenceDir: Path =
