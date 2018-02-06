@@ -47,7 +47,8 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDe
         longField("mock_key_long"),
         keywordField("mock_key_string"),
         keywordField("mock_string_array"),
-        keywordField("mock_path_array")
+        keywordField("mock_path_array"),
+        keywordField("mock_document_status")
       )
     }
   }
@@ -80,7 +81,8 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with Elastic4sAutoDe
         longField("mock_key_long"),
         textField("mock_key_string").fields(keywordField(TextExactMatchFieldName)),
         textField("mock_string_array").fields(keywordField(TextExactMatchFieldName)),
-        keywordField("mock_path_array")
+        keywordField("mock_path_array"),
+        keywordField("mock_document_status")
       )
     }
   }

@@ -3,7 +3,7 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 import java.net.URI
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.util.model.UpsertId
+import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 case class DocumentMock(
   upsertId: UpsertId,
@@ -17,7 +17,8 @@ case class DocumentMock(
   mockFilePath: Option[URI] = None,
   mockFileSize: Option[Long] = None,
   mockStringArray: Option[Seq[String]] = None,
-  mockPathArray: Option[Seq[URI]] = None
+  mockPathArray: Option[Seq[URI]] = None,
+  mockDocumentStatus: Option[DocumentStatus] = None
 ) extends ClioDocument
 
 object DocumentMock extends Elastic4sAutoDerivation {
@@ -31,7 +32,8 @@ object DocumentMock extends Elastic4sAutoDerivation {
     mockFileMd5 = Some(Symbol("12345abcdefg")),
     mockFilePath = Some(URI.create("gs://the-bucket/the-path.file")),
     mockStringArray = Some(Seq.empty),
-    mockPathArray = Some(Seq.empty)
+    mockPathArray = Some(Seq.empty),
+    mockDocumentStatus = Some(DocumentStatus.Normal)
   )
 
   implicit val index: ElasticsearchIndex[DocumentMock] =
