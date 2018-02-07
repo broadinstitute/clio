@@ -17,6 +17,7 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Success
 
 class ServerService private (
   serverStatusDAO: ServerStatusDAO,
@@ -51,15 +52,22 @@ class ServerService private (
     * Returns the number of updates pulled & applied on success.
     */
   private[service] def recoverMetadata[
-    D <: ClioDocument: Decoder: ElasticsearchIndex
-  ](): Future[Int] = {
+    D <: ClioDocument: Decoder
+  ]()(implicit index: ElasticsearchIndex[D]): Future[Int] = {
     searchDAO.getMostRecentDocument.flatMap { mostRecent =>
+      val msg = s"Recovering all upserts from index ${index.indexName}"
+      logger.info(mostRecent.fold(msg)(d => s"$msg since ${d.upsertId}"))
+
       persistenceDAO
         .getAllSince[D](mostRecent)
         .runWith(Sink.foldAsync(0) { (count, doc) =>
           logger.debug(s"Recovering document with ID ${doc.upsertId}")
           searchDAO.updateMetadata(doc).map(_ => count + 1)
         })
+        .andThen {
+          case Success(count) =>
+            logger.info(s"Recovered $count upserts for index ${index.indexName}")
+        }
     }
   }
 
@@ -100,17 +108,13 @@ class ServerService private (
       _ <- httpServerDAO.startup()
       _ <- serverStatusDAO.setStatus(ClioStatus.Recovering)
       _ = logger.info("Recovering metadata from storage...")
-      Seq(recoveredUbamCount, recoveredGvcfCount, recoveredCramCount) <- Future
-        .sequence(
-          Seq(
-            recoverMetadata[DocumentWgsUbam](),
-            recoverMetadata[DocumentGvcf](),
-            recoverMetadata[DocumentWgsCram]()
-          )
+      _ <- Future.sequence(
+        Seq(
+          recoverMetadata[DocumentWgsUbam](),
+          recoverMetadata[DocumentGvcf](),
+          recoverMetadata[DocumentWgsCram]()
         )
-      _ = logger.info(s"Recovered $recoveredUbamCount wgs-ubams from storage")
-      _ = logger.info(s"Recovered $recoveredGvcfCount gvcfs from storage")
-      _ = logger.info(s"Recovered $recoveredCramCount wgs-crams from storage")
+      )
       _ <- httpServerDAO.enableApi()
       _ <- serverStatusDAO.setStatus(ClioStatus.Started)
       _ = logger.info("Server started")
