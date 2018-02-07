@@ -19,7 +19,7 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     "https://www.googleapis.com/auth/userinfo.email"
   )
 
-  private val shellOutCreds: Either[Throwable, OAuth2Credentials] = {
+  private lazy val shellOutCreds: Either[Throwable, OAuth2Credentials] = {
     logger.debug("Shelling out to gcloud to get credentials")
     // Need to test out the gcloud command here before we build the credentials
     // Since the access token is lazily evaluated.

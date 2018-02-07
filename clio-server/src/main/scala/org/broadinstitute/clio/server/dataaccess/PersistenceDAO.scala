@@ -190,9 +190,6 @@ trait PersistenceDAO extends LazyLogging {
       // If Elasticsearch contained no documents, load every JSON file in storage.
       getAllAfter(rootDir, None)
     ) { document =>
-      logger.debug(
-        s"Recovering all upserts from index ${index.indexName} since ${document.upsertId}"
-      )
       val filename = document.persistenceFilename
 
       /*
@@ -213,7 +210,10 @@ trait PersistenceDAO extends LazyLogging {
                 s"No document found in storage for ID ${document.upsertId}"
               )
             )
-          )(pathToLast => getAllAfter(rootDir, Some(pathToLast)))
+          ) { pathToLast =>
+            logger.info(s"Found record for upsert ${document.upsertId} at $pathToLast")
+            getAllAfter(rootDir, Some(pathToLast))
+          }
         }
     }
   }
