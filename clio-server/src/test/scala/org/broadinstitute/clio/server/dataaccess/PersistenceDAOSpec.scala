@@ -5,8 +5,6 @@ import java.nio.file.Files
 import java.time.OffsetDateTime
 
 import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.Indexable
-import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -14,8 +12,6 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   Elastic4sAutoDerivation,
   ElasticsearchIndex
 }
-
-import scala.concurrent.Future
 
 class PersistenceDAOSpec
     extends TestKitSuite("PersistenceDAOSpec")
@@ -71,71 +67,66 @@ class PersistenceDAOSpec
     }
   }
 
-  it should "return metadata documents from GCS in order" in {
-    val dao = new MemoryPersistenceDAO()
-    val half = 23
-    val documents = Seq.tabulate(2 * half) { n =>
-      DocumentMock.default.copy(
-        mockKeyLong = n.toLong,
-        mockFilePath = Some(URI.create(s"gs://document-mock-key-$n"))
-      )
-    }
-    documents.toSet.size should be(documents.size)
-    documents.map(_.upsertId).toSet.size should be(documents.size)
-    val expected = documents.drop(half)
-    for {
-      _ <- dao.initialize(Seq(index))
-      _ <- Future.sequence(documents.map(dao.writeUpdate[DocumentMock]))
-      result <- dao.getAllSince[DocumentMock](expected.headOption).runWith(Sink.seq)
-    } yield {
-      result should be(expected.tail)
-    }
+  val testDocs: List[DocumentMock] = List.fill(25)(DocumentMock.default)
+  (None :: testDocs.map(Some.apply)).foreach {
+    it should behave like recoveryTest(testDocs, _)
   }
 
-  it should "return all documents from GCS if no latest upsertId is given" in {
-    val dao = new MemoryPersistenceDAO()
-    val documents = Seq.tabulate(26) { n =>
-      DocumentMock.default.copy(
-        mockKeyLong = n.toLong,
-        mockFilePath = Some(URI.create(s"gs://document-mock-key-$n"))
-      )
+  // From StackOverflow: https://stackoverflow.com/a/11458240
+  def cutIntoBuckets[A](xs: Seq[A], n: Int): Vector[Seq[A]] = {
+    val m = xs.length
+    val targets = (0 to n).map { x =>
+      math.round((x.toDouble * m) / n).toInt
     }
-    documents.toSet.size should be(documents.size)
-    documents.map(_.upsertId).toSet.size should be(documents.size)
-    val expected = documents
-    for {
-      _ <- dao.initialize(Seq(index))
-      _ <- Future.sequence(documents.map(dao.writeUpdate[DocumentMock]))
-      result <- dao.getAllSince[DocumentMock](None).runWith(Sink.seq)
-    } yield {
-      result should be(expected)
+    def snip(xs: Seq[A], ns: Seq[Int], got: Vector[Seq[A]]): Vector[Seq[A]] = {
+      if (ns.length < 2) got
+      else {
+        val (i, j) = (ns.head, ns.tail.head)
+        snip(xs.drop(j - i), ns.tail, got :+ xs.take(j - i))
+      }
     }
+    snip(xs, targets, Vector.empty)
   }
 
-  it should "stop searching storage when it finds the document with the last-known upsert ID" in {
-    val document = DocumentMock.default
-    val dao = new MemoryPersistenceDAO()
+  def recoveryTest(
+    documents: Seq[DocumentMock],
+    lastKnown: Option[DocumentMock]
+  ): Unit = {
+    val description =
+      lastKnown.fold("recover all upserts from GCS when Elasticsearch is empty") { d =>
+        s"recover all upserts from GCS after last-known ID ${d.upsertId}"
+      }
 
-    val now = OffsetDateTime.now()
-    val yesterday = now.minusDays(1L)
-    val indexable = implicitly[Indexable[DocumentMock]]
+    it should description in {
+      val dao = new MemoryPersistenceDAO()
+      val now = OffsetDateTime.now()
 
-    for {
-      _ <- dao.initialize(Seq(index))
-      _ = Seq(yesterday, now).map { dt =>
-        val dir = Files.createDirectories(
-          dao.rootPath.resolve(
-            s"${index.rootDir}/${dt.format(ElasticsearchIndex.dateTimeFormatter)}"
-          )
-        )
-        Files.write(
-          dir.resolve(document.persistenceFilename),
-          indexable.json(document).getBytes
+      val days = Seq(now.minusYears(1L), now.minusMonths(1L), now.minusDays(1L), now)
+      val docsByDay = days.zip(cutIntoBuckets(documents, days.size))
+
+      for {
+        _ <- dao.initialize(Seq(index))
+        _ = docsByDay.foreach {
+          case (day, docs) =>
+            val dir = Files.createDirectories(
+              dao.rootPath.resolve(
+                s"${index.rootDir}/${day.format(ElasticsearchIndex.dateTimeFormatter)}"
+              )
+            )
+            docs.foreach { document =>
+              Files.write(
+                dir.resolve(document.persistenceFilename),
+                index.indexable.json(document).getBytes
+              )
+            }
+        }
+        result <- dao.getAllSince[DocumentMock](lastKnown).runWith(Sink.seq)
+      } yield {
+        result should contain theSameElementsInOrderAs documents.slice(
+          lastKnown.fold(-1)(documents.indexOf) + 1,
+          documents.size
         )
       }
-      result <- dao.getAllSince[DocumentMock](Some(document)).runWith(Sink.seq)
-    } yield {
-      result shouldBe empty
     }
   }
 
