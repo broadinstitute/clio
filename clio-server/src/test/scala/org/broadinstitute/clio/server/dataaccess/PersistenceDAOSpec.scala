@@ -5,8 +5,6 @@ import java.nio.file.Files
 import java.time.OffsetDateTime
 
 import akka.stream.scaladsl.Sink
-import com.sksamuel.elastic4s.Indexable
-import com.sksamuel.elastic4s.circe._
 import io.circe.parser._
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -118,7 +116,6 @@ class PersistenceDAOSpec
 
     val now = OffsetDateTime.now()
     val yesterday = now.minusDays(1L)
-    val indexable = implicitly[Indexable[DocumentMock]]
 
     for {
       _ <- dao.initialize(Seq(index))
@@ -130,12 +127,41 @@ class PersistenceDAOSpec
         )
         Files.write(
           dir.resolve(document.persistenceFilename),
-          indexable.json(document).getBytes
+          index.indexable.json(document).getBytes
         )
       }
       result <- dao.getAllSince[DocumentMock](Some(document)).runWith(Sink.seq)
     } yield {
       result shouldBe empty
+    }
+  }
+
+  it should "return upserts from days after the last-known upsert ID" in {
+    val documents = Seq.fill(4)(DocumentMock.default)
+    val dao = new MemoryPersistenceDAO()
+
+    val now = OffsetDateTime.now()
+    val aYearAgo = now.minusYears(1L)
+    val aMonthAgo = now.minusMonths(1L)
+    val yesterday = now.minusDays(1L)
+
+    for {
+      _ <- dao.initialize(Seq(index))
+      _ = Seq(aYearAgo, aMonthAgo, yesterday, now).zip(documents).map {
+        case (dt, document) =>
+          val dir = Files.createDirectories(
+            dao.rootPath.resolve(
+              s"${index.rootDir}/${dt.format(ElasticsearchIndex.dateTimeFormatter)}"
+            )
+          )
+          Files.write(
+            dir.resolve(document.persistenceFilename),
+            index.indexable.json(document).getBytes
+          )
+      }
+      result <- dao.getAllSince[DocumentMock](documents.headOption).runWith(Sink.seq)
+    } yield {
+      result should be(documents.tail)
     }
   }
 
