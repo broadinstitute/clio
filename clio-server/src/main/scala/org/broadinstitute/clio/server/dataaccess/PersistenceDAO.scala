@@ -166,13 +166,13 @@ trait PersistenceDAO extends LazyLogging {
       _.toString <= pathOfLastUpsert
     }
 
-    getPathsOrderedBy(rootDir, pathOrdering, dayFilter)
     /*
-       * `dropWhile` instead of `filterNot` because we know `getPathsOrderedBy` is going
-       * to return paths in order by time, so once we see a document which is more recent
-       * than the latest known upsert, all following documents must also be more recent
-       * than that upsert.
-       */
+     * `dropWhile` instead of `filterNot` because we know `getPathsOrderedBy` is going
+     * to return paths in order by time, so once we see a document which is more recent
+     * than the latest known upsert, all following documents must also be more recent
+     * than that upsert.
+     */
+    getPathsOrderedBy(rootDir, pathOrdering, dayFilter)
       .dropWhile(docIsNotMoreRecentThanLastUpsert)
       .map { p =>
         decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)

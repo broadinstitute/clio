@@ -73,7 +73,7 @@ class PersistenceDAOSpec
   }
 
   // From StackOverflow: https://stackoverflow.com/a/11458240
-  def cut[A](xs: Seq[A], n: Int): Vector[Seq[A]] = {
+  def cutIntoBuckets[A](xs: Seq[A], n: Int): Vector[Seq[A]] = {
     val m = xs.length
     val targets = (0 to n).map { x =>
       math.round((x.toDouble * m) / n).toInt
@@ -102,11 +102,11 @@ class PersistenceDAOSpec
       val now = OffsetDateTime.now()
 
       val days = Seq(now.minusYears(1L), now.minusMonths(1L), now.minusDays(1L), now)
-      val docsByDay = cut(documents, 4)
+      val docsByDay = days.zip(cutIntoBuckets(documents, days.size))
 
       for {
         _ <- dao.initialize(Seq(index))
-        _ = days.zip(docsByDay).foreach {
+        _ = docsByDay.foreach {
           case (day, docs) =>
             val dir = Files.createDirectories(
               dao.rootPath.resolve(
