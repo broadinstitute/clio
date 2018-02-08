@@ -150,10 +150,9 @@ trait PersistenceDAO extends LazyLogging {
     val dayFilter = lastToIgnore.fold((_: Path) => true) { last =>
       val dayDirectoryOfLastUpsert = last.getParent.toString
       /*
-       * Given an existing path to a document which contains the last upsert known to
-       * Elasticsearch, we want to keep only the day-directories for upserts following
-       * that upsert, to avoid pointlessly examining upserts which are definitely already
-       * in Elasticsearch.
+       * Given the path in storage to the last upsert known to Elasticsearch, we want to keep
+       * only the day-directories for upserts following that upsert, to avoid pointlessly
+       * examining paths which are definitely already in Elasticsearch.
        *
        * We filter inclusively on date because the most recent document in Elasticsearch
        * might not have been the last document upsert-ed during the day it was added.
