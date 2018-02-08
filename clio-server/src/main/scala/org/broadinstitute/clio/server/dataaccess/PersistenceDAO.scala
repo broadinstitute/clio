@@ -147,22 +147,33 @@ trait PersistenceDAO extends LazyLogging {
     lastToIgnore: Option[Path]
   )(implicit ec: ExecutionContext, materializer: Materializer): Source[D, NotUsed] = {
 
-    val dayFilter = lastToIgnore.fold((_: Path) => true) {
+    val dayFilter = lastToIgnore.fold((_: Path) => true) { last =>
+      val dayDirectoryOfLastUpsert = last.getParent.toString
       /*
-       * We filter inclusively on date because the most recent
-       * document in Elasticsearch might not have been the last
-       * document upsert-ed during the day it was added.
+       * Given an existing path to a document which contains the last upsert known to
+       * Elasticsearch, we want to keep only the day-directories for upserts following
+       * that upsert, to avoid pointlessly examining upserts which are definitely already
+       * in Elasticsearch.
+       *
+       * We filter inclusively on date because the most recent document in Elasticsearch
+       * might not have been the last document upsert-ed during the day it was added.
        */
-      last => (dir: Path) =>
-        last.getParent.toString >= dir.toString
+      _.toString >= dayDirectoryOfLastUpsert
     }
 
-    val docFilter = lastToIgnore.fold((_: Path) => false) { last => (path: Path) =>
-      last.toString >= path.toString
+    val docIsNotMoreRecentThanLastUpsert = lastToIgnore.fold((_: Path) => false) { last =>
+      val pathOfLastUpsert = last.toString
+      _.toString <= pathOfLastUpsert
     }
 
     getPathsOrderedBy(rootDir, pathOrdering, dayFilter)
-      .dropWhile(docFilter)
+    /*
+       * `dropWhile` instead of `filterNot` because we know `getPathsOrderedBy` is going
+       * to return paths in order by time, so once we see a document which is more recent
+       * than the latest known upsert, all following documents must also be more recent
+       * than that upsert.
+       */
+      .dropWhile(docIsNotMoreRecentThanLastUpsert)
       .map { p =>
         decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
       }
