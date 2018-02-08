@@ -70,6 +70,8 @@ object ClioServerConfig extends ConfigReaders {
           )
         }
     }
+
+    val recoveryParallelism: Int = persistence.as[Int]("recovery-parallelism")
   }
 
   object HttpServer {

@@ -4,7 +4,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Decoder
-import org.broadinstitute.clio.server.ClioApp
+import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.dataaccess.{
   HttpServerDAO,
@@ -23,7 +23,8 @@ class ServerService private (
   serverStatusDAO: ServerStatusDAO,
   httpServerDAO: HttpServerDAO,
   persistenceDAO: PersistenceDAO,
-  searchDAO: SearchDAO
+  searchDAO: SearchDAO,
+  version: String
 )(implicit executionContext: ExecutionContext, mat: Materializer)
     extends ModelAutoDerivation
     with StrictLogging {
@@ -103,7 +104,7 @@ class ServerService private (
 
     for {
       _ <- serverStatusDAO.setStatus(ClioStatus.Starting)
-      _ <- persistenceDAO.initialize(indexes)
+      _ <- persistenceDAO.initialize(indexes, version)
       _ <- searchDAO.initialize(indexes)
       _ <- httpServerDAO.startup()
       _ <- serverStatusDAO.setStatus(ClioStatus.Recovering)
@@ -141,7 +142,8 @@ object ServerService {
       app.serverStatusDAO,
       app.httpServerDAO,
       app.persistenceDAO,
-      app.searchDAO
+      app.searchDAO,
+      ClioServerConfig.Version.value
     )
   }
 }

@@ -9,7 +9,6 @@ import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder
 import io.circe.parser._
-import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
@@ -22,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
   * Persists metadata updates to a source of truth, allowing
   * for playback during disaster recovery.
   */
-trait PersistenceDAO extends LazyLogging {
+abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
 
   import PersistenceDAO.{StorageWalkDepth, VersionFileName}
 
@@ -38,13 +37,13 @@ trait PersistenceDAO extends LazyLogging {
     * Initialize the root storage directories for Clio documents.
     */
   def initialize(
-    indexes: Seq[ElasticsearchIndex[_]]
+    indexes: Seq[ElasticsearchIndex[_]],
+    version: String
   )(implicit ec: ExecutionContext): Future[Unit] = Future {
     // Make sure the rootPath can actually be used.
     val versionPath = rootPath.resolve(VersionFileName)
     try {
-      val versionFile =
-        Files.write(versionPath, ClioServerConfig.Version.value.getBytes)
+      val versionFile = Files.write(versionPath, version.getBytes)
       logger.debug(s"Wrote current Clio version to ${versionFile.toUri}")
     } catch {
       case e: Exception => {
@@ -124,7 +123,7 @@ trait PersistenceDAO extends LazyLogging {
        * We use `mapAsync` then `mapConcat`, instead of just `flatMapConcat`,
        * so we can sort the intermediate Seq result of the ls.
        */
-      .mapAsync(1)(Directory.ls(_).runWith(Sink.seq))
+      .mapAsync(recoveryParallelism)(Directory.ls(_).runWith(Sink.seq))
       .mapConcat(_.sorted(ordering))
   }
 
@@ -169,8 +168,10 @@ trait PersistenceDAO extends LazyLogging {
      */
     getPathsOrderedBy(rootDir, pathOrdering, dayFilter)
       .dropWhile(docIsNotLaterThanLastUpsert)
-      .map { p =>
-        decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
+      .mapAsync(recoveryParallelism) { p =>
+        Future {
+          decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
+        }
       }
   }
 
@@ -248,13 +249,9 @@ object PersistenceDAO {
     */
   val StorageWalkDepth = 3
 
-  def apply(config: Persistence.PersistenceConfig): PersistenceDAO =
+  def apply(config: Persistence.PersistenceConfig, parallelism: Int): PersistenceDAO =
     config match {
-      case l: Persistence.LocalConfig => {
-        new LocalFilePersistenceDAO(l)
-      }
-      case g: Persistence.GcsConfig => {
-        new GcsPersistenceDAO(g)
-      }
+      case l: Persistence.LocalConfig => new LocalFilePersistenceDAO(l, parallelism)
+      case g: Persistence.GcsConfig   => new GcsPersistenceDAO(g, parallelism)
     }
 }

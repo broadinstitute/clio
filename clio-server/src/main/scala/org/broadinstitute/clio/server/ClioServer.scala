@@ -59,7 +59,8 @@ object ClioServer
   private val httpServerDAO = AkkaHttpServerDAO(wrapperDirectives, infoRoutes, apiRoutes)
   private val searchDAO = HttpElasticsearchDAO()
   private val persistenceDAO = PersistenceDAO(
-    ClioServerConfig.Persistence.config
+    ClioServerConfig.Persistence.config,
+    ClioServerConfig.Persistence.recoveryParallelism
   )
 
   private val app =

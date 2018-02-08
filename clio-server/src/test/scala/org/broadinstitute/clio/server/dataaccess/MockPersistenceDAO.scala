@@ -9,11 +9,12 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class MockPersistenceDAO extends PersistenceDAO {
+class MockPersistenceDAO extends PersistenceDAO(recoveryParallelism = 1) {
   override def rootPath: Path = Paths.get("/")
 
   override def initialize(
-    indexes: Seq[ElasticsearchIndex[_]]
+    indexes: Seq[ElasticsearchIndex[_]],
+    version: String
   )(implicit ec: ExecutionContext): Future[Unit] =
     Future.successful(())
 
