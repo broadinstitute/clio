@@ -55,13 +55,11 @@ trait ModelAutoDerivation extends AutoDerivation {
 
   // https://circe.github.io/circe/codec.html#custom-encodersdecoders
   implicit val encodeOffsetDateTime: Encoder[OffsetDateTime] = {
-    Encoder.encodeString contramap [OffsetDateTime] { offsetDateTime =>
-      offsetDateTime.toString
-    }
+    Encoder.encodeString.contramap(_.toString)
   }
 
   implicit val decodeOffsetDateTime: Decoder[OffsetDateTime] = {
-    Decoder.decodeString emap { string =>
+    Decoder.decodeString.emap { string =>
       Either
         .catchNonFatal(OffsetDateTime.parse(string))
         .leftMap(ex => s"$string is not a valid OffsetDateTime: ${ex.getMessage}")
@@ -69,10 +67,10 @@ trait ModelAutoDerivation extends AutoDerivation {
   }
 
   implicit val encodeUpsertId: Encoder[UpsertId] =
-    Encoder.encodeString contramap [UpsertId] { _.id }
+    Encoder.encodeString.contramap(_.id)
 
   implicit val decodeUpsertId: Decoder[UpsertId] = {
-    Decoder.decodeString emap { string =>
+    Decoder.decodeString.emap { string =>
       Either.fromOption(
         UpsertId.fromString(string),
         s"$string is not a valid upsert ID"

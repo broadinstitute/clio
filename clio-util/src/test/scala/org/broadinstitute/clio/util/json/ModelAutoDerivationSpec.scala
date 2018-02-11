@@ -1,10 +1,12 @@
 package org.broadinstitute.clio.util.json
 
+import java.net.URI
 import java.time.OffsetDateTime
 
 import enumeratum._
 import io.circe.parser._
 import io.circe.syntax._
+import org.broadinstitute.clio.util.model.UpsertId
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.{EitherValues, FlatSpec, Matchers}
 
@@ -96,6 +98,17 @@ class ModelAutoDerivationSpec
     )
   }
 
+  it should "show the string which caused the error when failing to decode a date" in {
+    case class TestClass(date: OffsetDateTime)
+
+    val malformed = "not-a-date"
+    val json = s"""{"date":"$malformed"}"""
+
+    import cats.syntax.show._
+
+    decode[TestClass](json).left.value.show should include(malformed)
+  }
+
   it should "encode an enum" in {
     import ModelAutoDerivationSpec._
     case class TestClass(enum: TestEnum)
@@ -112,6 +125,86 @@ class ModelAutoDerivationSpec
     decode[TestClass](json).right.value should be(
       TestClass(TestEnum.TestValue2)
     )
+  }
+
+  it should "show the string which caused the error when failing to decode an enum" in {
+    import ModelAutoDerivationSpec._
+    case class TestClass(enum: TestEnum)
+
+    import cats.syntax.show._
+
+    val malformed = "TestValue3"
+    val json = s"""{"enum": "$malformed"}"""
+
+    decode[TestClass](json).left.value.show should include(malformed)
+  }
+
+  it should "encode a URI" in {
+    case class TestClass(uri: URI)
+
+    val uriValues = Table(
+      "uri",
+      "/seq/picard/some/file/path.stuff",
+      "gs://broad-gotc-dev-storage/some/file/path.stuff"
+    )
+
+    forAll(uriValues) { uri =>
+      TestClass(URI.create(uri)).asJson.pretty(defaultPrinter) should be(
+        s"""{"uri":"$uri"}"""
+      )
+    }
+  }
+
+  it should "decode a URI" in {
+    case class TestClass(uri: URI)
+
+    val uriValues = Table(
+      "uri",
+      "/seq/picard/some/file/path.stuff",
+      "gs://some-bucket/some/file/path.stuff"
+    )
+
+    forAll(uriValues) { uri =>
+      decode[TestClass](s"""{"uri":"$uri"}""").right.value should be(
+        TestClass(URI.create(uri))
+      )
+    }
+  }
+
+  it should "show the string which caused the error when failing to decode a URI" in {
+    case class TestClass(uri: URI)
+
+    import cats.syntax.show._
+
+    val malformed = "*&^)"
+    val json = s"""{"uri":"$malformed"}"""
+
+    decode[TestClass](json).left.value.show should include(malformed)
+  }
+
+  it should "encode an UpsertID" in {
+    case class TestClass(id: UpsertId)
+
+    val id = UpsertId.nextId()
+    TestClass(id).asJson.pretty(defaultPrinter) should be(s"""{"id":"${id.id}"}""")
+  }
+
+  it should "decode an UpsertID" in {
+    case class TestClass(id: UpsertId)
+
+    val id = UpsertId.nextId()
+    decode[TestClass](s"""{"id":"${id.id}"}""").right.value should be(TestClass(id))
+  }
+
+  it should "show the string which caused the error when failing to decode an UpsertId" in {
+    case class TestClass(id: UpsertId)
+
+    import cats.syntax.show._
+
+    val malformed = "123badId"
+    val json = s"""{"id":"$malformed"}"""
+
+    decode[TestClass](json).left.value.show should include(malformed)
   }
 }
 
