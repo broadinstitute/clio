@@ -78,7 +78,7 @@ object StateDecoder extends LowPriorityStateDecoder {
 
     field.as[Option[A]] match {
       // Found the field. Delete it, and return the modified cursor.
-      case Right(a @ Some(_)) => Right((field.delete, a))
+      case Right(a) if field.focus.isDefined => Right((field.delete, a))
       // The field was not found. Return the original cursor.
       case Right(None) => Right((c, None))
       // A decoding error occurred.

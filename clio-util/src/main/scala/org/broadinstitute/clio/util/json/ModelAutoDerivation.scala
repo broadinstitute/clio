@@ -41,7 +41,7 @@ trait ModelAutoDerivation extends AutoDerivation {
     * By default, compact JSON as much as possible by removing spaces and keys with null / None values.
     */
   implicit val defaultPrinter: Printer =
-    Printer.noSpaces.copy(dropNullValues = true)
+    Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true)
 
   /**
     * When decoding, don't allow extra fields.
@@ -64,7 +64,7 @@ trait ModelAutoDerivation extends AutoDerivation {
     Decoder.decodeString emap { string =>
       Either
         .catchNonFatal(OffsetDateTime.parse(string))
-        .leftMap(_ => "OffsetDateTime")
+        .leftMap(ex => s"$string is not a valid OffsetDateTime: ${ex.getMessage}")
     }
   }
 
@@ -73,18 +73,12 @@ trait ModelAutoDerivation extends AutoDerivation {
 
   implicit val decodeUpsertId: Decoder[UpsertId] = {
     Decoder.decodeString emap { string =>
-      Either
-        .fromOption(
-          UpsertId.fromString(string),
-          DecodingFailure(s"$string is not a valid upsert ID", List())
-        )
-        .leftMap(_ => "UpsertId")
+      Either.fromOption(
+        UpsertId.fromString(string),
+        s"$string is not a valid upsert ID"
+      )
     }
   }
-
-  // Caches for enum encoders and decoders.
-  private val enumEncoderCache = new CompanionCache
-  private val enumDecoderCache = new CompanionCache
 
   /**
     * Provides an encoder for any class that extends EnumEntry.
@@ -97,7 +91,7 @@ trait ModelAutoDerivation extends AutoDerivation {
     * @return The enum encoder.
     */
   implicit def encodeEnum[T <: EnumEntry: ClassTag]: Encoder[T] = {
-    enumEncoderCache.cached[T, Enum[T], Encoder[T]](Circe.encoder)
+    ModelAutoDerivation.enumEncoderCache.cached[T, Enum[T], Encoder[T]](Circe.encoder)
   }
 
   /**
@@ -111,7 +105,7 @@ trait ModelAutoDerivation extends AutoDerivation {
     * @return The enum decoder.
     */
   implicit def decodeEnum[T <: EnumEntry: ClassTag]: Decoder[T] = {
-    enumDecoderCache.cached[T, Enum[T], Decoder[T]](Circe.decoder)
+    ModelAutoDerivation.enumDecoderCache.cached[T, Enum[T], Decoder[T]](Circe.decoder)
   }
 
   implicit val encodeUri: Encoder[URI] =
@@ -121,7 +115,7 @@ trait ModelAutoDerivation extends AutoDerivation {
     Decoder.decodeString.emap { string =>
       Either
         .catchNonFatal(URI.create(string))
-        .leftMap(_ => "URI")
+        .leftMap(ex => s"$string is not a valid URI: ${ex.getMessage}")
     }
   }
 
@@ -136,4 +130,8 @@ trait ModelAutoDerivation extends AutoDerivation {
   * Companion object so we can `import ModelAutoDerivation._` to get the implicits within when
   * that is more convenient than extending the trait.
   */
-object ModelAutoDerivation extends ModelAutoDerivation
+object ModelAutoDerivation extends ModelAutoDerivation {
+  // Caches for enum encoders and decoders.
+  private val enumEncoderCache = new CompanionCache
+  private val enumDecoderCache = new CompanionCache
+}
