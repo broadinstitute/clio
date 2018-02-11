@@ -3,6 +3,7 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 import java.net.URI
 import java.time.OffsetDateTime
 
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 case class DocumentMock(
@@ -21,8 +22,7 @@ case class DocumentMock(
   mockDocumentStatus: Option[DocumentStatus] = None
 ) extends ClioDocument
 
-object DocumentMock extends Elastic4sAutoDerivation {
-  import com.sksamuel.elastic4s.circe._
+object DocumentMock extends ModelAutoDerivation {
 
   def default: DocumentMock = DocumentMock(
     upsertId = UpsertId.nextId(),

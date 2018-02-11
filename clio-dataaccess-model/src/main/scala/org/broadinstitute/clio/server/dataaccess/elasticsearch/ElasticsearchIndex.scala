@@ -4,16 +4,17 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 import com.sksamuel.elastic4s.mappings.FieldDefinition
-import com.sksamuel.elastic4s.{HitReader, Indexable}
+import io.circe.{Decoder, Encoder}
 import org.broadinstitute.clio.util.generic.FieldMapper
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 /**
   * An index for an Elasticsearch document.
   *
   * @param indexName The name of the index in Elasticsearch.
   * @param fieldMapper The version of the mapping used to generate the index.
-  * @param indexable Typeclass used to convert `Document` instances into JSON.
-  * @param hitReader Typeclass used to convert ES search hits back to `Document` instances.
+  * @param encoder Typeclass used to convert `Document` instances into JSON.
+  * @param decoder Typeclass used to convert ES search hits back to `Document` instances.
   * @tparam Document The type of the Elasticsearch document.
   */
 class ElasticsearchIndex[Document: FieldMapper](
@@ -21,8 +22,8 @@ class ElasticsearchIndex[Document: FieldMapper](
   private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper
 )(
   implicit
-  private[clio] val indexable: Indexable[Document],
-  private[clio] val hitReader: HitReader[Document]
+  private[clio] val encoder: Encoder[Document],
+  private[clio] val decoder: Decoder[Document]
 ) {
 
   /**
@@ -36,11 +37,17 @@ class ElasticsearchIndex[Document: FieldMapper](
 
   /**
     * The source-of-truth directory in which updates to this index
-    * should be persisted now.
+    * should be persisted, if applied now.
     */
-  def currentPersistenceDir: String = {
-    val now = OffsetDateTime.now().format(ElasticsearchIndex.dateTimeFormatter)
-    s"$rootDir$now/"
+  def currentPersistenceDir: String = persistenceDirForDatetime(OffsetDateTime.now())
+
+  /**
+    * The source-of-truth directory in which updates to this index
+    * should be persisted, if applied at the given date-time.
+    */
+  def persistenceDirForDatetime(dt: OffsetDateTime): String = {
+    val dir = dt.format(ElasticsearchIndex.dateTimeFormatter)
+    s"$rootDir$dir/"
   }
 
   /**
@@ -61,8 +68,7 @@ class ElasticsearchIndex[Document: FieldMapper](
     }
 }
 
-object ElasticsearchIndex extends Elastic4sAutoDerivation {
-  import com.sksamuel.elastic4s.circe._
+object ElasticsearchIndex extends ModelAutoDerivation {
 
   /** Format the directory path for the indexed meta-data files. */
   lazy val dateTimeFormatter: DateTimeFormatter =

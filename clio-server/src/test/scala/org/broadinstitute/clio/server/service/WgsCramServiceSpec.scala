@@ -3,6 +3,7 @@ package org.broadinstitute.clio.server.service
 import java.net.URI
 
 import akka.stream.scaladsl.Sink
+import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentWgsCram,
   ElasticsearchIndex
@@ -65,6 +66,8 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
     documentStatus: Option[DocumentStatus],
     expectedDocumentStatus: Option[DocumentStatus]
   ) = {
+    import ElasticsearchIndex.WgsCram.encoder
+
     val memoryPersistenceDAO = new MemoryPersistenceDAO()
     val memorySearchDAO = new MemorySearchDAO()
     val app = MockClioApp(
@@ -102,7 +105,7 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
         Seq((expectedDocument, ElasticsearchIndex[DocumentWgsCram]))
       )
       memorySearchDAO.updateCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex[DocumentWgsCram]))
+        Seq((expectedDocument.asJson, ElasticsearchIndex[DocumentWgsCram]))
       )
       memorySearchDAO.queryCalls should be(empty)
     }
