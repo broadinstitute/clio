@@ -11,7 +11,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
-class MemoryPersistenceDAO extends PersistenceDAO(recoveryParallelism = 1) {
+class MemoryPersistenceDAO extends PersistenceDAO {
   val writeCalls: mutable.ArrayBuffer[(_, _)] = mutable.ArrayBuffer.empty
 
   private val memFS: FileSystem =

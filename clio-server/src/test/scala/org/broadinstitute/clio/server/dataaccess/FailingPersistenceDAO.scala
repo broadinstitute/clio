@@ -9,7 +9,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class FailingPersistenceDAO extends PersistenceDAO(recoveryParallelism = 1) {
+class FailingPersistenceDAO extends PersistenceDAO {
   val ex = new Exception("Tried to use failing persistence DAO")
 
   override def rootPath: Path = throw ex

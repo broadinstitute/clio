@@ -23,6 +23,8 @@ import scala.concurrent.{ExecutionContext, Future}
   */
 abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
 
+  def this() = this(recoveryParallelism = 1)
+
   import PersistenceDAO.{StorageWalkDepth, VersionFileName}
 
   /**
