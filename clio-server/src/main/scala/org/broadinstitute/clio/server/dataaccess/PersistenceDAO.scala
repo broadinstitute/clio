@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import java.nio.ByteBuffer
 import java.nio.file.{Files, Path}
 
 import akka.NotUsed
@@ -8,7 +9,7 @@ import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Decoder
-import io.circe.parser._
+import io.circe.jawn.JawnParser
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
@@ -163,6 +164,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
       _.toString <= pathOfLastUpsert
     }
 
+    val parser = new JawnParser
     /*
      * `dropWhile` instead of `filterNot` because `getPathsOrderedBy` returns the paths sorted
      * from earliest to latest, so we can stop testing paths after finding the first one more
@@ -170,11 +172,21 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
      */
     getPathsOrderedBy(rootDir, pathOrdering, dayFilter)
       .dropWhile(docIsNotLaterThanLastUpsert)
-      .mapAsync(recoveryParallelism) { p =>
-        Future {
-          decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
-        }
-      }
+      .mapAsync(recoveryParallelism)(p => Future(Files.readAllBytes(p)))
+      /*
+       * By default, when an Akka stream is materialized all of its stages are "fused" into
+       * a sequential pipeline, and only one stage is executed at a time. `.async` splits the
+       * stream into two pieces which will run concurrently.
+       *
+       * In this stream, the use of `.async` means that as soon as the downstream decoding stage
+       * pulls a ByteString from a file-to-recover, the above file-reading stage will immediately
+       * pull for the next path to read. Without `.async`, the file-reading stage wouldn't try to
+       * pull the next path until after all of its downstream stages finish executing.
+       *
+       * For more info see: https://doc.akka.io/docs/akka/current/stream/stream-parallelism.html#pipelining
+       */
+      .async
+      .map(b => parser.decodeByteBuffer[D](ByteBuffer.wrap(b)).fold(throw _, identity))
   }
 
   /**
