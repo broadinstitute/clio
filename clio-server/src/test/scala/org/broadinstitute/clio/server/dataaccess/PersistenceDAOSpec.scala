@@ -13,12 +13,17 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex
 }
 
+import scala.concurrent.Future
+
 class PersistenceDAOSpec
     extends TestKitSuite("PersistenceDAOSpec")
     with Elastic4sAutoDerivation {
   behavior of "PersistenceDAO"
 
   implicit val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
+
+  def initIndex(dao: PersistenceDAO): Future[Unit] =
+    dao.initialize(Seq(index), "fake-version")
 
   it should "initialize top-level storage for indexed documents" in {
     val dao = new MemoryPersistenceDAO()
@@ -28,7 +33,7 @@ class PersistenceDAOSpec
     Files.isDirectory(wgsPath) should be(false)
 
     for {
-      _ <- dao.initialize(Seq(index))
+      _ <- initIndex(dao)
     } yield {
       Files.exists(wgsPath) should be(true)
       Files.isDirectory(wgsPath) should be(true)
@@ -44,7 +49,7 @@ class PersistenceDAOSpec
     val document2 = DocumentMock.default.copy(mockFieldDouble = Some(0.9876))
 
     for {
-      _ <- dao.initialize(Seq(index))
+      _ <- initIndex(dao)
       _ <- dao.writeUpdate(document)
       _ <- dao.writeUpdate(document2)
     } yield {
@@ -105,7 +110,7 @@ class PersistenceDAOSpec
       val docsByDay = days.zip(cutIntoBuckets(documents, days.size))
 
       for {
-        _ <- dao.initialize(Seq(index))
+        _ <- initIndex(dao)
         _ = docsByDay.foreach {
           case (day, docs) =>
             val dir = Files.createDirectories(
@@ -135,7 +140,7 @@ class PersistenceDAOSpec
     val dao = new MemoryPersistenceDAO()
 
     for {
-      _ <- dao.initialize(Seq(index))
+      _ <- initIndex(dao)
       result <- recoverToSucceededIf[NoSuchElementException] {
         dao.getAllSince[DocumentMock](Some(document)).runWith(Sink.seq)
       }

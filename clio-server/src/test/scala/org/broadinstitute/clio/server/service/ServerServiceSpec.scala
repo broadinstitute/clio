@@ -100,7 +100,7 @@ class ServerServiceSpec
     val initSearchDocuments = initStoredDocuments.take(initInSearch)
 
     for {
-      _ <- persistenceDAO.initialize(Seq(DocumentMock.index))
+      _ <- persistenceDAO.initialize(Seq(DocumentMock.index), "fake-version")
       _ <- Future.sequence(
         initStoredDocuments.map(persistenceDAO.writeUpdate[DocumentMock])
       )
