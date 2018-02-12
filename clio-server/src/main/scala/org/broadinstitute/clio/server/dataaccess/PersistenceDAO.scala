@@ -83,9 +83,8 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
     implicit ec: ExecutionContext,
     index: ElasticsearchIndex[D]
   ): Future[Unit] = Future {
-    import index.encoder
-
-    val jsonString = ModelAutoDerivation.defaultPrinter.pretty(document.asJson)
+    val jsonString =
+      ModelAutoDerivation.defaultPrinter.pretty(document.asJson(index.encoder))
 
     val writePath =
       Files.createDirectories(rootPath.resolve(index.persistenceDirForDatetime(dt)))
@@ -218,8 +217,8 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
     mostRecentUpsert.fold(
       // If Elasticsearch contained no documents, load every JSON file in storage.
       getAllAfter(rootDir, None)
-    ) { id =>
-      val filename = ClioDocument.persistenceFilename(id)
+    ) { upsert =>
+      val filename = ClioDocument.persistenceFilename(upsert)
 
       /*
        * Pull the stream until we find the path corresponding to the last
@@ -236,11 +235,11 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
           maybePathToLast.fold(
             Source.failed[Json](
               new NoSuchElementException(
-                s"No document found in storage for ID ${id.id}"
+                s"No document found in storage for ID ${upsert.id}"
               )
             )
           ) { pathToLast =>
-            logger.info(s"Found record for upsert ${id.id} at $pathToLast")
+            logger.info(s"Found record for upsert ${upsert.id} at $pathToLast")
             getAllAfter(rootDir, Some(pathToLast))
           }
         }

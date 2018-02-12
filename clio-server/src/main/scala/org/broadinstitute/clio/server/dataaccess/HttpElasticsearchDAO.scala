@@ -54,8 +54,6 @@ class HttpElasticsearchDAO private[dataaccess] (
   override def queryMetadata[D <: ClioDocument](queryDefinition: QueryDefinition)(
     implicit index: ElasticsearchIndex[D]
   ): Source[D, NotUsed] = {
-    import index.decoder
-
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
       .size(HttpElasticsearchDAO.DocumentScrollSize)
@@ -63,7 +61,9 @@ class HttpElasticsearchDAO private[dataaccess] (
       .query(queryDefinition)
 
     val responsePublisher = httpClient.publisher(searchDefinition)
-    Source.fromPublisher(responsePublisher).map(_.to[Json].as[D].fold(throw _, identity))
+    Source
+      .fromPublisher(responsePublisher)
+      .map(_.to[Json].as[D](index.decoder).fold(throw _, identity))
   }
 
   override def getMostRecentDocument(
@@ -154,11 +154,12 @@ class HttpElasticsearchDAO private[dataaccess] (
     index: ElasticsearchIndex[_],
     document: Json
   ): BulkCompatibleDefinition = {
-    update(
-      document.hcursor
-        .get[String](ClioDocument.EntityIdElasticSearchName)
-        .fold(throw _, identity)
-    ).in(index.indexName / index.indexType)
+    val id = document.hcursor
+      .get[String](ClioDocument.EntityIdElasticSearchName)
+      .fold(throw _, identity)
+
+    update(id)
+      .in(index.indexName / index.indexType)
       .docAsUpsert(document.pretty(ModelAutoDerivation.defaultPrinter))
   }
 }
