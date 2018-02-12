@@ -41,7 +41,7 @@ trait ModelAutoDerivation extends AutoDerivation {
     * By default, compact JSON as much as possible by removing spaces and keys with null / None values.
     */
   implicit val defaultPrinter: Printer =
-    Printer.noSpaces.copy(dropNullValues = true, reuseWriters = true)
+    Printer.noSpaces.copy(dropNullValues = true)
 
   /**
     * When decoding, don't allow extra fields.
