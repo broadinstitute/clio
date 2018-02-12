@@ -2,19 +2,23 @@ package org.broadinstitute.clio.server.dataaccess
 
 import java.nio.ByteBuffer
 import java.nio.file.{Files, Path}
+import java.time.OffsetDateTime
 
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.LazyLogging
-import io.circe.Decoder
+import io.circe.Json
 import io.circe.jawn.JawnParser
+import io.circe.syntax._
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,10 +43,9 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
   /**
     * Initialize the root storage directories for Clio documents.
     */
-  def initialize(
-    indexes: Seq[ElasticsearchIndex[_]],
-    version: String
-  )(implicit ec: ExecutionContext): Future[Unit] = Future {
+  def initialize(indexes: Seq[ElasticsearchIndex[_]], version: String)(
+    implicit ec: ExecutionContext
+  ): Future[Unit] = Future {
     // Make sure the rootPath can actually be used.
     val versionPath = rootPath.resolve(VersionFileName)
     try {
@@ -73,19 +76,25 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
     * @param index    Typeclass providing information on where to persist the
     *                 metadata update.
     */
-  def writeUpdate[D <: ClioDocument](document: D)(
+  def writeUpdate[D <: ClioDocument](
+    document: D,
+    dt: OffsetDateTime = OffsetDateTime.now()
+  )(
     implicit ec: ExecutionContext,
     index: ElasticsearchIndex[D]
-  ): Future[Unit] =
-    Future {
-      val writePath =
-        Files.createDirectories(rootPath.resolve(index.currentPersistenceDir))
-      val written = Files.write(
-        writePath.resolve(s"${document.persistenceFilename}"),
-        index.indexable.json(document).getBytes
-      )
-      logger.debug(s"Wrote document $document to ${written.toUri}")
-    }
+  ): Future[Unit] = Future {
+    val jsonString =
+      ModelAutoDerivation.defaultPrinter.pretty(document.asJson(index.encoder))
+
+    val writePath =
+      Files.createDirectories(rootPath.resolve(index.persistenceDirForDatetime(dt)))
+
+    val written = Files.write(
+      writePath.resolve(ClioDocument.persistenceFilename(document.upsertId)),
+      jsonString.getBytes
+    )
+    logger.debug(s"Wrote document $document to ${written.toUri}")
+  }
 
   /**
     * Build a stream of all the paths to Clio upserts persisted under `rootDir`
@@ -141,13 +150,12 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
     * @param lastToIgnore the last (most recent) path in storage
     *                     that should be dropped instead of read
     *                     and converted into a document
-    * @tparam D is the type of `ClioDocument` expected under `rootDir`
     * @return the `ClioDocument` at `withId` and all later ones
     */
-  private def getAllAfter[D <: ClioDocument: Decoder](
-    rootDir: Path,
-    lastToIgnore: Option[Path]
-  )(implicit ec: ExecutionContext, materializer: Materializer): Source[D, NotUsed] = {
+  private def getAllAfter(rootDir: Path, lastToIgnore: Option[Path])(
+    implicit ec: ExecutionContext,
+    materializer: Materializer
+  ): Source[Json, NotUsed] = {
 
     val dayFilter = lastToIgnore.fold((_: Path) => true) { last =>
       val dayDirectoryOfLastUpsert = last.getParent.toString
@@ -186,7 +194,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
        * For more info see: https://doc.akka.io/docs/akka/current/stream/stream-parallelism.html#pipelining
        */
       .async
-      .map(b => parser.decodeByteBuffer[D](ByteBuffer.wrap(b)).fold(throw _, identity))
+      .map(b => parser.parseByteBuffer(ByteBuffer.wrap(b)).fold(throw _, identity))
   }
 
   /**
@@ -194,24 +202,23 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
     * after `document`.  Decode the files from JSON as `ClioDocument`s
     * sorted by `upsertId`.
     *
-    * @param mostRecentDocument the last known upserted document, `None`
-    *                           if all documents should be restored
+    * @param mostRecentUpsert the ID of the last known upserted document,
+    *                         `None` if all documents should be restored
     * @param index  to query against
-    * @tparam D is a ClioDocument type with a JSON Decoder
     * @return a Future Seq of ClioDocument
     */
-  def getAllSince[D <: ClioDocument: Decoder](mostRecentDocument: Option[ClioDocument])(
+  def getAllSince(mostRecentUpsert: Option[UpsertId])(
     implicit ec: ExecutionContext,
     materializer: Materializer,
-    index: ElasticsearchIndex[D]
-  ): Source[D, NotUsed] = {
+    index: ElasticsearchIndex[_]
+  ): Source[Json, NotUsed] = {
     val rootDir = rootPath.resolve(index.rootDir)
 
-    mostRecentDocument.fold(
+    mostRecentUpsert.fold(
       // If Elasticsearch contained no documents, load every JSON file in storage.
       getAllAfter(rootDir, None)
-    ) { document =>
-      val filename = document.persistenceFilename
+    ) { upsert =>
+      val filename = ClioDocument.persistenceFilename(upsert)
 
       /*
        * Pull the stream until we find the path corresponding to the last
@@ -226,13 +233,13 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
         .fold[Option[Path]](None)((_, p) => Some(p))
         .flatMapConcat { maybePathToLast =>
           maybePathToLast.fold(
-            Source.failed[D](
+            Source.failed[Json](
               new NoSuchElementException(
-                s"No document found in storage for ID ${document.upsertId}"
+                s"No document found in storage for ID ${upsert.id}"
               )
             )
           ) { pathToLast =>
-            logger.info(s"Found record for upsert ${document.upsertId} at $pathToLast")
+            logger.info(s"Found record for upsert ${upsert.id} at $pathToLast")
             getAllAfter(rootDir, Some(pathToLast))
           }
         }

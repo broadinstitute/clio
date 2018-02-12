@@ -25,16 +25,16 @@ trait ClioDocument {
     * during recovery without needing to use a document mapper.
     */
   val entityId: Symbol
+}
+
+object ClioDocument {
 
   /**
     * The filename used for persisting a document's upsert data.
     *
-    * @return the filename where this document's upsert data is stored
+    * @return the filename where the upsert with the given ID's data is stored
     */
-  def persistenceFilename: String = s"${upsertId.id}.json"
-}
-
-object ClioDocument {
+  def persistenceFilename(upsertId: UpsertId): String = s"${upsertId.id}.json"
 
   /**
     * Name of the ID field used in all Clio documents to identify a specific upsert.
@@ -60,4 +60,8 @@ object ClioDocument {
     * auto-query-mapper to strips the IDs from returned query outputs.
     */
   val EntityIdFieldName: String = "entityId"
+
+  /** Elasticsearch name for the entity ID field in a document. */
+  val EntityIdElasticSearchName: String =
+    ElasticsearchUtil.toElasticsearchName(EntityIdFieldName)
 }

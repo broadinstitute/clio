@@ -1,18 +1,13 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentMock,
-  Elastic4sAutoDerivation
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentMock
 import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.status.model.ClioStatus
 
 import scala.concurrent.Future
 
-class ServerServiceSpec
-    extends TestKitSuite("ServerServiceSpec")
-    with Elastic4sAutoDerivation {
+class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
   behavior of "ServerService"
 
   it should "beginStartup" in {
@@ -102,17 +97,17 @@ class ServerServiceSpec
     for {
       _ <- persistenceDAO.initialize(Seq(DocumentMock.index), "fake-version")
       _ <- Future.sequence(
-        initStoredDocuments.map(persistenceDAO.writeUpdate[DocumentMock])
+        initStoredDocuments.map(persistenceDAO.writeUpdate[DocumentMock](_))
       )
       _ <- Future.sequence(
         initSearchDocuments.map(searchDAO.updateMetadata[DocumentMock])
       )
-      numRestored <- serverService.recoverMetadata[DocumentMock]()
+      numRestored <- serverService.recoverMetadata(DocumentMock.index)
     } yield {
       numRestored should be(numDocs - initInSearch)
-      searchDAO.updateCalls should be(
-        initStoredDocuments.map((_, DocumentMock.index))
-      )
+      searchDAO.updateCalls.map {
+        _._1.as[DocumentMock](DocumentMock.index.decoder).fold(throw _, identity),
+      } should be(initStoredDocuments)
     }
   }
 

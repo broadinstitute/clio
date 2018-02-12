@@ -8,16 +8,17 @@ import akka.stream.scaladsl.Sink
 import io.circe.parser._
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
   DocumentMock,
-  Elastic4sAutoDerivation,
   ElasticsearchIndex
 }
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
 
 class PersistenceDAOSpec
     extends TestKitSuite("PersistenceDAOSpec")
-    with Elastic4sAutoDerivation {
+    with ModelAutoDerivation {
   behavior of "PersistenceDAO"
 
   implicit val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
@@ -56,7 +57,7 @@ class PersistenceDAOSpec
       Seq(document, document2).foreach { doc =>
         val expectedPath =
           dao.rootPath.resolve(
-            s"${index.currentPersistenceDir}/${doc.persistenceFilename}"
+            s"${index.currentPersistenceDir}/${ClioDocument.persistenceFilename(doc.upsertId)}"
           )
 
         Files.exists(expectedPath) should be(true)
@@ -111,23 +112,15 @@ class PersistenceDAOSpec
 
       for {
         _ <- initIndex(dao)
-        _ = docsByDay.foreach {
-          case (day, docs) =>
-            val dir = Files.createDirectories(
-              dao.rootPath.resolve(
-                s"${index.rootDir}/${day.format(ElasticsearchIndex.dateTimeFormatter)}"
-              )
-            )
-            docs.foreach { document =>
-              Files.write(
-                dir.resolve(document.persistenceFilename),
-                index.indexable.json(document).getBytes
-              )
-            }
+        _ <- Future.sequence {
+          docsByDay.flatMap {
+            case (day, docs) => docs.map(dao.writeUpdate(_, day))
+          }
         }
-        result <- dao.getAllSince[DocumentMock](lastKnown).runWith(Sink.seq)
+        result <- dao.getAllSince(lastKnown.map(_.upsertId)).runWith(Sink.seq)
       } yield {
-        result should contain theSameElementsInOrderAs documents.slice(
+        val decodedResults = result.map(_.as[DocumentMock].fold(throw _, identity))
+        decodedResults should contain theSameElementsInOrderAs documents.slice(
           lastKnown.fold(-1)(documents.indexOf) + 1,
           documents.size
         )
@@ -142,7 +135,7 @@ class PersistenceDAOSpec
     for {
       _ <- initIndex(dao)
       result <- recoverToSucceededIf[NoSuchElementException] {
-        dao.getAllSince[DocumentMock](Some(document)).runWith(Sink.seq)
+        dao.getAllSince(Some(document.upsertId)).runWith(Sink.seq)
       }
     } yield {
       result

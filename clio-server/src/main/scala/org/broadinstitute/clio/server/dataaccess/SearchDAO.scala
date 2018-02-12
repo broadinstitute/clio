@@ -3,6 +3,8 @@ package org.broadinstitute.clio.server.dataaccess
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
+import io.circe.Json
+import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
@@ -39,8 +41,12 @@ trait SearchDAO {
     * @param index    The index in which to update the document.
     * @tparam D The type of the document.
     */
-  def updateMetadata[D <: ClioDocument](document: D)(
+  final def updateMetadata[D <: ClioDocument](document: D)(
     implicit index: ElasticsearchIndex[D]
+  ): Future[Unit] = updateMetadata(document.asJson(index.encoder))
+
+  def updateMetadata(document: Json)(
+    implicit index: ElasticsearchIndex[_]
   ): Future[Unit]
 
   /**
@@ -60,10 +66,7 @@ trait SearchDAO {
     * Document ordering is determined by the "upsert ID", which must be an indexed field.
     *
     * @param index the elasticsearch index
-    * @tparam D the document type this index contains
     * @return the most recent document for this index, if any
     */
-  def getMostRecentDocument[D <: ClioDocument](
-    implicit index: ElasticsearchIndex[D]
-  ): Future[Option[D]]
+  def getMostRecentDocument(implicit index: ElasticsearchIndex[_]): Future[Option[Json]]
 }
