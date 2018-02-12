@@ -7,10 +7,7 @@ import cats.syntax.either._
 import enumeratum._
 import io.circe.generic.extras.{AutoDerivation, Configuration}
 import io.circe._
-import org.broadinstitute.clio.util.generic.CompanionCache
 import org.broadinstitute.clio.util.model.UpsertId
-
-import scala.reflect.ClassTag
 
 /**
   * Extends circe's _extra_ auto derivation with additional derivations needed for clio.
@@ -59,7 +56,7 @@ trait ModelAutoDerivation extends AutoDerivation {
   }
 
   implicit val decodeOffsetDateTime: Decoder[OffsetDateTime] = {
-    Decoder.decodeString.emap { string =>
+    Decoder.decodeString emap { string =>
       Either
         .catchNonFatal(OffsetDateTime.parse(string))
         .leftMap(ex => s"$string is not a valid OffsetDateTime: ${ex.getMessage}")
@@ -70,7 +67,7 @@ trait ModelAutoDerivation extends AutoDerivation {
     Encoder.encodeString.contramap(_.id)
 
   implicit val decodeUpsertId: Decoder[UpsertId] = {
-    Decoder.decodeString.emap { string =>
+    Decoder.decodeString emap { string =>
       Either.fromOption(
         UpsertId.fromString(string),
         s"$string is not a valid upsert ID"
@@ -81,30 +78,28 @@ trait ModelAutoDerivation extends AutoDerivation {
   /**
     * Provides an encoder for any class that extends EnumEntry.
     *
-    * Using java reflection it retrieves the EnumEntry's companion, and builds a circe encoder using the library
-    * enumeratum-circe. The encoder is then cached using the type T.
-    *
-    * @tparam T The type of the enum, with a context bound also specifying that an `implicit ctag: ClassTag[T]` exists.
-    *           https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
+    * @tparam T The specific type of the enum.
+    * @param enum The companion `Enum` which knows all possible values of `T`.
+    *             This should always be in scope for any given subtype of `EnumEntry`
+    *             thanks to this macro:
+    *             https://github.com/lloydmeta/enumeratum/blob/master/enumeratum-core/src/main/scala/enumeratum/Enum.scala#L173
     * @return The enum encoder.
     */
-  implicit def encodeEnum[T <: EnumEntry: ClassTag]: Encoder[T] = {
-    ModelAutoDerivation.enumEncoderCache.cached[T, Enum[T], Encoder[T]](Circe.encoder)
-  }
+  implicit def encodeEnum[T <: EnumEntry](implicit enum: Enum[T]): Encoder[T] =
+    Circe.encoder(enum)
 
   /**
     * Provides a decoder for any class that extends EnumEntry.
     *
-    * Using java reflection it retrieves the EnumEntry's companion, and builds a circe decoder using the library
-    * enumeratum-circe. The decoder is then cached using the type T.
-    *
-    * @tparam T The type of the enum, with a context bound also specifying that an `implicit ctag: ClassTag[T]` exists.
-    *           https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
+    * @tparam T The specific type of the enum.
+    * @param enum The companion `Enum` which knows all possible values of `T`.
+    *             This should always be in scope for any given subtype of `EnumEntry`
+    *             thanks to this macro:
+    *             https://github.com/lloydmeta/enumeratum/blob/master/enumeratum-core/src/main/scala/enumeratum/Enum.scala#L173
     * @return The enum decoder.
     */
-  implicit def decodeEnum[T <: EnumEntry: ClassTag]: Decoder[T] = {
-    ModelAutoDerivation.enumDecoderCache.cached[T, Enum[T], Decoder[T]](Circe.decoder)
-  }
+  implicit def decodeEnum[T <: EnumEntry](implicit enum: Enum[T]): Decoder[T] =
+    Circe.decoder(enum)
 
   implicit val encodeUri: Encoder[URI] =
     Encoder.encodeString.contramap(_.toString)
@@ -128,8 +123,4 @@ trait ModelAutoDerivation extends AutoDerivation {
   * Companion object so we can `import ModelAutoDerivation._` to get the implicits within when
   * that is more convenient than extending the trait.
   */
-object ModelAutoDerivation extends ModelAutoDerivation {
-  // Caches for enum encoders and decoders.
-  private val enumEncoderCache = new CompanionCache
-  private val enumDecoderCache = new CompanionCache
-}
+object ModelAutoDerivation extends ModelAutoDerivation
