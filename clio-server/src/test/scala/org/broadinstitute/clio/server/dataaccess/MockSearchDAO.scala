@@ -21,7 +21,7 @@ class MockSearchDAO extends SearchDAO {
 
   override def close(): Future[Unit] = Future.unit
 
-  override def updateMetadata(document: Json)(
+  override def updateMetadata(documents: Json*)(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = Future.unit
 

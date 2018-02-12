@@ -47,9 +47,9 @@ class HttpElasticsearchDAO private[dataaccess] (
     HttpClient.fromRestClient(restClient)
   }
 
-  override def updateMetadata(document: Json)(
+  override def updateMetadata(documents: Json*)(
     implicit index: ElasticsearchIndex[_]
-  ): Future[Unit] = bulkUpdate(updatePartialDocument(index, document))
+  ): Future[Unit] = bulkUpdate(documents.map(updatePartialDocument(index, _)))
 
   override def queryMetadata[D <: ClioDocument](queryDefinition: QueryDefinition)(
     implicit index: ElasticsearchIndex[D]
@@ -135,7 +135,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def bulkUpdate(
-    definitions: BulkCompatibleDefinition*
+    definitions: Seq[BulkCompatibleDefinition]
   ): Future[Unit] = {
     val bulkDefinition = bulk(definitions).refresh(RefreshPolicy.WAIT_UNTIL)
     httpClient.executeAndUnpack(bulkDefinition).map { response =>

@@ -105,9 +105,11 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
       numRestored <- serverService.recoverMetadata(DocumentMock.index)
     } yield {
       numRestored should be(numDocs - initInSearch)
-      searchDAO.updateCalls.map {
-        _._1.as[DocumentMock](DocumentMock.index.decoder).fold(throw _, identity),
-      } should be(initStoredDocuments)
+      searchDAO.updateCalls
+        .flatMap(_._1)
+        .map(_.as[DocumentMock](DocumentMock.index.decoder).fold(throw _, identity)) should be(
+        initStoredDocuments
+      )
     }
   }
 

@@ -64,9 +64,9 @@ class ServerService private (
 
       persistenceDAO
         .getAllSince(latestUpsert)
-        .runWith(Sink.foldAsync(0) { (count, json) =>
-          logger.debug(s"Recovering document with ID ${getUpsertId(json)}")
-          searchDAO.updateMetadata(json).map(_ => count + 1)
+        .conflateWithSeed(Vector(_))(_ :+ _)
+        .runWith(Sink.foldAsync(0) { (count, jsons) =>
+          searchDAO.updateMetadata(jsons: _*).map(_ => count + jsons.size)
         })
         .andThen {
           case Success(count) =>
