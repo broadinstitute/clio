@@ -101,6 +101,7 @@ class ClioDockerComposeContainer(
     seededDocuments.foreach {
       case (index, documents) =>
         val documentCount = documents.length
+
         documents.zipWithIndex.foreach {
           case (doc, i) => {
             val dateDir = index.persistenceDirForDatetime(

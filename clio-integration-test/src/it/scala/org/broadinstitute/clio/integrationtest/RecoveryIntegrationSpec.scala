@@ -24,62 +24,75 @@ import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1QueryOutp
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 
 import scala.concurrent.Future
-import scala.util.Random
 
 /** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
 class RecoveryIntegrationSpec
     extends DockerIntegrationSpec("Clio in recovery", "Recovering metadata") {
 
-  val documentCount = 50
+  val documentCount = 500
   val location = Location.GCP
 
-  val storedUbams = Seq.fill(documentCount) {
+  def randomUri(i: Int): URI = URI.create(s"gs://$i/$randomId")
+
+  val initUbams: Seq[DocumentWgsUbam] = Seq.tabulate(documentCount) { i =>
     val flowcellBarcode = s"flowcell$randomId"
-    val lane = Random.nextInt()
     val libraryName = s"library$randomId"
     DocumentWgsUbam(
       upsertId = UpsertId.nextId(),
-      entityId = Symbol(s"$flowcellBarcode.$lane.$libraryName.${location.entryName}"),
+      entityId = Symbol(s"$flowcellBarcode.$i.$libraryName.${location.entryName}"),
       flowcellBarcode = flowcellBarcode,
-      lane = lane,
+      lane = i,
       libraryName = libraryName,
       location = location,
-      ubamPath = Some(URI.create(s"gs://$randomId/$randomId/$randomId")),
+      ubamPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     )
   }
 
-  val storedGvcfs = Seq.fill(documentCount) {
+  val updatedUbams: Seq[DocumentWgsUbam] =
+    initUbams.map(
+      u => u.copy(upsertId = UpsertId.nextId(), ubamPath = Some(randomUri(u.lane)))
+    )
+
+  val initGvcfs: Seq[DocumentGvcf] = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
-    val version = Random.nextInt()
     DocumentGvcf(
       upsertId = UpsertId.nextId(),
-      entityId = Symbol(s"${location.entryName}.$project.$sampleAlias.$version"),
+      entityId = Symbol(s"${location.entryName}.$project.$sampleAlias.$i"),
       location = location,
       project = project,
       sampleAlias = sampleAlias,
-      version = version,
-      gvcfPath = Some(URI.create(s"gs://$randomId/$randomId/$randomId")),
+      version = i,
+      gvcfPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     )
   }
 
-  val storedWgsCrams = Seq.fill(documentCount) {
+  val updatedGvcfs: Seq[DocumentGvcf] =
+    initGvcfs.map(
+      g => g.copy(upsertId = UpsertId.nextId(), gvcfPath = Some(randomUri(g.version)))
+    )
+
+  val initCrams: Seq[DocumentWgsCram] = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
-    val version = Random.nextInt()
     DocumentWgsCram(
       upsertId = UpsertId.nextId(),
-      entityId = Symbol(s"${location.entryName}.$project.$sampleAlias.$version"),
+      entityId = Symbol(s"${location.entryName}.$project.$sampleAlias.$i"),
       location = location,
       project = project,
       sampleAlias = sampleAlias,
-      version = version,
-      cramPath = Some(URI.create(s"gs://$randomId/$randomId/$randomId")),
+      version = i,
+      cramPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     )
   }
+
+  val updatedCrams: Seq[DocumentWgsCram] =
+    initCrams.map(
+      c => c.copy(upsertId = UpsertId.nextId(), cramPath = Some(randomUri(c.version)))
+    )
 
   override val container = new ClioDockerComposeContainer(
     new File(getClass.getResource(DockerIntegrationSpec.composeFilename).toURI),
@@ -89,9 +102,9 @@ class RecoveryIntegrationSpec
       esFullName -> DockerIntegrationSpec.elasticsearchServicePort
     ),
     Map(
-      ElasticsearchIndex[DocumentWgsUbam] -> storedUbams,
-      ElasticsearchIndex[DocumentGvcf] -> storedGvcfs,
-      ElasticsearchIndex[DocumentWgsCram] -> storedWgsCrams
+      ElasticsearchIndex.WgsUbam -> (initUbams ++ updatedUbams),
+      ElasticsearchIndex.Gvcf -> (initGvcfs ++ updatedGvcfs),
+      ElasticsearchIndex.WgsCram -> (initCrams ++ updatedCrams)
     )
   )
 
@@ -156,10 +169,10 @@ class RecoveryIntegrationSpec
         location.entryName
       )
     } yield {
-      ubams should have length documentCount.toLong
-      ubams.map(_.ubamPath) should contain theSameElementsAs storedUbams.map(
-        _.ubamPath
-      )
+      val ubamUris = ubams.flatMap(_.ubamPath).sorted
+      ubamUris should contain theSameElementsInOrderAs updatedUbams
+        .flatMap(_.ubamPath)
+        .sorted
     }
   }
 
@@ -172,10 +185,10 @@ class RecoveryIntegrationSpec
         location.entryName
       )
     } yield {
-      gvcfs should have length documentCount.toLong
-      gvcfs.map(_.gvcfPath) should contain theSameElementsAs gvcfs.map(
-        _.gvcfPath
-      )
+      val gvcfUris = gvcfs.flatMap(_.gvcfPath).sorted
+      gvcfUris should contain theSameElementsInOrderAs updatedGvcfs
+        .flatMap(_.gvcfPath)
+        .sorted
     }
   }
 
@@ -188,10 +201,10 @@ class RecoveryIntegrationSpec
         location.entryName
       )
     } yield {
-      crams should have length documentCount.toLong
-      crams.map(_.cramPath) should contain theSameElementsAs crams.map(
-        _.cramPath
-      )
+      val cramUris = crams.flatMap(_.cramPath).sorted
+      cramUris should contain theSameElementsInOrderAs updatedCrams
+        .flatMap(_.cramPath)
+        .sorted
     }
   }
 }

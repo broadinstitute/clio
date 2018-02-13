@@ -102,14 +102,12 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
       _ <- Future.sequence(
         initSearchDocuments.map(searchDAO.updateMetadata[DocumentMock])
       )
-      numRestored <- serverService.recoverMetadata(DocumentMock.index)
+      _ <- serverService.recoverMetadata(DocumentMock.index)
     } yield {
-      numRestored should be(numDocs - initInSearch)
-      searchDAO.updateCalls
+      val upsertedDocs = searchDAO.updateCalls
         .flatMap(_._1)
-        .map(_.as[DocumentMock](DocumentMock.index.decoder).fold(throw _, identity)) should be(
-        initStoredDocuments
-      )
+        .map(_.as[DocumentMock](DocumentMock.index.decoder).fold(throw _, identity))
+      upsertedDocs should contain theSameElementsAs initStoredDocuments
     }
   }
 
