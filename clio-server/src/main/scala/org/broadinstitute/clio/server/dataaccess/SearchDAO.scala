@@ -45,7 +45,7 @@ trait SearchDAO {
     implicit index: ElasticsearchIndex[D]
   ): Future[Unit] = updateMetadata(document.asJson(index.encoder))
 
-  def updateMetadata(document: Json)(
+  def updateMetadata(documents: Json*)(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit]
 

@@ -100,7 +100,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
       status shouldEqual StatusCodes.OK
       memorySearchDAO.updateCalls should have length 1
       val firstUpdate = memorySearchDAO.updateCalls.headOption
-        .map(_._1)
+        .flatMap(_._1.headOption)
         .getOrElse {
           // Doing this .headOption.getOrElse dance because Codacy
           // scolds us for using .head
@@ -141,7 +141,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
       status shouldEqual StatusCodes.OK
       memorySearchDAO.updateCalls should have length 2
       val secondUpdate = memorySearchDAO.updateCalls
-        .map(_._1)
+        .flatMap(_._1.headOption)
         .apply(1)
         .as[DocumentWgsUbam]
         .fold(throw _, identity)

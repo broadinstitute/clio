@@ -43,7 +43,7 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       persistenceDAO.writeCalls should be(
         Seq((expectedDocument, expectedIndex))
       )
-      searchDAO.updateCalls should be(
+      searchDAO.updateCalls.flatMap { case (jsons, index) => jsons.map(_ -> index) } should be(
         Seq((expectedDocument.asJson(expectedIndex.encoder), expectedIndex))
       )
     }

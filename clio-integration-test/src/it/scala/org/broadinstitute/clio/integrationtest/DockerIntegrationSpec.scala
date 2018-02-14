@@ -72,7 +72,7 @@ abstract class DockerIntegrationSpec(
    */
   val clioLogLines: Source[String, NotUsed] = FileTailSource.lines(
     path = ClioDockerComposeContainer.clioLog,
-    maxLineSize = 8192,
+    maxLineSize = 1048576,
     pollingInterval = 250.millis
   )
 

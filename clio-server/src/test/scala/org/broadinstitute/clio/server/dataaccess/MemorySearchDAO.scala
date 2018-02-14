@@ -14,17 +14,17 @@ import scala.concurrent.Future
 
 class MemorySearchDAO extends MockSearchDAO {
 
-  val updateCalls: mutable.ArrayBuffer[(Json, ElasticsearchIndex[_])] =
+  val updateCalls: mutable.ArrayBuffer[(Seq[Json], ElasticsearchIndex[_])] =
     mutable.ArrayBuffer.empty
 
   val queryCalls: mutable.ArrayBuffer[QueryDefinition] =
     mutable.ArrayBuffer.empty
 
-  override def updateMetadata(document: Json)(
+  override def updateMetadata(documents: Json*)(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = {
-    updateCalls += ((document, index))
-    super.updateMetadata(document)
+    updateCalls += ((documents, index))
+    super.updateMetadata(documents: _*)
   }
 
   override def queryMetadata[D <: ClioDocument](queryDefinition: QueryDefinition)(
@@ -38,6 +38,6 @@ class MemorySearchDAO extends MockSearchDAO {
   override def getMostRecentDocument(
     implicit index: ElasticsearchIndex[_]
   ): Future[Option[Json]] = {
-    Future.successful(updateCalls.lastOption.map(_._1))
+    Future.successful(updateCalls.lastOption.flatMap(_._1.lastOption))
   }
 }
