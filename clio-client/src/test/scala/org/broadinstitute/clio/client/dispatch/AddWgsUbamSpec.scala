@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.AddWgsUbam
+import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.util.model.UpsertId
 
 class AddWgsUbamSpec extends BaseClientSpec {
@@ -42,9 +43,27 @@ class AddWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "return an UpsertId if the server response is OK" in {
-    dispatcher
+    val mockIoUtil = new MockIoUtil
+    succeedingDispatcher(mockIoUtil)
       .dispatch(goodAddCommand)
-      .map(_ shouldBe an[UpsertId])
+      .map { _ shouldBe an[UpsertId] }
   }
 
+  it should "fail to add a ubam that would overwrite an existing document" in {
+    recoverToSucceededIf[Exception] {
+      val mockIoUtil = new MockIoUtil
+      mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
+      succeedingDispatcher(mockIoUtil, testWgsUbamLocation)
+        .dispatch(goodAddCommand)
+        .map { _ shouldBe an[UpsertId] }
+    }
+  }
+
+  it should "succeed in overwriting an existing document if a force flag is set" in {
+    val mockIoUtil = new MockIoUtil
+    mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
+    succeedingDispatcher(mockIoUtil, testWgsChangedUbamLocation)
+      .dispatch(goodAddCommandForceUpdate)
+      .map { _ shouldBe an[UpsertId] }
+  }
 }

@@ -5,21 +5,25 @@ import org.broadinstitute.clio.client.commands.{AddCommand, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.util.ClassUtil
+import org.broadinstitute.clio.util.generic.{CaseClassMapper, CaseClassTypeConverter}
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
     extends Executor[UpsertId] {
+  import addCommand.index.implicits._
+
+  private[dispatch] val name: String = addCommand.index.name
+  private[dispatch] val prettyKey = ClassUtil.formatFields(addCommand.key)
+
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[UpsertId] = {
 
-    import addCommand.index.implicits._
-
     val location = addCommand.metadataLocation
     val commandName = addCommand.index.commandName
-    val name = addCommand.index.name
 
     val parsedOrError = parse(IoUtil.readMetadata(location)).left.map { err =>
       new RuntimeException(
@@ -42,8 +46,106 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
       Future
         .failed(_) logErrorMsg s"Metadata at $location cannot be added to Clio", {
         decoded =>
-          webClient.upsert(addCommand.index)(addCommand.key, decoded)
+          {
+            for {
+              existingMetadata <- queryForKey(webClient).logErrorMsg(
+                s"Could not query the $name. No files have been deleted."
+              )
+              upsertResponse <- addFiles(
+                webClient,
+                decoded,
+                existingMetadata,
+                addCommand.forceUpdate
+              ).fold(
+                left => Future.failed(left) logErrorMsg left.getMessage,
+                right => right
+              )
+            } yield {
+              upsertResponse
+            }
+          }
       }
     )
+  }
+
+  private def addFiles(
+    client: ClioWebClient,
+    newMetadata: addCommand.index.MetadataType,
+    existingMetadata: Option[addCommand.index.MetadataType],
+    forceUpdate: Boolean
+  )(implicit ec: ExecutionContext): Either[Throwable, Future[UpsertId]] = {
+    val map = existingMetadata.map(diffMetadata(_, newMetadata)).getOrElse(Map.empty)
+    for {
+      upsertResponse <- Either.cond(
+        map.isEmpty || forceUpdate,
+        client
+          .upsert(addCommand.index)(addCommand.key, newMetadata)
+          .logErrorMsg(
+            s"""An error occurred while adding the $name record in Clio.""".stripMargin
+          ),
+        new RuntimeException(
+          s"Adding this document that will overwrite the following existing metadata: " +
+            map.keys.mkString(", ") +
+            s" Use the '--force-update true' to overwrite this data."
+        )
+      )
+
+    } yield {
+      upsertResponse
+    }
+  }
+
+  private def diffMetadata(
+    existingMetadata: addCommand.index.MetadataType,
+    newMetadata: addCommand.index.MetadataType
+  ): Map[String, Any] = {
+    val storedFields =
+      new CaseClassMapper[addCommand.index.MetadataType].vals(existingMetadata)
+    val upsertFields =
+      new CaseClassMapper[addCommand.index.MetadataType].vals(newMetadata)
+
+    (upsertFields.toSet diff storedFields.toSet).toMap
+  }
+
+  private def queryForKey(
+    client: ClioWebClient
+  )(implicit ec: ExecutionContext): Future[Option[addCommand.index.MetadataType]] = {
+
+    val keyToQueryMapper = CaseClassTypeConverter[
+      addCommand.index.KeyType,
+      addCommand.index.QueryInputType
+    ](vals => vals.mapValues((v: Any) => Option(v)))
+
+    val keyFields = new CaseClassMapper[addCommand.index.KeyType].names
+    val outputToMetadataMapper = CaseClassTypeConverter[
+      addCommand.index.QueryOutputType,
+      addCommand.index.MetadataType
+    ](inKeys => inKeys -- keyFields)
+
+    val queryResponse = client
+      .query(addCommand.index)(
+        keyToQueryMapper.convert(addCommand.key),
+        includeDeleted = false
+      )
+      .logErrorMsg("There was an error contacting the Clio server.")
+
+    val queryOutputs = queryResponse
+      .map(
+        _.as[Seq[addCommand.index.QueryOutputType]]
+          .fold(throw _, identity)
+      )
+
+    queryOutputs.map { outputs =>
+      val commandName = addCommand.index.commandName
+
+      outputs.toList match {
+        case Nil           => None
+        case output :: Nil => Some(outputToMetadataMapper.convert(output))
+        case _ =>
+          throw new Exception(
+            s"${outputs.length} ${name}s were returned for $prettyKey, expected 1. Use ${ClioCommand.queryPrefix}$commandName to see what was returned."
+          )
+      }
+    }
   }
 }

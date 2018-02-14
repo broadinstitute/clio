@@ -37,6 +37,7 @@ sealed abstract class GetSchemaCommand[TI <: TransferIndex](val index: TI)
 sealed abstract class AddCommand[TI <: TransferIndex](val index: TI) extends ClioCommand {
   def key: index.KeyType
   def metadataLocation: URI
+  def forceUpdate: Boolean
 }
 
 sealed abstract class QueryCommand[TI <: TransferIndex](val index: TI)
@@ -72,8 +73,11 @@ case object GetServerVersion extends RetrieveAndPrintCommand
 case object GetSchemaWgsUbam extends GetSchemaCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.addWgsUbamName)
-final case class AddWgsUbam(@Recurse key: TransferUbamV1Key, metadataLocation: URI)
-    extends AddCommand(WgsUbamIndex)
+final case class AddWgsUbam(
+  @Recurse key: TransferUbamV1Key,
+  metadataLocation: URI,
+  forceUpdate: Boolean = false
+) extends AddCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.queryWgsUbamName)
 final case class QueryWgsUbam(
@@ -98,8 +102,11 @@ final case class DeleteWgsUbam(@Recurse key: TransferUbamV1Key, note: String)
 case object GetSchemaGvcf extends GetSchemaCommand(GvcfIndex)
 
 @CommandName(ClioCommand.addGvcfName)
-final case class AddGvcf(@Recurse key: TransferGvcfV1Key, metadataLocation: URI)
-    extends AddCommand(GvcfIndex)
+final case class AddGvcf(
+  @Recurse key: TransferGvcfV1Key,
+  metadataLocation: URI,
+  forceUpdate: Boolean = false
+) extends AddCommand(GvcfIndex)
 
 @CommandName(ClioCommand.queryGvcfName)
 final case class QueryGvcf(
@@ -124,8 +131,11 @@ final case class DeleteGvcf(@Recurse key: TransferGvcfV1Key, note: String)
 case object GetSchemaWgsCram extends GetSchemaCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.addWgsCramName)
-final case class AddWgsCram(@Recurse key: TransferWgsCramV1Key, metadataLocation: URI)
-    extends AddCommand(WgsCramIndex)
+final case class AddWgsCram(
+  @Recurse key: TransferWgsCramV1Key,
+  metadataLocation: URI,
+  forceUpdate: Boolean = false
+) extends AddCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.queryWgsCramName)
 final case class QueryWgsCram(
@@ -158,8 +168,11 @@ final case class DeliverWgsCram(
 case object GetSchemaHybselUbam extends GetSchemaCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.addHybselUbamName)
-final case class AddHybselUbam(@Recurse key: TransferUbamV1Key, metadataLocation: URI)
-    extends AddCommand(HybselUbamIndex)
+final case class AddHybselUbam(
+  @Recurse key: TransferUbamV1Key,
+  metadataLocation: URI,
+  forceUpdate: Boolean = false
+) extends AddCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.queryHybselUbamName)
 final case class QueryHybselUbam(

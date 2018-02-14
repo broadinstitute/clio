@@ -34,6 +34,10 @@ trait TestData {
     URI.create("clio-client/src/test/resources/testdata/testWgsUbam")
   )
 
+  val testWgsChangedUbamLocation = Some(
+    URI.create("clio-client/src/test/resources/testdata/testChangedWgsUbam")
+  )
+
   val testTwoWgsUbamsLocation = Some(
     URI.create("clio-client/src/test/resources/testdata/testWgsUbams")
   )
@@ -174,6 +178,13 @@ trait TestData {
   val goodAddCommand =
     AddWgsUbam(metadataLocation = metadataFileLocation, key = testTransferV1Key)
 
+  val goodAddCommandForceUpdate =
+    AddWgsUbam(
+      metadataLocation = metadataFileLocation,
+      key = testTransferV1Key,
+      forceUpdate = true
+    )
+
   val goodMoveCommand = MoveWgsUbam(
     key = testTransferV1Key,
     destination = testCloudDestinationDirectoryPath
@@ -187,6 +198,12 @@ trait TestData {
   val goodGvcfAddCommand = AddGvcf(
     metadataLocation = gvcfMetadataFileLocation,
     key = testGvcfTransferV1Key
+  )
+
+  val goodGvcfAddCommandForceUpdate = AddGvcf(
+    metadataLocation = gvcfMetadataFileLocation,
+    key = testGvcfTransferV1Key,
+    forceUpdate = true
   )
 
   val goodGvcfMoveCommand = MoveGvcf(
