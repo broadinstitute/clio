@@ -43,8 +43,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "return an UpsertId if the server response is OK" in {
-    val mockIoUtil = new MockIoUtil
-    succeedingDispatcher(mockIoUtil)
+    dispatcher
       .dispatch(goodAddCommand)
       .map(_ shouldBe an[UpsertId])
   }
