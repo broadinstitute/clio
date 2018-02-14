@@ -48,17 +48,20 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
         decoded =>
           {
             for {
-              existingMetadata <- queryForKey(webClient).logErrorMsg(
-                s"Could not query the $name. No files have been deleted."
-              )
+              existingMetadata <- if (!addCommand.forceUpdate) {
+                queryForKey(webClient).logErrorMsg(
+                  s"Could not query the $name. No files have been added."
+                )
+              } else {
+                Future.successful(None)
+              }
               upsertResponse <- addFiles(
                 webClient,
                 decoded,
-                existingMetadata,
-                addCommand.forceUpdate
+                existingMetadata
               ).fold(
-                left => Future.failed(left) logErrorMsg left.getMessage,
-                right => right
+                left => Future.failed(left).logErrorMsg(left.getMessage),
+                identity
               )
             } yield {
               upsertResponse
@@ -72,21 +75,26 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
     client: ClioWebClient,
     newMetadata: addCommand.index.MetadataType,
     existingMetadata: Option[addCommand.index.MetadataType],
-    forceUpdate: Boolean
   )(implicit ec: ExecutionContext): Either[Throwable, Future[UpsertId]] = {
-    val map = existingMetadata.map(diffMetadata(_, newMetadata)).getOrElse(Map.empty)
+    val differences = existingMetadata.fold(Iterable.empty[(String, Any, Any)]) {
+      diffMetadata(_, newMetadata)
+    }
     for {
       upsertResponse <- Either.cond(
-        map.isEmpty || forceUpdate,
+        differences.isEmpty,
         client
           .upsert(addCommand.index)(addCommand.key, newMetadata)
           .logErrorMsg(
-            s"""An error occurred while adding the $name record in Clio.""".stripMargin
+            s"An error occurred while adding the $name record in Clio."
           ),
         new RuntimeException(
-          s"Adding this document that will overwrite the following existing metadata: " +
-            map.keys.mkString(", ") +
-            s" Use the '--force-update true' to overwrite this data."
+          "Adding this document will overwrite the following existing metadata: " +
+            differences
+              .map(
+                diff => s"Field: ${diff._1} Old value: ${diff._3} New value: ${diff._2}"
+              )
+              .mkString("\n") +
+            " Use the '--force-update' to overwrite this data."
         )
       )
 
@@ -98,13 +106,17 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
   private def diffMetadata(
     existingMetadata: addCommand.index.MetadataType,
     newMetadata: addCommand.index.MetadataType
-  ): Map[String, Any] = {
+  ): Iterable[(String, Any, Any)] = {
     val storedFields =
       new CaseClassMapper[addCommand.index.MetadataType].vals(existingMetadata)
     val upsertFields =
       new CaseClassMapper[addCommand.index.MetadataType].vals(newMetadata)
 
-    (upsertFields.toSet diff storedFields.toSet).toMap
+    val newToOldDiff = upsertFields.toSet.diff(storedFields.toSet).toMap
+    val oldToNewDiff = storedFields.toSet.diff(upsertFields.toSet).toMap
+
+    for (key <- newToOldDiff.keys ++ oldToNewDiff.keys)
+      yield (key, newToOldDiff.getOrElse(key, None), oldToNewDiff.getOrElse(key, None))
   }
 
   private def queryForKey(

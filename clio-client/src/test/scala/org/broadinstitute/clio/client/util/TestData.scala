@@ -178,12 +178,7 @@ trait TestData {
   val goodAddCommand =
     AddWgsUbam(metadataLocation = metadataFileLocation, key = testTransferV1Key)
 
-  val goodAddCommandForceUpdate =
-    AddWgsUbam(
-      metadataLocation = metadataFileLocation,
-      key = testTransferV1Key,
-      forceUpdate = true
-    )
+  val goodAddCommandForceUpdate: AddWgsUbam = goodAddCommand.copy(forceUpdate = true)
 
   val goodMoveCommand = MoveWgsUbam(
     key = testTransferV1Key,
@@ -200,11 +195,7 @@ trait TestData {
     key = testGvcfTransferV1Key
   )
 
-  val goodGvcfAddCommandForceUpdate = AddGvcf(
-    metadataLocation = gvcfMetadataFileLocation,
-    key = testGvcfTransferV1Key,
-    forceUpdate = true
-  )
+  val goodGvcfAddCommandForceUpdate: AddGvcf = goodGvcfAddCommand.copy(forceUpdate = true)
 
   val goodGvcfMoveCommand = MoveGvcf(
     key = testGvcfTransferV1Key,

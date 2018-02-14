@@ -51,10 +51,8 @@ class AddWgsUbamSpec extends BaseClientSpec {
   it should "fail to add a ubam that would overwrite an existing document" in {
     recoverToSucceededIf[Exception] {
       val mockIoUtil = new MockIoUtil
-      mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
       succeedingDispatcher(mockIoUtil, testWgsUbamLocation)
         .dispatch(goodAddCommand)
-        .map(_ shouldBe an[UpsertId])
     }
   }
 

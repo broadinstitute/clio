@@ -42,7 +42,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       "--version",
       key.version.toString,
       "--metadata-location",
-      tmpMetadata.toString
+      tmpMetadata.toString,
+      "--force-update"
     ).mapTo[UpsertId]
   }
 

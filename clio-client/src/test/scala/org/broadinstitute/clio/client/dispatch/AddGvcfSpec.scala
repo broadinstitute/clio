@@ -54,7 +54,6 @@ class AddGvcfSpec extends BaseClientSpec {
 
       succeedingDispatcher(mockIoUtil, testGvcfLocation)
         .dispatch(goodGvcfAddCommand)
-        .map(_ shouldBe an[UpsertId])
     }
   }
 

@@ -49,7 +49,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
       "--location",
       key.location.entryName,
       "--metadata-location",
-      tmpMetadata.toString
+      tmpMetadata.toString,
+      "--force-update"
     ).mapTo[UpsertId]
   }
 
