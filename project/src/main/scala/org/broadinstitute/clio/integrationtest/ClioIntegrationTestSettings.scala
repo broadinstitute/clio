@@ -40,19 +40,19 @@ object ClioIntegrationTestSettings extends BuildInfoKeys {
   private val TestcontainersPropsFile = "testcontainers.properties"
 
   /** Organization, name, and version for the "ambassador" image used by Testcontainers. */
-  private val AmbassadorImageId = "richnorth/ambassador:latest"
+  private val AmbassadorImageId = "alpine/socat:latest"
 
   /** Java property used to override the default ambassador image in Testcontainers. */
-  private val AmbassadorImageProp = "ambassador.container.image"
+  private val AmbassadorImageProp = "socat.container.image"
 
   /**
     * The output of `docker images` changed between version 1.X and version 17.X.
     *
     * In 1.X, images are prefixed with the repository name they came from, i.e.:
-    *   docker.io/richnorth/ambassador:latest
+    *   docker.io/alpine/socat:latest
     *
     * In 17.X, the prefix is gone:
-    *   richnorth/ambassador:latest
+    *   alpine/socat:latest
     *
     * Testcontainers-java can only handle the latter by default, but it exposes a
     * way to override its built-in image names via properties file. We override the
