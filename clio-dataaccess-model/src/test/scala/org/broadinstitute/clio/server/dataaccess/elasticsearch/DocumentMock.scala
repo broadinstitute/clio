@@ -6,6 +6,8 @@ import java.time.OffsetDateTime
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
+import scala.util.Random
+
 case class DocumentMock(
   upsertId: UpsertId,
   entityId: Symbol,
@@ -24,17 +26,21 @@ case class DocumentMock(
 
 object DocumentMock extends ModelAutoDerivation {
 
-  def default: DocumentMock = DocumentMock(
-    upsertId = UpsertId.nextId(),
-    entityId = Symbol("1234.the-string"),
-    mockKeyLong = 1234L,
-    mockKeyString = "the-string",
-    mockFileMd5 = Some(Symbol("12345abcdefg")),
-    mockFilePath = Some(URI.create("gs://the-bucket/the-path.file")),
-    mockStringArray = Some(Seq.empty),
-    mockPathArray = Some(Seq.empty),
-    mockDocumentStatus = Some(DocumentStatus.Normal)
-  )
+  def default: DocumentMock = {
+    val long = Random.nextLong()
+    val string = Random.nextString(10)
+    DocumentMock(
+      upsertId = UpsertId.nextId(),
+      entityId = Symbol(s"$long.$string"),
+      mockKeyLong = long,
+      mockKeyString = string,
+      mockFileMd5 = Some(Symbol("12345abcdefg")),
+      mockFilePath = Some(URI.create("gs://the-bucket/the-path.file")),
+      mockStringArray = Some(Seq.empty),
+      mockPathArray = Some(Seq.empty),
+      mockDocumentStatus = Some(DocumentStatus.Normal)
+    )
+  }
 
   implicit val index: ElasticsearchIndex[DocumentMock] =
     new ElasticsearchIndex[DocumentMock](

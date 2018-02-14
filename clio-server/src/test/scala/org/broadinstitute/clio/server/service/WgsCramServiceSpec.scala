@@ -100,7 +100,7 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
 
       memoryPersistenceDAO.writeCalls should be(Seq((expectedDocument, index)))
       memorySearchDAO.updateCalls should be(
-        Seq((expectedDocument.asJson(index.encoder), index))
+        Seq((Seq(expectedDocument.asJson(index.encoder)), index))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

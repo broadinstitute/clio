@@ -18,7 +18,6 @@ import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Success
 
 class ServerService private (
   serverStatusDAO: ServerStatusDAO,
@@ -55,25 +54,45 @@ class ServerService private (
     */
   private[service] def recoverMetadata(
     implicit index: ElasticsearchIndex[_]
-  ): Future[Int] = {
+  ): Future[Unit] = {
+    val name = index.indexName
+
     searchDAO.getMostRecentDocument.flatMap { mostRecent =>
-      val msg = s"Recovering all upserts from index ${index.indexName}"
+      val msg = s"Recovering all upserts from index $name"
       val latestUpsert = mostRecent.map(getUpsertId)
 
       logger.info(latestUpsert.fold(msg)(id => s"$msg since ${id.id}"))
 
       persistenceDAO
         .getAllSince(latestUpsert)
-        .runWith(Sink.foldAsync(0) { (count, json) =>
-          logger.debug(s"Recovering document with ID ${getUpsertId(json)}")
-          searchDAO.updateMetadata(json).map(_ => count + 1)
-        })
-        .andThen {
-          case Success(count) =>
-            logger.info(s"Recovered $count upserts for index ${index.indexName}")
+        .batch(ServerService.RecoveryMaxBulkSize, json => Map(getEntityId(json) -> json)) {
+          (idMap, json) =>
+            val id = getEntityId(json)
+            val newJson = idMap.get(id) match {
+              case Some(oldJson) => {
+                logger.debug(
+                  s"Merging upserts ${getUpsertId(oldJson)} and ${getUpsertId(json)} for id $id"
+                )
+                oldJson.deepMerge(json)
+              }
+              case None => json
+            }
+            idMap.updated(id, newJson)
         }
+        .runWith(Sink.foldAsync(()) { (_, jsonMap) =>
+          val jsons = jsonMap.valuesIterator.toVector
+          searchDAO.updateMetadata(jsons: _*).map { _ =>
+            logger.debug(s"Sent ${jsons.size} upserts to Elasticsearch for index $name")
+          }
+        })
+        .map(_ => logger.info(s"Done recovering upserts for index $name"))
     }
   }
+
+  private def getEntityId(json: Json): String =
+    json.hcursor
+      .get[String](ClioDocument.EntityIdElasticSearchName)
+      .fold(throw _, identity)
 
   private def getUpsertId(json: Json): UpsertId =
     json.hcursor
@@ -136,6 +155,12 @@ class ServerService private (
 }
 
 object ServerService {
+
+  /**
+    * Maximum number of updates that should be sent in a single bulk request
+    * to Elasticsearch during document recovery.
+    */
+  val RecoveryMaxBulkSize: Long = 1000L
 
   def apply(
     app: ClioApp

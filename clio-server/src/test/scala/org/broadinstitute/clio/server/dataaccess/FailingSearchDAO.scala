@@ -28,7 +28,7 @@ class FailingSearchDAO extends SearchDAO {
     implicit index: ElasticsearchIndex[D]
   ): Source[D, NotUsed] = Source.failed(ex)
 
-  override def updateMetadata(document: Json)(
+  override def updateMetadata(documents: Json*)(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = failure
 

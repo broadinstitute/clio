@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess
 
 import java.nio.ByteBuffer
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, StandardOpenOption}
 import java.time.OffsetDateTime
 
 import akka.NotUsed
@@ -91,7 +91,9 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
 
     val written = Files.write(
       writePath.resolve(ClioDocument.persistenceFilename(document.upsertId)),
-      jsonString.getBytes
+      jsonString.getBytes,
+      StandardOpenOption.CREATE_NEW,
+      StandardOpenOption.WRITE
     )
     logger.debug(s"Wrote document $document to ${written.toUri}")
   }
