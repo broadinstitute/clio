@@ -112,7 +112,8 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
           // scolds us for using .head
           fail("Impossible because of the above check")
         }
-        .asInstanceOf[DocumentGvcf]
+        .as[DocumentGvcf]
+        .fold(throw _, identity)
 
       firstUpdate.upsertId should be(responseAs[UpsertId])
       firstUpdate.gvcfMd5 should be(Some('abcgithashdef))
@@ -150,7 +151,9 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
       val secondUpdate = memorySearchDAO.updateCalls
         .map(_._1)
         .apply(1)
-        .asInstanceOf[DocumentGvcf]
+        .as[DocumentGvcf]
+        .fold(throw _, identity)
+
       secondUpdate.gvcfMd5 should be(Some('abcgithashdef))
       secondUpdate.notes should be(Some("some note"))
       secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))

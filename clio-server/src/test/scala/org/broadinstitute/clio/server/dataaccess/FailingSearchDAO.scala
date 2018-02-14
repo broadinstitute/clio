@@ -3,6 +3,7 @@ package org.broadinstitute.clio.server.dataaccess
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
+import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
@@ -27,11 +28,11 @@ class FailingSearchDAO extends SearchDAO {
     implicit index: ElasticsearchIndex[D]
   ): Source[D, NotUsed] = Source.failed(ex)
 
-  override def updateMetadata[D <: ClioDocument](document: D)(
-    implicit index: ElasticsearchIndex[D]
+  override def updateMetadata(document: Json)(
+    implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = failure
 
-  override def getMostRecentDocument[D <: ClioDocument](
-    implicit index: ElasticsearchIndex[D]
-  ): Future[Option[D]] = failure
+  override def getMostRecentDocument(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Option[Json]] = failure
 }

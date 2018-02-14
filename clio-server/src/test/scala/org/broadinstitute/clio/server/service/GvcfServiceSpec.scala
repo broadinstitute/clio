@@ -3,10 +3,8 @@ package org.broadinstitute.clio.server.service
 import java.net.URI
 
 import akka.stream.scaladsl.Sink
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentGvcf,
-  ElasticsearchIndex
-}
+import io.circe.syntax._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.transfer.model.gvcf.{
@@ -65,6 +63,8 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
     documentStatus: Option[DocumentStatus],
     expectedDocumentStatus: Option[DocumentStatus]
   ) = {
+    val index = ElasticsearchIndex.Gvcf
+
     val memoryPersistenceDAO = new MemoryPersistenceDAO()
     val memorySearchDAO = new MemorySearchDAO()
     val app = MockClioApp(
@@ -98,11 +98,9 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
         )
         .copy(upsertId = returnedUpsertId)
 
-      memoryPersistenceDAO.writeCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex[DocumentGvcf]))
-      )
+      memoryPersistenceDAO.writeCalls should be(Seq((expectedDocument, index)))
       memorySearchDAO.updateCalls should be(
-        Seq((expectedDocument, ElasticsearchIndex[DocumentGvcf]))
+        Seq((expectedDocument.asJson(index.encoder), index))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

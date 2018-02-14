@@ -278,10 +278,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   ): Document = {
     val expectedPath = rootPersistenceDir
       .resolve(index.currentPersistenceDir)
-      .resolve(new ClioDocument {
-        override val entityId: Symbol = Symbol("")
-        override val upsertId: UpsertId = expectedId
-      }.persistenceFilename)
+      .resolve(ClioDocument.persistenceFilename(expectedId))
 
     Files.exists(expectedPath) should be(true)
     val document = parse(new String(Files.readAllBytes(expectedPath)))

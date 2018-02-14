@@ -1,20 +1,24 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import java.nio.ByteBuffer
 import java.nio.file.{Files, Path}
+import java.time.OffsetDateTime
 
 import akka.NotUsed
 import akka.stream.Materializer
 import akka.stream.alpakka.file.scaladsl.Directory
 import akka.stream.scaladsl.{Sink, Source}
 import com.typesafe.scalalogging.LazyLogging
-import io.circe.Decoder
-import io.circe.parser._
-import org.broadinstitute.clio.server.ClioServerConfig
+import io.circe.Json
+import io.circe.jawn.JawnParser
+import io.circe.syntax._
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -22,7 +26,9 @@ import scala.concurrent.{ExecutionContext, Future}
   * Persists metadata updates to a source of truth, allowing
   * for playback during disaster recovery.
   */
-trait PersistenceDAO extends LazyLogging {
+abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
+
+  def this() = this(recoveryParallelism = 1)
 
   import PersistenceDAO.{StorageWalkDepth, VersionFileName}
 
@@ -37,14 +43,13 @@ trait PersistenceDAO extends LazyLogging {
   /**
     * Initialize the root storage directories for Clio documents.
     */
-  def initialize(
-    indexes: Seq[ElasticsearchIndex[_]]
-  )(implicit ec: ExecutionContext): Future[Unit] = Future {
+  def initialize(indexes: Seq[ElasticsearchIndex[_]], version: String)(
+    implicit ec: ExecutionContext
+  ): Future[Unit] = Future {
     // Make sure the rootPath can actually be used.
     val versionPath = rootPath.resolve(VersionFileName)
     try {
-      val versionFile =
-        Files.write(versionPath, ClioServerConfig.Version.value.getBytes)
+      val versionFile = Files.write(versionPath, version.getBytes)
       logger.debug(s"Wrote current Clio version to ${versionFile.toUri}")
     } catch {
       case e: Exception => {
@@ -71,19 +76,25 @@ trait PersistenceDAO extends LazyLogging {
     * @param index    Typeclass providing information on where to persist the
     *                 metadata update.
     */
-  def writeUpdate[D <: ClioDocument](document: D)(
+  def writeUpdate[D <: ClioDocument](
+    document: D,
+    dt: OffsetDateTime = OffsetDateTime.now()
+  )(
     implicit ec: ExecutionContext,
     index: ElasticsearchIndex[D]
-  ): Future[Unit] =
-    Future {
-      val writePath =
-        Files.createDirectories(rootPath.resolve(index.currentPersistenceDir))
-      val written = Files.write(
-        writePath.resolve(s"${document.persistenceFilename}"),
-        index.indexable.json(document).getBytes
-      )
-      logger.debug(s"Wrote document $document to ${written.toUri}")
-    }
+  ): Future[Unit] = Future {
+    val jsonString =
+      ModelAutoDerivation.defaultPrinter.pretty(document.asJson(index.encoder))
+
+    val writePath =
+      Files.createDirectories(rootPath.resolve(index.persistenceDirForDatetime(dt)))
+
+    val written = Files.write(
+      writePath.resolve(ClioDocument.persistenceFilename(document.upsertId)),
+      jsonString.getBytes
+    )
+    logger.debug(s"Wrote document $document to ${written.toUri}")
+  }
 
   /**
     * Build a stream of all the paths to Clio upserts persisted under `rootDir`
@@ -124,7 +135,7 @@ trait PersistenceDAO extends LazyLogging {
        * We use `mapAsync` then `mapConcat`, instead of just `flatMapConcat`,
        * so we can sort the intermediate Seq result of the ls.
        */
-      .mapAsync(1)(Directory.ls(_).runWith(Sink.seq))
+      .mapAsync(recoveryParallelism)(Directory.ls(_).runWith(Sink.seq))
       .mapConcat(_.sorted(ordering))
   }
 
@@ -139,13 +150,12 @@ trait PersistenceDAO extends LazyLogging {
     * @param lastToIgnore the last (most recent) path in storage
     *                     that should be dropped instead of read
     *                     and converted into a document
-    * @tparam D is the type of `ClioDocument` expected under `rootDir`
     * @return the `ClioDocument` at `withId` and all later ones
     */
-  private def getAllAfter[D <: ClioDocument: Decoder](
-    rootDir: Path,
-    lastToIgnore: Option[Path]
-  )(implicit ec: ExecutionContext, materializer: Materializer): Source[D, NotUsed] = {
+  private def getAllAfter(rootDir: Path, lastToIgnore: Option[Path])(
+    implicit ec: ExecutionContext,
+    materializer: Materializer
+  ): Source[Json, NotUsed] = {
 
     val dayFilter = lastToIgnore.fold((_: Path) => true) { last =>
       val dayDirectoryOfLastUpsert = last.getParent.toString
@@ -162,6 +172,7 @@ trait PersistenceDAO extends LazyLogging {
       _.toString <= pathOfLastUpsert
     }
 
+    val parser = new JawnParser
     /*
      * `dropWhile` instead of `filterNot` because `getPathsOrderedBy` returns the paths sorted
      * from earliest to latest, so we can stop testing paths after finding the first one more
@@ -169,9 +180,21 @@ trait PersistenceDAO extends LazyLogging {
      */
     getPathsOrderedBy(rootDir, pathOrdering, dayFilter)
       .dropWhile(docIsNotLaterThanLastUpsert)
-      .map { p =>
-        decode[D](new String(Files.readAllBytes(p))).fold(throw _, identity)
-      }
+      .mapAsync(recoveryParallelism)(p => Future(Files.readAllBytes(p)))
+      /*
+       * By default, when an Akka stream is materialized all of its stages are "fused" into
+       * a sequential pipeline, and only one stage is executed at a time. `.async` splits the
+       * stream into two pieces which will run concurrently.
+       *
+       * In this stream, the use of `.async` means that as soon as the downstream decoding stage
+       * pulls a ByteString from a file-to-recover, the above file-reading stage will immediately
+       * pull for the next path to read. Without `.async`, the file-reading stage wouldn't try to
+       * pull the next path until after all of its downstream stages finish executing.
+       *
+       * For more info see: https://doc.akka.io/docs/akka/current/stream/stream-parallelism.html#pipelining
+       */
+      .async
+      .map(b => parser.parseByteBuffer(ByteBuffer.wrap(b)).fold(throw _, identity))
   }
 
   /**
@@ -179,24 +202,23 @@ trait PersistenceDAO extends LazyLogging {
     * after `document`.  Decode the files from JSON as `ClioDocument`s
     * sorted by `upsertId`.
     *
-    * @param mostRecentDocument the last known upserted document, `None`
-    *                           if all documents should be restored
+    * @param mostRecentUpsert the ID of the last known upserted document,
+    *                         `None` if all documents should be restored
     * @param index  to query against
-    * @tparam D is a ClioDocument type with a JSON Decoder
     * @return a Future Seq of ClioDocument
     */
-  def getAllSince[D <: ClioDocument: Decoder](mostRecentDocument: Option[ClioDocument])(
+  def getAllSince(mostRecentUpsert: Option[UpsertId])(
     implicit ec: ExecutionContext,
     materializer: Materializer,
-    index: ElasticsearchIndex[D]
-  ): Source[D, NotUsed] = {
+    index: ElasticsearchIndex[_]
+  ): Source[Json, NotUsed] = {
     val rootDir = rootPath.resolve(index.rootDir)
 
-    mostRecentDocument.fold(
+    mostRecentUpsert.fold(
       // If Elasticsearch contained no documents, load every JSON file in storage.
       getAllAfter(rootDir, None)
-    ) { document =>
-      val filename = document.persistenceFilename
+    ) { upsert =>
+      val filename = ClioDocument.persistenceFilename(upsert)
 
       /*
        * Pull the stream until we find the path corresponding to the last
@@ -211,13 +233,13 @@ trait PersistenceDAO extends LazyLogging {
         .fold[Option[Path]](None)((_, p) => Some(p))
         .flatMapConcat { maybePathToLast =>
           maybePathToLast.fold(
-            Source.failed[D](
+            Source.failed[Json](
               new NoSuchElementException(
-                s"No document found in storage for ID ${document.upsertId}"
+                s"No document found in storage for ID ${upsert.id}"
               )
             )
           ) { pathToLast =>
-            logger.info(s"Found record for upsert ${document.upsertId} at $pathToLast")
+            logger.info(s"Found record for upsert ${upsert.id} at $pathToLast")
             getAllAfter(rootDir, Some(pathToLast))
           }
         }
@@ -248,13 +270,9 @@ object PersistenceDAO {
     */
   val StorageWalkDepth = 3
 
-  def apply(config: Persistence.PersistenceConfig): PersistenceDAO =
+  def apply(config: Persistence.PersistenceConfig, parallelism: Int): PersistenceDAO =
     config match {
-      case l: Persistence.LocalConfig => {
-        new LocalFilePersistenceDAO(l)
-      }
-      case g: Persistence.GcsConfig => {
-        new GcsPersistenceDAO(g)
-      }
+      case l: Persistence.LocalConfig => new LocalFilePersistenceDAO(l, parallelism)
+      case g: Persistence.GcsConfig   => new GcsPersistenceDAO(g, parallelism)
     }
 }

@@ -106,7 +106,8 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
           // scolds us for using .head
           fail("Impossible because of the above check")
         }
-        .asInstanceOf[DocumentWgsUbam]
+        .as[DocumentWgsUbam]
+        .fold(throw _, identity)
 
       firstUpdate.upsertId should be(responseAs[UpsertId])
       firstUpdate.project should be(Some("G123"))
@@ -142,7 +143,9 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
       val secondUpdate = memorySearchDAO.updateCalls
         .map(_._1)
         .apply(1)
-        .asInstanceOf[DocumentWgsUbam]
+        .as[DocumentWgsUbam]
+        .fold(throw _, identity)
+
       secondUpdate.project should be(Some("G123"))
       secondUpdate.sampleAlias should be(Some("sample1"))
       secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))

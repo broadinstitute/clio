@@ -3,7 +3,7 @@ package org.broadinstitute.clio.server.dataaccess
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
-import com.sksamuel.elastic4s.{HitReader, Indexable, RefreshPolicy}
+import com.sksamuel.elastic4s.RefreshPolicy
 import com.sksamuel.elastic4s.bulk.BulkCompatibleDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
@@ -12,10 +12,12 @@ import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.typesafe.scalalogging.StrictLogging
+import io.circe.Json
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.elasticsearch.client.RestClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -28,6 +30,7 @@ class HttpElasticsearchDAO private[dataaccess] (
     with StrictLogging {
 
   import ElasticsearchUtil.HttpClientOps
+  import com.sksamuel.elastic4s.circe._
 
   implicit val ec: ExecutionContext = system.dispatcher
 
@@ -44,17 +47,13 @@ class HttpElasticsearchDAO private[dataaccess] (
     HttpClient.fromRestClient(restClient)
   }
 
-  override def updateMetadata[D <: ClioDocument](document: D)(
-    implicit index: ElasticsearchIndex[D]
-  ): Future[Unit] = {
-    bulkUpdate(updatePartialDocument(index, document))
-  }
+  override def updateMetadata(document: Json)(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Unit] = bulkUpdate(updatePartialDocument(index, document))
 
   override def queryMetadata[D <: ClioDocument](queryDefinition: QueryDefinition)(
     implicit index: ElasticsearchIndex[D]
   ): Source[D, NotUsed] = {
-    implicit val hitReader: HitReader[D] = index.hitReader
-
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
       .size(HttpElasticsearchDAO.DocumentScrollSize)
@@ -62,18 +61,20 @@ class HttpElasticsearchDAO private[dataaccess] (
       .query(queryDefinition)
 
     val responsePublisher = httpClient.publisher(searchDefinition)
-    Source.fromPublisher(responsePublisher).map(_.to[D])
+    Source
+      .fromPublisher(responsePublisher)
+      .map(_.to[Json].as[D](index.decoder).fold(throw _, identity))
   }
 
-  override def getMostRecentDocument[D <: ClioDocument](
-    implicit index: ElasticsearchIndex[D]
-  ): Future[Option[D]] = {
-    implicit val hitReader: HitReader[D] = index.hitReader
-
+  override def getMostRecentDocument(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Option[Json]] = {
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .size(1)
       .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
-    httpClient.executeAndUnpack(searchDefinition).map(_.to[D].headOption)
+    httpClient
+      .executeAndUnpack(searchDefinition)
+      .map(_.to[Json].headOption)
   }
 
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {
@@ -149,14 +150,17 @@ class HttpElasticsearchDAO private[dataaccess] (
     }
   }
 
-  private[dataaccess] def updatePartialDocument[D <: ClioDocument](
-    index: ElasticsearchIndex[D],
-    document: D
+  private[dataaccess] def updatePartialDocument(
+    index: ElasticsearchIndex[_],
+    document: Json
   ): BulkCompatibleDefinition = {
-    implicit val indexable: Indexable[D] = index.indexable
-    update(document.entityId.name)
+    val id = document.hcursor
+      .get[String](ClioDocument.EntityIdElasticSearchName)
+      .fold(throw _, identity)
+
+    update(id)
       .in(index.indexName / index.indexType)
-      .docAsUpsert(document)
+      .docAsUpsert(document.pretty(ModelAutoDerivation.defaultPrinter))
   }
 }
 

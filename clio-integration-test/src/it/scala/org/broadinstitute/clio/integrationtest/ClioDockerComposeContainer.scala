@@ -7,12 +7,14 @@ import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.Uri
 import com.dimafeng.testcontainers.DockerComposeContainer
-import com.sksamuel.elastic4s.Indexable
+import io.circe.Encoder
+import io.circe.syntax._
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.junit.runner.Description
 import org.testcontainers.utility.Base58
 
@@ -101,20 +103,18 @@ class ClioDockerComposeContainer(
         val documentCount = documents.length
         documents.zipWithIndex.foreach {
           case (doc, i) => {
-            val dateDir = earliest
-              .plusDays(i.toLong / (documentCount.toLong / daySpread))
-              .format(ElasticsearchIndex.dateTimeFormatter)
-
-            val writeDir = Files.createDirectories(
-              rootPersistenceDir.resolve(s"${index.rootDir}$dateDir/")
+            val dateDir = index.persistenceDirForDatetime(
+              earliest.plusDays(i.toLong / (documentCount.toLong / daySpread))
             )
 
+            val writeDir =
+              Files.createDirectories(rootPersistenceDir.resolve(s"$dateDir/"))
+
+            val json = doc.asJson(index.encoder.asInstanceOf[Encoder[ClioDocument]])
+
             val _ = Files.write(
-              writeDir.resolve(s"${doc.persistenceFilename}"),
-              index.indexable
-                .asInstanceOf[Indexable[ClioDocument]]
-                .json(doc)
-                .getBytes
+              writeDir.resolve(ClioDocument.persistenceFilename(doc.upsertId)),
+              ModelAutoDerivation.defaultPrinter.pretty(json).getBytes
             )
           }
         }

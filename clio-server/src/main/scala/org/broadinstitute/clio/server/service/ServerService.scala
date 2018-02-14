@@ -3,8 +3,8 @@ package org.broadinstitute.clio.server.service
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Decoder
-import org.broadinstitute.clio.server.ClioApp
+import io.circe.Json
+import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.dataaccess.{
   HttpServerDAO,
@@ -14,6 +14,7 @@ import org.broadinstitute.clio.server.dataaccess.{
 }
 import org.broadinstitute.clio.status.model.ClioStatus
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -23,7 +24,8 @@ class ServerService private (
   serverStatusDAO: ServerStatusDAO,
   httpServerDAO: HttpServerDAO,
   persistenceDAO: PersistenceDAO,
-  searchDAO: SearchDAO
+  searchDAO: SearchDAO,
+  version: String
 )(implicit executionContext: ExecutionContext, mat: Materializer)
     extends ModelAutoDerivation
     with StrictLogging {
@@ -51,18 +53,20 @@ class ServerService private (
     *
     * Returns the number of updates pulled & applied on success.
     */
-  private[service] def recoverMetadata[
-    D <: ClioDocument: Decoder
-  ]()(implicit index: ElasticsearchIndex[D]): Future[Int] = {
+  private[service] def recoverMetadata(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Int] = {
     searchDAO.getMostRecentDocument.flatMap { mostRecent =>
       val msg = s"Recovering all upserts from index ${index.indexName}"
-      logger.info(mostRecent.fold(msg)(d => s"$msg since ${d.upsertId}"))
+      val latestUpsert = mostRecent.map(getUpsertId)
+
+      logger.info(latestUpsert.fold(msg)(id => s"$msg since ${id.id}"))
 
       persistenceDAO
-        .getAllSince[D](mostRecent)
-        .runWith(Sink.foldAsync(0) { (count, doc) =>
-          logger.debug(s"Recovering document with ID ${doc.upsertId}")
-          searchDAO.updateMetadata(doc).map(_ => count + 1)
+        .getAllSince(latestUpsert)
+        .runWith(Sink.foldAsync(0) { (count, json) =>
+          logger.debug(s"Recovering document with ID ${getUpsertId(json)}")
+          searchDAO.updateMetadata(json).map(_ => count + 1)
         })
         .andThen {
           case Success(count) =>
@@ -70,6 +74,11 @@ class ServerService private (
         }
     }
   }
+
+  private def getUpsertId(json: Json): UpsertId =
+    json.hcursor
+      .get[UpsertId](ClioDocument.UpsertIdElasticSearchName)
+      .fold(throw _, identity)
 
   /**
     * Block until shutdown, within some finite limit.
@@ -103,18 +112,12 @@ class ServerService private (
 
     for {
       _ <- serverStatusDAO.setStatus(ClioStatus.Starting)
-      _ <- persistenceDAO.initialize(indexes)
+      _ <- persistenceDAO.initialize(indexes, version)
       _ <- searchDAO.initialize(indexes)
       _ <- httpServerDAO.startup()
       _ <- serverStatusDAO.setStatus(ClioStatus.Recovering)
       _ = logger.info("Recovering metadata from storage...")
-      _ <- Future.sequence(
-        Seq(
-          recoverMetadata[DocumentWgsUbam](),
-          recoverMetadata[DocumentGvcf](),
-          recoverMetadata[DocumentWgsCram]()
-        )
-      )
+      _ <- Future.sequence(indexes.map(recoverMetadata(_)))
       _ <- httpServerDAO.enableApi()
       _ <- serverStatusDAO.setStatus(ClioStatus.Started)
       _ = logger.info("Server started")
@@ -141,7 +144,8 @@ object ServerService {
       app.serverStatusDAO,
       app.httpServerDAO,
       app.persistenceDAO,
-      app.searchDAO
+      app.searchDAO,
+      ClioServerConfig.Version.value
     )
   }
 }
