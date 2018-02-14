@@ -46,7 +46,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     succeedingDispatcher(mockIoUtil)
       .dispatch(goodAddCommand)
-      .map { _ shouldBe an[UpsertId] }
+      .map(_ shouldBe an[UpsertId])
   }
 
   it should "fail to add a ubam that would overwrite an existing document" in {
@@ -55,7 +55,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
       mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
       succeedingDispatcher(mockIoUtil, testWgsUbamLocation)
         .dispatch(goodAddCommand)
-        .map { _ shouldBe an[UpsertId] }
+        .map(_ shouldBe an[UpsertId])
     }
   }
 
@@ -64,6 +64,6 @@ class AddWgsUbamSpec extends BaseClientSpec {
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     succeedingDispatcher(mockIoUtil, testWgsChangedUbamLocation)
       .dispatch(goodAddCommandForceUpdate)
-      .map { _ shouldBe an[UpsertId] }
+      .map(_ shouldBe an[UpsertId])
   }
 }

@@ -45,7 +45,7 @@ class AddGvcfSpec extends BaseClientSpec {
   it should "return an UpsertId if the server response is OK" in {
     dispatcher
       .dispatch(goodGvcfAddCommand)
-      .map { _ shouldBe an[UpsertId] }
+      .map(_ shouldBe an[UpsertId])
   }
 
   it should "fail to add a gvcf that would overwrite an existing document" in {
@@ -54,7 +54,7 @@ class AddGvcfSpec extends BaseClientSpec {
 
       succeedingDispatcher(mockIoUtil, testGvcfLocation)
         .dispatch(goodGvcfAddCommand)
-        .map { _ shouldBe an[UpsertId] }
+        .map(_ shouldBe an[UpsertId])
     }
   }
 
@@ -63,6 +63,6 @@ class AddGvcfSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     succeedingDispatcher(mockIoUtil, testGvcfLocation)
       .dispatch(goodGvcfAddCommandForceUpdate)
-      .map { _ shouldBe an[UpsertId] }
+      .map(_ shouldBe an[UpsertId])
   }
 }
