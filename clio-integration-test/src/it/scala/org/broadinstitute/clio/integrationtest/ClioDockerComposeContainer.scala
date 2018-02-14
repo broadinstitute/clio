@@ -94,44 +94,46 @@ class ClioDockerComposeContainer(
       val _ = Files.createDirectories(dir)
     }
 
-    /*
-     * Simulate spreading pre-seeded documents over time.
-     *
-     * NOTE: The spread calculation is meant to work around a problem with case-sensitivity
-     * when running this test on OS X. Our `UpsertId`s are case-sensitive, but HFS / APFS are
-     * case-insensitive by default. This can cause naming collisions when generating a ton of
-     * IDs at once (like in these tests). By spreading documents into bins of 26, we try to
-     * avoid the possibility of two IDs differing only in the case of the last byte being dropped
-     * into the same day-directory.
-     */
-    val daySpread = (seededDocuments.map(_._2.size).max / 26).toLong
-    val today: OffsetDateTime = OffsetDateTime.now()
-    val earliest: OffsetDateTime = today.minusDays(daySpread)
+    if (seededDocuments.nonEmpty) {
+      /*
+       * Simulate spreading pre-seeded documents over time.
+       *
+       * NOTE: The spread calculation is meant to work around a problem with case-sensitivity
+       * when running this test on OS X. Our `UpsertId`s are case-sensitive, but HFS / APFS are
+       * case-insensitive by default. This can cause naming collisions when generating a ton of
+       * IDs at once (like in these tests). By spreading documents into bins of 26, we try to
+       * avoid the possibility of two IDs differing only in the case of the last byte being dropped
+       * into the same day-directory.
+       */
+      val daySpread = (seededDocuments.map(_._2.size).max / 26).toLong
+      val today: OffsetDateTime = OffsetDateTime.now()
+      val earliest: OffsetDateTime = today.minusDays(daySpread)
 
-    seededDocuments.foreach {
-      case (index, documents) =>
-        val documentCount = documents.length
+      seededDocuments.foreach {
+        case (index, documents) =>
+          val documentCount = documents.length
 
-        documents.zipWithIndex.foreach {
-          case (json, i) => {
-            val dateDir = index.persistenceDirForDatetime(
-              earliest.plusDays(i.toLong / (documentCount.toLong / daySpread))
-            )
+          documents.zipWithIndex.foreach {
+            case (json, i) => {
+              val dateDir = index.persistenceDirForDatetime(
+                earliest.plusDays(i.toLong / (documentCount.toLong / daySpread))
+              )
 
-            val writeDir =
-              Files.createDirectories(rootPersistenceDir.resolve(s"$dateDir/"))
-            val upsertId = json.hcursor
-              .get[UpsertId](ClioDocument.UpsertIdElasticSearchName)
-              .fold(throw _, identity)
+              val writeDir =
+                Files.createDirectories(rootPersistenceDir.resolve(s"$dateDir/"))
+              val upsertId = json.hcursor
+                .get[UpsertId](ClioDocument.UpsertIdElasticSearchName)
+                .fold(throw _, identity)
 
-            val _ = Files.write(
-              writeDir.resolve(ClioDocument.persistenceFilename(upsertId)),
-              defaultPrinter.pretty(json).getBytes,
-              StandardOpenOption.CREATE_NEW,
-              StandardOpenOption.WRITE
-            )
+              val _ = Files.write(
+                writeDir.resolve(ClioDocument.persistenceFilename(upsertId)),
+                defaultPrinter.pretty(json).getBytes,
+                StandardOpenOption.CREATE_NEW,
+                StandardOpenOption.WRITE
+              )
+            }
           }
-        }
+      }
     }
 
     val logPaths = ClioDockerComposeContainer.clioLog +: esLogs
