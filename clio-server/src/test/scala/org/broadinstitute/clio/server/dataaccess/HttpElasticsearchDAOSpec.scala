@@ -12,6 +12,7 @@ import com.sksamuel.elastic4s.indexes.CreateIndexDefinition
 import com.sksamuel.elastic4s.searches.SearchDefinition
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.RequestException
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 import org.scalatest._
 
@@ -22,7 +23,8 @@ class HttpElasticsearchDAOSpec
     with AsyncFlatSpecLike
     with Matchers
     with EitherValues
-    with Elastic4sAutoDerivation {
+    with ModelAutoDerivation
+    with OptionValues {
   import com.sksamuel.elastic4s.circe._
   import ElasticsearchUtil.HttpClientOps
 
@@ -136,7 +138,7 @@ class HttpElasticsearchDAOSpec
         documents.map(httpElasticsearchDAO.updateMetadata(_)(index))
       )
       document <- httpElasticsearchDAO.getMostRecentDocument(index)
-    } yield document should be(documents.lastOption)
+    } yield document.value.as[Document].right.value should be(documents.last)
   }
 
   it should "not throw an exception if no documents exist" in {

@@ -10,6 +10,7 @@ clio.server {
     project-id: broad-gotc-{{env "ENV"}}-storage
     bucket: broad-gotc-{{env "ENV"}}-clio
     service-account-json: {{env "CLIO_CONF_DIR"}}/{{env "CLIO_SERVICE_ACCOUNT_JSON"}}
+    recovery-parallelism: 8
   }
 
   elasticsearch.http-hosts: [

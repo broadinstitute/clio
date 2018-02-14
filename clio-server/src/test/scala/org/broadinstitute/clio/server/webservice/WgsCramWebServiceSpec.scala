@@ -112,7 +112,8 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
           // scolds us for using .head
           fail("Impossible because of the above check")
         }
-        .asInstanceOf[DocumentWgsCram]
+        .as[DocumentWgsCram]
+        .fold(throw _, identity)
 
       firstUpdate.upsertId should be(responseAs[UpsertId])
       firstUpdate.cramMd5 should be(Some('abcgithashdef))
@@ -150,7 +151,9 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
       val secondUpdate = memorySearchDAO.updateCalls
         .map(_._1)
         .apply(1)
-        .asInstanceOf[DocumentWgsCram]
+        .as[DocumentWgsCram]
+        .fold(throw _, identity)
+
       secondUpdate.cramMd5 should be(Some('abcgithashdef))
       secondUpdate.notes should be(Some("some note"))
       secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))
