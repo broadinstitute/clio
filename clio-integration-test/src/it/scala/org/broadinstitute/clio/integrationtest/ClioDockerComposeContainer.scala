@@ -2,19 +2,19 @@ package org.broadinstitute.clio.integrationtest
 
 import java.io.File
 import java.nio.file.attribute.PosixFilePermissions
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path, Paths, StandardOpenOption}
 import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.Uri
 import com.dimafeng.testcontainers.DockerComposeContainer
-import io.circe.Encoder
-import io.circe.syntax._
+import io.circe.Json
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.UpsertId
 import org.junit.runner.Description
 import org.testcontainers.utility.Base58
 
@@ -29,12 +29,13 @@ class ClioDockerComposeContainer(
   composeFile: File,
   elasticsearchHostname: String,
   exposedServices: Map[String, Int],
-  seededDocuments: Map[ElasticsearchIndex[_], Seq[ClioDocument]] = Map.empty
+  seededDocuments: Map[ElasticsearchIndex[_], Seq[Json]] = Map.empty
 ) extends DockerComposeContainer(
       Seq(composeFile),
       exposedServices,
       Base58.randomString(6).toLowerCase()
-    ) {
+    )
+    with ModelAutoDerivation {
 
   /** Log files to mount into the Elasticsearch containers. */
   private val esLogs = for {
@@ -93,8 +94,17 @@ class ClioDockerComposeContainer(
       val _ = Files.createDirectories(dir)
     }
 
-    // Simulate spreading pre-seeded documents over time.
-    val daySpread = 10L
+    /*
+     * Simulate spreading pre-seeded documents over time.
+     *
+     * NOTE: The spread calculation is meant to work around a problem with case-sensitivity
+     * when running this test on OS X. Our `UpsertId`s are case-sensitive, but HFS / APFS are
+     * case-insensitive by default. This can cause naming collisions when generating a ton of
+     * IDs at once (like in these tests). By spreading documents into bins of 26, we try to
+     * avoid the possibility of two IDs differing only in the case of the last byte being dropped
+     * into the same day-directory.
+     */
+    val daySpread = (seededDocuments.map(_._2.size).max / 26).toLong
     val today: OffsetDateTime = OffsetDateTime.now()
     val earliest: OffsetDateTime = today.minusDays(daySpread)
 
@@ -103,19 +113,22 @@ class ClioDockerComposeContainer(
         val documentCount = documents.length
 
         documents.zipWithIndex.foreach {
-          case (doc, i) => {
+          case (json, i) => {
             val dateDir = index.persistenceDirForDatetime(
               earliest.plusDays(i.toLong / (documentCount.toLong / daySpread))
             )
 
             val writeDir =
               Files.createDirectories(rootPersistenceDir.resolve(s"$dateDir/"))
-
-            val json = doc.asJson(index.encoder.asInstanceOf[Encoder[ClioDocument]])
+            val upsertId = json.hcursor
+              .get[UpsertId](ClioDocument.UpsertIdElasticSearchName)
+              .fold(throw _, identity)
 
             val _ = Files.write(
-              writeDir.resolve(ClioDocument.persistenceFilename(doc.upsertId)),
-              ModelAutoDerivation.defaultPrinter.pretty(json).getBytes
+              writeDir.resolve(ClioDocument.persistenceFilename(upsertId)),
+              defaultPrinter.pretty(json).getBytes,
+              StandardOpenOption.CREATE_NEW,
+              StandardOpenOption.WRITE
             )
           }
         }

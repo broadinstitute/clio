@@ -160,7 +160,7 @@ object ServerService {
     * Maximum number of updates that should be sent in a single bulk request
     * to Elasticsearch during document recovery.
     */
-  val RecoveryMaxBulkSize: Long = 100L
+  val RecoveryMaxBulkSize: Long = 1000L
 
   def apply(
     app: ClioApp

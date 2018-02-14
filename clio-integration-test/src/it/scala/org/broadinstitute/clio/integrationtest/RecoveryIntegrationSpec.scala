@@ -3,38 +3,38 @@ package org.broadinstitute.clio.integrationtest
 import java.io.File
 import java.net.URI
 
-import akka.Done
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.Sink
+import io.circe.Json
+import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentGvcf,
-  DocumentWgsCram,
-  DocumentWgsUbam,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo}
-import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
-import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Metadata,
-  TransferUbamV1QueryOutput
-}
-import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1QueryOutput
+import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1Metadata
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
-
-import scala.concurrent.Future
+import org.scalatest.OptionValues
 
 /** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
 class RecoveryIntegrationSpec
-    extends DockerIntegrationSpec("Clio in recovery", "Recovering metadata") {
+    extends DockerIntegrationSpec("Clio in recovery", "Recovering metadata")
+    with OptionValues {
 
-  val documentCount = 500
-  val location = Location.GCP
+  private val documentCount = 10000
+  private val location = Location.GCP
 
-  def randomUri(i: Int): URI = URI.create(s"gs://$i/$randomId")
+  private def randomUri(i: Int): URI = URI.create(s"gs://the-bucket/$i/$randomId")
 
-  val initUbams: Seq[DocumentWgsUbam] = Seq.tabulate(documentCount) { i =>
+  private def updateDoc(json: Json, pathFieldName: String): Json = {
+    val oldUri = json.hcursor.get[String](pathFieldName).fold(throw _, identity)
+    val updates = Seq(
+      ClioDocument.UpsertIdElasticSearchName -> Json.fromString(UpsertId.nextId().id),
+      pathFieldName -> Json.fromString(s"$oldUri/$randomId")
+    )
+    json.deepMerge(Json.fromFields(updates))
+  }
+
+  private val initUbams = Seq.tabulate(documentCount) { i =>
     val flowcellBarcode = s"flowcell$randomId"
     val libraryName = s"library$randomId"
     DocumentWgsUbam(
@@ -46,15 +46,12 @@ class RecoveryIntegrationSpec
       location = location,
       ubamPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
-    )
+    ).asJson(ElasticsearchIndex.WgsUbam.encoder)
   }
 
-  val updatedUbams: Seq[DocumentWgsUbam] =
-    initUbams.map(
-      u => u.copy(upsertId = UpsertId.nextId(), ubamPath = Some(randomUri(u.lane)))
-    )
+  private val updatedUbams = initUbams.map(updateDoc(_, "ubam_path"))
 
-  val initGvcfs: Seq[DocumentGvcf] = Seq.tabulate(documentCount) { i =>
+  private val initGvcfs = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
     DocumentGvcf(
@@ -66,15 +63,12 @@ class RecoveryIntegrationSpec
       version = i,
       gvcfPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
-    )
+    ).asJson(ElasticsearchIndex.Gvcf.encoder)
   }
 
-  val updatedGvcfs: Seq[DocumentGvcf] =
-    initGvcfs.map(
-      g => g.copy(upsertId = UpsertId.nextId(), gvcfPath = Some(randomUri(g.version)))
-    )
+  private val updatedGvcfs = initGvcfs.map(updateDoc(_, "gvcf_path"))
 
-  val initCrams: Seq[DocumentWgsCram] = Seq.tabulate(documentCount) { i =>
+  private val initCrams = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
     DocumentWgsCram(
@@ -86,13 +80,10 @@ class RecoveryIntegrationSpec
       version = i,
       cramPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
-    )
+    ).asJson(ElasticsearchIndex.WgsCram.encoder)
   }
 
-  val updatedCrams: Seq[DocumentWgsCram] =
-    initCrams.map(
-      c => c.copy(upsertId = UpsertId.nextId(), cramPath = Some(randomUri(c.version)))
-    )
+  private val updatedCrams = initCrams.map(updateDoc(_, "cram_path"))
 
   override val container = new ClioDockerComposeContainer(
     new File(getClass.getResource(DockerIntegrationSpec.composeFilename).toURI),
@@ -108,7 +99,7 @@ class RecoveryIntegrationSpec
     )
   )
 
-  lazy val recoveryDoneFuture: Future[Done] = clioLogLines
+  private lazy val recoveryDoneFuture = clioLogLines
     .takeWhile(!_.contains(DockerIntegrationSpec.clioReadyMessage))
     .runWith(Sink.ignore)
 
@@ -160,51 +151,52 @@ class RecoveryIntegrationSpec
     }
   }
 
-  it should "recover wgs-ubam metadata on startup" in {
-    for {
-      _ <- recoveryDoneFuture
-      ubams <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
-        ClioCommand.queryWgsUbamName,
-        "--location",
-        location.entryName
-      )
-    } yield {
-      val ubamUris = ubams.flatMap(_.ubamPath).sorted
-      ubamUris should contain theSameElementsInOrderAs updatedUbams
-        .flatMap(_.ubamPath)
-        .sorted
-    }
+  private val keysToDrop =
+    Set(ClioDocument.UpsertIdElasticSearchName, ClioDocument.EntityIdElasticSearchName)
+
+  Seq(
+    ("wgs-ubam", ClioCommand.queryWgsUbamName, "lane", updatedUbams),
+    ("gvcf", ClioCommand.queryGvcfName, "version", updatedGvcfs),
+    ("wgs-cram", ClioCommand.queryWgsCramName, "version", updatedCrams)
+  ).foreach {
+    case (name, cmd, sortField, expected) =>
+      it should behave like checkRecovery(name, cmd, sortField, expected)
   }
 
-  it should "recover gvcf metadata on startup" in {
-    for {
-      _ <- recoveryDoneFuture
-      gvcfs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
-        ClioCommand.queryGvcfName,
-        "--location",
-        location.entryName
-      )
-    } yield {
-      val gvcfUris = gvcfs.flatMap(_.gvcfPath).sorted
-      gvcfUris should contain theSameElementsInOrderAs updatedGvcfs
-        .flatMap(_.gvcfPath)
-        .sorted
-    }
-  }
+  def checkRecovery(
+    indexName: String,
+    queryCommand: String,
+    sortField: String,
+    expected: Seq[Json]
+  ): Unit = {
+    implicit val jsonOrdering: Ordering[Json] =
+      (x, y) => {
+        val maybeRes = for {
+          xVal <- x.hcursor.get[Int](sortField)
+          yVal <- y.hcursor.get[Int](sortField)
+        } yield {
+          xVal - yVal
+        }
 
-  it should "recover wgs-cram metadata on startup" in {
-    for {
-      _ <- recoveryDoneFuture
-      crams <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
-        ClioCommand.queryWgsCramName,
-        "--location",
-        location.entryName
-      )
-    } yield {
-      val cramUris = crams.flatMap(_.cramPath).sorted
-      cramUris should contain theSameElementsInOrderAs updatedCrams
-        .flatMap(_.cramPath)
-        .sorted
+        maybeRes.fold(throw _, identity)
+      }
+
+    it should s"recover $indexName metdata on startup" in {
+      for {
+        _ <- recoveryDoneFuture
+        docs <- runClient(queryCommand, "--location", location.entryName).mapTo[Json]
+      } yield {
+        // Sort before comparing so we can do a pairwise comparison, which saves a ton of time.
+        val sortedActual = docs.asArray.value.sorted
+
+        // Remove null & internal values before comparing; already sorted by construction.
+        val sortedExpected = expected
+          .map(_.mapObject(_.filter {
+            case (k, v) => !v.isNull && !keysToDrop.contains(k)
+          }))
+
+        sortedActual should contain theSameElementsInOrderAs sortedExpected
+      }
     }
   }
 }
