@@ -11,7 +11,6 @@ info:
     url: "https://opensource.org/licenses/BSD-3-Clause"
 
 host: "localhost:8080"
-basePath: "/api/v1"
 tags:
   - name: "wgsubam"
     description: "Whole genome unmapped bam endpoints"
@@ -26,27 +25,34 @@ security:
       - "profile"
 
 paths:
-  /readgroup/metadata:
-    post:
+  /version:
+    get:
       tags:
-         - "wgsubam"
-      summary: "Posts whole genome unmapped bam metadata."
-      operationId: "wgsUbamMetadata"
-      consumes:
-        - "application/json"
+        - "status"
+      summary: "Gets the currently deployed version."
+      operationId: "version"
       produces:
         - "application/json"
       responses:
         '200':
           description: "Successful Request"
-  /wgsubam/schema:
+  /health:
     get:
       tags:
-        - "wgsubam"
-      summary: "Gets the json schema for whole genome unmapped bams"
-      operationId: "wgsUbamSchema"
+        - "status"
+      summary: "Gets the health status of Clio."
+      operationId: "health"
       produces:
         - "application/json"
+      responses:
+        '200':
+          description: "Successful Request"
+  /api/v1/wgsubam/metadata/{flowcellBarcode}/{lane}/{libraryName}/{location}:
+    post:
+      tags:
+         - "wgsubam"
+      summary: "Posts whole genome unmapped bam metadata."
+      operationId: "wgsUbamMetadata"
       parameters:
         - in: "body"
           name: "body"
@@ -54,18 +60,83 @@ paths:
           required: true
           schema:
             $ref: '#/definitions/TransferWgsUbamV1Metadata'
+        - in: "path"
+          name: "flowcellBarcode"
+          description: "Flowcell Barcode"
+          required: true
+          type: "string"
+        - in: "path"
+          name: "lane"
+          description: "Lane"
+          required: true
+          type: "string"
+        - in: "path"
+          name: "libraryName"
+          description: "Library Name"
+          required: true
+          type: "string"
+        - in: "path"
+          name: "location"
+          description: "Location"
+          required: true
+          type: "string"
+          enum:
+            - "GCP"
+            - "OnPrem"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      responses:
+        '200':
+          description: "Successful Request"
+  /api/v1/wgsubam/schema:
+    get:
+      tags:
+        - "wgsubam"
+      summary: "Gets the json schema for whole genome unmapped bams"
+      operationId: "wgsUbamSchema"
+      produces:
+        - "application/json"
       responses:
         '200':
           description: "Successful Request"
       security:
         - googleoauth:
           - "openid"
-  /wgsubam/query:
+  /api/v1/wgsubam/query:
     post:
       tags:
         - "wgsubam"
       summary: "Query for a whole genome unmapped bam"
       operationId: "wgsUbamQuery"
+      consumes:
+        - "application/json"
+      produces:
+        - "application/json"
+      parameters:
+        - in: "body"
+          name: "body"
+          description: "Whole genome unmapped bam query to search for"
+          required: true
+          schema:
+            $ref: '#/definitions/TransferWgsUbamV1QueryInput'
+      responses:
+        '200':
+          description: "Successful Request"
+          schema:
+            $ref: '#/definitions/TransferWgsUbamV1QueryResponse'
+        '405':
+          description: "Invalid input"
+      security:
+        - googleoauth:
+            - "openid"
+  /api/v1/wgsubam/queryall:
+    post:
+      tags:
+        - "wgsubam"
+      summary: "Query for all whole genome unmapped bam (including Deleted)"
+      operationId: "wgsUbamQueryAll"
       consumes:
         - "application/json"
       produces:
@@ -155,6 +226,12 @@ definitions:
       sample_alias:
         type: "string"
         description: "Sample alias"
+      document_status:
+        type: "string"
+        description: "Document status"
+        enum:
+            - "Normal"
+            - "Deleted"
 
   TransferWgsUbamV1QueryResponse:
     description: "Response to a whole genome unmapped bam query"
@@ -279,6 +356,12 @@ definitions:
         type: "integer"
         format: "int64"
         description: "Unmapped bam size"
+      document_status:
+        type: "string"
+        description: "Document status"
+        enum:
+            - "Normal"
+            - "Deleted"
 
   TransferWgsUbamV1Metadata:
     type: "object"
@@ -381,3 +464,9 @@ definitions:
         type: "integer"
         format: "int64"
         description: "Unmapped bam size"
+      document_status:
+        type: "string"
+        description: "Document status"
+        enum:
+            - "Normal"
+            - "Deleted"
