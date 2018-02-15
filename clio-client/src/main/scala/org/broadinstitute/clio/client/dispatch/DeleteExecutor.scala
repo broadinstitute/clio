@@ -1,20 +1,17 @@
 package org.broadinstitute.clio.client.dispatch
 
 import org.broadinstitute.clio.client.ClioClientConfig
-import org.broadinstitute.clio.client.commands.{ClioCommand, DeleteCommand}
+import org.broadinstitute.clio.client.commands.DeleteCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.ClassUtil
-import org.broadinstitute.clio.util.generic.{CaseClassMapper, CaseClassTypeConverter}
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
     extends Executor[UpsertId] {
-
-  import deleteCommand.index.implicits._
 
   private val prettyKey = ClassUtil.formatFields(deleteCommand.key)
   val name: String = deleteCommand.index.name
@@ -28,57 +25,19 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
       )
     } else {
       for {
-        existingMetadata <- queryForKey(webClient)
-          .logErrorMsg(
-            s"Could not query the $name. No files have been deleted."
-          )
+        existingMetadata <- webClient
+          .getMetadataForKey(deleteCommand.index)(deleteCommand.key)
+          .map {
+            _.getOrElse(
+              throw new RuntimeException(
+                s"No ${name} found in Clio for $prettyKey, nothing to delete."
+              )
+            )
+          }
         _ <- Future(checkPathConsistency(ioUtil, existingMetadata))
         upsertResponse <- deleteFiles(webClient, ioUtil, existingMetadata)
       } yield {
         upsertResponse
-      }
-    }
-  }
-
-  private def queryForKey(
-    client: ClioWebClient
-  )(implicit ec: ExecutionContext): Future[deleteCommand.index.MetadataType] = {
-    val keyToQueryMapper = CaseClassTypeConverter[
-      deleteCommand.index.KeyType,
-      deleteCommand.index.QueryInputType
-    ](vals => vals.mapValues((v: Any) => Option(v)))
-
-    val keyFields = new CaseClassMapper[deleteCommand.index.KeyType].names
-    val outputToMetadataMapper = CaseClassTypeConverter[
-      deleteCommand.index.QueryOutputType,
-      deleteCommand.index.MetadataType
-    ](inKeys => inKeys -- keyFields)
-
-    val queryResponse = client
-      .query(deleteCommand.index)(
-        keyToQueryMapper.convert(deleteCommand.key),
-        includeDeleted = false
-      )
-      .logErrorMsg(s"There was a problem querying the Clio server for ${name}s")
-
-    val queryOutputs = queryResponse
-      .map(
-        _.as[Seq[deleteCommand.index.QueryOutputType]].fold(throw _, identity)
-      )
-
-    queryOutputs.map { outputs =>
-      val commandName = deleteCommand.index.commandName
-
-      outputs.toList match {
-        case Nil =>
-          throw new Exception(
-            s"No ${name}s were found for $prettyKey, nothing to delete."
-          )
-        case output :: Nil => outputToMetadataMapper.convert(output)
-        case _ =>
-          throw new Exception(
-            s"${outputs.length} ${name}s were returned for $prettyKey, expected 1. Use ${ClioCommand.queryPrefix}$commandName to see what was returned."
-          )
       }
     }
   }

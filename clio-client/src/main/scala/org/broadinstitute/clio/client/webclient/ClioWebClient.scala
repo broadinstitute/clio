@@ -12,6 +12,8 @@ import io.circe.{Json, Printer}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.util.FutureWithErrorMessage
 import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.ClassUtil
+import org.broadinstitute.clio.util.generic.{CaseClassMapper, CaseClassTypeConverter}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -229,6 +231,42 @@ class ClioWebClient(
         entity = entity
       )
     ).flatMap(unmarshal[Json])
+  }
+
+  def getMetadataForKey[TI <: TransferIndex](transferIndex: TI)(
+    input: transferIndex.KeyType
+  ): Future[Option[transferIndex.type#MetadataType]] = {
+    import transferIndex.implicits._
+
+    val keyFields = new CaseClassMapper[transferIndex.KeyType].names
+
+    val keyToQueryMapper = CaseClassTypeConverter[
+      transferIndex.KeyType,
+      transferIndex.QueryInputType
+    ](_.mapValues(Option.apply[Any]))
+
+    val outputToMetadataMapper =
+      CaseClassTypeConverter[
+        transferIndex.QueryOutputType,
+        transferIndex.MetadataType
+      ](_ -- keyFields)
+
+    query(transferIndex)(keyToQueryMapper.convert(input), includeDeleted = false)
+      .map(_.as[Seq[Json]].fold(throw _, identity).toList)
+      .map {
+        case Nil => None
+        case js :: Nil => {
+          val output = js.as[transferIndex.QueryOutputType].fold(throw _, identity)
+          Some(outputToMetadataMapper.convert(output))
+        }
+        case many => {
+          val prettyKey = ClassUtil.formatFields(input)
+          throw new IllegalStateException(
+            s"""Got > 1 ${transferIndex.name}s from Clio for $prettyKey:
+               |${many.asJson.pretty(Printer.spaces2)}""".stripMargin
+          )
+        }
+      }
   }
 
   private def unmarshal[A: FromEntityUnmarshaller: TypeTag](

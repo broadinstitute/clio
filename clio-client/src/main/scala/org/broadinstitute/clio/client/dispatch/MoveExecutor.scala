@@ -3,12 +3,12 @@ package org.broadinstitute.clio.client.dispatch
 import java.net.URI
 
 import org.broadinstitute.clio.client.ClioClientConfig
-import org.broadinstitute.clio.client.commands.{ClioCommand, MoveCommand}
+import org.broadinstitute.clio.client.commands.MoveCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.ClassUtil
-import org.broadinstitute.clio.util.generic.{CaseClassMapper, CaseClassTypeConverter}
+import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,8 +27,15 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
   ): Future[Option[UpsertId]] = {
     for {
       _ <- Future(verifyCloudPaths(ioUtil))
-      existingMetadata <- queryForKey(webClient)
-        .logErrorMsg(s"Could not query the $name. No files have been moved.")
+      existingMetadata <- webClient
+        .getMetadataForKey(moveCommand.index)(moveCommand.key)
+        .map {
+          _.getOrElse(
+            throw new RuntimeException(
+              s"No $name found in Clio for $prettyKey, nothing to move."
+            )
+          )
+        }
       upsertResponse <- moveFiles(webClient, ioUtil, existingMetadata)
     } yield {
       upsertResponse
@@ -46,48 +53,6 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
       throw new IllegalArgumentException(
         s"The destination of the $name must be a cloud path ending with '/'."
       )
-    }
-  }
-
-  private def queryForKey(
-    client: ClioWebClient
-  )(implicit ec: ExecutionContext): Future[moveCommand.index.MetadataType] = {
-
-    val keyToQueryMapper = CaseClassTypeConverter[
-      moveCommand.index.KeyType,
-      moveCommand.index.QueryInputType
-    ](vals => vals.mapValues((v: Any) => Option(v)))
-
-    val keyFields = new CaseClassMapper[moveCommand.index.KeyType].names
-    val outputToMetadataMapper = CaseClassTypeConverter[
-      moveCommand.index.QueryOutputType,
-      moveCommand.index.MetadataType
-    ](inKeys => inKeys -- keyFields)
-
-    val queryResponse = client
-      .query(moveCommand.index)(
-        keyToQueryMapper.convert(moveCommand.key),
-        includeDeleted = false
-      )
-      .logErrorMsg("There was an error contacting the Clio server.")
-
-    val queryOutputs = queryResponse
-      .map(_.as[Seq[moveCommand.index.QueryOutputType]].fold(throw _, identity))
-
-    queryOutputs.map { outputs =>
-      val commandName = moveCommand.index.commandName
-
-      outputs.toList match {
-        case Nil =>
-          throw new Exception(
-            s"No ${name}s were found for $prettyKey. Use ${ClioCommand.addPrefix}$commandName to add a $name."
-          )
-        case output :: Nil => outputToMetadataMapper.convert(output)
-        case _ =>
-          throw new Exception(
-            s"${outputs.length} ${name}s were returned for $prettyKey, expected 1. Use ${ClioCommand.queryPrefix}$commandName to see what was returned."
-          )
-      }
     }
   }
 
