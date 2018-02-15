@@ -94,7 +94,7 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
                 diff => s"Field: ${diff._1} Old value: ${diff._3} New value: ${diff._2}"
               )
               .mkString("\n") +
-            " Use the '--force-update' to overwrite this data."
+            " Use '--force-update' to overwrite this data."
         )
       )
 

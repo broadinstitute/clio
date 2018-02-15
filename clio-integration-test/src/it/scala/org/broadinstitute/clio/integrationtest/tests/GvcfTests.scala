@@ -33,7 +33,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
   def runUpsertGvcf(
     key: TransferGvcfV1Key,
-    metadata: TransferGvcfV1Metadata
+    metadata: TransferGvcfV1Metadata,
+    forceUpdate: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
@@ -48,7 +49,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       key.version.toString,
       "--metadata-location",
       tmpMetadata.toString,
-      "--force-update"
+      if(forceUpdate)"--force-update" else ""
     ).mapTo[UpsertId]
   }
 

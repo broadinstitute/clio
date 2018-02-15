@@ -28,7 +28,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
   def runUpsertCram(
     key: TransferWgsCramV1Key,
-    metadata: TransferWgsCramV1Metadata
+    metadata: TransferWgsCramV1Metadata,
+    forceUpdate: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
@@ -43,7 +44,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       key.version.toString,
       "--metadata-location",
       tmpMetadata.toString,
-      "--force-update"
+      if(forceUpdate)"--force-update" else ""
     ).mapTo[UpsertId]
   }
 

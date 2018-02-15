@@ -31,7 +31,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
   def runUpsertUbam(
     key: TransferUbamV1Key,
     metadata: TransferUbamV1Metadata,
-    sequencingType: SequencingType
+    sequencingType: SequencingType,
+    forceUpdate: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     val command = sequencingType match {
@@ -50,7 +51,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       key.location.entryName,
       "--metadata-location",
       tmpMetadata.toString,
-      "--force-update"
+      if(forceUpdate)"--force-update" else ""
     ).mapTo[UpsertId]
   }
 
