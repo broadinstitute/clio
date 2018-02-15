@@ -41,17 +41,19 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
     runClient(
       command,
-      "--flowcell-barcode",
-      key.flowcellBarcode,
-      "--lane",
-      key.lane.toString,
-      "--library-name",
-      key.libraryName,
-      "--location",
-      key.location.entryName,
-      "--metadata-location",
-      tmpMetadata.toString,
-      if(forceUpdate)"--force-update" else ""
+      Seq(
+        "--flowcell-barcode",
+        key.flowcellBarcode,
+        "--lane",
+        key.lane.toString,
+        "--library-name",
+        key.libraryName,
+        "--location",
+        key.location.entryName,
+        "--metadata-location",
+        tmpMetadata.toString,
+        if (forceUpdate) "--force-update" else ""
+      ).filter(_.nonEmpty): _*
     ).mapTo[UpsertId]
   }
 
@@ -727,6 +729,90 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
     }.map {
       _.getMessage should include("--note")
+    }
+  }
+
+  it should "upsert a new ubam if forceUpdate is false" in {
+    val upsertKey = TransferUbamV1Key(
+      Location.GCP,
+      "testupsertIdBarcode",
+      2,
+      s"library$randomId"
+    )
+
+    for {
+      upsertId1 <- runUpsertUbam(
+        upsertKey,
+        TransferUbamV1Metadata(project = Some("testProject1")),
+        SequencingType.WholeGenome,
+        forceUpdate = false
+      )
+    } yield {
+      val storedDocument1 =
+        getJsonFrom[DocumentWgsUbam](upsertId1)
+      storedDocument1.project should be(Some("testProject1"))
+    }
+  }
+
+  it should "allow an upsert that modifies values not already set or are unchanged if forceUpdate is false" in {
+    val upsertKey = TransferUbamV1Key(
+      Location.GCP,
+      "testupsertIdBarcode",
+      2,
+      s"library$randomId"
+    )
+
+    for {
+      upsertId1 <- runUpsertUbam(
+        upsertKey,
+        TransferUbamV1Metadata(project = Some("testProject1")),
+        SequencingType.WholeGenome,
+        forceUpdate = false
+      )
+      upsertId2 <- runUpsertUbam(
+        upsertKey,
+        TransferUbamV1Metadata(
+          project = Some("testProject1"),
+          sampleAlias = Some("sampleAlias1")
+        ),
+        SequencingType.WholeGenome,
+        forceUpdate = false
+      )
+    } yield {
+      val storedDocument1 =
+        getJsonFrom[DocumentWgsUbam](upsertId1)
+      val storedDocument2 = getJsonFrom[DocumentWgsUbam](upsertId2)
+      storedDocument1.project should be(Some("testProject1"))
+      storedDocument2.sampleAlias should be(Some("sampleAlias1"))
+    }
+  }
+
+  it should "not allow an upsert that modifies values already set if forceUpdate is false" in {
+    val upsertKey = TransferUbamV1Key(
+      Location.GCP,
+      "testupsertIdBarcode",
+      2,
+      s"library$randomId"
+    )
+    for {
+      upsertId1 <- runUpsertUbam(
+        upsertKey,
+        TransferUbamV1Metadata(project = Some("testProject1")),
+        SequencingType.WholeGenome,
+        forceUpdate = false
+      )
+      _ <- recoverToSucceededIf[Exception] {
+        runUpsertUbam(
+          upsertKey,
+          TransferUbamV1Metadata(project = Some("testProject2")),
+          SequencingType.WholeGenome,
+          forceUpdate = false
+        )
+      }
+    } yield {
+      val storedDocument1 =
+        getJsonFrom[DocumentWgsUbam](upsertId1)
+      storedDocument1.project should be(Some("testProject1"))
     }
   }
 }

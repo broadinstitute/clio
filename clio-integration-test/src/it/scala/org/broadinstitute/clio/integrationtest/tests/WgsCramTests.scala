@@ -34,17 +34,19 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addWgsCramName,
-      "--location",
-      key.location.entryName,
-      "--project",
-      key.project,
-      "--sample-alias",
-      key.sampleAlias,
-      "--version",
-      key.version.toString,
-      "--metadata-location",
-      tmpMetadata.toString,
-      if(forceUpdate)"--force-update" else ""
+      Seq(
+        "--location",
+        key.location.entryName,
+        "--project",
+        key.project,
+        "--sample-alias",
+        key.sampleAlias,
+        "--version",
+        key.version.toString,
+        "--metadata-location",
+        tmpMetadata.toString,
+        if (forceUpdate) "--force-update" else ""
+      ).filter(_.nonEmpty): _*
     ).mapTo[UpsertId]
   }
 
@@ -1133,6 +1135,79 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         // The CLP shouldn't have tried to upsert the workspace name.
         outputs shouldBe empty
       }
+    }
+  }
+
+  it should "upsert a new cram if forceUpdate is false" in {
+    val upsertKey = TransferWgsCramV1Key(
+      location = Location.GCP,
+      project = s"project$randomId",
+      sampleAlias = s"sample$randomId",
+      version = 1
+    )
+    for {
+      upsertId1 <- runUpsertCram(
+        upsertKey,
+        TransferWgsCramV1Metadata(notes = Some("I'm a note")),
+        forceUpdate = false
+      )
+    } yield {
+      val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
+      storedDocument1.notes should be(Some("I'm a note"))
+    }
+  }
+
+  it should "allow an upsert that modifies values not already set or are unchanged if forceUpdate is false" in {
+    val upsertKey = TransferWgsCramV1Key(
+      location = Location.GCP,
+      project = s"project$randomId",
+      sampleAlias = s"sample$randomId",
+      version = 1
+    )
+    for {
+      upsertId1 <- runUpsertCram(
+        upsertKey,
+        TransferWgsCramV1Metadata(notes = Some("I'm a note")),
+        forceUpdate = false
+      )
+      upsertId2 <- runUpsertCram(
+        upsertKey,
+        TransferWgsCramV1Metadata(notes = Some("I'm a note"), cramSize = Some(12345)),
+        forceUpdate = false
+      )
+    } yield {
+      val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
+      val storedDocument2 = getJsonFrom[DocumentWgsCram](upsertId2)
+      storedDocument1.notes should be(Some("I'm a note"))
+      storedDocument2.cramSize should be(Some(12345))
+    }
+  }
+
+  it should "not allow an upsert that modifies values already set if forceUpdate is false" in {
+    val upsertKey = TransferWgsCramV1Key(
+      location = Location.GCP,
+      project = s"project$randomId",
+      sampleAlias = s"sample$randomId",
+      version = 1
+    )
+    for {
+      upsertId1 <- runUpsertCram(
+        upsertKey,
+        TransferWgsCramV1Metadata(notes = Some("I'm a note")),
+        forceUpdate = false
+      )
+      _ <- recoverToSucceededIf[Exception] {
+        runUpsertCram(
+          upsertKey,
+          TransferWgsCramV1Metadata(
+            notes = Some("I'm a different note")
+          ),
+          forceUpdate = false
+        )
+      }
+    } yield {
+      val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
+      storedDocument1.notes should be(Some("I'm a note"))
     }
   }
 }

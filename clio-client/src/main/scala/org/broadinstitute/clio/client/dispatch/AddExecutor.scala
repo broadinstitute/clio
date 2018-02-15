@@ -107,16 +107,40 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
     existingMetadata: addCommand.index.MetadataType,
     newMetadata: addCommand.index.MetadataType
   ): Iterable[(String, Any, Any)] = {
-    val storedFields =
-      new CaseClassMapper[addCommand.index.MetadataType].vals(existingMetadata)
-    val upsertFields =
-      new CaseClassMapper[addCommand.index.MetadataType].vals(newMetadata)
+    val mapper = new CaseClassMapper[addCommand.index.MetadataType]
 
-    val newToOldDiff = upsertFields.toSet.diff(storedFields.toSet).toMap
-    val oldToNewDiff = storedFields.toSet.diff(upsertFields.toSet).toMap
+    def filterNones(value: (String, Any)) = {
+      value._2 match {
+        case Some(_) => true
+        case None    => false
+        case _       => true
+      }
+    }
 
-    for (key <- newToOldDiff.keys ++ oldToNewDiff.keys)
-      yield (key, newToOldDiff.getOrElse(key, None), oldToNewDiff.getOrElse(key, None))
+    val existingMetadataValues =
+      mapper.vals(existingMetadata).filter { value =>
+        filterNones(value)
+      }
+
+    val newMetadataValues =
+      mapper.vals(newMetadata).filter { value =>
+        filterNones(value)
+      }
+
+    val differentFields =
+      newMetadataValues.keySet
+        .intersect(existingMetadataValues.keySet)
+        .filterNot(
+          field => existingMetadataValues.get(field).equals(newMetadataValues.get(field))
+        )
+
+    for (key <- differentFields)
+      yield
+        (
+          key,
+          newMetadataValues.getOrElse(key, None),
+          existingMetadataValues.getOrElse(key, None)
+        )
   }
 
   private def queryForKey(

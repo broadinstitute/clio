@@ -29,7 +29,8 @@ import org.scalatest.Assertion
 import scala.concurrent.Future
 
 /** Tests of Clio's gvcf functionality. */
-trait GvcfTests { self: BaseIntegrationSpec =>
+trait GvcfTests {
+  self: BaseIntegrationSpec =>
 
   def runUpsertGvcf(
     key: TransferGvcfV1Key,
@@ -39,17 +40,19 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
       ClioCommand.addGvcfName,
-      "--location",
-      key.location.entryName,
-      "--project",
-      key.project,
-      "--sample-alias",
-      key.sampleAlias,
-      "--version",
-      key.version.toString,
-      "--metadata-location",
-      tmpMetadata.toString,
-      if(forceUpdate)"--force-update" else ""
+      Seq(
+        "--location",
+        key.location.entryName,
+        "--project",
+        key.project,
+        "--sample-alias",
+        key.sampleAlias,
+        "--version",
+        key.version.toString,
+        "--metadata-location",
+        tmpMetadata.toString,
+        if (forceUpdate) "--force-update" else ""
+      ).filter(_.nonEmpty): _*
     ).mapTo[UpsertId]
   }
 
@@ -720,6 +723,77 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       )
     }.map {
       _.getMessage should include("--note")
+    }
+  }
+
+  it should "upsert a new gvcf if forceUpdate is false" in {
+    val upsertKey = TransferGvcfV1Key(
+      location = Location.GCP,
+      project = s"project$randomId",
+      sampleAlias = s"sample$randomId",
+      version = 1
+    )
+    for {
+      upsertId1 <- runUpsertGvcf(
+        upsertKey,
+        TransferGvcfV1Metadata(notes = Some("I'm a note")),
+        forceUpdate = false
+      )
+    } yield {
+      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
+      storedDocument1.notes should be(Some("I'm a note"))
+    }
+  }
+
+  it should "allow an upsert that modifies values not already set or are unchanged if forceUpdate is false" in {
+    val upsertKey = TransferGvcfV1Key(
+      location = Location.GCP,
+      project = s"project$randomId",
+      sampleAlias = s"sample$randomId",
+      version = 1
+    )
+    for {
+      upsertId1 <- runUpsertGvcf(
+        upsertKey,
+        TransferGvcfV1Metadata(notes = Some("I'm a note")),
+        forceUpdate = false
+      )
+      upsertId2 <- runUpsertGvcf(
+        upsertKey,
+        TransferGvcfV1Metadata(notes = Some("I'm a note"), gvcfSize = Some(12345)),
+        forceUpdate = false
+      )
+    } yield {
+      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
+      val storedDocument2 = getJsonFrom[DocumentGvcf](upsertId2)
+      storedDocument1.notes should be(Some("I'm a note"))
+      storedDocument2.gvcfSize should be(Some(12345))
+    }
+  }
+
+  it should "not allow an upsert that modifies values already set if forceUpdate is false" in {
+    val upsertKey = TransferGvcfV1Key(
+      location = Location.GCP,
+      project = s"project$randomId",
+      sampleAlias = s"sample$randomId",
+      version = 1
+    )
+    for {
+      upsertId1 <- runUpsertGvcf(
+        upsertKey,
+        TransferGvcfV1Metadata(notes = Some("I'm a note")),
+        forceUpdate = false
+      )
+      _ <- recoverToSucceededIf[Exception] {
+        runUpsertGvcf(
+          upsertKey,
+          TransferGvcfV1Metadata(notes = Some("I'm a different note")),
+          forceUpdate = false
+        )
+      }
+    } yield {
+      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
+      storedDocument1.notes should be(Some("I'm a note"))
     }
   }
 }
