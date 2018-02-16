@@ -60,7 +60,7 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
                 decoded,
                 existingMetadata
               ).fold(
-                left => Future.failed(left).logErrorMsg(left.getMessage),
+                left => Future.failed(left),
                 identity
               )
             } yield {
@@ -109,23 +109,11 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
   ): Iterable[(String, Any, Any)] = {
     val mapper = new CaseClassMapper[addCommand.index.MetadataType]
 
-    def filterNones(value: (String, Any)) = {
-      value._2 match {
-        case Some(_) => true
-        case None    => false
-        case _       => true
-      }
-    }
-
     val existingMetadataValues =
-      mapper.vals(existingMetadata).filter { value =>
-        filterNones(value)
-      }
+      mapper.vals(existingMetadata).filterNot(_._2 == None)
 
     val newMetadataValues =
-      mapper.vals(newMetadata).filter { value =>
-        filterNones(value)
-      }
+      mapper.vals(newMetadata).filterNot(_._2 == None)
 
     val differentFields =
       newMetadataValues.keySet
