@@ -66,9 +66,12 @@ case class TransferWgsCramV1Metadata(
     Seq.concat(
       cramPath,
       craiPath,
-      if (workspaceName.isDefined) cramPath.map { cp =>
-        URI.create(s"$cp${WgsCramExtensions.Md5ExtensionAddition}")
-      } else None
+      workspaceName.flatMap(
+        _ =>
+          cramPath.map { cp =>
+            URI.create(s"$cp${WgsCramExtensions.Md5ExtensionAddition}")
+        }
+      )
     )
 
   // As of DSDEGP-1711, we are only delivering the cram, crai, and md5

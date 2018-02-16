@@ -104,13 +104,13 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
     val pathsToDelete = existingMetadata.pathsToDelete.filter { path =>
       val pathExists = ioUtil.googleObjectExists(path)
       val err = s"'$path' associated with $prettyKey does not exist in the cloud."
-      (pathExists, deleteCommand.forceDelete) match {
-        case (false, false) =>
-          logger.error(err + " Use --force-delete to delete this file.")
-          throw new Exception(err)
-        case (false, true) =>
-          logger.warn(err)
-        case _ =>
+      if (!pathExists) {
+        if (!deleteCommand.forceDelete) {
+          throw new IllegalStateException(
+            err + " Use --force-delete to delete this file."
+          )
+        }
+        logger.warn(err)
       }
       pathExists
     }
