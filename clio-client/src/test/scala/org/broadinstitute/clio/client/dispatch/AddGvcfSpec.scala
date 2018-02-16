@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.AddGvcf
+import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.util.model.UpsertId
 
 class AddGvcfSpec extends BaseClientSpec {
@@ -47,4 +48,20 @@ class AddGvcfSpec extends BaseClientSpec {
       .map(_ shouldBe an[UpsertId])
   }
 
+  it should "fail to add a gvcf that would overwrite an existing document" in {
+    recoverToSucceededIf[Exception] {
+      val mockIoUtil = new MockIoUtil
+
+      succeedingDispatcher(mockIoUtil, testGvcfLocation)
+        .dispatch(goodGvcfAddCommand)
+    }
+  }
+
+  it should "succeed in overwriting an existing document if a force flag is set" in {
+
+    val mockIoUtil = new MockIoUtil
+    succeedingDispatcher(mockIoUtil, testGvcfLocation)
+      .dispatch(goodGvcfAddCommandForceUpdate)
+      .map(_ shouldBe an[UpsertId])
+  }
 }
