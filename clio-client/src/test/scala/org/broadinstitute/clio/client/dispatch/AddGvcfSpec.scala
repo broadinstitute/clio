@@ -61,7 +61,7 @@ class AddGvcfSpec extends BaseClientSpec {
 
     val mockIoUtil = new MockIoUtil
     succeedingDispatcher(mockIoUtil, testGvcfLocation)
-      .dispatch(goodGvcfAddCommandForceUpdate)
+      .dispatch(goodGvcfAddCommand.copy(force = true))
       .map(_ shouldBe an[UpsertId])
   }
 }

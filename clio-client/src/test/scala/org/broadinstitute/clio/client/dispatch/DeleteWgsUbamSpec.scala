@@ -71,9 +71,16 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
     }
   }
 
-  it should "delete a WgsUbam in Clio if the cloud ubam does not exist" in {
+  it should "throw an exception when attempting to delete a WgsUbam in Clio if the cloud ubam does not exist" in {
+    recoverToSucceededIf[Exception] {
+      succeedingDispatcher(new MockIoUtil, testWgsUbamLocation)
+        .dispatch(goodDeleteCommand)
+    }
+  }
+
+  it should "delete a WgsUbam in Clio if the cloud ubam does not exist and the force flag is true" in {
     succeedingDispatcher(new MockIoUtil, testWgsUbamLocation)
-      .dispatch(goodDeleteCommand)
+      .dispatch(goodDeleteCommand.copy(force = true))
       .map(_ shouldBe an[UpsertId])
   }
 

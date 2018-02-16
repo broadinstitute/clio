@@ -103,10 +103,14 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
   )(implicit ec: ExecutionContext): Future[UpsertId] = {
     val pathsToDelete = existingMetadata.pathsToDelete.filter { path =>
       val pathExists = ioUtil.googleObjectExists(path)
+      val err = s"'$path' associated with $prettyKey does not exist in the cloud."
       if (!pathExists) {
-        logger.warn(
-          s"'$path' associated with $prettyKey does not exist in the cloud."
-        )
+        if (!deleteCommand.force) {
+          throw new IllegalStateException(
+            err + " Use --force to mark the record as deleted in Clio"
+          )
+        }
+        logger.warn(err)
       }
       pathExists
     }

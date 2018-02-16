@@ -48,7 +48,7 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
         decoded =>
           {
             for {
-              existingMetadata <- if (!addCommand.forceUpdate) {
+              existingMetadata <- if (!addCommand.force) {
                 queryForKey(webClient).logErrorMsg(
                   s"Could not query the $name. No files have been added."
                 )
@@ -94,7 +94,7 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
                 diff => s"Field: ${diff._1} Old value: ${diff._3} New value: ${diff._2}"
               )
               .mkString("\n") +
-            " Use '--force-update' to overwrite this data."
+            " Use '--force' to overwrite this data."
         )
       )
 
