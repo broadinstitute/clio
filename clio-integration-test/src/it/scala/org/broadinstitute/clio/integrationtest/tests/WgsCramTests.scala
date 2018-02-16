@@ -602,7 +602,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
   def testDeleteCram(
     existingNote: Option[String] = None,
     testNonExistingFile: Boolean = false,
-    forceDelete: Boolean = false
+    forceDelete: Boolean = false,
+    workspaceName: Option[String] = None
   ): Future[Assertion] = {
     val deleteNote =
       s"$randomId --- Deleted by the integration tests --- $randomId"
@@ -635,7 +636,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         craiPath = Some(craiPath.toUri),
         alignmentSummaryMetricsPath = Some(metrics1Path.toUri),
         fingerprintingSummaryMetricsPath = Some(metrics1Path.toUri),
-        notes = existingNote
+        notes = existingNote,
+        workspaceName = workspaceName
       )
 
     val _ = Seq(
@@ -730,6 +732,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       )
     }.map {
       _.getMessage should include("--note")
+    }
+  }
+
+  it should "throw an exception deleting the associated md5 if the workspaceName is set and the md5 is missing" in {
+    recoverToSucceededIf[Exception] {
+      testDeleteCram(workspaceName = Some("testWorkspace"))
     }
   }
 
