@@ -5,6 +5,7 @@ import java.nio.file.Files
 
 import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentGvcf,
@@ -599,7 +600,11 @@ trait GvcfTests {
     }
   }
 
-  def testDeleteGvcf(existingNote: Option[String] = None): Future[Assertion] = {
+  def testDeleteGvcf(
+    existingNote: Option[String] = None,
+    testNonExistingFile: Boolean = false,
+    forceDelete: Boolean = false
+  ): Future[Assertion] = {
     val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
@@ -644,20 +649,26 @@ trait GvcfTests {
     ).map {
       case (path, contents) => Files.write(path, contents.getBytes)
     }
+
+    if (testNonExistingFile) IoUtil.deleteGoogleObject(gvcfPath.toUri)
+
     val result = for {
       _ <- runUpsertGvcf(key, metadata)
       _ <- runClient(
         ClioCommand.deleteGvcfName,
-        "--location",
-        Location.GCP.entryName,
-        "--project",
-        project,
-        "--sample-alias",
-        sample,
-        "--version",
-        version.toString,
-        "--note",
-        deleteNote
+        Seq(
+          "--location",
+          Location.GCP.entryName,
+          "--project",
+          project,
+          "--sample-alias",
+          sample,
+          "--version",
+          version.toString,
+          "--note",
+          deleteNote,
+          if (forceDelete) "--force-delete" else ""
+        ).filter(_.nonEmpty): _*
       )
       outputs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
         ClioCommand.queryGvcfName,
@@ -706,6 +717,16 @@ trait GvcfTests {
 
   it should "preserve existing notes when deleting gvcfs" in testDeleteGvcf(
     existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
+  )
+  it should "throw an exception when trying to delete a gvcf if a file does not exist" in {
+    recoverToSucceededIf[Exception] {
+      testDeleteGvcf(testNonExistingFile = true)
+    }
+  }
+
+  it should "delete a gvcf if a file does not exist and forceDelete is true" in testDeleteGvcf(
+    testNonExistingFile = true,
+    forceDelete = true
   )
 
   it should "not delete gvcfs without a note" in {

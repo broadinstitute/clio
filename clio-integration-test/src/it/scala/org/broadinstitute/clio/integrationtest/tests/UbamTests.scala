@@ -6,6 +6,7 @@ import java.nio.file.Files
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -642,7 +643,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testDeleteUbam(existingNote: Option[String] = None): Future[Assertion] = {
+  def testDeleteUbam(
+    existingNote: Option[String] = None,
+    testNonExistingFile: Boolean = false,
+    forceDelete: Boolean = false
+  ): Future[Assertion] = {
     val deleteNote =
       s"$randomId --- Deleted by the integration tests --- $randomId"
 
@@ -661,20 +666,26 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     // Clio needs the metadata to be added before it can be deleted.
     val _ = Files.write(cloudPath, fileContents.getBytes)
+
+    if (testNonExistingFile) IoUtil.deleteGoogleObject(cloudPath.toUri)
+
     val result = for {
       _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       _ <- runClient(
         ClioCommand.deleteWgsUbamName,
-        "--flowcell-barcode",
-        barcode,
-        "--lane",
-        lane.toString,
-        "--library-name",
-        library,
-        "--location",
-        Location.GCP.entryName,
-        "--note",
-        deleteNote
+        Seq(
+          "--flowcell-barcode",
+          barcode,
+          "--lane",
+          lane.toString,
+          "--library-name",
+          library,
+          "--location",
+          Location.GCP.entryName,
+          "--note",
+          deleteNote,
+          if (forceDelete) "--force-delete" else ""
+        ).filter(_.nonEmpty): _*
       )
       _ = Files.exists(cloudPath) should be(false)
       outputs <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
@@ -712,6 +723,17 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   it should "preserve existing notes when deleting wgs-ubams" in testDeleteUbam(
     existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
+  )
+
+  it should "throw an exception when trying to delete a ubam if a file does not exist" in {
+    recoverToSucceededIf[Exception] {
+      testDeleteUbam(testNonExistingFile = true)
+    }
+  }
+
+  it should "delete a ubam if a file does not exist and forceDelete is true" in testDeleteUbam(
+    testNonExistingFile = true,
+    forceDelete = true
   )
 
   it should "not delete wgs-ubams without a note" in {

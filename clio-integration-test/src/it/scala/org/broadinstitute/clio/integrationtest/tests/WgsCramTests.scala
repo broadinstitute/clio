@@ -4,6 +4,7 @@ import java.net.URI
 import java.nio.file.Files
 
 import com.sksamuel.elastic4s.IndexAndType
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -19,6 +20,7 @@ import org.broadinstitute.clio.util.model.{
   RegulatoryDesignation,
   UpsertId
 }
+
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
@@ -356,7 +358,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val upserts = Future.sequence {
       keysWithMetadata.map {
-        case (key, metadata) => runUpsertCram(key, metadata)
+        case (v1Key, metadata) => runUpsertCram(v1Key, metadata)
       }
     }
 
@@ -597,7 +599,11 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testDeleteCram(existingNote: Option[String] = None): Future[Assertion] = {
+  def testDeleteCram(
+    existingNote: Option[String] = None,
+    testNonExistingFile: Boolean = false,
+    forceDelete: Boolean = false
+  ): Future[Assertion] = {
     val deleteNote =
       s"$randomId --- Deleted by the integration tests --- $randomId"
 
@@ -640,20 +646,26 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     ).map {
       case (path, contents) => Files.write(path, contents.getBytes)
     }
+
+    if (testNonExistingFile) IoUtil.deleteGoogleObject(cramPath.toUri)
+
     val result = for {
       _ <- runUpsertCram(key, metadata)
       _ <- runClient(
         ClioCommand.deleteWgsCramName,
-        "--location",
-        Location.GCP.entryName,
-        "--project",
-        project,
-        "--sample-alias",
-        sample,
-        "--version",
-        version.toString,
-        "--note",
-        deleteNote
+        Seq(
+          "--location",
+          Location.GCP.entryName,
+          "--project",
+          project,
+          "--sample-alias",
+          sample,
+          "--version",
+          version.toString,
+          "--note",
+          deleteNote,
+          if (forceDelete) "--force-delete" else ""
+        ).filter(_.nonEmpty): _*
       )
       outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
@@ -720,6 +732,17 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       _.getMessage should include("--note")
     }
   }
+
+  it should "throw an exception when trying to delete a cram if a file does not exist" in {
+    recoverToSucceededIf[Exception] {
+      testDeleteCram(testNonExistingFile = true)
+    }
+  }
+
+  it should "delete a cram if a file does not exist and forceDelete is true" in testDeleteCram(
+    testNonExistingFile = true,
+    forceDelete = true
+  )
 
   it should "move files, generate an md5 file, and record the workspace name when delivering crams" in {
     val id = randomId

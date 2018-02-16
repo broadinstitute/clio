@@ -71,9 +71,16 @@ class DeleteGvcfSpec extends BaseClientSpec {
     }
   }
 
-  it should "delete a gvcf in Clio if the cloud gvcf does not exist" in {
-    succeedingDispatcher(new MockIoUtil, testGvcfLocation)
-      .dispatch(goodGvcfDeleteCommand)
+  it should "throw an exception when attempting to delete a gvcf in Clio if the cloud ubam does not exist" in {
+    recoverToSucceededIf[Exception] {
+      succeedingDispatcher(new MockIoUtil, testGvcfLocation)
+        .dispatch(goodGvcfDeleteCommand)
+    }
+  }
+
+  it should "delete a gvcf in Clio if the cloud gcvf does not exist and the forceDelete flag is true" in {
+    succeedingDispatcher(new MockIoUtil, testWgsUbamLocation)
+      .dispatch(goodDeleteCommand.copy(forceDelete = true))
       .map(_ shouldBe an[UpsertId])
   }
 
@@ -81,7 +88,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     succeedingDispatcher(new MockIoUtil, testGvcfLocation)
-      .dispatch(goodGvcfDeleteCommand)
+      .dispatch(goodGvcfDeleteCommand.copy(forceDelete = true))
       .map(_ shouldBe an[UpsertId])
   }
 }

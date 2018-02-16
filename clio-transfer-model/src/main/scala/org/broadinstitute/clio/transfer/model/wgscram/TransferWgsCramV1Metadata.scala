@@ -60,14 +60,15 @@ case class TransferWgsCramV1Metadata(
   readgroupLevelMetricsFiles: Option[List[URI]] = None
 ) extends TransferMetadata[TransferWgsCramV1Metadata] {
 
-  // Delete the cramPath.md5 file (foo.cram.md5 where foo.cram is cramPath).
+  // Delete the cramPath.md5 file only if a workspaceName is defined otherwise there will be no md5
+  // (foo.cram.md5 where foo.cram is cramPath).
   override def pathsToDelete: Seq[URI] =
     Seq.concat(
       cramPath,
       craiPath,
-      cramPath.map(
-        cp => URI.create(s"$cp${WgsCramExtensions.Md5ExtensionAddition}")
-      )
+      if (workspaceName.isDefined) cramPath.map { cp =>
+        URI.create(s"$cp${WgsCramExtensions.Md5ExtensionAddition}")
+      } else None
     )
 
   // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
