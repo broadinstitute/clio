@@ -31,7 +31,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
   def runUpsertCram(
     key: TransferWgsCramV1Key,
     metadata: TransferWgsCramV1Metadata,
-    forceUpdate: Boolean = true
+    force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
@@ -47,7 +47,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         key.version.toString,
         "--metadata-location",
         tmpMetadata.toString,
-        if (forceUpdate) "--force-update" else ""
+        if (force) "--force" else ""
       ).filter(_.nonEmpty): _*
     ).mapTo[UpsertId]
   }
@@ -602,7 +602,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
   def testDeleteCram(
     existingNote: Option[String] = None,
     testNonExistingFile: Boolean = false,
-    forceDelete: Boolean = false,
+    force: Boolean = false,
     workspaceName: Option[String] = None
   ): Future[Assertion] = {
     val deleteNote =
@@ -666,7 +666,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           version.toString,
           "--note",
           deleteNote,
-          if (forceDelete) "--force-delete" else ""
+          if (force) "--force" else ""
         ).filter(_.nonEmpty): _*
       )
       outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
@@ -747,9 +747,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "delete a cram if a file does not exist and forceDelete is true" in testDeleteCram(
+  it should "delete a cram if a file does not exist and force is true" in testDeleteCram(
     testNonExistingFile = true,
-    forceDelete = true
+    force = true
   )
 
   it should "move files, generate an md5 file, and record the workspace name when delivering crams" in {
@@ -1169,7 +1169,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "upsert a new cram if forceUpdate is false" in {
+  it should "upsert a new cram if force is false" in {
     val upsertKey = TransferWgsCramV1Key(
       location = Location.GCP,
       project = s"project$randomId",
@@ -1180,7 +1180,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertCram(
         upsertKey,
         TransferWgsCramV1Metadata(notes = Some("I'm a note")),
-        forceUpdate = false
+        force = false
       )
     } yield {
       val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
@@ -1188,7 +1188,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "allow an upsert that modifies values not already set or are unchanged if forceUpdate is false" in {
+  it should "allow an upsert that modifies values not already set or are unchanged if force is false" in {
     val upsertKey = TransferWgsCramV1Key(
       location = Location.GCP,
       project = s"project$randomId",
@@ -1199,12 +1199,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertCram(
         upsertKey,
         TransferWgsCramV1Metadata(notes = Some("I'm a note")),
-        forceUpdate = false
+        force = false
       )
       upsertId2 <- runUpsertCram(
         upsertKey,
         TransferWgsCramV1Metadata(notes = Some("I'm a note"), cramSize = Some(12345)),
-        forceUpdate = false
+        force = false
       )
     } yield {
       val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
@@ -1214,7 +1214,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "not allow an upsert that modifies values already set if forceUpdate is false" in {
+  it should "not allow an upsert that modifies values already set if force is false" in {
     val upsertKey = TransferWgsCramV1Key(
       location = Location.GCP,
       project = s"project$randomId",
@@ -1225,7 +1225,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertCram(
         upsertKey,
         TransferWgsCramV1Metadata(notes = Some("I'm a note")),
-        forceUpdate = false
+        force = false
       )
       _ <- recoverToSucceededIf[Exception] {
         runUpsertCram(
@@ -1233,7 +1233,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           TransferWgsCramV1Metadata(
             notes = Some("I'm a different note")
           ),
-          forceUpdate = false
+          force = false
         )
       }
     } yield {

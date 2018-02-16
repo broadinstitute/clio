@@ -33,7 +33,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     key: TransferUbamV1Key,
     metadata: TransferUbamV1Metadata,
     sequencingType: SequencingType,
-    forceUpdate: Boolean = true
+    force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     val command = sequencingType match {
@@ -53,7 +53,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         key.location.entryName,
         "--metadata-location",
         tmpMetadata.toString,
-        if (forceUpdate) "--force-update" else ""
+        if (force) "--force" else ""
       ).filter(_.nonEmpty): _*
     ).mapTo[UpsertId]
   }
@@ -646,7 +646,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
   def testDeleteUbam(
     existingNote: Option[String] = None,
     testNonExistingFile: Boolean = false,
-    forceDelete: Boolean = false
+    force: Boolean = false
   ): Future[Assertion] = {
     val deleteNote =
       s"$randomId --- Deleted by the integration tests --- $randomId"
@@ -684,7 +684,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           Location.GCP.entryName,
           "--note",
           deleteNote,
-          if (forceDelete) "--force-delete" else ""
+          if (force) "--force" else ""
         ).filter(_.nonEmpty): _*
       )
       _ = Files.exists(cloudPath) should be(false)
@@ -731,9 +731,9 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "delete a ubam if a file does not exist and forceDelete is true" in testDeleteUbam(
+  it should "delete a ubam if a file does not exist and force is true" in testDeleteUbam(
     testNonExistingFile = true,
-    forceDelete = true
+    force = true
   )
 
   it should "not delete wgs-ubams without a note" in {
@@ -754,7 +754,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "upsert a new ubam if forceUpdate is false" in {
+  it should "upsert a new ubam if force is false" in {
     val upsertKey = TransferUbamV1Key(
       Location.GCP,
       "testupsertIdBarcode",
@@ -767,7 +767,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         upsertKey,
         TransferUbamV1Metadata(project = Some("testProject1")),
         SequencingType.WholeGenome,
-        forceUpdate = false
+        force = false
       )
     } yield {
       val storedDocument1 =
@@ -776,7 +776,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "allow an upsert that modifies values not already set or are unchanged if forceUpdate is false" in {
+  it should "allow an upsert that modifies values not already set or are unchanged if force is false" in {
     val upsertKey = TransferUbamV1Key(
       Location.GCP,
       "testupsertIdBarcode",
@@ -789,7 +789,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         upsertKey,
         TransferUbamV1Metadata(project = Some("testProject1")),
         SequencingType.WholeGenome,
-        forceUpdate = false
+        force = false
       )
       upsertId2 <- runUpsertUbam(
         upsertKey,
@@ -798,7 +798,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           sampleAlias = Some("sampleAlias1")
         ),
         SequencingType.WholeGenome,
-        forceUpdate = false
+        force = false
       )
     } yield {
       val storedDocument1 =
@@ -809,7 +809,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "not allow an upsert that modifies values already set if forceUpdate is false" in {
+  it should "not allow an upsert that modifies values already set if force is false" in {
     val upsertKey = TransferUbamV1Key(
       Location.GCP,
       "testupsertIdBarcode",
@@ -821,14 +821,14 @@ trait UbamTests { self: BaseIntegrationSpec =>
         upsertKey,
         TransferUbamV1Metadata(project = Some("testProject1")),
         SequencingType.WholeGenome,
-        forceUpdate = false
+        force = false
       )
       _ <- recoverToSucceededIf[Exception] {
         runUpsertUbam(
           upsertKey,
           TransferUbamV1Metadata(project = Some("testProject2")),
           SequencingType.WholeGenome,
-          forceUpdate = false
+          force = false
         )
       }
     } yield {

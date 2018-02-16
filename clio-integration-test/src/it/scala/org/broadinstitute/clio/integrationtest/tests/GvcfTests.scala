@@ -36,7 +36,7 @@ trait GvcfTests {
   def runUpsertGvcf(
     key: TransferGvcfV1Key,
     metadata: TransferGvcfV1Metadata,
-    forceUpdate: Boolean = true
+    force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
@@ -52,7 +52,7 @@ trait GvcfTests {
         key.version.toString,
         "--metadata-location",
         tmpMetadata.toString,
-        if (forceUpdate) "--force-update" else ""
+        if (force) "--force" else ""
       ).filter(_.nonEmpty): _*
     ).mapTo[UpsertId]
   }
@@ -603,7 +603,7 @@ trait GvcfTests {
   def testDeleteGvcf(
     existingNote: Option[String] = None,
     testNonExistingFile: Boolean = false,
-    forceDelete: Boolean = false
+    force: Boolean = false
   ): Future[Assertion] = {
     val project = s"project$randomId"
     val sample = s"sample$randomId"
@@ -667,7 +667,7 @@ trait GvcfTests {
           version.toString,
           "--note",
           deleteNote,
-          if (forceDelete) "--force-delete" else ""
+          if (force) "--force" else ""
         ).filter(_.nonEmpty): _*
       )
       outputs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
@@ -724,9 +724,9 @@ trait GvcfTests {
     }
   }
 
-  it should "delete a gvcf if a file does not exist and forceDelete is true" in testDeleteGvcf(
+  it should "delete a gvcf if a file does not exist and force is true" in testDeleteGvcf(
     testNonExistingFile = true,
-    forceDelete = true
+    force = true
   )
 
   it should "not delete gvcfs without a note" in {
@@ -747,7 +747,7 @@ trait GvcfTests {
     }
   }
 
-  it should "upsert a new gvcf if forceUpdate is false" in {
+  it should "upsert a new gvcf if force is false" in {
     val upsertKey = TransferGvcfV1Key(
       location = Location.GCP,
       project = s"project$randomId",
@@ -758,7 +758,7 @@ trait GvcfTests {
       upsertId1 <- runUpsertGvcf(
         upsertKey,
         TransferGvcfV1Metadata(notes = Some("I'm a note")),
-        forceUpdate = false
+        force = false
       )
     } yield {
       val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
@@ -766,7 +766,7 @@ trait GvcfTests {
     }
   }
 
-  it should "allow an upsert that modifies values not already set or are unchanged if forceUpdate is false" in {
+  it should "allow an upsert that modifies values not already set or are unchanged if force is false" in {
     val upsertKey = TransferGvcfV1Key(
       location = Location.GCP,
       project = s"project$randomId",
@@ -777,12 +777,12 @@ trait GvcfTests {
       upsertId1 <- runUpsertGvcf(
         upsertKey,
         TransferGvcfV1Metadata(notes = Some("I'm a note")),
-        forceUpdate = false
+        force = false
       )
       upsertId2 <- runUpsertGvcf(
         upsertKey,
         TransferGvcfV1Metadata(notes = Some("I'm a note"), gvcfSize = Some(12345)),
-        forceUpdate = false
+        force = false
       )
     } yield {
       val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
@@ -792,7 +792,7 @@ trait GvcfTests {
     }
   }
 
-  it should "not allow an upsert that modifies values already set if forceUpdate is false" in {
+  it should "not allow an upsert that modifies values already set if force is false" in {
     val upsertKey = TransferGvcfV1Key(
       location = Location.GCP,
       project = s"project$randomId",
@@ -803,13 +803,13 @@ trait GvcfTests {
       upsertId1 <- runUpsertGvcf(
         upsertKey,
         TransferGvcfV1Metadata(notes = Some("I'm a note")),
-        forceUpdate = false
+        force = false
       )
       _ <- recoverToSucceededIf[Exception] {
         runUpsertGvcf(
           upsertKey,
           TransferGvcfV1Metadata(notes = Some("I'm a different note")),
-          forceUpdate = false
+          force = false
         )
       }
     } yield {

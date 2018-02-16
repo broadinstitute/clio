@@ -60,7 +60,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     succeedingDispatcher(mockIoUtil, testWgsChangedUbamLocation)
-      .dispatch(goodAddCommand.copy(forceUpdate = true))
+      .dispatch(goodAddCommand.copy(force = true))
       .map(_ shouldBe an[UpsertId])
   }
 }
