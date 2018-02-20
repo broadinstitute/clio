@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.integrationtest
 
-import java.io.File
 import java.nio.file.{Path, Paths}
 
 import akka.NotUsed
@@ -8,6 +7,7 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.file.scaladsl.FileTailSource
 import akka.stream.scaladsl.{Sink, Source}
+import better.files.File
 import com.dimafeng.testcontainers.ForAllTestContainer
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.integrationtest.tests._
@@ -36,7 +36,7 @@ abstract class DockerIntegrationSpec(
     s"${DockerIntegrationSpec.elasticsearchServiceName}_1"
 
   override val container = new ClioDockerComposeContainer(
-    new File(getClass.getResource(DockerIntegrationSpec.composeFilename).toURI),
+    File(getClass.getResource(DockerIntegrationSpec.composeFilename)),
     DockerIntegrationSpec.elasticsearchServiceName,
     Map(
       clioFullName -> DockerIntegrationSpec.clioServicePort,
@@ -71,7 +71,7 @@ abstract class DockerIntegrationSpec(
    * container to reach a ready state, so we roll our own here.
    */
   val clioLogLines: Source[String, NotUsed] = FileTailSource.lines(
-    path = ClioDockerComposeContainer.clioLog,
+    path = ClioDockerComposeContainer.clioLog.path,
     maxLineSize = 1048576,
     pollingInterval = 250.millis
   )

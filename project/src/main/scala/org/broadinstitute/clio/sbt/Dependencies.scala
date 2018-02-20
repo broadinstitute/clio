@@ -9,8 +9,9 @@ object Dependencies {
   // The version numbers of each main and test dependency.
   private val AkkaHttpCirceVersion = "1.19.0"
   private val AkkaHttpVersion = "10.0.11"
-  private val AlpakkaVersion = "0.16"
+  private val AlpakkaVersion = "0.17"
   private val ApacheHttpClientVersion = "4.5.5"
+  private val BetterFilesVersion = "3.4.0"
   private val CaseAppVersion = "2.0.0-M3"
   private val CirceVersion = "0.9.1"
   private val Elastic4sVersion = "6.1.4"
@@ -85,6 +86,7 @@ object Dependencies {
   val ClientMainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
     "com.github.alexarchambault" %% "case-app" % CaseAppVersion,
+    "com.github.pathikrit" %% "better-files" % BetterFilesVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,

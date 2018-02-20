@@ -47,12 +47,16 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
 
     decodedOrError.fold(
       Future.failed, { decoded =>
-        for {
-          existingMetadata <- if (!addCommand.force) {
-            webClient.getMetadataForKey(addCommand.index)(addCommand.key)
-          } else {
+        val maybeQuery =
+          if (addCommand.force) {
+            // Don't bother querying if we're going to force-overwrite anyways.
             Future.successful(None)
+          } else {
+            webClient.getMetadataForKey(addCommand.index)(addCommand.key)
           }
+
+        for {
+          existingMetadata <- maybeQuery
           upsertResponse <- addFiles(
             webClient,
             decoded,

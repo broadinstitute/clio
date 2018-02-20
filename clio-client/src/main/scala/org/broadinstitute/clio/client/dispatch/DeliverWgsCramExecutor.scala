@@ -1,8 +1,8 @@
 package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
-import java.nio.file.Files
 
+import better.files.File
 import org.broadinstitute.clio.client.commands.{DeliverWgsCram, MoveWgsCram}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -39,7 +39,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor[Up
 
     for {
       _ <- moveExecutor.execute(webClient, ioUtil)
-      // If there was no metadata, the move would have failed.
+      // Metadata must exist at this point because it's required by the move executor.
       Some(cramData) <- webClient.getMetadataForKey(WgsCramIndex)(deliverCommand.key)
       _ <- writeCramMd5(cramData, ioUtil)
       updated = cramData.copy(workspaceName = Some(deliverCommand.workspaceName))
@@ -54,32 +54,26 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor[Up
   ): Future[Unit] = Future {
     (metadata.cramMd5, metadata.cramPath) match {
       case (Some(cramMd5), Some(cramPath)) => {
-
         /*
          * FIXME: If we enable the google-cloud-nio adapter in the client,
-         * we can write directory to the source location instead of writing
+         * we can write directly to the source location instead of writing
          * to temp and then copying.
          */
-        val md5Tmp = Files.createTempFile(
-          "clio-cram-deliver",
-          WgsCramExtensions.Md5Extension
-        )
-        val cloudMd5Path =
-          s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}"
+        File.usingTemporaryFile("clio-cram-deliver", WgsCramExtensions.Md5Extension) {
+          md5Tmp =>
+            val cloudMd5Path =
+              s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}"
 
-        try {
-          Files.write(md5Tmp, cramMd5.name.getBytes)
-          val copyRc = ioUtil.copyGoogleObject(
-            URI.create(md5Tmp.toString),
-            URI.create(cloudMd5Path)
-          )
-          if (copyRc != 0) {
-            throw new RuntimeException(
-              s"Failed to copy local cram md5 file to path $cloudMd5Path"
+            md5Tmp.write(cramMd5.name)
+            val copyRc = ioUtil.copyGoogleObject(
+              URI.create(md5Tmp.toString),
+              URI.create(cloudMd5Path)
             )
-          }
-        } finally {
-          Files.delete(md5Tmp)
+            if (copyRc != 0) {
+              throw new RuntimeException(
+                s"Failed to copy local cram md5 file to path $cloudMd5Path"
+              )
+            }
         }
       }
       case _ => {

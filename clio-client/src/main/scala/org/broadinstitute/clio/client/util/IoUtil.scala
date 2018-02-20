@@ -1,11 +1,10 @@
 package org.broadinstitute.clio.client.util
 
-import java.io.IOException
 import java.math.BigInteger
 import java.net.URI
-import java.nio.file._
-import java.nio.file.attribute.BasicFileAttributes
 import java.util.Base64
+
+import better.files.File
 
 import scala.sys.process.{Process, ProcessBuilder}
 
@@ -32,35 +31,8 @@ trait IoUtil {
     }
   }
 
-  def readFileData(location: URI): String = {
-    new String(Files.readAllBytes(Paths.get(location.getPath)))
-  }
-
-  def deleteDirectoryRecursively(directory: Path): Unit = {
-    val _ =
-      Files.walkFileTree(
-        directory,
-        new SimpleFileVisitor[Path]() {
-          override def visitFile(
-            file: Path,
-            attrs: BasicFileAttributes
-          ): FileVisitResult = {
-            Files.delete(file)
-            FileVisitResult.CONTINUE
-          }
-
-          override def postVisitDirectory(
-            dir: Path,
-            exc: IOException
-          ): FileVisitResult = {
-            Option(exc).fold({
-              Files.delete(dir)
-              FileVisitResult.CONTINUE
-            })(throw _)
-          }
-        }
-      )
-  }
+  def readFileData(location: URI): String =
+    File(location.getPath).contentAsString
 
   /*
    * FIXME for all below:
@@ -195,15 +167,12 @@ object IoUtil extends IoUtil {
     private def runGsUtil[Out](
       runner: ProcessBuilder => Out
     )(gsUtilArgs: Seq[String]): Out = {
-      val tmp = Files.createTempDirectory("gsutil-state")
-      val process = Process(
-        Seq("gsutil", "-o", s"GSUtil:state_dir=$tmp") ++ gsUtilArgs
-      )
-      try {
-        runner(process)
-      } finally {
-        deleteDirectoryRecursively(tmp)
-      }
+      File
+        .temporaryDirectory("gsutil-state")
+        .map { tmp =>
+          runner(Process(Seq("gsutil", "-o", s"GSUtil:state_dir=$tmp") ++ gsUtilArgs))
+        }
+        .get()
     }
   }
 }
