@@ -257,14 +257,14 @@ main() {
 
   # Temporary directory to store rendered configs.
   local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
-  trap "rm -r ${tmpdir}" ERR EXIT HUP INT TERM
+  trap "rm -rf ${tmpdir}" ERR EXIT HUP INT TERM
 
   render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
 
   deploy_containers ${clio_fqdn} ${tmpdir}
 
   if poll_clio_health ${clio_fqdn} ${docker_tag}; then
-    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -r ${APP_BACKUP_BACKUP_DIR}"
+    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
   else
     >&2 echo Error: Clio failed to report expected health / version, rolling back deploy!
     rollback_deploy ${clio_fqdn}
