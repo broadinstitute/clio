@@ -26,33 +26,33 @@ class MoveWgsCramSpec extends BaseClientSpec {
   }
 
   it should "throw an exception if the cram file does not exist" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[RuntimeException] {
       val command =
         MoveWgsCram(
           key = testCramTransferV1Key,
-          destination = testUbamCloudSourcePath
+          destination = testCramCloudSourcePath
         )
       succeedingDispatcher().dispatch(command)
     }
   }
 
   it should "throw an exception if Clio returns an error" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[RuntimeException] {
       val command =
         MoveWgsCram(
           key = testCramTransferV1Key,
-          destination = testUbamCloudSourcePath
+          destination = testCramCloudSourcePath
         )
       failingDispatcher.dispatch(command)
     }
   }
 
   it should "throw an exception if Clio doesn't return a cram" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalStateException] {
       val command =
         MoveWgsCram(
           key = testCramTransferV1Key,
-          destination = testUbamCloudSourcePath
+          destination = testCloudDestinationDirectoryPath
         )
       succeedingDispatcher().dispatch(command)
     }
@@ -60,18 +60,18 @@ class MoveWgsCramSpec extends BaseClientSpec {
 
   it should "throw an exception if Clio can't upsert the new cram" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
-    recoverToSucceededIf[Exception] {
+    mockIoUtil.putFileInCloud(testCramCloudSourcePath)
+    recoverToSucceededIf[RuntimeException] {
       new CommandDispatch(MockClioWebClient.failingToUpsert, mockIoUtil)
         .dispatch(goodMoveCommand)
     }
   }
 
   it should "throw an exception if given a non-GCP cram" in {
-    recoverToSucceededIf[IllegalArgumentException] {
+    recoverToSucceededIf[UnsupportedOperationException] {
       val command = MoveWgsCram(
         key = testCramTransferV1Key.copy(location = Location.OnPrem),
-        destination = testUbamCloudDestinationPath
+        destination = testCramCloudSourcePath
       )
       succeedingDispatcher().dispatch(command)
     }

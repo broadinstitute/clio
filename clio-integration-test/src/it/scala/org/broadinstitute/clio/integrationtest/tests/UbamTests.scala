@@ -125,8 +125,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
       "--destination",
       "gs://fake-path/"
     )
-    recoverToExceptionIf[Exception](moveResponseFuture)
-      .map(messageShouldBe("Could not query the HybselUbam. No files have been moved."))
+    recoverToExceptionIf[FailedResponse](moveResponseFuture)
+      .map(statusCodeShouldBe(StatusCodes.NotFound))
   }
 
   it should "throw a FailedResponse 404 when running delete command for hybsel ubams" in {
@@ -143,8 +143,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
       "--note",
       "note"
     )
-    recoverToExceptionIf[Exception](deleteResponseFuture)
-      .map(messageShouldBe("Could not query the HybselUbam. No files have been deleted."))
+    recoverToExceptionIf[FailedResponse](deleteResponseFuture)
+      .map(statusCodeShouldBe(StatusCodes.NotFound))
   }
 
   it should "create the expected wgs-ubam mapping in elasticsearch" in {

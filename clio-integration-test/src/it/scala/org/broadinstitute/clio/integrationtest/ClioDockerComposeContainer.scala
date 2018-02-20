@@ -1,14 +1,12 @@
 package org.broadinstitute.clio.integrationtest
 
-import java.io.File
-import java.nio.file.attribute.PosixFilePermissions
-import java.nio.file.{Files, Path, Paths, StandardOpenOption}
+import java.nio.file.StandardOpenOption
 import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.Uri
+import better.files.File
 import com.dimafeng.testcontainers.DockerComposeContainer
 import io.circe.Json
-import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
@@ -31,7 +29,7 @@ class ClioDockerComposeContainer(
   exposedServices: Map[String, Int],
   seededDocuments: Map[ElasticsearchIndex[_], Seq[Json]] = Map.empty
 ) extends DockerComposeContainer(
-      Seq(composeFile),
+      Seq(composeFile.toJava),
       exposedServices,
       Base58.randomString(6).toLowerCase()
     )
@@ -42,7 +40,7 @@ class ClioDockerComposeContainer(
     service <- Seq("elasticsearch1", "elasticsearch2")
     filename <- Seq("docker-cluster.log", "docker-cluster_access.log")
   } yield {
-    Paths.get(ClioBuildInfo.logDir, service, filename)
+    File(ClioBuildInfo.logDir, service, filename)
   }
 
   /*
@@ -85,13 +83,10 @@ class ClioDockerComposeContainer(
     * to initialize in the ES containers and tests will fail to start.
     */
   override def starting()(implicit description: Description): Unit = {
-    val rootPersistenceDir = Paths.get(ClioBuildInfo.persistenceDir)
+    val rootPersistenceDir = File(ClioBuildInfo.persistenceDir)
 
-    Seq(Paths.get(ClioBuildInfo.logDir), rootPersistenceDir).foreach { dir =>
-      if (Files.exists(dir)) {
-        IoUtil.deleteDirectoryRecursively(dir)
-      }
-      val _ = Files.createDirectories(dir)
+    Seq(File(ClioBuildInfo.logDir), rootPersistenceDir).foreach {
+      _.delete(swallowIOExceptions = true).createDirectories()
     }
 
     if (seededDocuments.nonEmpty) {
@@ -119,18 +114,14 @@ class ClioDockerComposeContainer(
                 earliest.plusDays(i.toLong / (documentCount.toLong / daySpread))
               )
 
-              val writeDir =
-                Files.createDirectories(rootPersistenceDir.resolve(s"$dateDir/"))
+              val writeDir = (rootPersistenceDir / s"$dateDir/").createDirectories()
               val upsertId = json.hcursor
                 .get[UpsertId](ClioDocument.UpsertIdElasticSearchName)
                 .fold(throw _, identity)
 
-              val _ = Files.write(
-                writeDir.resolve(ClioDocument.persistenceFilename(upsertId)),
-                defaultPrinter.pretty(json).getBytes,
-                StandardOpenOption.CREATE_NEW,
-                StandardOpenOption.WRITE
-              )
+              val _ = (writeDir / ClioDocument.persistenceFilename(upsertId)).write(
+                defaultPrinter.pretty(json)
+              )(Seq(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE))
             }
           }
       }
@@ -138,15 +129,25 @@ class ClioDockerComposeContainer(
 
     val logPaths = ClioDockerComposeContainer.clioLog +: esLogs
     logPaths.foreach { log =>
-      if (!Files.exists(log.getParent)) {
-        val _ = Files.createDirectories(log.getParent)
+      if (!log.parent.exists) {
+        val _ = log.parent.createDirectories()
       }
-      if (!Files.exists(log)) {
-        val _ = Files.createFile(log)
-        Files.setPosixFilePermissions(
-          log,
-          PosixFilePermissions.fromString("rw-rw-rw-")
-        )
+      if (!log.exists) {
+        import java.nio.file.attribute.PosixFilePermission._
+
+        val _ = log
+          .createFile()
+          // Without these permissions, logback throws on startup, breaking our log monitoring.
+          .setPermissions(
+            Set(
+              OWNER_READ,
+              OWNER_WRITE,
+              GROUP_READ,
+              GROUP_WRITE,
+              OTHERS_READ,
+              OTHERS_WRITE
+            )
+          )
       }
     }
     super.starting()
@@ -159,11 +160,9 @@ class ClioDockerComposeContainer(
   override def finished()(implicit description: Description): Unit = {
     super.finished()
     Seq(ClioBuildInfo.logDir, ClioBuildInfo.persistenceDir).foreach { dirPrefix =>
-      val target = Paths.get(s"$dirPrefix-${description.getDisplayName}")
-      if (Files.exists(target)) {
-        IoUtil.deleteDirectoryRecursively(target)
-      }
-      val _ = Files.move(Paths.get(dirPrefix), target)
+      val target = File(s"$dirPrefix-${description.getDisplayName}")
+        .delete(swallowIOExceptions = true)
+      val _ = File(dirPrefix).moveTo(target, overwrite = true)
     }
   }
 
@@ -230,6 +229,5 @@ object ClioDockerComposeContainer {
   val persistenceDirVariable = "LOCAL_PERSISTENCE_DIR"
 
   /** Log file to mount into the Clio container. */
-  val clioLog: Path =
-    Paths.get(ClioBuildInfo.logDir, "clio-server", "clio-server.log")
+  val clioLog: File = File(ClioBuildInfo.logDir, "clio-server", "clio-server.log")
 }

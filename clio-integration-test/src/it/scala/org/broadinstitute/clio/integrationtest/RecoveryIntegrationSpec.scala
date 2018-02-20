@@ -1,10 +1,10 @@
 package org.broadinstitute.clio.integrationtest
 
-import java.io.File
 import java.net.URI
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.Sink
+import better.files.File
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
@@ -86,7 +86,7 @@ class RecoveryIntegrationSpec
   private val updatedCrams = initCrams.map(updateDoc(_, "cram_path"))
 
   override val container = new ClioDockerComposeContainer(
-    new File(getClass.getResource(DockerIntegrationSpec.composeFilename).toURI),
+    File(getClass.getResource(DockerIntegrationSpec.composeFilename)),
     DockerIntegrationSpec.elasticsearchServiceName,
     Map(
       clioFullName -> DockerIntegrationSpec.clioServicePort,

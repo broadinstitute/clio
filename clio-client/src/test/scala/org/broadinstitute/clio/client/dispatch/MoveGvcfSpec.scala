@@ -26,7 +26,7 @@ class MoveGvcfSpec extends BaseClientSpec {
   }
 
   it should "throw an exception if the gvcf file does not exist" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[RuntimeException] {
       val command =
         MoveGvcf(
           key = testGvcfTransferV1Key,
@@ -36,28 +36,28 @@ class MoveGvcfSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw an exception if Clio doesn't return a Gvcf" in {
-    recoverToSucceededIf[Exception] {
+  it should "throw an exception if Clio doesn't return a gvcf" in {
+    recoverToSucceededIf[IllegalStateException] {
       val command =
         MoveGvcf(
           key = testGvcfTransferV1Key,
-          destination = testGvcfCloudSourcePath
+          destination = testCloudDestinationDirectoryPath
         )
       succeedingDispatcher().dispatch(command)
     }
   }
 
-  it should "throw an exception if Clio can't upsert the new Gvcf" in {
+  it should "throw an exception if Clio can't upsert the new gvcf" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[RuntimeException] {
       new CommandDispatch(MockClioWebClient.failingToUpsert, mockIoUtil)
         .dispatch(goodGvcfMoveCommand)
     }
   }
 
   it should "throw an exception if given a non-GCP gvcf" in {
-    recoverToSucceededIf[IllegalArgumentException] {
+    recoverToSucceededIf[UnsupportedOperationException] {
       val command = MoveGvcf(
         key = TransferGvcfV1Key(
           location = Location.OnPrem,
@@ -85,7 +85,7 @@ class MoveGvcfSpec extends BaseClientSpec {
     recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveGvcf(
         key = testGvcfTransferV1Key,
-        destination = testGvcfCloudDestinationPath
+        destination = URI.create("gs://the-bucket/the/file.g.vcf.gz")
       )
       succeedingDispatcher().dispatch(command)
     }

@@ -7,11 +7,13 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream._
 import akka.stream.scaladsl.{Keep, Sink, Source}
+import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.{Json, Printer}
 import io.circe.syntax._
-import org.broadinstitute.clio.client.util.FutureWithErrorMessage
 import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.ClassUtil
+import org.broadinstitute.clio.util.generic.{CaseClassMapper, CaseClassTypeConverter}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -32,7 +34,7 @@ class ClioWebClient(
 )(implicit system: ActorSystem)
     extends ModelAutoDerivation
     with FailFastCirceSupport
-    with FutureWithErrorMessage {
+    with StrictLogging {
 
   implicit val executionContext: ExecutionContext = system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
@@ -160,9 +162,7 @@ class ClioWebClient(
           }
       }
 
-      responsePromise.future
-        .logErrorMsg("Failed to send HTTP request to Clio server")
-        .flatMap(ensureOkResponse)
+      responsePromise.future.flatMap(ensureOkResponse)
     }
   }
 
@@ -231,21 +231,61 @@ class ClioWebClient(
     ).flatMap(unmarshal[Json])
   }
 
+  def getMetadataForKey[TI <: TransferIndex](transferIndex: TI)(
+    input: transferIndex.KeyType
+  ): Future[Option[transferIndex.type#MetadataType]] = {
+    import transferIndex.implicits._
+
+    val keyFields = new CaseClassMapper[transferIndex.KeyType].names
+
+    val keyToQueryMapper = CaseClassTypeConverter[
+      transferIndex.KeyType,
+      transferIndex.QueryInputType
+    ](_.mapValues(Option.apply[Any]))
+
+    val outputToMetadataMapper =
+      CaseClassTypeConverter[
+        transferIndex.QueryOutputType,
+        transferIndex.MetadataType
+      ](_ -- keyFields)
+
+    query(transferIndex)(keyToQueryMapper.convert(input), includeDeleted = false)
+      .map(_.as[Seq[Json]].fold(throw _, identity).toList)
+      .map {
+        case Nil => None
+        case js :: Nil => {
+          val output = js.as[transferIndex.QueryOutputType].fold(throw _, identity)
+          Some(outputToMetadataMapper.convert(output))
+        }
+        case many => {
+          val prettyKey = ClassUtil.formatFields(input)
+          throw new IllegalStateException(
+            s"""Got > 1 ${transferIndex.name}s from Clio for $prettyKey:
+               |${many.asJson.pretty(Printer.spaces2)}""".stripMargin
+          )
+        }
+      }
+  }
+
   private def unmarshal[A: FromEntityUnmarshaller: TypeTag](
     httpResponse: HttpResponse
   ): Future[A] = {
     Unmarshal(httpResponse)
       .to[A]
-      .logErrorMsg(
-        s"Could not convert entity from $httpResponse to ${typeOf[A]}"
-      )
+      .recover {
+        case ex =>
+          throw new RuntimeException(
+            s"Could not convert entity from $httpResponse to ${typeOf[A]}",
+            ex
+          )
+      }
   }
 
   private def ensureOkResponse(
     httpResponse: HttpResponse
   ): Future[HttpResponse] = {
     if (httpResponse.status.isSuccess()) {
-      logger.info(
+      logger.debug(
         s"Successfully completed command. Response code: ${httpResponse.status}"
       )
       Future.successful(httpResponse)

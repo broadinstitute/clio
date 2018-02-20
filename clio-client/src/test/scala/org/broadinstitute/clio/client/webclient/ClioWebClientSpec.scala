@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.client.webclient
 
+import java.util.concurrent.TimeoutException
+
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse}
 import akka.pattern.{after => `akka-after`}
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
@@ -42,7 +44,7 @@ class ClioWebClientSpec
   )
 
   it should "time out requests that take too long" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[TimeoutException] {
       client.getClioServerHealth
     }
   }
@@ -83,7 +85,7 @@ class ClioWebClientSpec
     val sequenceAll = Future.sequence(requests)
     val sequenceMaxQueued = Future.sequence(requests.take(testMaxQueued))
 
-    recoverToSucceededIf[Exception](sequenceAll)
+    recoverToSucceededIf[RuntimeException](sequenceAll)
       .flatMap(_ => sequenceMaxQueued)
       .map(_ => succeed)
   }
