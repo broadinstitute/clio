@@ -31,7 +31,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
         .getMetadataForKey(moveCommand.index)(moveCommand.key)
         .map {
           _.getOrElse(
-            throw new RuntimeException(
+            throw new IllegalStateException(
               s"No $name found in Clio for $prettyKey, nothing to move."
             )
           )
@@ -44,7 +44,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
 
   private def verifyCloudPaths(ioUtil: IoUtil): Unit = {
     if (moveCommand.key.location != Location.GCP) {
-      throw new IllegalArgumentException(
+      throw new UnsupportedOperationException(
         s"Only cloud ${name}s are supported at this time."
       )
     }
@@ -126,17 +126,17 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
       Future.successful(None)
     } else {
       val oldPaths = movesToPerform.keys
-      oldPaths.foreach { path =>
-        if (!ioUtil.isGoogleObject(path)) {
-          sys.error(
-            s"Inconsistent state detected: non-cloud path '$path' is registered to the $name for $prettyKey"
-          )
+      val pathCheck = Future {
+        oldPaths.foreach { path =>
+          if (!ioUtil.isGoogleObject(path)) {
+            throw new IllegalStateException(
+              s"Inconsistent state detected: non-cloud path '$path' is registered to the $name for $prettyKey"
+            )
+          }
         }
       }
 
-      val sourcesAsString = movesToPerform.keys.mkString("'", "', '", "'")
-
-      val googleCopies = movesToPerform.map {
+      lazy val googleCopies = movesToPerform.map {
         case (oldPath, newPath) =>
           Future(copyGoogleObject(oldPath, newPath, ioUtil))
       }
@@ -148,30 +148,45 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
       }
 
       for {
+        _ <- pathCheck
         _ <- Future
           .sequence(googleCopies)
-          .logErrorMsg(
-            s"""An error occurred while copying files in the cloud. Clio hasn't been updated,
-               |but some files for $prettyKey may exist in two locations. Check the logs to see
-               |which copy commands failed, and why, then try re-running this command. If this
-               |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.""".stripMargin
-          )
+          .recover {
+            case ex =>
+              throw new RuntimeException(
+                s"""An error occurred while copying files in the cloud. Clio hasn't been updated,
+                   |but some files for $prettyKey may exist in two locations. Check the logs to see
+                   |which copy commands failed, and why, then try re-running this command. If this
+                   |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}.""".stripMargin,
+                ex
+              )
+          }
         upsertResponse <- client
           .upsert(moveCommand.index)(moveCommand.key, newMetadata)
-          .logErrorMsg(
-            s"""An error occurred while updating the $name record in Clio. All files associated with
-               |$prettyKey exist at both the old and new locations, but Clio only knows about the old
-               |location. Try removing the file(s) at $destination and re-running this command.
-               |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
-          )
+          .recover {
+            case ex =>
+              throw new RuntimeException(
+                s"""An error occurred while updating the $name record in Clio. All files associated with
+                   |$prettyKey exist at both the old and new locations, but Clio only knows about the old
+                   |location. Try removing the file(s) at $destination and re-running this command.
+                   |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin,
+                ex
+              )
+          }
         _ <- Future
           .sequence(googleDeletes)
-          .logErrorMsg(
-            s"""The old files associated with $prettyKey were not able to be deleted.
-               |Please manually delete the old files at: $sourcesAsString.
-               |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
-          )
+          .recover {
+            case ex =>
+              throw new RuntimeException(
+                s"""The old files associated with $prettyKey were not able to be deleted.
+                   |Please manually delete the old files at:
+                   |${oldPaths.mkString(",\n")}
+                   |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin,
+                ex
+              )
+          }
       } yield {
+        val sourcesAsString = movesToPerform.keys.mkString("'", "', '", "'")
         logger.info(s"Successfully moved $sourcesAsString to '$destination'")
         Some(upsertResponse)
       }
@@ -180,7 +195,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
 
   private def copyGoogleObject(source: URI, destination: URI, ioUtil: IoUtil): Unit = {
     if (ioUtil.copyGoogleObject(source, destination) != 0) {
-      throw new Exception(
+      throw new RuntimeException(
         s"Copy files in the cloud failed from '$source' to '$destination'"
       )
     }
@@ -188,7 +203,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
 
   private def deleteGoogleObject(path: URI, ioUtil: IoUtil): Unit = {
     if (ioUtil.deleteGoogleObject(path) != 0) {
-      throw new Exception(s"Deleting file in the cloud failed for path '$path'")
+      throw new RuntimeException(s"Deleting file in the cloud failed for path '$path'")
     }
   }
 }

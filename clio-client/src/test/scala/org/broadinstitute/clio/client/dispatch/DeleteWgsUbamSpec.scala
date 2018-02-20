@@ -16,7 +16,7 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   implicit val bearToken: OAuth2BearerToken = testBearer
 
   it should "throw an exception if the location is not GCP" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[UnsupportedOperationException] {
       val command = DeleteWgsUbam(
         key = TransferUbamV1Key(
           flowcellBarcode = testFlowcell,
@@ -31,27 +31,27 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "throw an exception if Clio returns an error" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[RuntimeException] {
       failingDispatcher.dispatch(goodDeleteCommand)
     }
   }
 
-  it should "throw an exception if Clio doesn't return a WgsUbam" in {
-    recoverToSucceededIf[Exception] {
+  it should "throw an exception if Clio doesn't return a ubam" in {
+    recoverToSucceededIf[IllegalStateException] {
       succeedingDispatcher().dispatch(goodDeleteCommand)
     }
   }
 
-  it should "throw an exception if Clio returns multiple records for a WgsUbam" in {
+  it should "throw an exception if Clio returns multiple records for a ubam" in {
     val mockIoUtil = new MockIoUtil
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalStateException] {
       succeedingDispatcher(mockIoUtil, testTwoWgsUbamsLocation)
         .dispatch(goodDeleteCommand)
     }
   }
 
   it should "throw an exception if Clio can't delete the cloud file" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[RuntimeException] {
       succeedingDispatcher(
         new MockIoUtil {
           override def deleteGoogleObject(path: URI): Int = 1
@@ -62,29 +62,29 @@ class DeleteWgsUbamSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw an exception if Clio can't delete the WgsUbam" in {
+  it should "throw an exception if Clio can't delete the ubam record" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[RuntimeException] {
       new CommandDispatch(MockClioWebClient.failingToUpsert, mockIoUtil)
         .dispatch(goodDeleteCommand)
     }
   }
 
-  it should "throw an exception when attempting to delete a WgsUbam in Clio if the cloud ubam does not exist" in {
-    recoverToSucceededIf[Exception] {
+  it should "throw an exception when attempting to delete a ubam in Clio if the cloud ubam does not exist" in {
+    recoverToSucceededIf[IllegalStateException] {
       succeedingDispatcher(new MockIoUtil, testWgsUbamLocation)
         .dispatch(goodDeleteCommand)
     }
   }
 
-  it should "delete a WgsUbam in Clio if the cloud ubam does not exist and the force flag is true" in {
+  it should "delete a ubam in Clio if the cloud ubam does not exist and the force flag is true" in {
     succeedingDispatcher(new MockIoUtil, testWgsUbamLocation)
       .dispatch(goodDeleteCommand.copy(force = true))
       .map(_ shouldBe an[UpsertId])
   }
 
-  it should "delete a WgsUbam in Clio and the cloud" in {
+  it should "delete a ubam in Clio and the cloud" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     succeedingDispatcher(mockIoUtil, testWgsUbamLocation)

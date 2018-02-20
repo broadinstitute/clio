@@ -109,11 +109,6 @@ trait TestData {
       s"gs://testProject/testSample/ubamPath1${UbamExtensions.UbamExtension}"
     )
 
-  val testUbamCloudDestinationPath: URI =
-    URI.create(
-      s"gs://testProject/testSample/ubamPath2${UbamExtensions.UbamExtension}"
-    )
-
   val testGvcfCloudSourcePath: URI =
     URI.create(
       s"gs://testProject/testSample/gvcfPath1${GvcfExtensions.GvcfExtension}"
@@ -131,11 +126,6 @@ trait TestData {
 
   val testCloudDestinationDirectoryPath: URI =
     URI.create("gs://testProject/testSample/moved/")
-
-  val testGvcfCloudDestinationPath: URI =
-    testCloudDestinationDirectoryPath.resolve(
-      s"gvcfPath2${GvcfExtensions.GvcfExtension}"
-    )
 
   val testCramCloudSourcePath: URI =
     URI.create(

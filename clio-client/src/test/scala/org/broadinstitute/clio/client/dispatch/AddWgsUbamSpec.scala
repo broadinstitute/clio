@@ -14,7 +14,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
   val dispatcher = succeedingDispatcher()
 
   it should "fail if the metadata is not valid json" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       dispatcher.dispatch(
         AddWgsUbam(
           metadataLocation = badMetadataFileLocation,
@@ -24,8 +24,8 @@ class AddWgsUbamSpec extends BaseClientSpec {
     }
   }
 
-  it should "fail if the json is valid but we can't unmarshal it" in {
-    recoverToSucceededIf[Exception] {
+  it should "fail if the json is valid but we can't decode it" in {
+    recoverToSucceededIf[IllegalArgumentException] {
       dispatcher.dispatch(
         AddWgsUbam(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
@@ -36,7 +36,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "return a failed future if there was a server error" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[RuntimeException] {
       failingDispatcher
         .dispatch(goodAddCommand)
     }
@@ -49,7 +49,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
   }
 
   it should "fail to add a ubam that would overwrite an existing document" in {
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val mockIoUtil = new MockIoUtil
       succeedingDispatcher(mockIoUtil, testWgsUbamLocation)
         .dispatch(goodAddCommand)
@@ -58,7 +58,6 @@ class AddWgsUbamSpec extends BaseClientSpec {
 
   it should "succeed in overwriting an existing document if a force flag is set" in {
     val mockIoUtil = new MockIoUtil
-    mockIoUtil.putFileInCloud(testUbamCloudSourcePath)
     succeedingDispatcher(mockIoUtil, testWgsChangedUbamLocation)
       .dispatch(goodAddCommand.copy(force = true))
       .map(_ shouldBe an[UpsertId])

@@ -21,7 +21,9 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
   ): Future[UpsertId] = {
     if (!deleteCommand.key.location.equals(Location.GCP)) {
       Future.failed(
-        new Exception(s"Only cloud ${name}s are supported at this time.")
+        new UnsupportedOperationException(
+          s"Only cloud ${name}s are supported at this time."
+        )
       )
     } else {
       for {
@@ -29,8 +31,8 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
           .getMetadataForKey(deleteCommand.index)(deleteCommand.key)
           .map {
             _.getOrElse(
-              throw new RuntimeException(
-                s"No ${name} found in Clio for $prettyKey, nothing to delete."
+              throw new IllegalStateException(
+                s"No $name found in Clio for $prettyKey, nothing to delete."
               )
             )
           }
@@ -48,7 +50,7 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
   ): Unit = {
     metadata.pathsToDelete.foreach { path =>
       if (!ioUtil.isGoogleObject(path)) {
-        throw new Exception(
+        throw new IllegalStateException(
           s"Inconsistent state detected: non-cloud path '$path' is registered to the cloud $name for $prettyKey"
         )
       }
@@ -93,24 +95,34 @@ class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
     for {
       _ <- Future
         .sequence(googleDeletes)
-        .logErrorMsg(
-          s"""Failed to delete at least one file associated with $prettyKey on the cloud.
-             |The record for $prettyKey still exists in Clio. Check the logs to see which
-             |delete commands failed, and why, then try re-running this command. If this
-             |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
-        )
+        .recover {
+          case ex =>
+            throw new RuntimeException(
+              s"""Failed to delete at least one file associated with $prettyKey on the cloud.
+                 |The record for $prettyKey still exists in Clio. Check the logs to see which
+                 |delete commands failed, and why, then try re-running this command. If this
+                 |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin,
+              ex
+            )
+        }
       upsertResponse <- client
         .upsert(deleteCommand.index)(deleteCommand.key, markedAsDeleted)
-        .logErrorMsg(
-          s"""Failed to delete the $name record for $prettyKey in Clio.
-             |The associated files have been deleted in the cloud, but Clio doesn't know.
-             |Check the logs to see what error occurred, and try re-running this command.
-             |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
-        )
+        .recover {
+          case ex =>
+            throw new RuntimeException(
+              s"""Failed to delete the $name record for $prettyKey in Clio.
+                 |The associated files have been deleted in the cloud, but Clio doesn't know.
+                 |Check the logs to see what error occurred, and try re-running this command.
+                 |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin,
+              ex
+            )
+        }
     } yield {
-      logger.info(
-        s"Successfully deleted ${pathsToDelete.mkString("'", "', '", "'")}"
-      )
+      if (pathsToDelete.nonEmpty) {
+        logger.info(
+          s"Successfully deleted ${pathsToDelete.mkString("'", "', '", "'")}"
+        )
+      }
       upsertResponse
     }
   }
