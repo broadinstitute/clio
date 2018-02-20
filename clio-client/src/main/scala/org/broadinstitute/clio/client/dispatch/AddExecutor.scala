@@ -6,7 +6,10 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.ClassUtil
-import org.broadinstitute.clio.util.generic.CaseClassMapper
+import org.broadinstitute.clio.util.generic.{
+  CaseClassMapper,
+  CirceEquivalentCamelCaseLexer
+}
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -43,25 +46,20 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
       }
 
     decodedOrError.fold(
-      Future.failed(_), { decoded =>
-        {
-          for {
-            existingMetadata <- if (!addCommand.force) {
-              webClient.getMetadataForKey(addCommand.index)(addCommand.key)
-            } else {
-              Future.successful(None)
-            }
-            upsertResponse <- addFiles(
-              webClient,
-              decoded,
-              existingMetadata
-            ).fold(
-              left => Future.failed(left),
-              identity
-            )
-          } yield {
-            upsertResponse
+      Future.failed, { decoded =>
+        for {
+          existingMetadata <- if (!addCommand.force) {
+            webClient.getMetadataForKey(addCommand.index)(addCommand.key)
+          } else {
+            Future.successful(None)
           }
+          upsertResponse <- addFiles(
+            webClient,
+            decoded,
+            existingMetadata
+          ).fold(Future.failed, identity)
+        } yield {
+          upsertResponse
         }
       }
     )
@@ -129,12 +127,13 @@ class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
           existingMetadataValues(field).equals(newMetadataValues(field))
         }
 
-    for (key <- differentFields)
-      yield
-        (
-          key,
-          newMetadataValues(key),
-          existingMetadataValues(key)
-        )
+    differentFields.map { key =>
+      import s_mach.string._
+      (
+        key.toSnakeCase(CirceEquivalentCamelCaseLexer),
+        newMetadataValues(key).get,
+        existingMetadataValues(key).get
+      )
+    }
   }
 }
