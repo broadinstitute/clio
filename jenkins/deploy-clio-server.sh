@@ -123,10 +123,10 @@ build_fqdn() {
 # Get the "real" hostname for the Clio host at the given address (which might be a DNS).
 # Assumes that Clio hosts will be named according to the pattern:
 #  gotc-clio-{ENV}(\d{3})
-# i.e. gotc-clio-dev101, gotc-clio-prod-203
+# i.e. gotc-clio-dev101, gotc-clio-prod203
 get_real_clio_name() {
   local -r gce_name=$(ssh ${SSH_OPTS[@]} ${SSH_USER}@$1 'uname -n')
-  local -r instance_number=$(echo ${gce_name} | sed "s/gotc-clio-${ENV}\([0-9]*\)/\1/")
+  local -r instance_number=$(echo ${gce_name} | sed -E "s/gotc-clio-${ENV}([0-9]{3})/\1/")
 
   echo $(build_fqdn "clio${instance_number}")
 }
