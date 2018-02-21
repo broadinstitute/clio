@@ -506,8 +506,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
         targetDir.uri.toString
       )
     } yield {
-      sourceUbam.exists should be(srcIsDest)
-      targetUbam.exists should be(true)
+      if (!srcIsDest) {
+        sourceUbam shouldNot exist
+      }
+      targetUbam should exist
       targetUbam.contentAsString should be(fileContents)
     }
 
@@ -583,7 +585,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         Location.GCP.entryName
       )
     } yield {
-      cloudPath2.exists should be(false)
+      cloudPath2 shouldNot exist
       queryOutputs should have length 1
       queryOutputs.head.ubamPath should be(Some(cloudPath.uri))
     }
@@ -667,7 +669,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           if (force) "--force" else ""
         ).filter(_.nonEmpty): _*
       )
-      _ = cloudPath.exists should be(false)
+      _ = cloudPath shouldNot exist
       outputs <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--flowcell-barcode",

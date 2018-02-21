@@ -519,15 +519,17 @@ trait GvcfTests {
         rootDestination.uri.toString
       )
     } yield {
-      gvcfSource.exists should be(srcIsDest || gvcfInDest)
+      if (!(srcIsDest || gvcfInDest)) {
+        gvcfSource shouldNot exist
+      }
       Seq(indexSource, summaryMetricsSource, detailMetricsSource)
-        .foreach(_.exists should be(srcIsDest))
+        .foreach(src => if (!srcIsDest) src shouldNot exist)
       Seq(
         gvcfDestination,
         indexDestination,
         summaryMetricsDestination,
         detailMetricsDestination
-      ).foreach(_.exists should be(true))
+      ).foreach(_ should exist)
       Seq(
         (gvcfDestination, gvcfContents),
         (indexDestination, indexContents),
@@ -659,12 +661,14 @@ trait GvcfTests {
         "--include-deleted"
       )
     } yield {
-      gvcfPath.exists should be(false)
-      indexPath.exists should be(false)
-      summaryMetricsPath.exists should be(true)
-      detailMetricsPath.exists should be(true)
-      summaryMetricsPath.contentAsString should be(summaryMetricsContents)
-      detailMetricsPath.contentAsString should be(detailMetricsContents)
+      gvcfPath shouldNot exist
+      indexPath shouldNot exist
+      if (!testNonExistingFile) {
+        summaryMetricsPath should exist
+        detailMetricsPath should exist
+        summaryMetricsPath.contentAsString should be(summaryMetricsContents)
+        detailMetricsPath.contentAsString should be(detailMetricsContents)
+      }
 
       outputs should have length 1
       val output = outputs.head

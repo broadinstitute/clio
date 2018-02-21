@@ -32,6 +32,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
 import org.elasticsearch.client.RestClient
+import org.scalatest.enablers.Existence
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 import scala.collection.JavaConverters._
@@ -266,6 +267,18 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   def randomId: String = UUID.randomUUID().toString.replaceAll("-", "")
 
   /**
+    * Typeclass which enables using syntax like
+    * <pre>
+    * file should exist
+    * </pre>
+    * instead of
+    * <pre>
+    * file.exists should be(true)
+    * </pre>
+    */
+  implicit val fileExistence: Existence[File] = _.exists
+
+  /**
     * Check that the storage path for a given Clio ID exists,
     * load its contents as JSON, and check that the loaded ID
     * matches the given ID.
@@ -276,7 +289,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     val expectedPath = rootPersistenceDir / index.currentPersistenceDir / ClioDocument
       .persistenceFilename(expectedId)
 
-    expectedPath.exists should be(true)
+    expectedPath should exist
     val document = parse(expectedPath.contentAsString)
       .flatMap(_.as[Document])
       .toTry

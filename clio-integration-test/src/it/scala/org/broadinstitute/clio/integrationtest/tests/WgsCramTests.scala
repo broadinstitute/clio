@@ -492,14 +492,14 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       _ <- runClient(ClioCommand.moveWgsCramName, args: _*)
     } yield {
       Seq(alignmentMetricsDestination, cramSource, craiSource)
-        .foreach(_.exists should be(false))
+        .foreach(_ shouldNot exist)
 
       Seq(alignmentMetricsSource, cramDestination, craiDestination)
-        .foreach(_.exists should be(true))
+        .foreach(_ should exist)
 
       // We don't deliver fingerprinting metrics for now because they're based on unpublished research.
-      fingerprintMetricsSource.exists should be(true)
-      fingerprintMetricsDestination.exists should be(false)
+      fingerprintMetricsSource should exist
+      fingerprintMetricsDestination shouldNot exist
 
       Seq(
         (cramDestination, cramContents),
@@ -661,12 +661,10 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--include-deleted"
       )
     } yield {
-      Seq(cramPath, craiPath).foreach {
-        _.exists should be(false)
-      }
+      Seq(cramPath, craiPath).foreach(_ shouldNot exist)
       Seq((metrics1Path, metrics1Contents), (metrics2Path, metrics2Contents)).foreach {
         case (path, contents) => {
-          path.exists should be(true)
+          path should exist
           path.contentAsString should be(contents)
         }
       }
@@ -793,11 +791,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         workspaceName
       )
     } yield {
-      Seq(cramSource, craiSource).foreach(_.exists should be(false))
+      Seq(cramSource, craiSource).foreach(_ shouldNot exist)
 
-      Seq(cramDestination, craiDestination, md5Destination).foreach(
-        _.exists should be(true)
-      )
+      Seq(cramDestination, craiDestination, md5Destination).foreach(_ should exist)
 
       Seq(
         (cramDestination, cramContents),
@@ -892,9 +888,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         workspaceName
       )
     } yield {
-      Seq(cramSource, craiSource, md5Destination).foreach(
-        _.exists should be(true)
-      )
+      Seq(cramSource, craiSource, md5Destination).foreach(_ should exist)
 
       Seq(
         (cramSource, cramContents),
@@ -1035,11 +1029,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         workspaceName
       )
     } yield {
-      Seq(cramSource, craiSource).foreach(_.exists should be(false))
+      Seq(cramSource, craiSource).foreach(_ shouldNot exist)
 
-      Seq(cramDestination, craiDestination, md5Destination).foreach(
-        _.exists should be(true)
-      )
+      Seq(cramDestination, craiDestination, md5Destination).foreach(_ should exist)
 
       Seq(
         (cramDestination, cramContents),
