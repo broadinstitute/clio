@@ -1,8 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess
 
+import better.files.File
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
-
-import java.nio.file.{Files, Path}
 
 /**
   * Persistence DAO which writes to local disk, for running Clio locally
@@ -11,9 +10,7 @@ import java.nio.file.{Files, Path}
 class LocalFilePersistenceDAO(config: Persistence.LocalConfig, recoveryParallelism: Int)
     extends PersistenceDAO(recoveryParallelism) {
 
-  override lazy val rootPath: Path = config.rootDir.getOrElse {
-    val dir = Files.createTempDirectory("clio-persistence").toFile
-    dir.deleteOnExit()
-    dir.toPath
+  override lazy val rootPath: File = config.rootDir.getOrElse {
+    File.newTemporaryDirectory("clio-persistence").deleteOnExit()
   }
 }

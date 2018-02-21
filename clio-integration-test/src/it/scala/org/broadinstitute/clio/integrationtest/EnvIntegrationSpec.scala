@@ -1,8 +1,7 @@
 package org.broadinstitute.clio.integrationtest
 
-import java.nio.file.Path
-
 import akka.http.scaladsl.model.Uri
+import better.files.File
 import org.broadinstitute.clio.client.webclient.{
   ClioWebClient,
   GoogleCredentialsGenerator
@@ -46,7 +45,7 @@ abstract class EnvIntegrationSpec(env: String)
     s"http://elasticsearch1.gotc-$env.broadinstitute.org:9200"
   )
 
-  override lazy val rootPersistenceDir: Path =
+  override lazy val rootPersistenceDir: File =
     rootPathForBucketInEnv(env, storageScopes)
 }
 

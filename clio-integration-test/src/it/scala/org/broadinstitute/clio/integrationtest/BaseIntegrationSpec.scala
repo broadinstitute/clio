@@ -1,12 +1,13 @@
 package org.broadinstitute.clio.integrationtest
 
-import java.nio.file.{FileSystem, Files, Path, Paths}
+import java.nio.file.FileSystem
 import java.util.UUID
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
 import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
+import better.files.File
 import com.bettercloud.vault.{Vault, VaultConfig}
 import com.google.cloud.storage.StorageOptions
 import com.google.cloud.storage.contrib.nio.{
@@ -106,8 +107,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
   /** List of possible token-file locations, in order of preference. */
   private val vaultTokenPaths = Seq(
-    Paths.get("/etc/vault-token-dsde"),
-    Paths.get(System.getProperty("user.home"), ".vault-token")
+    File("/etc/vault-token-dsde"),
+    File(System.getProperty("user.home"), ".vault-token")
   )
 
   /** Scopes needed from Google to write to our test-storage bucket. */
@@ -118,13 +119,9 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   /** Service account credentials for use when accessing cloud resources. */
   final protected lazy val serviceAccount: ServiceAccount = {
     val vaultToken: String = vaultTokenPaths
-      .find(Files.exists(_))
-      .map { path =>
-        new String(Files.readAllBytes(path)).stripLineEnd
-      }
-      .getOrElse {
-        sys.error("Vault token not found on filesystem!")
-      }
+      .find(_.exists)
+      .map(_.contentAsString.stripLineEnd)
+      .getOrElse(sys.error("Vault token not found on filesystem!"))
 
     val vaultConfig = new VaultConfig()
       .address(vaultUrl)
@@ -158,7 +155,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * Get a path to the root of a bucket in cloud-storage,
     * using Google's NIO filesystem adapter.
     */
-  def rootPathForBucketInEnv(env: String, scopes: Seq[String]): Path = {
+  def rootPathForBucketInEnv(env: String, scopes: Seq[String]): File = {
     val storageOptions = {
       val project = s"broad-gotc-$env-storage"
       serviceAccount
@@ -186,21 +183,21 @@ abstract class BaseIntegrationSpec(clioDescription: String)
       storageOptions
     )
 
-    gcs.getPath("/")
+    File(gcs.getPath("/"))
   }
 
   /**
     * Path to the cloud directory to which all GCP test data
     * should be written.
     */
-  lazy val rootTestStorageDir: Path =
+  lazy val rootTestStorageDir: File =
     rootPathForBucketInEnv("test", testStorageScopes)
 
   /**
     * Path to the root directory in which metadata updates will
     * be persisted.
     */
-  def rootPersistenceDir: Path
+  def rootPersistenceDir: File
 
   /**
     * HTTP client pointing to the elasticsearch node to test against.
@@ -276,12 +273,11 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   def getJsonFrom[Document <: ClioDocument: Decoder](expectedId: UpsertId)(
     implicit index: ElasticsearchIndex[Document]
   ): Document = {
-    val expectedPath = rootPersistenceDir
-      .resolve(index.currentPersistenceDir)
-      .resolve(ClioDocument.persistenceFilename(expectedId))
+    val expectedPath = rootPersistenceDir / index.currentPersistenceDir / ClioDocument
+      .persistenceFilename(expectedId)
 
-    Files.exists(expectedPath) should be(true)
-    val document = parse(new String(Files.readAllBytes(expectedPath)))
+    expectedPath.exists should be(true)
+    val document = parse(expectedPath.contentAsString)
       .flatMap(_.as[Document])
       .toTry
       .get
@@ -295,13 +291,11 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     *
     * Registers the temp file for deletion.
     */
-  def writeLocalTmpJson[A: Encoder](obj: A): Path = {
-    val tmpFile = Files.createTempFile("clio-integration", ".json")
-    val json = obj.asJson.pretty(implicitly[Printer])
-    Files.write(tmpFile, json.getBytes)
-
-    tmpFile.toFile.deleteOnExit()
+  def writeLocalTmpJson[A: Encoder](obj: A): File = {
+    val tmpFile = File.newTemporaryFile("clio-integration", ".json")
     tmpFile
+      .deleteOnExit()
+      .write(obj.asJson.pretty(implicitly[Printer]))
   }
 
   /** Shut down the actor system at the end of the suite. */

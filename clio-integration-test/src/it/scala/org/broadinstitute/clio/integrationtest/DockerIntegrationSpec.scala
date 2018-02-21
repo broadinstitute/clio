@@ -1,7 +1,5 @@
 package org.broadinstitute.clio.integrationtest
 
-import java.nio.file.{Path, Paths}
-
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
@@ -63,8 +61,7 @@ abstract class DockerIntegrationSpec(
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)
 
   // SBT sets a local path for persisting metadata updates.
-  override val rootPersistenceDir: Path =
-    Paths.get(ClioBuildInfo.persistenceDir)
+  override val rootPersistenceDir: File = File(ClioBuildInfo.persistenceDir)
 
   /*
    * Testcontainers doesn't provide a way to wait on a docker-compose

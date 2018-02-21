@@ -1,10 +1,8 @@
 package org.broadinstitute.clio.integrationtest.tests
 
 import java.net.URI
-import java.nio.file.Files
 
 import com.sksamuel.elastic4s.IndexAndType
-import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -153,14 +151,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 =
-        getJsonFrom[DocumentWgsCram](upsertId1)
+      val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
       storedDocument1.cramPath should be(
         Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
       )
 
-      val storedDocument2 =
-        getJsonFrom[DocumentWgsCram](upsertId2)
+      val storedDocument2 = getJsonFrom[DocumentWgsCram](upsertId2)
       storedDocument2.cramPath should be(
         Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))
       )
@@ -179,10 +175,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       sampleAlias = s"sample$randomId",
       version = 1
     )
-    val upsertData =
-      TransferWgsCramV1Metadata(
-        cramPath = Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
-      )
+    val upsertData = TransferWgsCramV1Metadata(
+      cramPath = Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
+    )
 
     for {
       upsertId1 <- runUpsertCram(upsertKey, upsertData)
@@ -285,10 +280,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
   it should "handle updates to wgs-cram metadata" in {
     val project = s"testProject$randomId"
-    val key =
-      TransferWgsCramV1Key(Location.GCP, project, s"testSample$randomId", 1)
-    val cramPath =
-      URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
+    val key = TransferWgsCramV1Key(Location.GCP, project, s"testSample$randomId", 1)
+    val cramPath = URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
     val metadata = TransferWgsCramV1Metadata(
       cramPath = Some(cramPath),
       cramSize = Some(1000L),
@@ -443,31 +436,26 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val alignmentMetricsName = s"$randomId.metrics"
     val fingerprintMetricsName = s"$randomId.metrics"
 
-    val rootSource =
-      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
-    val cramSource = rootSource.resolve(cramName)
-    val craiSource = rootSource.resolve(craiName)
-    val alignmentMetricsSource = rootSource.resolve(alignmentMetricsName)
-    val fingerprintMetricsSource = rootSource.resolve(fingerprintMetricsName)
+    val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+    val cramSource = rootSource / cramName
+    val craiSource = rootSource / craiName
+    val alignmentMetricsSource = rootSource / alignmentMetricsName
+    val fingerprintMetricsSource = rootSource / fingerprintMetricsName
 
     val endBasename = if (changeBasename) randomId else sample
 
-    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
-    val cramDestination =
-      rootDestination.resolve(s"$endBasename${WgsCramExtensions.CramExtension}")
-    val craiDestination =
-      rootDestination.resolve(s"$endBasename${WgsCramExtensions.CraiExtension}")
-    val alignmentMetricsDestination =
-      rootDestination.resolve(alignmentMetricsName)
-    val fingerprintMetricsDestination =
-      rootDestination.resolve(fingerprintMetricsName)
+    val rootDestination = rootSource.parent / s"moved/$randomId/"
+    val cramDestination = rootDestination / s"$endBasename${WgsCramExtensions.CramExtension}"
+    val craiDestination = rootDestination / s"$endBasename${WgsCramExtensions.CraiExtension}"
+    val alignmentMetricsDestination = rootDestination / alignmentMetricsName
+    val fingerprintMetricsDestination = rootDestination / fingerprintMetricsName
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata = TransferWgsCramV1Metadata(
-      cramPath = Some(cramSource.toUri),
-      craiPath = Some(craiSource.toUri),
-      alignmentSummaryMetricsPath = Some(alignmentMetricsSource.toUri),
-      fingerprintingSummaryMetricsPath = Some(fingerprintMetricsSource.toUri)
+      cramPath = Some(cramSource.uri),
+      craiPath = Some(craiSource.uri),
+      alignmentSummaryMetricsPath = Some(alignmentMetricsSource.uri),
+      fingerprintingSummaryMetricsPath = Some(fingerprintMetricsSource.uri)
     )
 
     val _ = Seq(
@@ -476,7 +464,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       (alignmentMetricsSource, alignmentMetricsContents),
       (fingerprintMetricsSource, fingerprintMetricsContents)
     ).map {
-      case (source, contents) => Files.write(source, contents.getBytes)
+      case (source, contents) => source.write(contents)
     }
 
     val args = Seq.concat(
@@ -490,7 +478,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--version",
         version.toString,
         "--destination",
-        rootDestination.toUri.toString
+        rootDestination.uri.toString
       ),
       if (changeBasename) {
         Seq("--new-basename", endBasename)
@@ -503,17 +491,15 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       _ <- runUpsertCram(key, metadata)
       _ <- runClient(ClioCommand.moveWgsCramName, args: _*)
     } yield {
-      Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
-      Files.exists(alignmentMetricsSource) should be(true)
+      Seq(alignmentMetricsDestination, cramSource, craiSource)
+        .foreach(_.exists should be(false))
 
-      Seq(cramDestination, craiDestination)
-        .foreach(Files.exists(_) should be(true))
-
-      Files.exists(alignmentMetricsDestination) should be(false)
+      Seq(alignmentMetricsSource, cramDestination, craiDestination)
+        .foreach(_.exists should be(true))
 
       // We don't deliver fingerprinting metrics for now because they're based on unpublished research.
-      Files.exists(fingerprintMetricsSource) should be(true)
-      Files.exists(fingerprintMetricsDestination) should be(false)
+      fingerprintMetricsSource.exists should be(true)
+      fingerprintMetricsDestination.exists should be(false)
 
       Seq(
         (cramDestination, cramContents),
@@ -522,7 +508,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         (fingerprintMetricsSource, fingerprintMetricsContents)
       ).foreach {
         case (destination, contents) =>
-          new String(Files.readAllBytes(destination)) should be(contents)
+          destination.contentAsString should be(contents)
       }
       succeed
     }
@@ -538,7 +524,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           alignmentMetricsDestination,
           fingerprintMetricsSource,
           fingerprintMetricsDestination
-        ).map(Files.deleteIfExists)
+        ).map(_.delete(swallowIOExceptions = true))
       }
     }
   }
@@ -605,51 +591,44 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     force: Boolean = false,
     workspaceName: Option[String] = None
   ): Future[Assertion] = {
-    val deleteNote =
-      s"$randomId --- Deleted by the integration tests --- $randomId"
+    val deleteNote = s"$randomId --- Deleted by the integration tests --- $randomId"
 
     val project = s"project$randomId"
     val sample = s"sample$randomId"
     val version = 3
 
     val cramContents = s"$randomId --- I am a cram fated to die --- $randomId"
-    val craiContents =
-      s"$randomId --- I am an index fated to die --- $randomId"
-    val metrics1Contents =
-      s"$randomId --- I am an immortal metrics file --- $randomId"
+    val craiContents = s"$randomId --- I am an index fated to die --- $randomId"
+    val metrics1Contents = s"$randomId --- I am an immortal metrics file --- $randomId"
     val metrics2Contents =
       s"$randomId --- I am a second immortal metrics file --- $randomId"
 
-    val storageDir =
-      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
-    val cramPath =
-      storageDir.resolve(s"$randomId${WgsCramExtensions.CramExtension}")
-    val craiPath =
-      storageDir.resolve(s"$randomId${WgsCramExtensions.CraiExtensionAddition}")
-    val metrics1Path = storageDir.resolve(s"$randomId.metrics")
-    val metrics2Path = storageDir.resolve(s"$randomId.metrics")
+    val storageDir = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+    val cramPath = storageDir / s"$randomId${WgsCramExtensions.CramExtension}"
+    val craiPath = storageDir / s"$randomId${WgsCramExtensions.CraiExtensionAddition}"
+    val metrics1Path = storageDir / s"$randomId.metrics"
+    val metrics2Path = storageDir / s"$randomId.metrics"
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata =
-      TransferWgsCramV1Metadata(
-        cramPath = Some(cramPath.toUri),
-        craiPath = Some(craiPath.toUri),
-        alignmentSummaryMetricsPath = Some(metrics1Path.toUri),
-        fingerprintingSummaryMetricsPath = Some(metrics1Path.toUri),
-        notes = existingNote,
-        workspaceName = workspaceName
-      )
+    val metadata = TransferWgsCramV1Metadata(
+      cramPath = Some(cramPath.uri),
+      craiPath = Some(craiPath.uri),
+      alignmentSummaryMetricsPath = Some(metrics1Path.uri),
+      fingerprintingSummaryMetricsPath = Some(metrics1Path.uri),
+      notes = existingNote,
+      workspaceName = workspaceName
+    )
 
-    val _ = Seq(
-      (cramPath, cramContents),
-      (craiPath, craiContents),
-      (metrics1Path, metrics1Contents),
-      (metrics2Path, metrics2Contents)
-    ).map {
-      case (path, contents) => Files.write(path, contents.getBytes)
+    val _ = if (!testNonExistingFile) {
+      Seq(
+        (cramPath, cramContents),
+        (craiPath, craiContents),
+        (metrics1Path, metrics1Contents),
+        (metrics2Path, metrics2Contents)
+      ).map {
+        case (path, contents) => path.write(contents)
+      }
     }
-
-    if (testNonExistingFile) IoUtil.deleteGoogleObject(cramPath.toUri)
 
     val result = for {
       _ <- runUpsertCram(key, metadata)
@@ -683,12 +662,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       )
     } yield {
       Seq(cramPath, craiPath).foreach {
-        Files.exists(_) should be(false)
+        _.exists should be(false)
       }
       Seq((metrics1Path, metrics1Contents), (metrics2Path, metrics2Contents)).foreach {
         case (path, contents) => {
-          Files.exists(path) should be(true)
-          new String(Files.readAllBytes(path)) should be(contents)
+          path.exists should be(true)
+          path.contentAsString should be(contents)
         }
       }
 
@@ -706,7 +685,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       case _ => {
         // Without `val _ =`, the compiler complains about discarded non-Unit value.
         val _ = Seq(cramPath, craiPath, metrics1Path, metrics2Path)
-          .map(Files.deleteIfExists)
+          .map(_.delete(swallowIOExceptions = true))
       }
     }
   }
@@ -766,29 +745,28 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
     val md5Name = s"$cramName${WgsCramExtensions.Md5ExtensionAddition}"
 
-    val rootSource =
-      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
-    val cramSource = rootSource.resolve(cramName)
-    val craiSource = rootSource.resolve(craiName)
+    val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+    val cramSource = rootSource / cramName
+    val craiSource = rootSource / craiName
 
     val prefix = "new_basename_"
     val newBasename = s"$prefix$sample"
-    val rootDestination = rootSource.getParent.resolve(s"moved/$id/")
-    val cramDestination = rootDestination.resolve(s"$prefix$cramName")
-    val craiDestination = rootDestination.resolve(s"$prefix$craiName")
-    val md5Destination = rootDestination.resolve(s"$prefix$md5Name")
+    val rootDestination = rootSource.parent / s"moved/$id/"
+    val cramDestination = rootDestination / s"$prefix$cramName"
+    val craiDestination = rootDestination / s"$prefix$craiName"
+    val md5Destination = rootDestination / s"$prefix$md5Name"
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata = TransferWgsCramV1Metadata(
-      cramPath = Some(cramSource.toUri),
-      craiPath = Some(craiSource.toUri),
+      cramPath = Some(cramSource.uri),
+      craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents))
     )
 
     val workspaceName = s"$id-TestWorkspace-$id"
 
     val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
-      case (source, contents) => Files.write(source, contents.getBytes)
+      case (source, contents) => source.write(contents)
     }
     val result = for {
       _ <- runUpsertCram(key, metadata)
@@ -805,7 +783,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--workspace-name",
         workspaceName,
         "--workspace-path",
-        rootDestination.toUri.toString,
+        rootDestination.uri.toString,
         "--new-basename",
         newBasename
       )
@@ -815,10 +793,10 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         workspaceName
       )
     } yield {
-      Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
+      Seq(cramSource, craiSource).foreach(_.exists should be(false))
 
       Seq(cramDestination, craiDestination, md5Destination).foreach(
-        Files.exists(_) should be(true)
+        _.exists should be(true)
       )
 
       Seq(
@@ -827,7 +805,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         (md5Destination, md5Contents)
       ).foreach {
         case (destination, contents) =>
-          new String(Files.readAllBytes(destination)) should be(contents)
+          destination.contentAsString should be(contents)
       }
 
       outputs should be {
@@ -838,8 +816,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
             sampleAlias = sample,
             version = version,
             workspaceName = Some(workspaceName),
-            cramPath = Some(cramDestination.toUri),
-            craiPath = Some(craiDestination.toUri),
+            cramPath = Some(cramDestination.uri),
+            craiPath = Some(craiDestination.uri),
             cramMd5 = Some(Symbol(md5Contents)),
             documentStatus = Some(DocumentStatus.Normal)
           )
@@ -855,7 +833,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           craiSource,
           craiDestination,
           md5Destination
-        ).map(Files.deleteIfExists)
+        ).map(_.delete(swallowIOExceptions = true))
       }
     }
   }
@@ -873,24 +851,23 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
     val md5Name = s"$cramName${WgsCramExtensions.Md5ExtensionAddition}"
 
-    val rootSource =
-      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
-    val cramSource = rootSource.resolve(cramName)
-    val craiSource = rootSource.resolve(craiName)
+    val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+    val cramSource = rootSource / cramName
+    val craiSource = rootSource / craiName
 
-    val md5Destination = rootSource.resolve(md5Name)
+    val md5Destination = rootSource / md5Name
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata = TransferWgsCramV1Metadata(
-      cramPath = Some(cramSource.toUri),
-      craiPath = Some(craiSource.toUri),
+      cramPath = Some(cramSource.uri),
+      craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents))
     )
 
     val workspaceName = s"$randomId-TestWorkspace-$randomId"
 
     val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
-      case (source, contents) => Files.write(source, contents.getBytes)
+      case (source, contents) => source.write(contents)
     }
     val result = for {
       _ <- runUpsertCram(key, metadata)
@@ -907,7 +884,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--workspace-name",
         workspaceName,
         "--workspace-path",
-        rootSource.toUri.toString
+        rootSource.uri.toString
       )
       outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
@@ -916,7 +893,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       )
     } yield {
       Seq(cramSource, craiSource, md5Destination).foreach(
-        Files.exists(_) should be(true)
+        _.exists should be(true)
       )
 
       Seq(
@@ -925,7 +902,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         (md5Destination, md5Contents)
       ).foreach {
         case (destination, contents) =>
-          new String(Files.readAllBytes(destination)) should be(contents)
+          destination.contentAsString should be(contents)
       }
 
       outputs should be {
@@ -936,8 +913,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
             sampleAlias = sample,
             version = version,
             workspaceName = Some(workspaceName),
-            cramPath = Some(cramSource.toUri),
-            craiPath = Some(craiSource.toUri),
+            cramPath = Some(cramSource.uri),
+            craiPath = Some(craiSource.uri),
             cramMd5 = Some(Symbol(md5Contents)),
             documentStatus = Some(DocumentStatus.Normal)
           )
@@ -947,8 +924,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     result.andThen {
       case _ => {
-        val _ =
-          Seq(cramSource, craiSource, md5Destination).map(Files.deleteIfExists)
+        val _ = Seq(cramSource, craiSource, md5Destination)
+          .map(_.delete(swallowIOExceptions = true))
       }
     }
   }
@@ -963,15 +940,14 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val cramName = s"$sample${WgsCramExtensions.CramExtension}"
     val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
 
-    val rootSource =
-      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
-    val cramSource = rootSource.resolve(cramName)
-    val craiSource = rootSource.resolve(craiName)
+    val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+    val cramSource = rootSource / cramName
+    val craiSource = rootSource / craiName
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata = TransferWgsCramV1Metadata(
-      cramPath = Some(cramSource.toUri),
-      craiPath = Some(craiSource.toUri),
+      cramPath = Some(cramSource.uri),
+      craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents)),
       regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
     )
@@ -1012,23 +988,21 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
     val md5Name = s"$cramName${WgsCramExtensions.Md5ExtensionAddition}"
 
-    val cramRegulatoryDesignation =
-      Some(RegulatoryDesignation.ClinicalDiagnostics)
+    val cramRegulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
 
-    val rootSource =
-      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
-    val cramSource = rootSource.resolve(cramName)
-    val craiSource = rootSource.resolve(craiName)
+    val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+    val cramSource = rootSource / cramName
+    val craiSource = rootSource / craiName
 
-    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
-    val cramDestination = rootDestination.resolve(cramName)
-    val craiDestination = rootDestination.resolve(craiName)
-    val md5Destination = rootDestination.resolve(md5Name)
+    val rootDestination = rootSource.parent / s"moved/$randomId/"
+    val cramDestination = rootDestination / cramName
+    val craiDestination = rootDestination / craiName
+    val md5Destination = rootDestination / md5Name
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata = TransferWgsCramV1Metadata(
-      cramPath = Some(cramSource.toUri),
-      craiPath = Some(craiSource.toUri),
+      cramPath = Some(cramSource.uri),
+      craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents)),
       regulatoryDesignation = cramRegulatoryDesignation
     )
@@ -1036,7 +1010,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val workspaceName = s"$randomId-TestWorkspace-$randomId"
 
     val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
-      case (source, contents) => Files.write(source, contents.getBytes)
+      case (source, contents) => source.write(contents)
     }
     val result = for {
       _ <- runUpsertCram(key, metadata)
@@ -1053,7 +1027,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--workspace-name",
         workspaceName,
         "--workspace-path",
-        rootDestination.toUri.toString
+        rootDestination.uri.toString
       )
       outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
@@ -1061,10 +1035,10 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         workspaceName
       )
     } yield {
-      Seq(cramSource, craiSource).foreach(Files.exists(_) should be(false))
+      Seq(cramSource, craiSource).foreach(_.exists should be(false))
 
       Seq(cramDestination, craiDestination, md5Destination).foreach(
-        Files.exists(_) should be(true)
+        _.exists should be(true)
       )
 
       Seq(
@@ -1073,7 +1047,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         (md5Destination, md5Contents)
       ).foreach {
         case (destination, contents) =>
-          new String(Files.readAllBytes(destination)) should be(contents)
+          destination.contentAsString should be(contents)
       }
 
       outputs should be {
@@ -1084,8 +1058,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
             sampleAlias = sample,
             version = version,
             workspaceName = Some(workspaceName),
-            cramPath = Some(cramDestination.toUri),
-            craiPath = Some(craiDestination.toUri),
+            cramPath = Some(cramDestination.uri),
+            craiPath = Some(craiDestination.uri),
             cramMd5 = Some(Symbol(md5Contents)),
             documentStatus = Some(DocumentStatus.Normal),
             regulatoryDesignation = cramRegulatoryDesignation
@@ -1102,7 +1076,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           craiSource,
           craiDestination,
           md5Destination
-        ).map(Files.deleteIfExists)
+        ).map(_.delete(swallowIOExceptions = true))
       }
     }
   }
@@ -1117,17 +1091,16 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val cramName = s"$sample${WgsCramExtensions.CramExtension}"
     val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
 
-    val rootSource =
-      rootTestStorageDir.resolve(s"cram/$project/$sample/v$version/")
-    val cramSource = rootSource.resolve(cramName)
-    val craiSource = rootSource.resolve(craiName)
+    val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+    val cramSource = rootSource / cramName
+    val craiSource = rootSource / craiName
 
-    val rootDestination = rootSource.getParent.resolve(s"moved/$randomId/")
+    val rootDestination = rootSource.parent / s"moved/$randomId/"
 
     val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
     val metadata = TransferWgsCramV1Metadata(
-      cramPath = Some(cramSource.toUri),
-      craiPath = Some(craiSource.toUri),
+      cramPath = Some(cramSource.uri),
+      craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents))
     )
 
@@ -1150,7 +1123,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           "--workspace-name",
           workspaceName,
           "--workspace-path",
-          rootDestination.toUri.toString
+          rootDestination.uri.toString
         )
       } yield {
         deliverResponse
