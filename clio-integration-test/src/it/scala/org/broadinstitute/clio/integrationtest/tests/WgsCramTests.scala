@@ -662,10 +662,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       )
     } yield {
       Seq(cramPath, craiPath).foreach(_ shouldNot exist)
-      Seq((metrics1Path, metrics1Contents), (metrics2Path, metrics2Contents)).foreach {
-        case (path, contents) => {
-          path should exist
-          path.contentAsString should be(contents)
+      if (!testNonExistingFile) {
+        Seq((metrics1Path, metrics1Contents), (metrics2Path, metrics2Contents)).foreach {
+          case (path, contents) => {
+            path should exist
+            path.contentAsString should be(contents)
+          }
         }
       }
 

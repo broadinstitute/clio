@@ -522,8 +522,10 @@ trait GvcfTests {
       if (!(srcIsDest || gvcfInDest)) {
         gvcfSource shouldNot exist
       }
-      Seq(indexSource, summaryMetricsSource, detailMetricsSource)
-        .foreach(src => if (!srcIsDest) src shouldNot exist)
+      if (!srcIsDest) {
+        Seq(indexSource, summaryMetricsSource, detailMetricsSource)
+          .foreach(_ shouldNot exist)
+      }
       Seq(
         gvcfDestination,
         indexDestination,
