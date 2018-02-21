@@ -1,7 +1,8 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import java.nio.file.{FileSystem, Path}
+import java.nio.file.FileSystem
 
+import better.files.File
 import com.google.cloud.storage.StorageOptions
 import com.google.cloud.storage.contrib.nio.{
   CloudStorageConfiguration,
@@ -45,7 +46,7 @@ class GcsPersistenceDAO(gcsConfig: Persistence.GcsConfig, recoveryParallelism: I
       storageOptions
     )
 
-  override lazy val rootPath: Path = gcs.getPath("/")
+  override lazy val rootPath: File = File(gcs.getPath("/"))
 }
 
 object GcsPersistenceDAO {

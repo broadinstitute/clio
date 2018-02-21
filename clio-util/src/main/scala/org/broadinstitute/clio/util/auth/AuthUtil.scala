@@ -1,13 +1,12 @@
 package org.broadinstitute.clio.util.auth
 
-import java.nio.file.{Files, Path}
-
+import better.files.File
+import cats.syntax.either._
 import com.google.auth.oauth2.{AccessToken, GoogleCredentials, OAuth2Credentials}
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.parser.decode
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.ServiceAccount
-import cats.syntax.either._
 
 import scala.util.Try
 
@@ -31,7 +30,7 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
 
   def getCredentials(
     accessToken: Option[AccessToken],
-    serviceAccountJson: Option[Path]
+    serviceAccountJson: Option[File]
   ): Either[Throwable, OAuth2Credentials] = {
     Either
       .fromOption(accessToken, new RuntimeException("No access token provided"))
@@ -50,7 +49,7 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
     * @param serviceAccountPath Option of path to the service account json
     */
   def getOAuth2Credentials(
-    serviceAccountPath: Option[Path]
+    serviceAccountPath: Option[File]
   ): Either[Throwable, OAuth2Credentials] = {
 
     serviceAccountPath
@@ -70,19 +69,19 @@ object AuthUtil extends ModelAutoDerivation with LazyLogging {
 
   /** Load JSON for a google service account. */
   def loadServiceAccountJson(
-    serviceAccountPath: Path
+    serviceAccountPath: File
   ): Either[Throwable, ServiceAccount] = {
     for {
       jsonPath <- Either.cond(
-        Files.exists(serviceAccountPath),
+        serviceAccountPath.exists,
         serviceAccountPath, {
           new RuntimeException(
             s"Could not find service account JSON at $serviceAccountPath"
           )
         }
       )
-      jsonBytes <- Try(Files.readAllBytes(jsonPath)).toEither
-      account <- decode[ServiceAccount](new String(jsonBytes).stripMargin)
+      json <- Try(jsonPath.contentAsString.stripMargin).toEither
+      account <- decode[ServiceAccount](json)
     } yield {
       account
     }

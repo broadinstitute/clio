@@ -1,8 +1,9 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import java.nio.file.{FileSystem, Path}
+import java.nio.file.FileSystem
 import java.time.OffsetDateTime
 
+import better.files.File
 import com.google.common.jimfs.{Configuration, Jimfs}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
@@ -19,7 +20,7 @@ class MemoryPersistenceDAO extends PersistenceDAO {
 
   private val memFS: FileSystem =
     Jimfs.newFileSystem(Configuration.unix())
-  override val rootPath: Path = memFS.getPath("/")
+  override val rootPath: File = File(memFS.getPath("/"))
 
   override def writeUpdate[D <: ClioDocument](document: D, dt: OffsetDateTime)(
     implicit ec: ExecutionContext,

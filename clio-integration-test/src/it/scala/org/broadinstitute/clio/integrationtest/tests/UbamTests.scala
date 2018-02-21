@@ -1,12 +1,10 @@
 package org.broadinstitute.clio.integrationtest.tests
 
 import java.net.URI
-import java.nio.file.Files
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
-import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -243,12 +241,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 =
-        getJsonFrom[DocumentWgsUbam](upsertId1)
+      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
       storedDocument1.project should be(Some("testProject1"))
 
-      val storedDocument2 =
-        getJsonFrom[DocumentWgsUbam](upsertId2)
+      val storedDocument2 = getJsonFrom[DocumentWgsUbam](upsertId2)
       storedDocument2.project should be(Some("testProject2"))
 
       storedDocument1.copy(upsertId = upsertId2, project = Some("testProject2")) should be(
@@ -273,10 +269,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 =
-        getJsonFrom[DocumentWgsUbam](upsertId1)
-      val storedDocument2 =
-        getJsonFrom[DocumentWgsUbam](upsertId2)
+      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
+      val storedDocument2 = getJsonFrom[DocumentWgsUbam](upsertId2)
       storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
     }
   }
@@ -297,8 +291,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       Seq(libraries, samples, researchProjectIds).transpose.map {
         case Seq(library, sample, researchProjectId) =>
-          val key =
-            TransferUbamV1Key(location, flowcellBarcode, lane, library)
+          val key = TransferUbamV1Key(location, flowcellBarcode, lane, library)
           val metadata = TransferUbamV1Metadata(
             project = Some(project),
             sampleAlias = Some(sample),
@@ -342,8 +335,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "handle updates to wgs-ubam metadata" in {
-    val key =
-      TransferUbamV1Key(Location.GCP, "barcode2", 2, s"library$randomId")
+    val key = TransferUbamV1Key(Location.GCP, "barcode2", 2, s"library$randomId")
     val project = s"testProject$randomId"
     val metadata = TransferUbamV1Metadata(
       project = Some(project),
@@ -484,22 +476,20 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     val fileContents = s"$randomId --- I am a dummy ubam --- $randomId"
     val ubamName = s"$randomId${UbamExtensions.UbamExtension}"
-    val sourceDir =
-      rootTestStorageDir.resolve(s"wgs-ubam/$barcode/$lane/$library/$ubamName/")
+    val sourceDir = rootTestStorageDir / s"wgs-ubam/$barcode/$lane/$library/$ubamName/"
     val targetDir = if (srcIsDest) {
       sourceDir
     } else {
-      sourceDir.getParent.resolve(s"moved/")
+      sourceDir.parent / "moved/"
     }
-    val sourceUbam = sourceDir.resolve(ubamName)
-    val targetUbam = targetDir.resolve(ubamName)
+    val sourceUbam = sourceDir / ubamName
+    val targetUbam = targetDir / ubamName
 
     val key = TransferUbamV1Key(Location.GCP, barcode, lane, library)
-    val metadata =
-      TransferUbamV1Metadata(ubamPath = Some(sourceUbam.toUri))
+    val metadata = TransferUbamV1Metadata(ubamPath = Some(sourceUbam.uri))
 
     // Clio needs the metadata to be added before it can be moved.
-    val _ = Files.write(sourceUbam, fileContents.getBytes)
+    val _ = sourceUbam.write(fileContents)
     val result = for {
       _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       _ <- runClient(
@@ -513,18 +503,20 @@ trait UbamTests { self: BaseIntegrationSpec =>
         "--location",
         Location.GCP.entryName,
         "--destination",
-        targetDir.toUri.toString
+        targetDir.uri.toString
       )
     } yield {
-      Files.exists(sourceUbam) should be(srcIsDest)
-      Files.exists(targetUbam) should be(true)
-      new String(Files.readAllBytes(targetUbam)) should be(fileContents)
+      if (!srcIsDest) {
+        sourceUbam shouldNot exist
+      }
+      targetUbam should exist
+      targetUbam.contentAsString should be(fileContents)
     }
 
     result.andThen[Unit] {
       case _ => {
         // Without `val _ =`, the compiler complains about discarded non-Unit value.
-        val _ = Seq(sourceUbam, targetUbam).map(Files.deleteIfExists)
+        val _ = Seq(sourceUbam, targetUbam).map(_.delete(swallowIOExceptions = true))
       }
     }
   }
@@ -558,17 +550,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val lane = 3
     val library = s"lib$randomId"
 
-    val cloudPath = rootTestStorageDir.resolve(
-      s"wgs-ubam/$barcode/$lane/$library/$randomId${UbamExtensions.UbamExtension}"
-    )
-    val cloudPath2 =
-      cloudPath.getParent.resolve(
-        s"moved/$randomId${UbamExtensions.UbamExtension}"
-      )
+    val cloudPath = rootTestStorageDir / s"wgs-ubam/$barcode/$lane/$library/$randomId${UbamExtensions.UbamExtension}"
+    val cloudPath2 = cloudPath.parent / s"moved/$randomId${UbamExtensions.UbamExtension}"
 
     val key = TransferUbamV1Key(Location.GCP, barcode, lane, library)
-    val metadata =
-      TransferUbamV1Metadata(ubamPath = Some(cloudPath.toUri))
+    val metadata = TransferUbamV1Metadata(ubamPath = Some(cloudPath.uri))
 
     val result = for {
       _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
@@ -584,7 +570,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           "--location",
           Location.GCP.entryName,
           "--destination",
-          cloudPath2.toUri.toString
+          cloudPath2.uri.toString
         )
       }
       queryOutputs <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
@@ -599,14 +585,14 @@ trait UbamTests { self: BaseIntegrationSpec =>
         Location.GCP.entryName
       )
     } yield {
-      Files.exists(cloudPath2) should be(false)
+      cloudPath2 shouldNot exist
       queryOutputs should have length 1
-      queryOutputs.head.ubamPath should be(Some(cloudPath.toUri))
+      queryOutputs.head.ubamPath should be(Some(cloudPath.uri))
     }
 
     result.andThen[Unit] {
       case _ => {
-        val _ = Files.deleteIfExists(cloudPath2)
+        val _ = cloudPath2.delete(swallowIOExceptions = true)
       }
     }
   }
@@ -616,8 +602,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val library = s"library.$randomId"
     val lane = 1
     val regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
-    val upsertKey =
-      TransferUbamV1Key(Location.GCP, flowcellBarcode, lane, library)
+    val upsertKey = TransferUbamV1Key(Location.GCP, flowcellBarcode, lane, library)
     val metadata = TransferUbamV1Metadata(
       project = Some("testProject1"),
       regulatoryDesignation = regulatoryDesignation
@@ -648,26 +633,23 @@ trait UbamTests { self: BaseIntegrationSpec =>
     testNonExistingFile: Boolean = false,
     force: Boolean = false
   ): Future[Assertion] = {
-    val deleteNote =
-      s"$randomId --- Deleted by the integration tests --- $randomId"
+    val deleteNote = s"$randomId --- Deleted by the integration tests --- $randomId"
 
     val barcode = s"barcode$randomId"
     val lane = 4
     val library = s"lib$randomId"
 
     val fileContents = s"$randomId --- I am fated to die --- $randomId"
-    val cloudPath = rootTestStorageDir.resolve(
-      s"wgs-ubam/$barcode/$lane/$library/$randomId${UbamExtensions.UbamExtension}"
-    )
+    val cloudPath = rootTestStorageDir / s"wgs-ubam/$barcode/$lane/$library/$randomId${UbamExtensions.UbamExtension}"
 
     val key = TransferUbamV1Key(Location.GCP, barcode, lane, library)
     val metadata =
-      TransferUbamV1Metadata(notes = existingNote, ubamPath = Some(cloudPath.toUri))
+      TransferUbamV1Metadata(notes = existingNote, ubamPath = Some(cloudPath.uri))
 
     // Clio needs the metadata to be added before it can be deleted.
-    val _ = Files.write(cloudPath, fileContents.getBytes)
-
-    if (testNonExistingFile) IoUtil.deleteGoogleObject(cloudPath.toUri)
+    val _ = if (!testNonExistingFile) {
+      cloudPath.write(fileContents)
+    }
 
     val result = for {
       _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
@@ -687,7 +669,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           if (force) "--force" else ""
         ).filter(_.nonEmpty): _*
       )
-      _ = Files.exists(cloudPath) should be(false)
+      _ = cloudPath shouldNot exist
       outputs <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--flowcell-barcode",
@@ -714,7 +696,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     result.andThen[Unit] {
       case _ => {
         // Without `val _ =`, the compiler complains about discarded non-Unit value.
-        val _ = Files.deleteIfExists(cloudPath)
+        val _ = cloudPath.delete(swallowIOExceptions = true)
       }
     }
   }
@@ -770,8 +752,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         force = false
       )
     } yield {
-      val storedDocument1 =
-        getJsonFrom[DocumentWgsUbam](upsertId1)
+      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
       storedDocument1.project should be(Some("testProject1"))
     }
   }
@@ -801,8 +782,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         force = false
       )
     } yield {
-      val storedDocument1 =
-        getJsonFrom[DocumentWgsUbam](upsertId1)
+      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
       val storedDocument2 = getJsonFrom[DocumentWgsUbam](upsertId2)
       storedDocument1.project should be(Some("testProject1"))
       storedDocument2.sampleAlias should be(Some("sampleAlias1"))
@@ -832,8 +812,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         )
       }
     } yield {
-      val storedDocument1 =
-        getJsonFrom[DocumentWgsUbam](upsertId1)
+      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
       storedDocument1.project should be(Some("testProject1"))
     }
   }

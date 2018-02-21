@@ -86,7 +86,6 @@ object Dependencies {
   val ClientMainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
     "com.github.alexarchambault" %% "case-app" % CaseAppVersion,
-    "com.github.pathikrit" %% "better-files" % BetterFilesVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
@@ -112,6 +111,7 @@ object Dependencies {
     "com.chuusai" %% "shapeless" % ShapelessVersion,
     "com.fasterxml.jackson.core" % "jackson-core" % JacksonVersion,
     "com.fasterxml.jackson.core" % "jackson-databind" % JacksonVersion,
+    "com.github.pathikrit" %% "better-files" % BetterFilesVersion,
     "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.typesafe" % "config" % TypesafeConfigVersion,

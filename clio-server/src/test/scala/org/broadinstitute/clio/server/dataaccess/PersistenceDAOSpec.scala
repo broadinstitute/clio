@@ -1,7 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess
 
 import java.net.URI
-import java.nio.file.Files
 import java.time.OffsetDateTime
 
 import akka.stream.scaladsl.Sink
@@ -28,16 +27,16 @@ class PersistenceDAOSpec
 
   it should "initialize top-level storage for indexed documents" in {
     val dao = new MemoryPersistenceDAO()
-    val wgsPath = dao.rootPath.resolve(index.rootDir)
+    val wgsPath = dao.rootPath / index.rootDir
 
-    Files.exists(wgsPath) should be(false)
-    Files.isDirectory(wgsPath) should be(false)
+    wgsPath.exists should be(false)
+    wgsPath.isDirectory should be(false)
 
     for {
       _ <- initIndex(dao)
     } yield {
-      Files.exists(wgsPath) should be(true)
-      Files.isDirectory(wgsPath) should be(true)
+      wgsPath.exists should be(true)
+      wgsPath.isDirectory should be(true)
     }
   }
 
@@ -56,14 +55,13 @@ class PersistenceDAOSpec
     } yield {
       Seq(document, document2).foreach { doc =>
         val expectedPath =
-          dao.rootPath.resolve(
-            s"${index.currentPersistenceDir}/${ClioDocument.persistenceFilename(doc.upsertId)}"
-          )
+          dao.rootPath / s"${index.currentPersistenceDir}/${ClioDocument
+            .persistenceFilename(doc.upsertId)}"
 
-        Files.exists(expectedPath) should be(true)
-        Files.isRegularFile(expectedPath) should be(true)
+        expectedPath.exists should be(true)
+        expectedPath.isRegularFile should be(true)
 
-        parse(new String(Files.readAllBytes(expectedPath)))
+        parse(expectedPath.contentAsString)
           .flatMap(_.as[DocumentMock])
           .map(_ should be(doc))
           .toTry

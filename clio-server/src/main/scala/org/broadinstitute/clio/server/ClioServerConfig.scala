@@ -1,7 +1,6 @@
 package org.broadinstitute.clio.server
 
-import java.nio.file.Path
-
+import better.files.File
 import com.typesafe.config.{Config, ConfigException}
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
@@ -25,7 +24,7 @@ object ClioServerConfig extends ConfigReaders {
       * persistence types supported by Clio.
       */
     sealed trait PersistenceConfig
-    case class LocalConfig(rootDir: Option[Path]) extends PersistenceConfig
+    case class LocalConfig(rootDir: Option[File]) extends PersistenceConfig
     case class GcsConfig(projectId: String, bucket: String, account: ServiceAccount)
         extends PersistenceConfig
 
@@ -38,13 +37,13 @@ object ClioServerConfig extends ConfigReaders {
         .withNameInsensitiveOption(persistenceType)
         .flatMap {
           case Location.OnPrem => {
-            val maybeRoot = persistence.getAs[Path]("root-dir")
+            val maybeRoot = persistence.getAs[File]("root-dir")
             Some(LocalConfig(maybeRoot))
           }
           case Location.GCP => {
             val projectId = persistence.as[String]("project-id")
             val bucket = persistence.as[String]("bucket")
-            val jsonPath = persistence.as[Path]("service-account-json")
+            val jsonPath = persistence.as[File]("service-account-json")
             val serviceAccount = AuthUtil.loadServiceAccountJson(jsonPath)
             serviceAccount.fold(
               { err =>

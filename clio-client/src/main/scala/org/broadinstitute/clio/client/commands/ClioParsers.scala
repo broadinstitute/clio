@@ -1,16 +1,16 @@
 package org.broadinstitute.clio.client.commands
 
 import java.net.URI
-import java.nio.file.{Path, Paths}
+import java.time.OffsetDateTime
+import java.util.UUID
 
+import better.files.File
 import caseapp.core.Error
 import caseapp.core.argparser.{ArgParser, SimpleArgParser}
 import cats.syntax.either._
 import enumeratum.{Enum, EnumEntry}
 
 import scala.reflect.ClassTag
-import java.time.OffsetDateTime
-import java.util.UUID
 
 /**
   * Argument parsers to use in building command parsers.
@@ -56,7 +56,7 @@ trait ClioParsers {
 
   implicit val uriParser: ArgParser[URI] = parseWith("uri", URI.create)
 
-  implicit val pathParser: ArgParser[Path] = parseWith("path", Paths.get(_))
+  implicit val pathParser: ArgParser[File] = parseWith("path", File(_))
 
   implicit val uuidParser: ArgParser[UUID] = parseWith("uuid", UUID.fromString)
 
