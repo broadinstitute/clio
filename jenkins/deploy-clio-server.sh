@@ -115,6 +115,22 @@ compute_docker_tag() {
   echo ${base_version}-g${short_sha}-SNAP
 }
 
+# Build a "conventional" fully-qualified domain name from a hostname and environment.
+build_fqdn() {
+  echo ${1}.gotc-${ENV}.broadinstitute.org
+}
+
+# Get the "real" hostname for the Clio host at the given address (which might be a DNS).
+# Assumes that Clio hosts will be named according to the pattern:
+#  gotc-clio-{ENV}(\d{3})
+# i.e. gotc-clio-dev101, gotc-clio-prod203
+get_real_clio_name() {
+  local -r gce_name=$(ssh ${SSH_OPTS[@]} ${SSH_USER}@$1 'uname -n')
+  local -r instance_number=$(echo ${gce_name} | sed -E "s/gotc-clio-${ENV}([0-9]{3})/\1/")
+
+  echo $(build_fqdn "clio${instance_number}")
+}
+
 # Copy ctmpls to a destination directory, then render them into configs.
 # Rendering has the side-effect of deleting the copied ctmpl files.
 render_ctmpls() {
@@ -209,8 +225,8 @@ rollback_deploy() {
   stop_containers ${clio_fqdn}
   ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} <<-EOF
   sudo rm -r ${APP_DIR} &&
-  ([ ! -d ${APP_BACKUP_DIR} || sudo mv ${APP_BACKUP_DIR} ${APP_DIR}) &&
-  ([ ! -d ${APP_BACKUP_BACKUP_DIR} || sudo mv ${APP_BACKUP_BACKUP_DIR} ${APP_BACKUP_DIR})
+  ([ ! -d ${APP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_DIR} ${APP_DIR}) &&
+  ([ ! -d ${APP_BACKUP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_BACKUP_DIR} ${APP_BACKUP_DIR})
 EOF
   start_containers ${clio_fqdn}
 }
@@ -253,7 +269,7 @@ main() {
   check_usage
 
   local -r docker_tag=$(compute_docker_tag)
-  local -r clio_fqdn=${CLIO_HOST_NAME}.gotc-${ENV}.broadinstitute.org
+  local -r clio_fqdn=$(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))
 
   # Temporary directory to store rendered configs.
   local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
