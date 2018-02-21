@@ -41,6 +41,7 @@ services:
       PROXY_PATH: /
       PROXY_URL: http://app:{{env "CONTAINER_CLIO_PORT"}}/
       SERVER_NAME: {{env "CLIO_FQDN"}}
+      SERVER_ALIAS: clio.gotc-{{env "ENV"}}.broadinstitute.org
       AUTH_TYPE: AuthType None
       OIDC_CLAIM: Require all granted
       PROXY_PATH2: /api
