@@ -15,6 +15,13 @@ final class UpsertId private (val id: String) extends Ordered[UpsertId] {
   }
   override def hashCode(): Int = id.hashCode
   override def toString: String = id
+
+  /**
+    * The filename used for persisting a document's upsert data.
+    *
+    * @return the filename where the upsert with the given ID's data is stored
+    */
+  def persistenceFilename: String = s"${id}.json"
 }
 
 /**
@@ -71,6 +78,11 @@ object UpsertId {
     * Return a random index into `Encoding`.
     */
   private val next6bitIndex = (_: Int) => source.nextInt(Encoding.length)
+
+  /**
+    * Clio name for an upsert ID.
+    */
+  val UpsertIdFieldName: String = "upsertId"
 
   /**
     * Return with new values for was, timestamp, and randomCharacters.

@@ -92,6 +92,7 @@ lazy val `clio-transfer-model` = project
   */
 lazy val `clio-dataaccess-model` = project
   .dependsOn(`clio-util`)
+  .dependsOn(`clio-transfer-model`)
   .settings(commonSettings)
   .disablePlugins(AssemblyPlugin)
   .settings(libraryDependencies ++= Dependencies.DataaccessModelDependencies)

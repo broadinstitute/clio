@@ -4,26 +4,42 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 import com.sksamuel.elastic4s.mappings.FieldDefinition
+import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.{Decoder, Encoder}
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  TransferGvcfV1Key,
+  TransferGvcfV1Metadata
+}
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata
+}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1Metadata
+}
+import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.{UpsertId, EntityId}
 
 /**
   * An index for an Elasticsearch document.
   *
   * @param indexName The name of the index in Elasticsearch.
   * @param fieldMapper The version of the mapping used to generate the index.
-  * @param encoder Typeclass used to convert `Document` instances into JSON.
-  * @param decoder Typeclass used to convert ES search hits back to `Document` instances.
-  * @tparam Document The type of the Elasticsearch document.
+  * @param encoder Typeclass used to convert `Key` and `Metadata` instances into JSON.
+  * @param decoder Typeclass used to convert ES search hits back to `Key` and `Metadata` instances.
+  * @tparam Key The TransferKey of the document.
+  * @tparam Metadata The TransferMetadata of the document.
   */
-class ElasticsearchIndex[Document: FieldMapper](
+class ElasticsearchIndex[Key <: TransferKey, Metadata <: TransferMetadata[Metadata]](
   val indexName: String,
   private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper
 )(
   implicit
-  private[clio] val encoder: Encoder[Document],
-  private[clio] val decoder: Decoder[Document]
+  private[clio] val encoder: Encoder[(TransferKey, TransferMetadata[Metadata])],
+  private[clio] val decoder: Decoder[(TransferKey, TransferMetadata[Metadata])]
 ) {
 
   /**
@@ -58,14 +74,24 @@ class ElasticsearchIndex[Document: FieldMapper](
 
   /** The fields for the index. */
   def fields: Seq[FieldDefinition] =
-    FieldMapper[Document].fields.toSeq.sortBy {
+    (FieldMapper[TransferMetadata[Metadata]].fields.toSeq.sortBy {
       case (name, _) => name
     } map {
       case (name, value) =>
         fieldMapper.stringToDefinition(value)(
           ElasticsearchUtil.toElasticsearchName(name)
         )
-    }
+    }) ++ (FieldMapper[TransferKey].fields.toSeq.sortBy {
+      case (name, _) => name
+    } map {
+      case (name, value) =>
+        fieldMapper.stringToDefinition(value)(
+          ElasticsearchUtil.toElasticsearchName(name)
+        )
+    }) ++ Seq(
+      keywordField(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName)),
+      keywordField(ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName))
+    )
 }
 
 object ElasticsearchIndex extends ModelAutoDerivation {
@@ -75,27 +101,30 @@ object ElasticsearchIndex extends ModelAutoDerivation {
     DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
   /** Implicit summoner, for convenience. */
-  def apply[Document: ElasticsearchIndex]: ElasticsearchIndex[Document] =
-    implicitly[ElasticsearchIndex[Document]]
+  def apply[Key, Metadata]: ElasticsearchIndex[Key, Metadata] =
+    implicitly[ElasticsearchIndex[Key, Metadata]]
 
-  implicit val WgsUbam: ElasticsearchIndex[DocumentWgsUbam] =
-    new ElasticsearchIndex[DocumentWgsUbam](
+  implicit val WgsUbam: ElasticsearchIndex[TransferUbamV1Key, TransferUbamV1Metadata] =
+    new ElasticsearchIndex[TransferUbamV1Key, TransferUbamV1Metadata](
       "wgs-ubam",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
-  implicit val Gvcf: ElasticsearchIndex[DocumentGvcf] =
+  implicit val Gvcf: ElasticsearchIndex[TransferGvcfV1Key, TransferGvcfV1Metadata] =
     // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
     // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
-    new ElasticsearchIndex[DocumentGvcf](
+    new ElasticsearchIndex[TransferGvcfV1Key, TransferGvcfV1Metadata](
       "gvcf-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
-  implicit val WgsCram: ElasticsearchIndex[DocumentWgsCram] =
+  implicit val WgsCram: ElasticsearchIndex[
+    TransferWgsCramV1Key,
+    TransferWgsCramV1Metadata
+  ] =
     // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
     // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
-    new ElasticsearchIndex[DocumentWgsCram](
+    new ElasticsearchIndex[TransferWgsCramV1Key, TransferWgsCramV1Metadata](
       "wgs-cram-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )

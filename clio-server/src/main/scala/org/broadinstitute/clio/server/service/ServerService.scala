@@ -6,15 +6,13 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.Json
 import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import org.broadinstitute.clio.server.dataaccess.{
-  HttpServerDAO,
-  PersistenceDAO,
-  SearchDAO,
-  ServerStatusDAO
-}
+import org.broadinstitute.clio.server.dataaccess.{HttpServerDAO, PersistenceDAO, SearchDAO, ServerStatusDAO}
 import org.broadinstitute.clio.status.model.ClioStatus
+import org.broadinstitute.clio.transfer.model.gvcf.{TransferGvcfV1Key, TransferGvcfV1Metadata}
+import org.broadinstitute.clio.transfer.model.ubam.{TransferUbamV1Key, TransferUbamV1Metadata}
+import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1Key, TransferWgsCramV1Metadata}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.UpsertId
+import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -53,7 +51,7 @@ class ServerService private (
     * Returns the number of updates pulled & applied on success.
     */
   private[service] def recoverMetadata(
-    implicit index: ElasticsearchIndex[_]
+    implicit index: ElasticsearchIndex[_, _]
   ): Future[Unit] = {
     val name = index.indexName
 
@@ -91,12 +89,12 @@ class ServerService private (
 
   private def getEntityId(json: Json): String =
     json.hcursor
-      .get[String](ClioDocument.EntityIdElasticSearchName)
+      .get[String](ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName))
       .fold(throw _, identity)
 
   private def getUpsertId(json: Json): UpsertId =
     json.hcursor
-      .get[UpsertId](ClioDocument.UpsertIdElasticSearchName)
+      .get[UpsertId](ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName))
       .fold(throw _, identity)
 
   /**
@@ -124,9 +122,9 @@ class ServerService private (
   private[service] def startup(): Future[Unit] = {
 
     val indexes = immutable.Seq(
-      ElasticsearchIndex[DocumentWgsUbam],
-      ElasticsearchIndex[DocumentGvcf],
-      ElasticsearchIndex[DocumentWgsCram]
+      ElasticsearchIndex[TransferUbamV1Key, TransferUbamV1Metadata],
+      ElasticsearchIndex[TransferGvcfV1Key, TransferGvcfV1Metadata],
+      ElasticsearchIndex[TransferWgsCramV1Key, TransferWgsCramV1Metadata]
     )
 
     for {

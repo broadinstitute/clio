@@ -12,12 +12,9 @@ import better.files.File
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Json
 import io.circe.jawn.JawnParser
-import io.circe.syntax._
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -44,7 +41,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
   /**
     * Initialize the root storage directories for Clio documents.
     */
-  def initialize(indexes: Seq[ElasticsearchIndex[_]], version: String)(
+  def initialize(indexes: Seq[ElasticsearchIndex[_, _]], version: String)(
     implicit ec: ExecutionContext
   ): Future[Unit] = Future {
     // Make sure the rootPath can actually be used.
@@ -69,27 +66,29 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
       logger.debug(s"  ${index.indexName} -> ${path.uri}")
     }
   }
-
+8
   /**
     * Write a metadata update to storage.
     *
-    * @param document A partial metadata document representing an upsert.
+    * @param transferKey A TransferKey representing part of an upsert.
+    * @param transferMetadata A TransferMetadata representing part of an upsert.
     * @param index    Typeclass providing information on where to persist the
     *                 metadata update.
     */
-  def writeUpdate[D <: ClioDocument](
-    document: D,
+  def writeUpdate[K <: TransferKey, M <: TransferMetadata[M]](
+    transferKey: K,
+    transferMetadata: M,
     dt: OffsetDateTime = OffsetDateTime.now()
   )(
     implicit ec: ExecutionContext,
-    index: ElasticsearchIndex[D]
+    index: ElasticsearchIndex[K, M]
   ): Future[Unit] = Future {
     val jsonString =
-      ModelAutoDerivation.defaultPrinter.pretty(document.asJson(index.encoder))
+      ModelAutoDerivation.defaultPrinter.pretty(index.encoder.apply(transferKey, transferMetadata))
 
     val writePath = (rootPath / index.persistenceDirForDatetime(dt)).createDirectories()
 
-    val written = (writePath / ClioDocument.persistenceFilename(document.upsertId))
+    val written = (writePath / document.upsertId.persistenceFilename)
       .write(jsonString)(Seq(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE))
     logger.debug(s"Wrote document $document to ${written.uri}")
   }
@@ -209,7 +208,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
   def getAllSince(mostRecentUpsert: Option[UpsertId])(
     implicit ec: ExecutionContext,
     materializer: Materializer,
-    index: ElasticsearchIndex[_]
+    index: ElasticsearchIndex[_, _]
   ): Source[Json, NotUsed] = {
     val rootDir = rootPath / index.rootDir
 
@@ -217,7 +216,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
       // If Elasticsearch contained no documents, load every JSON file in storage.
       getAllAfter(rootDir, None)
     ) { upsert =>
-      val filename = ClioDocument.persistenceFilename(upsert)
+      val filename = upsert.persistenceFilename
 
       /*
        * Pull the stream until we find the path corresponding to the last

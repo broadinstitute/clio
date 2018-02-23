@@ -17,7 +17,9 @@ import org.apache.http.HttpHost
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
 import org.elasticsearch.client.RestClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -48,12 +50,12 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   override def updateMetadata(documents: Json*)(
-    implicit index: ElasticsearchIndex[_]
+    implicit index: ElasticsearchIndex[_, _]
   ): Future[Unit] = bulkUpdate(documents.map(updatePartialDocument(index, _)))
 
-  override def queryMetadata[D <: ClioDocument](queryDefinition: QueryDefinition)(
-    implicit index: ElasticsearchIndex[D]
-  ): Source[D, NotUsed] = {
+  override def queryMetadata[K <: TransferKey, M <: TransferMetadata[M]](queryDefinition: QueryDefinition)(
+    implicit index: ElasticsearchIndex[K, M]
+  ): Source[(K, M), NotUsed] = {
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
       .size(HttpElasticsearchDAO.DocumentScrollSize)
@@ -63,15 +65,15 @@ class HttpElasticsearchDAO private[dataaccess] (
     val responsePublisher = httpClient.publisher(searchDefinition)
     Source
       .fromPublisher(responsePublisher)
-      .map(_.to[Json].as[D](index.decoder).fold(throw _, identity))
+      .map(_.to[Json].as[_,_](index.decoder).fold(throw _, identity))
   }
 
   override def getMostRecentDocument(
-    implicit index: ElasticsearchIndex[_]
+    implicit index: ElasticsearchIndex[_, _]
   ): Future[Option[Json]] = {
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .size(1)
-      .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
+      .sortByFieldDesc(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName))
     httpClient
       .executeAndUnpack(searchDefinition)
       .map(_.to[Json].headOption)
@@ -87,14 +89,14 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def existsIndexType(
-    index: ElasticsearchIndex[_]
+    index: ElasticsearchIndex[_, _]
   ): Future[Boolean] = {
     val indexExistsDefinition = indexExists(index.indexName)
     httpClient.executeAndUnpack(indexExistsDefinition).map(_.exists)
   }
 
   private[dataaccess] def createIndexType(
-    index: ElasticsearchIndex[_]
+    index: ElasticsearchIndex[_, _]
   ): Future[Unit] = {
     val createIndexDefinition = createIndex(index.indexName).mappings(
       mapping(index.indexType)
@@ -116,7 +118,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def updateFieldDefinitions(
-    index: ElasticsearchIndex[_]
+    index: ElasticsearchIndex[_, _]
   ): Future[Unit] = {
     val putMappingDefinition =
       putMapping(index.indexName / index.indexType)
@@ -151,11 +153,11 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def updatePartialDocument(
-    index: ElasticsearchIndex[_],
+    index: ElasticsearchIndex[_, _],
     document: Json
   ): BulkCompatibleDefinition = {
     val id = document.hcursor
-      .get[String](ClioDocument.EntityIdElasticSearchName)
+      .get[String](ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName))
       .fold(throw _, identity)
 
     update(id)

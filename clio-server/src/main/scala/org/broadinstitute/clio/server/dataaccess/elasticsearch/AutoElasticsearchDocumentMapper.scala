@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import org.broadinstitute.clio.util.generic.CaseClassMapper
-import org.broadinstitute.clio.util.model.UpsertId
+import org.broadinstitute.clio.util.model.{UpsertId, EntityId}
 
 import scala.reflect.ClassTag
 
@@ -14,40 +14,37 @@ import scala.reflect.ClassTag
   * @tparam ModelMetadata The type of the metadata, with a context bound also specifying that an
   *                       `implicit ctagMetadata: ClassTag[ModelMetadata]` exists.
   *                       https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
-  * @tparam Document      The type of the document, with a context bound also specifying that an
-  *                       `implicit ctagDocument: ClassTag[Document]` exists.
   *                       https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
   */
 class AutoElasticsearchDocumentMapper[
   ModelKey <: Product: ClassTag,
   ModelMetadata: ClassTag,
-  Document <: ClioDocument: ClassTag
 ] private[elasticsearch] (genId: () => UpsertId)
-    extends ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] {
+    extends ElasticsearchDocumentMapper[ModelKey, ModelMetadata] {
 
   private val modelKeyMapper = new CaseClassMapper[ModelKey]
   private val modelMetadataMapper = new CaseClassMapper[ModelMetadata]
-  private val documentMapper = new CaseClassMapper[Document]
 
-  override def empty(key: ModelKey): Document = {
+  override def empty(key: ModelKey): (ModelKey, ModelMetadata) = {
     val keyVals = modelKeyMapper.vals(key)
     val bookkeeping = Map(
-      ClioDocument.UpsertIdFieldName -> genId(),
-      ClioDocument.EntityIdFieldName -> Symbol(
+      UpsertId.UpsertIdFieldName -> genId(),
+      EntityId.EntityIdFieldName -> Symbol(
         key.productIterator.mkString(".")
       )
     )
-    val document = documentMapper.newInstance(keyVals ++ bookkeeping)
-    document
+    val modelKey = modelKeyMapper.newInstance(keyVals ++ bookkeeping)
+    val modelMetadata = modelMetadataMapper.newInstance(Map.empty)
+    (modelKey, modelMetadata)
   }
 
-  override def withMetadata(document: Document, metadata: ModelMetadata): Document = {
+  override def withMetadata(key: ModelKey, existingMetadata: ModelMetadata, newMetadata: ModelMetadata): (ModelKey, ModelMetadata) = {
     // Copy all the metadata values except those that are `None`.
-    val metadataVals = modelMetadataMapper vals metadata collect {
+    val metadataVals = modelMetadataMapper vals newMetadata collect {
       case (name, value) if value != None => (name, value)
     }
-    val copy = documentMapper.copy(document, metadataVals)
-    copy
+    val copy = modelMetadataMapper.copy(existingMetadata, metadataVals)
+    (key, copy)
   }
 }
 
@@ -56,8 +53,7 @@ object AutoElasticsearchDocumentMapper {
   def apply[
     ModelKey <: Product: ClassTag,
     ModelMetadata: ClassTag,
-    Document <: ClioDocument: ClassTag
-  ]: ElasticsearchDocumentMapper[ModelKey, ModelMetadata, Document] = {
+  ]: ElasticsearchDocumentMapper[ModelKey, ModelMetadata] = {
     new AutoElasticsearchDocumentMapper(UpsertId.nextId)
   }
 }

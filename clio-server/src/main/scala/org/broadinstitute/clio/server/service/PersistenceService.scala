@@ -2,7 +2,6 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
   ElasticsearchDocumentMapper,
   ElasticsearchIndex
 }
@@ -24,22 +23,22 @@ class PersistenceService private (persistenceDAO: PersistenceDAO, searchDAO: Sea
     * Update-or-insert (upsert) metadata for a given key.
     *
     * @param transferKey      The DTO for the key.
-    * @param transferMetadata The DTO for the metadata.
+    * @param existingTransferMetadata The DTO for the existing metadata.
+    * @param newTransferMetadata The DTO for the new metadata.
     * @tparam TK The type of the Transfer Key DTO.
     * @tparam TM The type of the Transfer Metadata DTO.
-    * @tparam D  The type of the Document.
     * @return the ID for this upsert
     */
-  def upsertMetadata[TK, TM, D <: ClioDocument: ElasticsearchIndex](
+  def upsertMetadata[TK, TM](
     transferKey: TK,
-    transferMetadata: TM,
-    documentMapper: ElasticsearchDocumentMapper[TK, TM, D]
+    existingTransferMetadata: TM,
+    newTransferMetadata: TM,
+    documentMapper: ElasticsearchDocumentMapper[TK, TM]
   )(implicit ec: ExecutionContext): Future[UpsertId] = {
-    val empty = documentMapper.empty(transferKey)
-    val document = documentMapper.withMetadata(empty, transferMetadata)
+    val (_, overlaidMetadata) = documentMapper.withMetadata(transferKey, existingTransferMetadata, newTransferMetadata)
 
     for {
-      _ <- persistenceDAO.writeUpdate(document)
+      _ <- persistenceDAO.writeUpdate(transferKey, overlaidMetadata)
       _ <- searchDAO.updateMetadata(document)
     } yield {
       document.upsertId

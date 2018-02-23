@@ -2,11 +2,9 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import org.broadinstitute.clio.util.generic.{
-  CaseClassMapper,
-  CaseClassMapperWithTypes,
-  FieldMapper
-}
+import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
+import org.broadinstitute.clio.util.generic.{CaseClassMapper, CaseClassMapperWithTypes, FieldMapper}
+import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
 
 import scala.reflect.ClassTag
 
@@ -20,22 +18,27 @@ import scala.reflect.ClassTag
   * @tparam ModelQueryOutput The type of the query output, with a context bound also specifying that an
   *                          `implicit ctagQueryOutput: ClassTag[ModelQueryOutput]` exists.
   *                          https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
-  * @tparam Document         The Elasticsearch documents being queried, with a context bound also specifying that an
-  *                          `implicit ctagDocument: ClassTag[Document]` exists.
+  * @tparam Key              The primary key of the Elasticsearch documents being queried, with a context bound also specifying that an
+  *                          `implicit ctagKey: ClassTag[Key]` exists.
+  * @tparam Metadata         The metadata content of the Elasticsearch documents being queried, with a context bound also
+  *                          specifying that an `implicit ctagMetadata: ClassTag[Metadata]` exists.
   */
 class AutoElasticsearchQueryMapper[
   ModelQueryInput: ClassTag: FieldMapper,
   ModelQueryOutput: ClassTag,
-  Document <: ClioDocument: ClassTag
+  Key <: TransferKey: ClassTag,
+  Metadata <: TransferMetadata[Metadata]: ClassTag
 ] private[dataaccess]
     extends ElasticsearchQueryMapper[
       ModelQueryInput,
       ModelQueryOutput,
-      Document
+      Key,
+      Metadata
     ] {
   val inputMapper = new CaseClassMapperWithTypes[ModelQueryInput]
   val outputMapper = new CaseClassMapper[ModelQueryOutput]
-  val documentMapper = new CaseClassMapper[Document]
+  val keyMapper = new CaseClassMapper[Key]
+  val metadataMapper = new CaseClassMapper[Metadata]
 
   override def isEmpty(queryInput: ModelQueryInput): Boolean = {
     flattenVals(queryInput).isEmpty
@@ -43,7 +46,7 @@ class AutoElasticsearchQueryMapper[
 
   override def buildQuery(
     queryInput: ModelQueryInput
-  )(implicit index: ElasticsearchIndex[Document]): QueryDefinition = {
+  )(implicit index: ElasticsearchIndex[Key, Metadata]): QueryDefinition = {
     val queries = flattenVals(queryInput) map {
       case (name, value) => {
         index.fieldMapper.valueToQuery(
@@ -55,12 +58,13 @@ class AutoElasticsearchQueryMapper[
     boolQuery must queries
   }
 
-  override def toQueryOutput(document: Document): ModelQueryOutput = {
-    val vals = documentMapper.vals(document)
+  override def toQueryOutput(key: Key, metadata: Metadata): ModelQueryOutput = {
+    val keyVals = keyMapper.vals(key)
+    val metadataVals = metadataMapper.vals(metadata)
     outputMapper.newInstance(
-      vals -- Seq(
-        ClioDocument.UpsertIdFieldName,
-        ClioDocument.EntityIdFieldName
+      keyVals ++ metadataVals -- Seq(
+        UpsertId.UpsertIdFieldName,
+        EntityId.EntityIdFieldName
       )
     )
   }
@@ -94,8 +98,9 @@ object AutoElasticsearchQueryMapper {
   def apply[
     QueryInput: ClassTag: FieldMapper,
     QueryOutput: ClassTag,
-    Document <: ClioDocument: ClassTag
-  ]: ElasticsearchQueryMapper[QueryInput, QueryOutput, Document] = {
+    Key <: TransferKey: ClassTag,
+    Metadata <: TransferMetadata[Metadata]: ClassTag
+  ]: ElasticsearchQueryMapper[QueryInput, QueryOutput, Key, Metadata] = {
     new AutoElasticsearchQueryMapper
   }
 }

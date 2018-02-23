@@ -35,6 +35,7 @@ class WgsCramService(
     persistenceService
       .upsertMetadata(
         transferKey,
+        transferMetadata,
         updatedTransferMetadata,
         WgsCramService.v1DocumentConverter
       )
@@ -65,17 +66,18 @@ object WgsCramService {
     AutoElasticsearchDocumentMapper[
       TransferWgsCramV1Key,
       TransferWgsCramV1Metadata,
-      DocumentWgsCram
     ]
 
   val v1QueryConverter: ElasticsearchQueryMapper[
     TransferWgsCramV1QueryInput,
     TransferWgsCramV1QueryOutput,
-    DocumentWgsCram
+    TransferWgsCramV1Key,
+    TransferWgsCramV1Metadata,
   ] =
     AutoElasticsearchQueryMapper[
       TransferWgsCramV1QueryInput,
       TransferWgsCramV1QueryOutput,
-      DocumentWgsCram
+      TransferWgsCramV1Key,
+      TransferWgsCramV1Metadata,
     ]
 }
