@@ -17,7 +17,6 @@ import org.apache.http.HttpHost
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
 import org.elasticsearch.client.RestClient
@@ -53,9 +52,9 @@ class HttpElasticsearchDAO private[dataaccess] (
     implicit index: ElasticsearchIndex[_, _]
   ): Future[Unit] = bulkUpdate(documents.map(updatePartialDocument(index, _)))
 
-  override def queryMetadata[K <: TransferKey, M <: TransferMetadata[M]](queryDefinition: QueryDefinition)(
-    implicit index: ElasticsearchIndex[K, M]
-  ): Source[(K, M), NotUsed] = {
+  override def queryMetadata(queryDefinition: QueryDefinition)(
+    implicit index: ElasticsearchIndex[_, _]
+  ): Source[Json, NotUsed] = {
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
       .size(HttpElasticsearchDAO.DocumentScrollSize)

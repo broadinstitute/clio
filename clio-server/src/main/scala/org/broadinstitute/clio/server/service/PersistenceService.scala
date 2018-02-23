@@ -1,11 +1,9 @@
 package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.ClioApp
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchDocumentMapper,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchDocumentMapper, ElasticsearchIndex}
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
+import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -29,19 +27,22 @@ class PersistenceService private (persistenceDAO: PersistenceDAO, searchDAO: Sea
     * @tparam TM The type of the Transfer Metadata DTO.
     * @return the ID for this upsert
     */
-  def upsertMetadata[TK, TM](
+  def upsertMetadata[TK <: TransferKey, TM <: TransferMetadata[TM]](
     transferKey: TK,
     existingTransferMetadata: TM,
     newTransferMetadata: TM,
     documentMapper: ElasticsearchDocumentMapper[TK, TM]
-  )(implicit ec: ExecutionContext): Future[UpsertId] = {
-    val (_, overlaidMetadata) = documentMapper.withMetadata(transferKey, existingTransferMetadata, newTransferMetadata)
+  )(implicit ec: ExecutionContext, index: ElasticsearchIndex[TK, TM]): Future[UpsertId] = {
+    val (empty, _) = documentMapper.empty(transferKey)
+    val (_, overlaidMetadata) = documentMapper.withMetadata(empty, existingTransferMetadata, newTransferMetadata)
+
+    val document = index.encoder.apply((transferKey, overlaidMetadata))
 
     for {
-      _ <- persistenceDAO.writeUpdate(transferKey, overlaidMetadata)
+      _ <- persistenceDAO.writeUpdate(document)
       _ <- searchDAO.updateMetadata(document)
     } yield {
-      document.upsertId
+      new UpsertId(document.findAllByKey(UpsertId.UpsertIdFieldName).head.findAllByKey("id"))
     }
   }
 }

@@ -6,7 +6,6 @@ import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
 
 import scala.collection.immutable
 import scala.concurrent.Future

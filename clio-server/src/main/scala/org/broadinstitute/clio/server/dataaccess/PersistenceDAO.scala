@@ -14,7 +14,6 @@ import io.circe.Json
 import io.circe.jawn.JawnParser
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -70,25 +69,24 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
   /**
     * Write a metadata update to storage.
     *
-    * @param transferKey A TransferKey representing part of an upsert.
-    * @param transferMetadata A TransferMetadata representing part of an upsert.
+    * @param document A JSON object representing an upsert.
     * @param index    Typeclass providing information on where to persist the
     *                 metadata update.
     */
-  def writeUpdate[K <: TransferKey, M <: TransferMetadata[M]](
-    transferKey: K,
-    transferMetadata: M,
+  def writeUpdate(
+    document: Json,
     dt: OffsetDateTime = OffsetDateTime.now()
   )(
     implicit ec: ExecutionContext,
-    index: ElasticsearchIndex[K, M]
+    index: ElasticsearchIndex[_, _]
   ): Future[Unit] = Future {
-    val jsonString =
-      ModelAutoDerivation.defaultPrinter.pretty(index.encoder.apply(transferKey, transferMetadata))
-
     val writePath = (rootPath / index.persistenceDirForDatetime(dt)).createDirectories()
 
-    val written = (writePath / document.upsertId.persistenceFilename)
+    val upsertId = new UpsertId(document.findAllByKey(UpsertId.UpsertIdFieldName).head.findAllByKey("id"))
+
+    val jsonString = ModelAutoDerivation.defaultPrinter.pretty(document)
+
+    val written = (writePath / upsertId.persistenceFilename)
       .write(jsonString)(Seq(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE))
     logger.debug(s"Wrote document $document to ${written.uri}")
   }
