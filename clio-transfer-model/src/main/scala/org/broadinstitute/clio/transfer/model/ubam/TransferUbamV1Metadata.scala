@@ -57,4 +57,11 @@ case class TransferUbamV1Metadata(
       notes = appendNote(deletionNote),
       documentStatus = Some(DocumentStatus.Deleted)
     )
+
+  override def withDocumentStatus(
+    documentStatus: Option[DocumentStatus]
+  ): TransferUbamV1Metadata =
+    this.copy(
+      documentStatus = documentStatus
+    )
 }

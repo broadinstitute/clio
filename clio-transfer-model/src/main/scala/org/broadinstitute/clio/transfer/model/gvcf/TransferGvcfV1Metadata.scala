@@ -44,4 +44,11 @@ case class TransferGvcfV1Metadata(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
     )
+
+  override def withDocumentStatus(
+    docStatus: Option[DocumentStatus]
+  ): TransferGvcfV1Metadata =
+    this.copy(
+      documentStatus = docStatus
+    )
 }

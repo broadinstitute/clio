@@ -1,7 +1,11 @@
 package org.broadinstitute.clio.server.service
 
 import io.circe.syntax._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  AutoElasticsearchDocumentMapper,
+  DocumentWgsUbam,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.server.dataaccess.{
   FailingPersistenceDAO,
   MemoryPersistenceDAO,
@@ -20,6 +24,12 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
   val mockKey = TransferUbamV1Key(Location.OnPrem, "barcode", 1, "library")
   val mockMetadata = TransferUbamV1Metadata()
 
+  val mockDocConverter = AutoElasticsearchDocumentMapper[
+    TransferUbamV1Key,
+    TransferUbamV1Metadata,
+    DocumentWgsUbam
+  ]
+
   it should "upsertMetadata" in {
     val persistenceDAO = new MemoryPersistenceDAO()
     val searchDAO = new MemorySearchDAO()
@@ -31,10 +41,11 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       uuid <- persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
-        WgsUbamService.v1DocumentConverter
+        mockDocConverter,
+        ElasticsearchIndex.WgsUbam
       )
     } yield {
-      val expectedDocument = WgsUbamService.v1DocumentConverter
+      val expectedDocument = mockDocConverter
         .empty(mockKey)
         .copy(upsertId = uuid)
 
@@ -60,7 +71,8 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
-        WgsUbamService.v1DocumentConverter
+        mockDocConverter,
+        ElasticsearchIndex.WgsUbam
       )
     }.map { _ =>
       searchDAO.updateCalls should be(empty)

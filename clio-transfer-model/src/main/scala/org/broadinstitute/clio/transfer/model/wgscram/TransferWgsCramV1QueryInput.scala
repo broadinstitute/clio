@@ -4,6 +4,7 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
+import org.broadinstitute.clio.transfer.model.TransferInput
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
   Location,
@@ -27,4 +28,12 @@ case class TransferWgsCramV1QueryInput(
   workspaceName: Option[String] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   notes: Option[String] = None
-)
+) extends TransferInput[TransferWgsCramV1QueryInput] {
+
+  def withDocumentStatus(
+    documentStatus: Option[DocumentStatus]
+  ): TransferWgsCramV1QueryInput =
+    this.copy(
+      documentStatus = documentStatus
+    )
+}

@@ -1,19 +1,9 @@
 package org.broadinstitute.clio.server.service
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
-import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1Metadata,
-  TransferUbamV1QueryInput,
-  TransferUbamV1QueryOutput
-}
-import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 /**
   * Service responsible for performing all wgs-ubam-specific logic
@@ -22,60 +12,10 @@ import scala.concurrent.{ExecutionContext, Future}
 class WgsUbamService(
   persistenceService: PersistenceService,
   searchService: SearchService
-)(implicit executionContext: ExecutionContext) {
-
-  def upsertMetadata(
-    transferKey: TransferUbamV1Key,
-    transferMetadata: TransferUbamV1Metadata
-  ): Future[UpsertId] = {
-    val updatedTransferMetadata = transferMetadata.copy(
-      documentStatus = transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
+)(implicit executionContext: ExecutionContext)
+    extends IndexService[WgsUbamIndex.type, DocumentWgsUbam](
+      persistenceService,
+      searchService,
+      WgsUbamIndex,
+      ElasticsearchIndex.WgsUbam
     )
-
-    persistenceService
-      .upsertMetadata(
-        transferKey,
-        updatedTransferMetadata,
-        WgsUbamService.v1DocumentConverter
-      )
-  }
-
-  def queryMetadata(
-    transferInput: TransferUbamV1QueryInput
-  ): Source[TransferUbamV1QueryOutput, NotUsed] = {
-    val transferInputNew =
-      transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
-    queryAllMetadata(transferInputNew)
-  }
-
-  def queryAllMetadata(
-    transferInput: TransferUbamV1QueryInput
-  ): Source[TransferUbamV1QueryOutput, NotUsed] = {
-    searchService.queryMetadata(
-      transferInput,
-      WgsUbamService.v1QueryConverter
-    )
-  }
-
-  def querySchema(): Future[Json] = Future(WgsUbamIndex.jsonSchema)
-}
-
-object WgsUbamService {
-  private[service] val v1DocumentConverter =
-    AutoElasticsearchDocumentMapper[
-      TransferUbamV1Key,
-      TransferUbamV1Metadata,
-      DocumentWgsUbam
-    ]
-
-  val v1QueryConverter: ElasticsearchQueryMapper[
-    TransferUbamV1QueryInput,
-    TransferUbamV1QueryOutput,
-    DocumentWgsUbam
-  ] =
-    AutoElasticsearchQueryMapper[
-      TransferUbamV1QueryInput,
-      TransferUbamV1QueryOutput,
-      DocumentWgsUbam
-    ]
-}

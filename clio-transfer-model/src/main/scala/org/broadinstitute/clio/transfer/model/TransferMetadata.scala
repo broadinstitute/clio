@@ -54,6 +54,11 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
   def markDeleted(deletionNote: String): M
 
   /**
+    * Return a copy of this object with given document status.
+    */
+  def withDocumentStatus(documentStatus: Option[DocumentStatus]): M
+
+  /**
     * Return a copy of this with files transformed by applying `pathMapper`.
     *
     * @param pathMapper of files from source to destination URI

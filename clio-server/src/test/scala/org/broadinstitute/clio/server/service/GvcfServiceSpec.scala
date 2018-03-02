@@ -51,8 +51,8 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(
         Seq(
-          GvcfService.v1QueryConverter.buildQuery(
-            transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
+          gvcfService.v1QueryConverter.buildQuery(
+            transferInput.withDocumentStatus(Option(DocumentStatus.Normal))
           )
         )
       )
@@ -91,9 +91,9 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
         transferMetadata
       )
     } yield {
-      val expectedDocument = GvcfService.v1DocumentConverter
+      val expectedDocument = gvcfService.v1DocumentConverter
         .withMetadata(
-          GvcfService.v1DocumentConverter.empty(transferKey),
+          gvcfService.v1DocumentConverter.empty(transferKey),
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
         .copy(upsertId = returnedUpsertId)

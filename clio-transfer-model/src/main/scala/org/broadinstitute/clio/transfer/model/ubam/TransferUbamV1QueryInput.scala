@@ -2,6 +2,7 @@ package org.broadinstitute.clio.transfer.model.ubam
 
 import java.time.OffsetDateTime
 
+import org.broadinstitute.clio.transfer.model.TransferInput
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
   Location,
@@ -24,4 +25,12 @@ case class TransferUbamV1QueryInput(
   baitSet: Option[Symbol] = None,
   baitIntervals: Option[Symbol] = None,
   targetIntervals: Option[Symbol] = None
-)
+) extends TransferInput[TransferUbamV1QueryInput] {
+
+  def withDocumentStatus(
+    documentStatus: Option[DocumentStatus]
+  ): TransferUbamV1QueryInput =
+    this.copy(
+      documentStatus = documentStatus
+    )
+}

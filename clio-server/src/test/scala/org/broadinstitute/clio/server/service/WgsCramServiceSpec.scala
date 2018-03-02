@@ -51,7 +51,7 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(
         Seq(
-          WgsCramService.v1QueryConverter.buildQuery(
+          cramService.v1QueryConverter.buildQuery(
             transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
           )
         )
@@ -91,9 +91,9 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
         transferMetadata
       )
     } yield {
-      val expectedDocument = WgsCramService.v1DocumentConverter
+      val expectedDocument = cramService.v1DocumentConverter
         .withMetadata(
-          WgsCramService.v1DocumentConverter.empty(transferKey),
+          cramService.v1DocumentConverter.empty(transferKey),
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
         .copy(upsertId = returnedUpsertId)

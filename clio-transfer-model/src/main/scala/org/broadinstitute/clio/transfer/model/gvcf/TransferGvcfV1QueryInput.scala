@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.transfer.model.gvcf
 
+import org.broadinstitute.clio.transfer.model.TransferInput
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
   Location,
@@ -13,4 +14,12 @@ case class TransferGvcfV1QueryInput(
   sampleAlias: Option[String] = None,
   version: Option[Int] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None
-)
+) extends TransferInput[TransferGvcfV1QueryInput] {
+
+  def withDocumentStatus(
+    documentStatus: Option[DocumentStatus]
+  ): TransferGvcfV1QueryInput =
+    this.copy(
+      documentStatus = documentStatus
+    )
+}

@@ -94,4 +94,11 @@ case class TransferWgsCramV1Metadata(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
     )
+
+  override def withDocumentStatus(
+    documentStatus: Option[DocumentStatus]
+  ): TransferWgsCramV1Metadata =
+    this.copy(
+      documentStatus = documentStatus
+    )
 }

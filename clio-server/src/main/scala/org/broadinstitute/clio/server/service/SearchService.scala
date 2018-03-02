@@ -27,13 +27,14 @@ class SearchService private (searchDAO: SearchDAO) {
     */
   def queryMetadata[TI, TO, D <: ClioDocument: ElasticsearchIndex](
     transferInput: TI,
-    queryMapper: ElasticsearchQueryMapper[TI, TO, D]
+    queryMapper: ElasticsearchQueryMapper[TI, TO, D],
+    elasticsearchIndex: ElasticsearchIndex[D]
   ): Source[TO, NotUsed] = {
     if (queryMapper.isEmpty(transferInput)) {
       Source.empty[TO]
     } else {
       searchDAO
-        .queryMetadata(queryMapper.buildQuery(transferInput))
+        .queryMetadata(queryMapper.buildQuery(transferInput))(elasticsearchIndex)
         .map(queryMapper.toQueryOutput)
     }
   }

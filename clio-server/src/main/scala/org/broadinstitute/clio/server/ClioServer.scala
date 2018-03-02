@@ -21,9 +21,6 @@ import scala.concurrent.ExecutionContext
 object ClioServer
     extends JsonWebService
     with StatusWebService
-    with WgsUbamWebService
-    with GvcfWebService
-    with WgsCramWebService
     with AuditDirectives
     with ExceptionDirectives
     with RejectionDirectives
@@ -52,7 +49,8 @@ object ClioServer
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
   private val infoRoutes: Route = concat(swaggerRoutes, statusRoutes)
-  private val apiRoutes: Route = concat(wgsUbamRoutes, gvcfRoutes, wgsCramRoutes)
+  private lazy val apiRoutes: Route =
+    concat(wgsUbamWebService.routes, gvcfWebService.routes, wgsCramWebService.routes)
 
   private val serverStatusDAO = CachedServerStatusDAO()
   private val auditDAO = LoggingAuditDAO()
@@ -78,12 +76,20 @@ object ClioServer
   override val auditService = AuditService(app)
   override val statusService = StatusService(app)
 
-  override val wgsUbamService =
-    new WgsUbamService(persistenceService, searchService)
-  override val gvcfService =
-    new GvcfService(persistenceService, searchService)
-  override val wgsCramService =
-    new WgsCramService(persistenceService, searchService)
+  val wgsUbamWebService =
+    new WgsUbamWebService(
+      new WgsUbamService(persistenceService, searchService)
+    )
+
+  val gvcfWebService =
+    new GvcfWebService(
+      new GvcfService(persistenceService, searchService)
+    )
+
+  val wgsCramWebService =
+    new WgsCramWebService(
+      new WgsCramService(persistenceService, searchService)
+    )
 
   def beginStartup(): Unit = serverService.beginStartup()
 

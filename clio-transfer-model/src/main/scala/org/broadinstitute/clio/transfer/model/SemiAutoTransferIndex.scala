@@ -19,6 +19,7 @@ import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1QueryInput,
   TransferUbamV1QueryOutput
 }
+import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.JsonSchema
 import org.broadinstitute.clio.util.json.ModelAutoDerivation._
 
@@ -28,7 +29,9 @@ import scala.reflect.ClassTag
   * Convenience class for building [[TransferIndex]] instances
   * by summoning most required fields from implicit scope.
   */
-sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMetadata[MT], QI, QO](
+sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMetadata[MT], QI <: TransferInput[
+  QI
+], QO](
   implicit
   schema: JsonSchema[QO],
   override val keyTag: ClassTag[KT],
@@ -38,7 +41,10 @@ sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMet
   override val metadataDecoder: Decoder[MT],
   override val metadataEncoder: Encoder[MT],
   override val queryInputEncoder: Encoder[QI],
-  override val queryOutputDecoder: Decoder[QO]
+  override val queryInputDecoder: Decoder[QI],
+  override val queryOutputEncoder: Encoder[QO],
+  override val queryOutputDecoder: Decoder[QO],
+  override val queryInputFieldMapper: FieldMapper[QI]
 ) extends TransferIndex {
 
   override type KeyType = KT

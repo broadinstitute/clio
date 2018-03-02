@@ -11,10 +11,7 @@ import scala.concurrent.ExecutionContext
 
 class MockWgsCramWebService(app: ClioApp = MockClioApp())(
   implicit executionContext: ExecutionContext
-) extends WgsCramWebService
-    with JsonWebService {
-  private val persistence = PersistenceService(app)
-  private val search = SearchService(app)
-  override lazy val wgsCramService: WgsCramService =
-    new WgsCramService(persistence, search)
-}
+) extends WgsCramWebService(
+      new WgsCramService(PersistenceService(app), SearchService(app))
+    )
+    with JsonWebService

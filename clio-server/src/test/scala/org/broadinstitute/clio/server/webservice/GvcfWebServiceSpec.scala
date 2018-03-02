@@ -7,29 +7,38 @@ import akka.http.scaladsl.server.Route
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentGvcf
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  AutoElasticsearchQueryMapper,
+  DocumentGvcf
+}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
-import org.broadinstitute.clio.server.service.GvcfService
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
   GvcfExtensions,
-  TransferGvcfV1QueryInput
+  TransferGvcfV1QueryInput,
+  TransferGvcfV1QueryOutput
 }
 
 class GvcfWebServiceSpec extends BaseWebserviceSpec {
   behavior of "GvcfWebService"
 
+  private val mockQueryConverter = AutoElasticsearchQueryMapper[
+    TransferGvcfV1QueryInput,
+    TransferGvcfV1QueryOutput,
+    DocumentGvcf
+  ]
+
   it should "postMetadata with OnPrem location" in {
     val webService = new MockGvcfWebService()
-    Post("/metadata/OnPrem/proj0/sample_alias0/1", Map("notes" -> "some note")) ~> webService.gvcfPostMetadata ~> check {
+    Post("/metadata/OnPrem/proj0/sample_alias0/1", Map("notes" -> "some note")) ~> webService.postMetadata ~> check {
       UpsertId.isValidId(responseAs[String]) should be(true)
     }
   }
 
   it should "postMetadata with GCP location" in {
     val webService = new MockGvcfWebService()
-    Post("/metadata/GCP/proj0/sample_alias0/1", Map("notes" -> "some note")) ~> webService.gvcfPostMetadata ~> check {
+    Post("/metadata/GCP/proj0/sample_alias0/1", Map("notes" -> "some note")) ~> webService.postMetadata ~> check {
       UpsertId.isValidId(responseAs[String]) should be(true)
     }
   }
@@ -44,7 +53,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
         "notes" -> "some note",
         "gvcf_path" -> s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"
       )
-    ) ~> webService.gvcfPostMetadata ~> check {
+    ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
     Post(
@@ -53,7 +62,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
         "notes" -> "some note",
         "gvcf_path" -> s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"
       )
-    ) ~> webService.gvcfPostMetadata ~> check {
+    ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
     Post(
@@ -62,28 +71,28 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
         "notes" -> "some note",
         "gvcf_path" -> s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"
       )
-    ) ~> webService.gvcfPostMetadata ~> check {
+    ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
-    Post("/query", Map("project" -> "proj0")) ~> webService.gvcfQuery ~> check {
+    Post("/query", Map("project" -> "proj0")) ~> webService.query ~> check {
       memorySearchDAO.queryCalls should be(
         Seq(
           TransferGvcfV1QueryInput(
             project = Some("proj0"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(GvcfService.v1QueryConverter.buildQuery)
+        ).map(mockQueryConverter.buildQuery)
       )
     }
 
     Post(
       "/query",
       Map("project" -> "testProject1", "sample_alias" -> "sample1")
-    ) ~> webService.gvcfQuery ~> check {
+    ) ~> webService.query ~> check {
       memorySearchDAO.queryCalls should have length 2
       val secondQuery =
         memorySearchDAO.queryCalls(1).asInstanceOf[BoolQueryDefinition]
@@ -102,7 +111,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
         "notes" -> "some note",
         "gvcf_path" -> s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"
       )
-    ) ~> webService.gvcfPostMetadata ~> check {
+    ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
       memorySearchDAO.updateCalls should have length 1
       val firstUpdate = memorySearchDAO.updateCalls.headOption
@@ -126,14 +135,14 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
     // We have to test the MemorySearchDAO because we're not going to implement
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
-    Post("/query", Map("location" -> "GCP")) ~> webService.gvcfQuery ~> check {
+    Post("/query", Map("location" -> "GCP")) ~> webService.query ~> check {
       memorySearchDAO.queryCalls should be(
         Seq(
           TransferGvcfV1QueryInput(
             location = Some(Location.GCP),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(GvcfService.v1QueryConverter.buildQuery)
+        ).map(mockQueryConverter.buildQuery)
       )
     }
 
@@ -145,7 +154,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
         "document_status" -> "Deleted",
         "gvcf_path" -> ""
       )
-    ) ~> webService.gvcfPostMetadata ~> check {
+    ) ~> webService.postMetadata ~> check {
       status shouldEqual StatusCodes.OK
       memorySearchDAO.updateCalls should have length 2
       val secondUpdate = memorySearchDAO.updateCalls
@@ -163,7 +172,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
     // We have to test the MemorySearchDAO because we're not going to implement
     // Elasticsearch logic in our test specs. Here, we're just verifying that
     // the web service passes the appropriate queries onto the search DAO.
-    Post("/queryall", Map("location" -> "GCP")) ~> webService.gvcfQueryall ~> check {
+    Post("/queryall", Map("location" -> "GCP")) ~> webService.queryall ~> check {
       memorySearchDAO.queryCalls should be(
         Seq(
           // From /query call earlier in the test.
@@ -173,7 +182,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
           ),
           // No documentStatus restriction from /queryall
           TransferGvcfV1QueryInput(location = Some(Location.GCP))
-        ).map(GvcfService.v1QueryConverter.buildQuery)
+        ).map(mockQueryConverter.buildQuery)
       )
     }
   }
@@ -183,7 +192,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
     Post(
       "/query",
       Map("project" -> "testBoGuSproject", "sample_alias" -> "testBoGuSsample")
-    ) ~> webService.gvcfQuery ~> check {
+    ) ~> webService.query ~> check {
       responseAs[Seq[String]] should be(empty)
     }
   }
@@ -191,28 +200,28 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
   it should "reject postMetadata with BoGuS location" in {
     val webService = new MockGvcfWebService()
     Post("/metadata/BoGuS/proj0/alias/2", Map("project" -> "testBoGuSlocation")) ~> Route
-      .seal(webService.gvcfPostMetadata) ~> check {
+      .seal(webService.postMetadata) ~> check {
       status shouldEqual StatusCodes.NotFound
     }
   }
 
   it should "query with an empty request" in {
     val webService = new MockGvcfWebService()
-    Post("/query", Map.empty[String, String]) ~> webService.gvcfQuery ~> check {
+    Post("/query", Map.empty[String, String]) ~> webService.query ~> check {
       responseAs[Seq[String]] should be(empty)
     }
   }
 
   it should "query without an empty request" in {
     val webService = new MockGvcfWebService()
-    Post("/query", Map("project" -> "testProject")) ~> webService.gvcfQuery ~> check {
+    Post("/query", Map("project" -> "testProject")) ~> webService.query ~> check {
       responseAs[Seq[String]] should be(empty)
     }
   }
 
   it should "return a JSON schema" in {
     val webService = new MockGvcfWebService()
-    Get("/schema") ~> webService.gvcfGetSchema ~> check {
+    Get("/schema") ~> webService.getSchema ~> check {
       responseAs[Json] should be(GvcfIndex.jsonSchema)
     }
   }

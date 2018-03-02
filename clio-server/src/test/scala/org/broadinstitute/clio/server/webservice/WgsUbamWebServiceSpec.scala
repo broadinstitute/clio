@@ -7,15 +7,26 @@ import akka.http.scaladsl.server.Route
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsUbam
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  AutoElasticsearchQueryMapper,
+  DocumentWgsUbam
+}
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
-import org.broadinstitute.clio.server.service.WgsUbamService
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1QueryInput
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1QueryInput,
+  TransferUbamV1QueryOutput
+}
 
 class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
   behavior of "WgsUbamWebService"
+
+  val mockQueryConverter = AutoElasticsearchQueryMapper[
+    TransferUbamV1QueryInput,
+    TransferUbamV1QueryOutput,
+    DocumentWgsUbam
+  ]
 
   it should "postMetadata with OnPrem location" in {
     val webService = new MockWgsUbamWebService()
@@ -70,7 +81,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
             project = Some("testProject1"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(WgsUbamService.v1QueryConverter.buildQuery)
+        ).map(mockQueryConverter.buildQuery)
       )
     }
 
@@ -125,7 +136,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
             flowcellBarcode = Some("FC123"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(WgsUbamService.v1QueryConverter.buildQuery)
+        ).map(mockQueryConverter.buildQuery)
       )
     }
 
@@ -165,7 +176,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
           ),
           // No documentStatus restriction from /queryall
           TransferUbamV1QueryInput(flowcellBarcode = Some("FC123"))
-        ).map(WgsUbamService.v1QueryConverter.buildQuery)
+        ).map(mockQueryConverter.buildQuery)
       )
     }
   }

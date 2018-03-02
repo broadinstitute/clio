@@ -48,7 +48,7 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(
         Seq(
-          WgsUbamService.v1QueryConverter.buildQuery(
+          wgsUbamService.v1QueryConverter.buildQuery(
             transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
           )
         )
@@ -86,9 +86,9 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
         transferMetadata
       )
     } yield {
-      val expectedDocument = WgsUbamService.v1DocumentConverter
+      val expectedDocument = wgsUbamService.v1DocumentConverter
         .withMetadata(
-          WgsUbamService.v1DocumentConverter.empty(transferKey),
+          wgsUbamService.v1DocumentConverter.empty(transferKey),
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
         .copy(upsertId = returnedUpsertId)

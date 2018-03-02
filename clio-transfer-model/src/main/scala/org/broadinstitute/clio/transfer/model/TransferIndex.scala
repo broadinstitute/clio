@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.transfer.model
 
 import io.circe.{Decoder, Encoder, Json}
+import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.ClassTag
 
@@ -26,7 +27,7 @@ trait TransferIndex {
 
   type MetadataType <: TransferMetadata[MetadataType]
 
-  type QueryInputType
+  type QueryInputType <: TransferInput[QueryInputType]
 
   type QueryOutputType
 
@@ -44,7 +45,13 @@ trait TransferIndex {
 
   val queryInputEncoder: Encoder[QueryInputType]
 
+  val queryInputDecoder: Decoder[QueryInputType]
+
+  val queryOutputEncoder: Encoder[QueryOutputType]
+
   val queryOutputDecoder: Decoder[QueryOutputType]
+
+  val queryInputFieldMapper: FieldMapper[QueryInputType]
 
   /**
     * Container for all index parameters that are typically
@@ -62,6 +69,9 @@ trait TransferIndex {
     implicit val md: Decoder[MetadataType] = metadataDecoder
     implicit val me: Encoder[MetadataType] = metadataEncoder
     implicit val qie: Encoder[QueryInputType] = queryInputEncoder
+    implicit val qid: Decoder[QueryInputType] = queryInputDecoder
+    implicit val qoe: Encoder[QueryOutputType] = queryOutputEncoder
     implicit val qod: Decoder[QueryOutputType] = queryOutputDecoder
+    implicit val qifm: FieldMapper[QueryInputType] = queryInputFieldMapper
   }
 }

@@ -11,10 +11,5 @@ import scala.concurrent.ExecutionContext
 
 class MockGvcfWebService(app: ClioApp = MockClioApp())(
   implicit executionContext: ExecutionContext
-) extends GvcfWebService
-    with JsonWebService {
-  private val persistence = PersistenceService(app)
-  private val search = SearchService(app)
-  override lazy val gvcfService: GvcfService =
-    new GvcfService(persistence, search)
-}
+) extends GvcfWebService(new GvcfService(PersistenceService(app), SearchService(app)))
+    with JsonWebService
