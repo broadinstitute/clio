@@ -37,7 +37,7 @@ case class TransferArraysV1QueryOutput(
   genotypeConcordanceDetailMetrics: Option[URI] = None,
   genotypeConcordanceSummaryMetrics: Option[URI] = None,
   grnIdat: Option[URI] = None,
-  gtc: Option[URI] = None,
+  gtcFile: Option[URI] = None,
   haplotypeDatabaseFile: Option[URI] = None,
   hetHomvarRatio: Option[Double] = None,
   hetPct: Option[Double] = None,
