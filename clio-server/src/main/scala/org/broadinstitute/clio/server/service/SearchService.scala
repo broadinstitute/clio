@@ -5,7 +5,7 @@ import akka.stream.scaladsl.Source
 import io.circe.Json
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.SearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchQueryMapper
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchIndex, ElasticsearchQueryMapper}
 
 /**
   * Service responsible for running queries against a search DAO.
@@ -24,6 +24,8 @@ class SearchService private (searchDAO: SearchDAO) {
   def queryMetadata[Input, Index](
     transferInput: Input,
     queryMapper: ElasticsearchQueryMapper[Input, Index]
+  )(
+    implicit index: ElasticsearchIndex[Index]
   ): Source[Json, NotUsed] = {
     if (queryMapper.isEmpty(transferInput)) {
       Source.empty[Json]

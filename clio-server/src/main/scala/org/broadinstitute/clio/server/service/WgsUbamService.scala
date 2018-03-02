@@ -8,8 +8,7 @@ import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1Key,
   TransferUbamV1Metadata,
-  TransferUbamV1QueryInput,
-  TransferUbamV1QueryOutput
+  TransferUbamV1QueryInput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
@@ -22,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class WgsUbamService(
   persistenceService: PersistenceService,
   searchService: SearchService
-)(implicit executionContext: ExecutionContext) {
+)(implicit executionContext: ExecutionContext, index: ElasticsearchIndex[WgsUbamIndex.type]) {
 
   def upsertMetadata(
     transferKey: TransferUbamV1Key,
@@ -42,7 +41,7 @@ class WgsUbamService(
 
   def queryMetadata(
     transferInput: TransferUbamV1QueryInput
-  ): Source[TransferUbamV1QueryOutput, NotUsed] = {
+  ): Source[Json, NotUsed] = {
     val transferInputNew =
       transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
     queryAllMetadata(transferInputNew)
@@ -50,7 +49,7 @@ class WgsUbamService(
 
   def queryAllMetadata(
     transferInput: TransferUbamV1QueryInput
-  ): Source[TransferUbamV1QueryOutput, NotUsed] = {
+  ): Source[Json, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
       WgsUbamService.v1QueryConverter

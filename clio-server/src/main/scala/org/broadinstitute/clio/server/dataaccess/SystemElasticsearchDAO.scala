@@ -27,7 +27,7 @@ trait SystemElasticsearchDAO extends SearchDAO { this: HttpElasticsearchDAO =>
   }
 
   override def initialize(
-    indexes: immutable.Seq[ElasticsearchIndex[_, _]]
+    indexes: immutable.Seq[ElasticsearchIndex[_]]
   ): Future[Unit] = {
     waitForSearchReady().flatMap { _ =>
       Future.foldLeft(indexes.map(createOrUpdateIndex))(())((_, _) => ())
@@ -42,7 +42,7 @@ trait SystemElasticsearchDAO extends SearchDAO { this: HttpElasticsearchDAO =>
 
   /** If an index with the name doesn't exist then create it, and then separately update the fields on the index. */
   private[dataaccess] def createOrUpdateIndex(
-    index: ElasticsearchIndex[_, _]
+    index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     for {
       exists <- existsIndexType(index)

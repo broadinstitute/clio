@@ -5,32 +5,26 @@ import java.time.format.DateTimeFormatter
 
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
-import io.circe.{Decoder, Encoder}
-
+import io.circe.Json
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.toElasticsearchName
 import org.broadinstitute.clio.transfer.model.TransferIndex
-import org.broadinstitute.clio.transfer.model.{GvcfIndex, WgsUbamIndex, WgsCramIndex}
+import org.broadinstitute.clio.transfer.model.{GvcfIndex, WgsCramIndex, WgsUbamIndex}
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{UpsertId, EntityId}
+import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
 
 /**
   * An index for an Elasticsearch document.
   *
   * @param indexName The name of the index in Elasticsearch.
   * @param fieldMapper The version of the mapping used to generate the index.
-  * @param encoder Typeclass used to convert `Key` and `Metadata` instances into JSON.
-  * @param decoder Typeclass used to convert ES search hits back to `Key` and `Metadata` instances.
   * @tparam Index The TransferIndex of the document.
   */
 class ElasticsearchIndex[Index <: TransferIndex](
   val indexName: String,
   val index: Index,
   private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper
-)(
-  implicit
-  private[clio] val encoder: Encoder[Index],
-  private[clio] val decoder: Decoder[Index]
-) {
+) extends ModelAutoDerivation {
   import index.implicits._
 
   /**
@@ -79,14 +73,19 @@ class ElasticsearchIndex[Index <: TransferIndex](
 }
 
 object ElasticsearchIndex extends ModelAutoDerivation {
+  def getEntityId(json: Json): String =
+    json.hcursor
+      .get[String](toElasticsearchName(EntityId.EntityIdFieldName))
+      .fold(throw _, identity)
+
+  def getUpsertId(json: Json): UpsertId =
+    json.hcursor
+      .get[UpsertId](toElasticsearchName(UpsertId.UpsertIdFieldName))
+      .fold(throw _, identity)
 
   /** Format the directory path for the indexed meta-data files. */
   lazy val dateTimeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy/MM/dd")
-
-  /** Implicit summoner, for convenience. */
-  def apply[Index]: ElasticsearchIndex[Index] =
-    implicitly[ElasticsearchIndex[Index]]
 
   implicit val WgsUbam: ElasticsearchIndex[WgsUbamIndex.type] =
     new ElasticsearchIndex(

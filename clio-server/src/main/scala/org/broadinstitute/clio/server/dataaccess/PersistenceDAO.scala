@@ -82,7 +82,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
   ): Future[Unit] = Future {
     val writePath = (rootPath / index.persistenceDirForDatetime(dt)).createDirectories()
 
-    val upsertId = new UpsertId(document.findAllByKey(UpsertId.UpsertIdFieldName).head.findAllByKey("id"))
+    val upsertId = ElasticsearchIndex.getUpsertId(document)
 
     val jsonString = ModelAutoDerivation.defaultPrinter.pretty(document)
 

@@ -3,14 +3,11 @@ package org.broadinstitute.clio.server.service
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Json
 import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.dataaccess.{HttpServerDAO, PersistenceDAO, SearchDAO, ServerStatusDAO}
 import org.broadinstitute.clio.status.model.ClioStatus
-import org.broadinstitute.clio.transfer.model.{WgsUbamIndex, WgsCramIndex, GvcfIndex}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -55,19 +52,19 @@ class ServerService private (
 
     searchDAO.getMostRecentDocument.flatMap { mostRecent =>
       val msg = s"Recovering all upserts from index $name"
-      val latestUpsert = mostRecent.map(getUpsertId)
+      val latestUpsert = mostRecent.map(ElasticsearchIndex.getUpsertId)
 
       logger.info(latestUpsert.fold(msg)(id => s"$msg since ${id.id}"))
 
       persistenceDAO
         .getAllSince(latestUpsert)
-        .batch(ServerService.RecoveryMaxBulkSize, json => Map(getEntityId(json) -> json)) {
+        .batch(ServerService.RecoveryMaxBulkSize, json => Map(ElasticsearchIndex.getEntityId(json) -> json)) {
           (idMap, json) =>
-            val id = getEntityId(json)
+            val id = ElasticsearchIndex.getEntityId(json)
             val newJson = idMap.get(id) match {
               case Some(oldJson) => {
                 logger.debug(
-                  s"Merging upserts ${getUpsertId(oldJson)} and ${getUpsertId(json)} for id $id"
+                  s"Merging upserts ${ElasticsearchIndex.getUpsertId(oldJson)} and ${ElasticsearchIndex.getUpsertId(json)} for id $id"
                 )
                 oldJson.deepMerge(json)
               }
@@ -84,16 +81,6 @@ class ServerService private (
         .map(_ => logger.info(s"Done recovering upserts for index $name"))
     }
   }
-
-  private def getEntityId(json: Json): String =
-    json.hcursor
-      .get[String](ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName))
-      .fold(throw _, identity)
-
-  private def getUpsertId(json: Json): UpsertId =
-    json.hcursor
-      .get[UpsertId](ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName))
-      .fold(throw _, identity)
 
   /**
     * Block until shutdown, within some finite limit.
@@ -120,9 +107,9 @@ class ServerService private (
   private[service] def startup(): Future[Unit] = {
 
     val indexes = immutable.Seq(
-      ElasticsearchIndex[WgsUbamIndex.type],
-      ElasticsearchIndex[GvcfIndex.type],
-      ElasticsearchIndex[WgsCramIndex.type]
+      ElasticsearchIndex.WgsUbam,
+      ElasticsearchIndex.Gvcf,
+      ElasticsearchIndex.WgsCram,
     )
 
     for {

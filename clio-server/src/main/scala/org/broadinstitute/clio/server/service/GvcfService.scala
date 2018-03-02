@@ -8,8 +8,7 @@ import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
-  TransferGvcfV1QueryInput,
-  TransferGvcfV1QueryOutput
+  TransferGvcfV1QueryInput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
@@ -22,7 +21,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class GvcfService(
   persistenceService: PersistenceService,
   searchService: SearchService
-)(implicit executionContext: ExecutionContext) {
+)(implicit executionContext: ExecutionContext, index: ElasticsearchIndex[GvcfIndex.type]) {
 
   def upsertMetadata(
     transferKey: TransferGvcfV1Key,
@@ -42,7 +41,7 @@ class GvcfService(
 
   def queryMetadata(
     transferInput: TransferGvcfV1QueryInput
-  ): Source[TransferGvcfV1QueryOutput, NotUsed] = {
+  ): Source[Json, NotUsed] = {
     val transferInputNew =
       transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
     queryAllMetadata(transferInputNew)
@@ -50,7 +49,7 @@ class GvcfService(
 
   def queryAllMetadata(
     transferInput: TransferGvcfV1QueryInput
-  ): Source[TransferGvcfV1QueryOutput, NotUsed] = {
+  ): Source[Json, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
       GvcfService.v1QueryConverter
