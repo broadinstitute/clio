@@ -89,7 +89,7 @@ case class TransferArraysV1Metadata(
     dbSnpVcf                 = pathMapper(dbSnpVcf,                 ArraysExtensions.VcfGzExtension),
     dbSnpVcfIndex            = pathMapper(dbSnpVcfIndex,            ArraysExtensions.VcfGzTbiExtension),
     extendedChipManifestFile = pathMapper(extendedChipManifestFile, ArraysExtensions.CsvExtension),
-    fileOfIdatFilenames      = pathMapper(fileOfIdatFilenames,      ArraysExtensions.TxtExtension),
+    fileOfIdatFilenames      = pathMapper(fileOfIdatFilenames,      ArraysExtensions.IdatsTxtExtension),
     genderClusterFile        = pathMapper(genderClusterFile,        ArraysExtensions.EgtExtension),
     haplotypeDatabaseFile    = pathMapper(haplotypeDatabaseFile,    ArraysExtensions.TxtExtension),
     paramsFile               = pathMapper(paramsFile,               ArraysExtensions.TxtExtension),

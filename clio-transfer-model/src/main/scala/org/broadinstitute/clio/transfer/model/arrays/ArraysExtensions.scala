@@ -35,5 +35,7 @@ object ArraysExtensions {
 
   val EgtThresholdsTxtExtension = s"${EgtExtension}${ThresholdsExtension}${TxtExtension}"
 
+  val IdatsTxtExtension = s"${IdatsExtension}${TxtExtension}"
+
   val FastaFaiExtension = s"${FastaExtension}${FaiExtension}"
 }
