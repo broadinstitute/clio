@@ -35,7 +35,6 @@ class GvcfService(
     persistenceService
       .upsertMetadata(
         transferKey,
-        transferMetadata,
         updatedTransferMetadata,
         GvcfService.v1DocumentConverter
       )
@@ -63,21 +62,17 @@ class GvcfService(
 
 object GvcfService {
   private[service] val v1DocumentConverter =
-    AutoElasticsearchDocumentMapper[
+    ElasticsearchDocumentMapper[
       TransferGvcfV1Key,
       TransferGvcfV1Metadata,
     ]
 
   val v1QueryConverter: ElasticsearchQueryMapper[
     TransferGvcfV1QueryInput,
-    TransferGvcfV1QueryOutput,
-    TransferGvcfV1Key,
-    TransferGvcfV1Metadata,
+    GvcfIndex.type,
   ] =
-    AutoElasticsearchQueryMapper[
+    ElasticsearchQueryMapper[
       TransferGvcfV1QueryInput,
-      TransferGvcfV1QueryOutput,
-      TransferGvcfV1Key,
-      TransferGvcfV1Metadata,
+      GvcfIndex.type,
     ]
 }

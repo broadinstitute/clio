@@ -8,9 +8,7 @@ import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.dataaccess.{HttpServerDAO, PersistenceDAO, SearchDAO, ServerStatusDAO}
 import org.broadinstitute.clio.status.model.ClioStatus
-import org.broadinstitute.clio.transfer.model.gvcf.{TransferGvcfV1Key, TransferGvcfV1Metadata}
-import org.broadinstitute.clio.transfer.model.ubam.{TransferUbamV1Key, TransferUbamV1Metadata}
-import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1Key, TransferWgsCramV1Metadata}
+import org.broadinstitute.clio.transfer.model.{WgsUbamIndex, WgsCramIndex, GvcfIndex}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
 
@@ -51,7 +49,7 @@ class ServerService private (
     * Returns the number of updates pulled & applied on success.
     */
   private[service] def recoverMetadata(
-    implicit index: ElasticsearchIndex[_, _]
+    implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     val name = index.indexName
 
@@ -122,9 +120,9 @@ class ServerService private (
   private[service] def startup(): Future[Unit] = {
 
     val indexes = immutable.Seq(
-      ElasticsearchIndex[TransferUbamV1Key, TransferUbamV1Metadata],
-      ElasticsearchIndex[TransferGvcfV1Key, TransferGvcfV1Metadata],
-      ElasticsearchIndex[TransferWgsCramV1Key, TransferWgsCramV1Metadata]
+      ElasticsearchIndex[WgsUbamIndex.type],
+      ElasticsearchIndex[GvcfIndex.type],
+      ElasticsearchIndex[WgsCramIndex.type]
     )
 
     for {

@@ -1,29 +1,50 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
+import io.circe.{Encoder, Json}
+import org.broadinstitute.clio.util.generic.CaseClassMapper
+import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
+
+import scala.reflect.ClassTag
+
 /**
   * Maps metadata to an Elasticsearch document.
   *
-  * @tparam ModelKey      The type of key.
-  * @tparam ModelMetadata The type of the metadata.
+  * @tparam Key      The type of the TransferKey.
+  * @tparam Metadata The type of the TransferMetadata.
   */
-abstract class ElasticsearchDocumentMapper[ModelKey, ModelMetadata] {
+class ElasticsearchDocumentMapper[Key <: Product: ClassTag, Metadata: ClassTag] (genId: () => UpsertId)(
+  implicit
+  private[elasticsearch] val keyEncoder: Encoder[Key],
+  private[elasticsearch] val metadataEncoder: Encoder[Metadata]
+) {
+  private val keyMapper = new CaseClassMapper[Key]
+  private val metadataMapper = new CaseClassMapper[Metadata]
 
   /**
-    * Returns an empty document for a key.
     *
-    * @param key The key.
-    * @return The newly initialized key and metadata.
+    * @param key      The TransferKey from which to create the document.
+    * @param metadata The TransferMetadata from which to create the document.
+    * @return
     */
-  def empty(key: ModelKey): (ModelKey, ModelMetadata)
+  def document(key: Key, metadata: Metadata): Json = {
+    val keyVals = keyMapper.vals(key)
+    val metadataVals = metadataMapper.vals(metadata)
+    val bookkeeping = Map(
+      UpsertId.UpsertIdFieldName -> genId(),
+      EntityId.EntityIdFieldName -> Symbol(
+        key.productIterator.mkString(".")
+      )
+    )
 
-  /**
-    * Returns an updated document with new metadata, where any fields that are `None` do NOT overwrite the existing
-    * metadata.
-    *
-    * @param key The existing key.
-    * @param existingMetadata The existing metadata.
-    * @param newMetadata The new metadata.
-    * @return The updated document.
-    */
-  def withMetadata(key: ModelKey, existingMetadata: ModelMetadata, newMetadata: ModelMetadata): (ModelKey, ModelMetadata)
+    val keyJson = keyEncoder.apply(keyMapper.newInstance(keyVals))
+    val metadataJson = metadataEncoder(metadataMapper.newInstance(metadataVals ++ bookkeeping))
+    keyJson.deepMerge(metadataJson)
+  }
+}
+
+object ElasticsearchDocumentMapper {
+
+  def apply[Key <: Product: ClassTag, Metadata: ClassTag]: ElasticsearchDocumentMapper[Key, Metadata] = {
+    new ElasticsearchDocumentMapper(UpsertId.nextId)
+  }
 }

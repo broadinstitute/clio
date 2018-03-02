@@ -35,7 +35,6 @@ class WgsUbamService(
     persistenceService
       .upsertMetadata(
         transferKey,
-        transferMetadata,
         updatedTransferMetadata,
         WgsUbamService.v1DocumentConverter
       )
@@ -63,21 +62,17 @@ class WgsUbamService(
 
 object WgsUbamService {
   private[service] val v1DocumentConverter =
-    AutoElasticsearchDocumentMapper[
+    ElasticsearchDocumentMapper[
       TransferUbamV1Key,
       TransferUbamV1Metadata,
     ]
 
   val v1QueryConverter: ElasticsearchQueryMapper[
     TransferUbamV1QueryInput,
-    TransferUbamV1QueryOutput,
-    TransferUbamV1Key,
-    TransferUbamV1Metadata,
+    WgsUbamIndex.type,
   ] =
-    AutoElasticsearchQueryMapper[
+    ElasticsearchQueryMapper[
       TransferUbamV1QueryInput,
-      TransferUbamV1QueryOutput,
-      TransferUbamV1Key,
-      TransferUbamV1Metadata,
+      WgsUbamIndex.type,
     ]
 }

@@ -40,7 +40,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
   /**
     * Initialize the root storage directories for Clio documents.
     */
-  def initialize(indexes: Seq[ElasticsearchIndex[_, _]], version: String)(
+  def initialize(indexes: Seq[ElasticsearchIndex[_]], version: String)(
     implicit ec: ExecutionContext
   ): Future[Unit] = Future {
     // Make sure the rootPath can actually be used.
@@ -65,7 +65,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
       logger.debug(s"  ${index.indexName} -> ${path.uri}")
     }
   }
-8
+
   /**
     * Write a metadata update to storage.
     *
@@ -78,7 +78,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
     dt: OffsetDateTime = OffsetDateTime.now()
   )(
     implicit ec: ExecutionContext,
-    index: ElasticsearchIndex[_, _]
+    index: ElasticsearchIndex[_]
   ): Future[Unit] = Future {
     val writePath = (rootPath / index.persistenceDirForDatetime(dt)).createDirectories()
 
@@ -206,7 +206,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
   def getAllSince(mostRecentUpsert: Option[UpsertId])(
     implicit ec: ExecutionContext,
     materializer: Materializer,
-    index: ElasticsearchIndex[_, _]
+    index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
     val rootDir = rootPath / index.rootDir
 

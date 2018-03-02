@@ -49,11 +49,11 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   override def updateMetadata(documents: Json*)(
-    implicit index: ElasticsearchIndex[_, _]
+    implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = bulkUpdate(documents.map(updatePartialDocument(index, _)))
 
   override def queryMetadata(queryDefinition: QueryDefinition)(
-    implicit index: ElasticsearchIndex[_, _]
+    implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
@@ -64,11 +64,11 @@ class HttpElasticsearchDAO private[dataaccess] (
     val responsePublisher = httpClient.publisher(searchDefinition)
     Source
       .fromPublisher(responsePublisher)
-      .map(_.to[Json].as[_,_](index.decoder).fold(throw _, identity))
+      .map(_.to[Json])
   }
 
   override def getMostRecentDocument(
-    implicit index: ElasticsearchIndex[_, _]
+    implicit index: ElasticsearchIndex[_]
   ): Future[Option[Json]] = {
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .size(1)
@@ -88,14 +88,14 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def existsIndexType(
-    index: ElasticsearchIndex[_, _]
+    index: ElasticsearchIndex[_]
   ): Future[Boolean] = {
     val indexExistsDefinition = indexExists(index.indexName)
     httpClient.executeAndUnpack(indexExistsDefinition).map(_.exists)
   }
 
   private[dataaccess] def createIndexType(
-    index: ElasticsearchIndex[_, _]
+    index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     val createIndexDefinition = createIndex(index.indexName).mappings(
       mapping(index.indexType)
@@ -117,7 +117,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def updateFieldDefinitions(
-    index: ElasticsearchIndex[_, _]
+    index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     val putMappingDefinition =
       putMapping(index.indexName / index.indexType)
@@ -152,7 +152,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def updatePartialDocument(
-    index: ElasticsearchIndex[_, _],
+    index: ElasticsearchIndex[_],
     document: Json
   ): BulkCompatibleDefinition = {
     val id = document.hcursor

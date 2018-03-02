@@ -4,7 +4,6 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import io.circe.Json
-import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.collection.immutable
@@ -23,7 +22,7 @@ trait SearchDAO {
   /**
     * Initialize the ready search application.
     */
-  def initialize(indexes: immutable.Seq[ElasticsearchIndex[_, _]]): Future[Unit]
+  def initialize(indexes: immutable.Seq[ElasticsearchIndex[_]]): Future[Unit]
 
   /**
     * Closes the connection.
@@ -31,7 +30,7 @@ trait SearchDAO {
   def close(): Future[Unit]
 
   def updateMetadata(documents: Json*)(
-    implicit index: ElasticsearchIndex[_, _]
+    implicit index: ElasticsearchIndex[_]
   ): Future[Unit]
 
   /**
@@ -41,7 +40,7 @@ trait SearchDAO {
     * @param index       The index to run the query against.
     */
   def queryMetadata(queryDefinition: QueryDefinition)(
-    implicit index: ElasticsearchIndex[_, _]
+    implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed]
 
   /**
@@ -52,5 +51,5 @@ trait SearchDAO {
     * @param index the elasticsearch index
     * @return the most recent document for this index, if any
     */
-  def getMostRecentDocument(implicit index: ElasticsearchIndex[_, _]): Future[Option[Json]]
+  def getMostRecentDocument(implicit index: ElasticsearchIndex[_]): Future[Option[Json]]
 }

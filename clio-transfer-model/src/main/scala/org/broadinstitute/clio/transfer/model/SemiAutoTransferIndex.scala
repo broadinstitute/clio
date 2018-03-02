@@ -1,24 +1,10 @@
 package org.broadinstitute.clio.transfer.model
 
 import io.circe.{Decoder, Encoder, Json}
-import org.broadinstitute.clio.transfer.model.gvcf.{
-  TransferGvcfV1Key,
-  TransferGvcfV1Metadata,
-  TransferGvcfV1QueryInput,
-  TransferGvcfV1QueryOutput
-}
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  TransferWgsCramV1Key,
-  TransferWgsCramV1Metadata,
-  TransferWgsCramV1QueryInput,
-  TransferWgsCramV1QueryOutput
-}
-import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1Metadata,
-  TransferUbamV1QueryInput,
-  TransferUbamV1QueryOutput
-}
+import org.broadinstitute.clio.transfer.model.gvcf.{TransferGvcfV1Key, TransferGvcfV1Metadata, TransferGvcfV1QueryInput, TransferGvcfV1QueryOutput}
+import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1Key, TransferWgsCramV1Metadata, TransferWgsCramV1QueryInput, TransferWgsCramV1QueryOutput}
+import org.broadinstitute.clio.transfer.model.ubam.{TransferUbamV1Key, TransferUbamV1Metadata, TransferUbamV1QueryInput, TransferUbamV1QueryOutput}
+import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.JsonSchema
 import org.broadinstitute.clio.util.json.ModelAutoDerivation._
 
@@ -38,7 +24,9 @@ sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMet
   override val metadataDecoder: Decoder[MT],
   override val metadataEncoder: Encoder[MT],
   override val queryInputEncoder: Encoder[QI],
-  override val queryOutputDecoder: Decoder[QO]
+  override val queryOutputDecoder: Decoder[QO],
+  override val keyMapper: FieldMapper[KT],
+  override val metadataMapper: FieldMapper[MT]
 ) extends TransferIndex {
 
   override type KeyType = KT
