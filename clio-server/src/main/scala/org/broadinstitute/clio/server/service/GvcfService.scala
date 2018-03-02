@@ -60,18 +60,13 @@ class GvcfService(
 }
 
 object GvcfService {
+  import GvcfIndex.implicits._
+
   private[service] val v1DocumentConverter =
     ElasticsearchDocumentMapper[
-      TransferGvcfV1Key,
+      GvcfIndex.KeyType,
       TransferGvcfV1Metadata,
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[
-    TransferGvcfV1QueryInput,
-    GvcfIndex.type,
-  ] =
-    ElasticsearchQueryMapper[
-      TransferGvcfV1QueryInput,
-      GvcfIndex.type,
-    ]
+  val v1QueryConverter: ElasticsearchQueryMapper[TransferGvcfV1QueryInput] = ElasticsearchQueryMapper[TransferGvcfV1QueryInput]
 }

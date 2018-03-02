@@ -21,6 +21,7 @@ sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMet
   override val metadataTag: ClassTag[MT],
   override val queryInputTag: ClassTag[QI],
   override val queryOutputTag: ClassTag[QO],
+  override val keyEncoder: Encoder[KT],
   override val metadataDecoder: Decoder[MT],
   override val metadataEncoder: Encoder[MT],
   override val queryInputEncoder: Encoder[QI],

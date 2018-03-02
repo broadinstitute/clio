@@ -39,6 +39,8 @@ trait TransferIndex {
 
   val queryOutputTag: ClassTag[QueryOutputType]
 
+  val keyEncoder: Encoder[KeyType]
+
   val metadataDecoder: Decoder[MetadataType]
 
   val metadataEncoder: Encoder[MetadataType]
@@ -64,6 +66,7 @@ trait TransferIndex {
     implicit val mt: ClassTag[MetadataType] = metadataTag
     implicit val qit: ClassTag[QueryInputType] = queryInputTag
     implicit val qot: ClassTag[QueryOutputType] = queryOutputTag
+    implicit val ke: Encoder[KeyType] = keyEncoder
     implicit val md: Decoder[MetadataType] = metadataDecoder
     implicit val me: Encoder[MetadataType] = metadataEncoder
     implicit val qie: Encoder[QueryInputType] = queryInputEncoder

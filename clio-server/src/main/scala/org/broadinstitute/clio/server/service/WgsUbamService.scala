@@ -60,18 +60,13 @@ class WgsUbamService(
 }
 
 object WgsUbamService {
+  import WgsUbamIndex.implicits._
+
   private[service] val v1DocumentConverter =
     ElasticsearchDocumentMapper[
       TransferUbamV1Key,
       TransferUbamV1Metadata,
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[
-    TransferUbamV1QueryInput,
-    WgsUbamIndex.type,
-  ] =
-    ElasticsearchQueryMapper[
-      TransferUbamV1QueryInput,
-      WgsUbamIndex.type,
-    ]
+  val v1QueryConverter: ElasticsearchQueryMapper[TransferUbamV1QueryInput] = ElasticsearchQueryMapper[TransferUbamV1QueryInput]
 }

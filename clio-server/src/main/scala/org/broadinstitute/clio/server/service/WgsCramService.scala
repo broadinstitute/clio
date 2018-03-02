@@ -60,18 +60,13 @@ class WgsCramService(
 }
 
 object WgsCramService {
+  import WgsCramIndex.implicits._
+
   private[service] val v1DocumentConverter =
     ElasticsearchDocumentMapper[
       TransferWgsCramV1Key,
       TransferWgsCramV1Metadata,
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[
-    TransferWgsCramV1QueryInput,
-    WgsCramIndex.type,
-  ] =
-    ElasticsearchQueryMapper[
-      TransferWgsCramV1QueryInput,
-      WgsCramIndex.type,
-    ]
+  val v1QueryConverter: ElasticsearchQueryMapper[TransferWgsCramV1QueryInput] = ElasticsearchQueryMapper[TransferWgsCramV1QueryInput]
 }

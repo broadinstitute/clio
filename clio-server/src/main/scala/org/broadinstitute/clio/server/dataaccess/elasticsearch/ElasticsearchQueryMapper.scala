@@ -2,21 +2,20 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import com.sksamuel.elastic4s.http.ElasticDsl.boolQuery
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import org.broadinstitute.clio.util.generic.{CaseClassMapper, CaseClassMapperWithTypes}
+import org.broadinstitute.clio.util.generic.{CaseClassMapperWithTypes, FieldMapper}
+
+import scala.reflect.ClassTag
 
 /**
   * Builds an ElasticsearchQueryMapper using shapeless and reflection.
   *
   * @tparam Input            The type of the query input, with a context bound also specifying that both an
-  *                          `implicit ctagQueryInput: ClassTag[Input  ]` exists, plus an
-  *                          `implicit fieldMapper: FieldMapper[Input  ]` exists.
+  *                          `implicit ctagQueryInput: ClassTag[Input]` exists, plus an
+  *                          `implicit fieldMapper: FieldMapper[Input]` exists.
   *                          https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
-  * @tparam Index            The index of the Elasticsearch documents being queried, with a context bound also specifying that an
-  *                          `implicit ctagIndex: ClassTag[Index]` exists.
   */
-class ElasticsearchQueryMapper[Input, Index] {
+class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
   val inputMapper = new CaseClassMapperWithTypes[Input]
-  val indexMapper = new CaseClassMapper[Index]
 
   /**
     * Returns true if the client sent a query that doesn't contain any filters.
@@ -35,7 +34,7 @@ class ElasticsearchQueryMapper[Input, Index] {
     * @return An elastic4s query definition from the query input.
     */
   def buildQuery(queryInput: Input)(
-    implicit index: ElasticsearchIndex[Index]
+    implicit index: ElasticsearchIndex[_]
   ): QueryDefinition = {
     val queries = flattenVals(queryInput) map {
       case (name, value) => {
@@ -74,8 +73,8 @@ class ElasticsearchQueryMapper[Input, Index] {
 
 object ElasticsearchQueryMapper {
 
-  def apply[Input, Index]: ElasticsearchQueryMapper[Input, Index] = {
-    new ElasticsearchQueryMapper
+  def apply[Input: ClassTag: FieldMapper]: ElasticsearchQueryMapper[Input] = {
+    new ElasticsearchQueryMapper[Input]
   }
 }
 
