@@ -84,19 +84,23 @@ case class TransferArraysV1Metadata(
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
   ): TransferArraysV1Metadata = this.copy(
-    beadPoolManifestFile     = pathMapper(beadPoolManifestFile,     ArraysExtensions.BpmExtension),
-    clusterFile              = pathMapper(clusterFile,              ArraysExtensions.EgtExtension),
-    dbSnpVcf                 = pathMapper(dbSnpVcf,                 ArraysExtensions.VcfGzExtension),
-    dbSnpVcfIndex            = pathMapper(dbSnpVcfIndex,            ArraysExtensions.VcfGzTbiExtension),
-    extendedChipManifestFile = pathMapper(extendedChipManifestFile, ArraysExtensions.CsvExtension),
-    fileOfIdatFilenames      = pathMapper(fileOfIdatFilenames,      ArraysExtensions.IdatsTxtExtension),
-    genderClusterFile        = pathMapper(genderClusterFile,        ArraysExtensions.EgtExtension),
-    haplotypeDatabaseFile    = pathMapper(haplotypeDatabaseFile,    ArraysExtensions.TxtExtension),
-    paramsFile               = pathMapper(paramsFile,               ArraysExtensions.TxtExtension),
-    refDict                  = pathMapper(refDict,                  ArraysExtensions.DictExtension),
-    refFasta                 = pathMapper(refFasta,                 ArraysExtensions.FastaExtension),
-    refFastaIndex            = pathMapper(refFastaIndex,            ArraysExtensions.FastaFaiExtension),
-    zcallThresholdsFile      = pathMapper(zcallThresholdsFile,      ArraysExtensions.EgtThresholdsTxtExtension)
+    beadPoolManifestFile = pathMapper(beadPoolManifestFile, ArraysExtensions.BpmExtension),
+    clusterFile = pathMapper(clusterFile, ArraysExtensions.EgtExtension),
+    dbSnpVcf = pathMapper(dbSnpVcf, ArraysExtensions.VcfGzExtension),
+    dbSnpVcfIndex = pathMapper(dbSnpVcfIndex, ArraysExtensions.VcfGzTbiExtension),
+    extendedChipManifestFile =
+      pathMapper(extendedChipManifestFile, ArraysExtensions.CsvExtension),
+    fileOfIdatFilenames =
+      pathMapper(fileOfIdatFilenames, ArraysExtensions.IdatsTxtExtension),
+    genderClusterFile = pathMapper(genderClusterFile, ArraysExtensions.EgtExtension),
+    haplotypeDatabaseFile =
+      pathMapper(haplotypeDatabaseFile, ArraysExtensions.TxtExtension),
+    paramsFile = pathMapper(paramsFile, ArraysExtensions.TxtExtension),
+    refDict = pathMapper(refDict, ArraysExtensions.DictExtension),
+    refFasta = pathMapper(refFasta, ArraysExtensions.FastaExtension),
+    refFastaIndex = pathMapper(refFastaIndex, ArraysExtensions.FastaFaiExtension),
+    zcallThresholdsFile =
+      pathMapper(zcallThresholdsFile, ArraysExtensions.EgtThresholdsTxtExtension)
   )
 
   override def markDeleted(deletionNote: String): TransferArraysV1Metadata =

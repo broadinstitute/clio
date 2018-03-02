@@ -3,10 +3,7 @@ package org.broadinstitute.clio.transfer.model.arrays
 import java.net.URI
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.util.model.{
-  DocumentStatus,
-  Location
-}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 case class TransferArraysV1QueryOutput(
   location: Location,
