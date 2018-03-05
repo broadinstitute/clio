@@ -13,7 +13,7 @@ case class TransferArraysV1QueryOutput(
    * Key fields in getUrlSegments() order
    */
   location: Option[Location] = None,
-  chipwellBarcode: Option[String] = None,
+  chipwellBarcode: Option[Symbol] = None,
   analysisVersionNumber: Option[Int] = None,
   version: Option[Int] = None,
   /*

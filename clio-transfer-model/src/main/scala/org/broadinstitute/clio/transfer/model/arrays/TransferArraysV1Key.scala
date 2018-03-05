@@ -8,7 +8,7 @@ case class TransferArraysV1Key(
    * Key fields declared in getUrlSegments() order
    */
   location: Location,
-  chipwellBarcode: String,
+  chipwellBarcode: Symbol,
   analysisVersionNumber: Int,
   version: Int
 ) extends TransferKey {
@@ -16,7 +16,7 @@ case class TransferArraysV1Key(
   override def getUrlSegments: Seq[String] =
     Seq(
       location.entryName,
-      chipwellBarcode,
+      chipwellBarcode.toString,
       analysisVersionNumber.toString,
       version.toString
     )
