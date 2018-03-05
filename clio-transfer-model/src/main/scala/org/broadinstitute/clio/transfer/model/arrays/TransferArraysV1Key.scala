@@ -4,6 +4,9 @@ import org.broadinstitute.clio.transfer.model.TransferKey
 import org.broadinstitute.clio.util.model.Location
 
 case class TransferArraysV1Key(
+  /*
+   * Key fields declared in getUrlSegments() order
+   */
   location: Location,
   chipwellBarcode: String,
   analysisVersionNumber: Int,

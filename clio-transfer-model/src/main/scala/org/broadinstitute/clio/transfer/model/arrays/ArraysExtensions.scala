@@ -19,7 +19,7 @@ object ArraysExtensions {
 
   val GzExtension = ".gz"
 
-  val IdatsExtension = ".idats"
+  val IdatExtension = ".idat"
 
   val TbiExtension = ".tbi"
 
@@ -34,8 +34,6 @@ object ArraysExtensions {
   val VcfGzTbiExtension = s"${VcfGzExtension}${TbiExtension}"
 
   val EgtThresholdsTxtExtension = s"${EgtExtension}${ThresholdsExtension}${TxtExtension}"
-
-  val IdatsTxtExtension = s"${IdatsExtension}${TxtExtension}"
 
   val FastaFaiExtension = s"${FastaExtension}${FaiExtension}"
 }

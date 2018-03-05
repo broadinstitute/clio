@@ -1,30 +1,30 @@
 package org.broadinstitute.clio.transfer.model.arrays
 
-import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.util.model.{
-  DocumentStatus,
-  Location,
-  RegulatoryDesignation
-}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
+/* The Key and Metadata fields that can be queried.
+ */
 case class TransferArraysV1QueryInput(
-  documentStatus: Option[DocumentStatus] = None,
+  /*
+   * Key fields in getUrlSegments() order
+   */
   location: Option[Location] = None,
+  chipwellBarcode: Option[String] = None,
+  analysisVersionNumber: Option[Int] = None,
+  version: Option[Int] = None,
+  /*
+   * Rest of QueryInput fields in lexicographic order
+   */
+  cromwellId: Option[UUID] = None,
+  documentStatus: Option[DocumentStatus] = None,
+  notes: Option[String] = None,
+  pipelineVersion: Option[Symbol] = None,
   project: Option[String] = None,
   sampleAlias: Option[String] = None,
-  version: Option[Int] = None,
-  pipelineVersion: Option[Symbol] = None,
-  workflowStartDate: Option[OffsetDateTime] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
-  cramMd5: Option[Symbol] = None,
-  cramSize: Option[Long] = None,
-  cramPath: Option[URI] = None,
-  cromwellId: Option[UUID] = None,
-  readgroupMd5: Option[Symbol] = None,
-  workspaceName: Option[String] = None,
-  regulatoryDesignation: Option[RegulatoryDesignation] = None,
-  notes: Option[String] = None
+  workflowStartDate: Option[OffsetDateTime] = None,
+  workspaceName: Option[String] = None
 )
