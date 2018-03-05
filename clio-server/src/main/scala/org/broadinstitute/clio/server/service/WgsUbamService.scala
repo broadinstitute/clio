@@ -35,7 +35,8 @@ class WgsUbamService(
       .upsertMetadata(
         transferKey,
         updatedTransferMetadata,
-        WgsUbamService.v1DocumentConverter
+        WgsUbamService.v1DocumentConverter,
+        index
       )
   }
 

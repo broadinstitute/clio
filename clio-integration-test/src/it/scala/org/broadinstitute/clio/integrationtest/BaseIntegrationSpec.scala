@@ -10,10 +10,7 @@ import akka.testkit.TestKit
 import better.files.File
 import com.bettercloud.vault.{Vault, VaultConfig}
 import com.google.cloud.storage.StorageOptions
-import com.google.cloud.storage.contrib.nio.{
-  CloudStorageConfiguration,
-  CloudStorageFileSystem
-}
+import com.google.cloud.storage.contrib.nio.{CloudStorageConfiguration, CloudStorageFileSystem}
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
@@ -25,10 +22,7 @@ import org.apache.http.HttpHost
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.client.{ClioClient, ClioClientConfig}
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
 import org.elasticsearch.client.RestClient
@@ -283,20 +277,18 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * load its contents as JSON, and check that the loaded ID
     * matches the given ID.
     */
-  def getJsonFrom[Document <: ClioDocument: Decoder](expectedId: UpsertId)(
-    implicit index: ElasticsearchIndex[Document]
-  ): Document = {
-    val expectedPath = rootPersistenceDir / index.currentPersistenceDir / ClioDocument
-      .persistenceFilename(expectedId)
+  def getJsonFrom(expectedId: UpsertId)(
+    implicit index: ElasticsearchIndex[_]
+  ): Json = {
+    val expectedPath = rootPersistenceDir / index.currentPersistenceDir / expectedId.persistenceFilename
 
     expectedPath should exist
-    val document = parse(expectedPath.contentAsString)
-      .flatMap(_.as[Document])
+    val json = parse(expectedPath.contentAsString)
       .toTry
       .get
 
-    document.upsertId should be(expectedId)
-    document
+    ElasticsearchIndex.getUpsertId(json) should be(expectedId)
+    json
   }
 
   /**

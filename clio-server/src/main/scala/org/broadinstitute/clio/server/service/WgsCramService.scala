@@ -35,7 +35,8 @@ class WgsCramService(
       .upsertMetadata(
         transferKey,
         updatedTransferMetadata,
-        WgsCramService.v1DocumentConverter
+        WgsCramService.v1DocumentConverter,
+        ElasticsearchIndex.WgsCram
       )
   }
 

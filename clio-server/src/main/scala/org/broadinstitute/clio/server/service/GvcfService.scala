@@ -35,7 +35,8 @@ class GvcfService(
       .upsertMetadata(
         transferKey,
         updatedTransferMetadata,
-        GvcfService.v1DocumentConverter
+        GvcfService.v1DocumentConverter,
+        ElasticsearchIndex.Gvcf
       )
   }
 

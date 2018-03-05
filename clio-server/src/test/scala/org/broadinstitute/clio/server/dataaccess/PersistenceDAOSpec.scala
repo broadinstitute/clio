@@ -4,14 +4,14 @@ import java.net.URI
 import java.time.OffsetDateTime
 
 import akka.stream.scaladsl.Sink
+import io.circe.Json
+import io.circe.syntax._
 import io.circe.parser._
+import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockKey, ModelMockMetadata}
 import org.broadinstitute.clio.server.TestKitSuite
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  DocumentMock,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchFieldMapper, ElasticsearchIndex}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.Future
 
@@ -20,7 +20,11 @@ class PersistenceDAOSpec
     with ModelAutoDerivation {
   behavior of "PersistenceDAO"
 
-  implicit val index: ElasticsearchIndex[DocumentMock] = DocumentMock.index
+  implicit val index: ElasticsearchIndex[ModelMockIndex] = new ElasticsearchIndex(
+    "mock",
+    ModelMockIndex(),
+    ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
+  )
 
   def initIndex(dao: PersistenceDAO): Future[Unit] =
     dao.initialize(Seq(index), "fake-version")
@@ -42,27 +46,29 @@ class PersistenceDAOSpec
 
   it should "write metadata updates to storage using the upsertId" in {
     val dao = new MemoryPersistenceDAO()
-    val document =
-      DocumentMock.default.copy(
-        mockFilePath = Some(URI.create("gs://the-file"))
-      )
-    val document2 = DocumentMock.default.copy(mockFieldDouble = Some(0.9876))
+
+    val key1 = ModelMockKey(1L, "mock-key-1")
+    val metadata1 = ModelMockMetadata(None, None, None, None, None, None)
+    val document1 = key1.asJson.deepMerge(metadata1.asJson).deepMerge(Map("mockFilePath" -> Some(URI.create("gs://the-file"))).asJson)
+
+    val key2 = ModelMockKey(2L, "mock-key-2")
+    val metadata2 = ModelMockMetadata(Some(0.9876), None, None, None, None, None)
+    val document2 = key2.asJson.deepMerge(metadata2.asJson)
 
     for {
       _ <- initIndex(dao)
-      _ <- dao.writeUpdate(document)
-      _ <- dao.writeUpdate(document2)
+      _ <- dao.writeUpdate(document1, index)
+      _ <- dao.writeUpdate(document2, index)
     } yield {
-      Seq(document, document2).foreach { doc =>
+      Seq(document1, document2).foreach { doc =>
         val expectedPath =
-          dao.rootPath / s"${index.currentPersistenceDir}/${ClioDocument
-            .persistenceFilename(doc.upsertId)}"
+          dao.rootPath / s"${index.currentPersistenceDir}/${ElasticsearchIndex.getUpsertId(doc)
+            .persistenceFilename}"
 
         expectedPath.exists should be(true)
         expectedPath.isRegularFile should be(true)
 
         parse(expectedPath.contentAsString)
-          .flatMap(_.as[DocumentMock])
           .map(_ should be(doc))
           .toTry
           .get
@@ -71,7 +77,9 @@ class PersistenceDAOSpec
     }
   }
 
-  val testDocs: List[DocumentMock] = List.fill(25)(DocumentMock.default)
+  val mockKeyJson = ModelMockKey(0L, "mock").asJson
+  val mockMetadataJson = ModelMockMetadata(None, None, None, None, None, None).asJson
+  val testDocs: List[Json] = List.fill(25)(mockKeyJson.deepMerge(mockMetadataJson))
   (None :: testDocs.map(Some.apply)).foreach {
     it should behave like recoveryTest(testDocs, _)
   }
@@ -93,12 +101,12 @@ class PersistenceDAOSpec
   }
 
   def recoveryTest(
-    documents: Seq[DocumentMock],
-    lastKnown: Option[DocumentMock]
+    documents: Seq[Json],
+    lastKnown: Option[Json]
   ): Unit = {
     val description =
       lastKnown.fold("recover all upserts from GCS when Elasticsearch is empty") { d =>
-        s"recover all upserts from GCS after last-known ID ${d.upsertId}"
+        s"recover all upserts from GCS after last-known ID ${ElasticsearchIndex.getUpsertId(d).id}"
       }
 
     it should description in {
@@ -112,13 +120,12 @@ class PersistenceDAOSpec
         _ <- initIndex(dao)
         _ <- Future.sequence {
           docsByDay.flatMap {
-            case (day, docs) => docs.map(dao.writeUpdate(_, day))
+            case (day, docs) => docs.map(dao.writeUpdate(_, index, day))
           }
         }
-        result <- dao.getAllSince(lastKnown.map(_.upsertId)).runWith(Sink.seq)
+        result <- dao.getAllSince(lastKnown.map(ElasticsearchIndex.getUpsertId(_))).runWith(Sink.seq)
       } yield {
-        val decodedResults = result.map(_.as[DocumentMock].fold(throw _, identity))
-        decodedResults should contain theSameElementsInOrderAs documents.slice(
+        result should contain theSameElementsInOrderAs documents.slice(
           lastKnown.fold(-1)(documents.indexOf) + 1,
           documents.size
         )
@@ -127,13 +134,12 @@ class PersistenceDAOSpec
   }
 
   it should "fail if the last document in Elasticsearch isn't found in storage" in {
-    val document = DocumentMock.default
     val dao = new MemoryPersistenceDAO()
 
     for {
       _ <- initIndex(dao)
       result <- recoverToSucceededIf[NoSuchElementException] {
-        dao.getAllSince(Some(document.upsertId)).runWith(Sink.seq)
+        dao.getAllSince(Some(UpsertId.nextId())).runWith(Sink.seq)
       }
     } yield {
       result

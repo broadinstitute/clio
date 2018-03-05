@@ -4,18 +4,14 @@ import java.net.URI
 
 import akka.stream.scaladsl.Sink
 import io.circe.syntax._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchIndex, ElasticsearchUtil}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
-import org.broadinstitute.clio.transfer.model.gvcf.{
-  GvcfExtensions,
-  TransferGvcfV1Key,
-  TransferGvcfV1Metadata,
-  TransferGvcfV1QueryInput
-}
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.transfer.model.gvcf.{GvcfExtensions, TransferGvcfV1Key, TransferGvcfV1Metadata, TransferGvcfV1QueryInput}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 
-class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
+class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") with ModelAutoDerivation {
   behavior of "GvcfService"
 
   it should "upsertMetadata" in {
@@ -53,6 +49,8 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
         Seq(
           GvcfService.v1QueryConverter.buildQuery(
             transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
+          )(
+            ElasticsearchIndex.Gvcf
           )
         )
       )
@@ -92,15 +90,15 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") {
       )
     } yield {
       val expectedDocument = GvcfService.v1DocumentConverter
-        .withMetadata(
-          GvcfService.v1DocumentConverter.empty(transferKey),
+        .document(
+          transferKey,
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
-        .copy(upsertId = returnedUpsertId)
+        .deepMerge(Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> returnedUpsertId).asJson)
 
       memoryPersistenceDAO.writeCalls should be(Seq((expectedDocument, index)))
       memorySearchDAO.updateCalls should be(
-        Seq((Seq(expectedDocument.asJson(index.encoder)), index))
+        Seq((Seq(expectedDocument), index))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

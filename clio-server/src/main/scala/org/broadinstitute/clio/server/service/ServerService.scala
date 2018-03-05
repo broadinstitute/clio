@@ -50,7 +50,7 @@ class ServerService private (
   ): Future[Unit] = {
     val name = index.indexName
 
-    searchDAO.getMostRecentDocument.flatMap { mostRecent =>
+    searchDAO.getMostRecentDocument(index).flatMap { mostRecent =>
       val msg = s"Recovering all upserts from index $name"
       val latestUpsert = mostRecent.map(ElasticsearchIndex.getUpsertId)
 

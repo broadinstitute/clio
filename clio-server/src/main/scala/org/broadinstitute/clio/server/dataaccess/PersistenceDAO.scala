@@ -75,10 +75,10 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
     */
   def writeUpdate(
     document: Json,
+    index: ElasticsearchIndex[_],
     dt: OffsetDateTime = OffsetDateTime.now()
   )(
-    implicit ec: ExecutionContext,
-    index: ElasticsearchIndex[_]
+    implicit ec: ExecutionContext
   ): Future[Unit] = Future {
     val writePath = (rootPath / index.persistenceDirForDatetime(dt)).createDirectories()
 

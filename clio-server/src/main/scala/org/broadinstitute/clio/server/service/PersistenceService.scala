@@ -29,13 +29,14 @@ class PersistenceService private (persistenceDAO: PersistenceDAO, searchDAO: Sea
   def upsertMetadata[Key <: TransferKey, Metadata <: TransferMetadata[Metadata]](
     transferKey: Key,
     transferMetadata: Metadata,
-    documentMapper: ElasticsearchDocumentMapper[Key, Metadata]
-  )(implicit ec: ExecutionContext, index: ElasticsearchIndex[_]): Future[UpsertId] = {
+    documentMapper: ElasticsearchDocumentMapper[Key, Metadata],
+    index: ElasticsearchIndex[_]
+  )(implicit ec: ExecutionContext): Future[UpsertId] = {
     val document = documentMapper.document(transferKey, transferMetadata)
 
     for {
-      _ <- persistenceDAO.writeUpdate(document)
-      _ <- searchDAO.updateMetadata(document)
+      _ <- persistenceDAO.writeUpdate(document, index)
+      _ <- searchDAO.updateMetadata(document)(index)
     } yield {
       ElasticsearchIndex.getUpsertId(document)
     }

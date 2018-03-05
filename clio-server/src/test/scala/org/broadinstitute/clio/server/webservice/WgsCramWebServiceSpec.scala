@@ -8,16 +8,14 @@ import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsCram
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.service.WgsCramService
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  TransferWgsCramV1QueryInput,
-  WgsCramExtensions
-}
+import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1QueryInput, WgsCramExtensions}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 
-class WgsCramWebServiceSpec extends BaseWebserviceSpec {
+class WgsCramWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation {
   behavior of "WgsCramWebService"
 
   it should "postMetadata with OnPrem location" in {
@@ -76,7 +74,7 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
             project = Some("proj0"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(WgsCramService.v1QueryConverter.buildQuery)
+        ).map(WgsCramService.v1QueryConverter.buildQuery(_)(ElasticsearchIndex.WgsCram))
       )
     }
 
@@ -112,13 +110,11 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
           // scolds us for using .head
           fail("Impossible because of the above check")
         }
-        .as[DocumentWgsCram]
-        .fold(throw _, identity)
 
-      firstUpdate.upsertId should be(responseAs[UpsertId])
-      firstUpdate.cramMd5 should be(Some('abcgithashdef))
-      firstUpdate.notes should be(Some("some note"))
-      firstUpdate.cramPath should be(
+      ElasticsearchIndex.getUpsertId(firstUpdate) should be(responseAs[UpsertId])
+      getStringByName(firstUpdate, "cramMd5") should be(Some('abcgithashdef))
+      getStringByName(firstUpdate, "notes") should be(Some("some note"))
+      getUriByName(firstUpdate, "cramPath") should be(
         Some(URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}"))
       )
     }
@@ -133,7 +129,7 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
             location = Some(Location.GCP),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(WgsCramService.v1QueryConverter.buildQuery)
+        ).map(WgsCramService.v1QueryConverter.buildQuery(_)(ElasticsearchIndex.WgsCram))
       )
     }
 
@@ -151,13 +147,11 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
       val secondUpdate = memorySearchDAO.updateCalls
         .flatMap(_._1.headOption)
         .apply(1)
-        .as[DocumentWgsCram]
-        .fold(throw _, identity)
 
-      secondUpdate.cramMd5 should be(Some('abcgithashdef))
-      secondUpdate.notes should be(Some("some note"))
-      secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))
-      secondUpdate.cramPath should be(Some(URI.create("")))
+      getStringByName(secondUpdate, "cramMd5") should be(Some('abcgithashdef))
+      getStringByName(secondUpdate, "notes") should be(Some("some note"))
+      getDocumentStatus(secondUpdate) should be(Some(DocumentStatus.Deleted))
+      getUriByName(secondUpdate, "cramPath") should be(Some(URI.create("")))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
@@ -173,7 +167,7 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
           ),
           // No documentStatus restriction from /queryall
           TransferWgsCramV1QueryInput(location = Some(Location.GCP))
-        ).map(WgsCramService.v1QueryConverter.buildQuery)
+        ).map(WgsCramService.v1QueryConverter.buildQuery(_)(ElasticsearchIndex.WgsCram))
       )
     }
   }

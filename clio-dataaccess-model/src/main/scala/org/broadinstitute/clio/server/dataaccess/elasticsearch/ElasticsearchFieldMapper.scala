@@ -31,7 +31,7 @@ private[dataaccess] sealed abstract class ElasticsearchFieldMapper(
   }
 }
 
-private[dataaccess] object ElasticsearchFieldMapper
+object ElasticsearchFieldMapper
     extends IntEnum[ElasticsearchFieldMapper] {
   import com.sksamuel.elastic4s.http.ElasticDsl._
 

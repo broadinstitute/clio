@@ -7,17 +7,15 @@ import akka.http.scaladsl.server.Route
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentGvcf
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.service.GvcfService
 import org.broadinstitute.clio.transfer.model.GvcfIndex
-import org.broadinstitute.clio.transfer.model.gvcf.{
-  GvcfExtensions,
-  TransferGvcfV1QueryInput
-}
+import org.broadinstitute.clio.transfer.model.gvcf.{GvcfExtensions, TransferGvcfV1QueryInput}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
-class GvcfWebServiceSpec extends BaseWebserviceSpec {
+class GvcfWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation {
   behavior of "GvcfWebService"
 
   it should "postMetadata with OnPrem location" in {
@@ -76,7 +74,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
             project = Some("proj0"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(GvcfService.v1QueryConverter.buildQuery)
+        ).map(GvcfService.v1QueryConverter.buildQuery(_)(ElasticsearchIndex.Gvcf))
       )
     }
 
@@ -112,13 +110,11 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
           // scolds us for using .head
           fail("Impossible because of the above check")
         }
-        .as[DocumentGvcf]
-        .fold(throw _, identity)
 
-      firstUpdate.upsertId should be(responseAs[UpsertId])
-      firstUpdate.gvcfMd5 should be(Some('abcgithashdef))
-      firstUpdate.notes should be(Some("some note"))
-      firstUpdate.gvcfPath should be(
+      ElasticsearchIndex.getUpsertId(firstUpdate) should be(responseAs[UpsertId])
+      getStringByName(firstUpdate, "gvcfMd5") should be(Some('abcgithashdef))
+      getStringByName(firstUpdate, "notes") should be(Some("some note"))
+      getUriByName(firstUpdate, "gvcfPath") should be(
         Some(URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"))
       )
     }
@@ -133,7 +129,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
             location = Some(Location.GCP),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(GvcfService.v1QueryConverter.buildQuery)
+        ).map(GvcfService.v1QueryConverter.buildQuery(_)(ElasticsearchIndex.Gvcf))
       )
     }
 
@@ -151,13 +147,11 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
       val secondUpdate = memorySearchDAO.updateCalls
         .flatMap(_._1.headOption)
         .apply(1)
-        .as[DocumentGvcf]
-        .fold(throw _, identity)
 
-      secondUpdate.gvcfMd5 should be(Some('abcgithashdef))
-      secondUpdate.notes should be(Some("some note"))
-      secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))
-      secondUpdate.gvcfPath should be(Some(URI.create("")))
+      getStringByName(secondUpdate, "gvcfMd5") should be(Some('abcgithashdef))
+      getStringByName(secondUpdate, "notes") should be(Some("some note"))
+      getDocumentStatus(secondUpdate) should be(Some(DocumentStatus.Deleted))
+      getUriByName(secondUpdate, "gvcfPath") should be(Some(URI.create("")))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
@@ -173,7 +167,7 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec {
           ),
           // No documentStatus restriction from /queryall
           TransferGvcfV1QueryInput(location = Some(Location.GCP))
-        ).map(GvcfService.v1QueryConverter.buildQuery)
+        ).map(GvcfService.v1QueryConverter.buildQuery(_)(ElasticsearchIndex.Gvcf))
       )
     }
   }

@@ -6,7 +6,6 @@ import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentGvcf,
   ElasticsearchIndex,
   ElasticsearchUtil
 }
@@ -59,7 +58,7 @@ trait GvcfTests {
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
-    val expected = ElasticsearchIndex[DocumentGvcf]
+    val expected = ElasticsearchIndex.Gvcf
     val getRequest = getMapping(IndexAndType(expected.indexName, expected.indexType))
 
     elasticsearchClient.executeAndUnpack(getRequest).map {
@@ -117,7 +116,7 @@ trait GvcfTests {
       } yield {
         outputs should be(Seq(expected))
 
-        val storedDocument = getJsonFrom[DocumentGvcf](returnedUpsertId)
+        val storedDocument = getJsonFrom[GvcfIndex](returnedUpsertId)
         storedDocument.location should be(expected.location)
         storedDocument.project should be(expected.project)
         storedDocument.sampleAlias should be(expected.sampleAlias)
@@ -150,10 +149,10 @@ trait GvcfTests {
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
+      val storedDocument1 = getJsonFrom[GvcfIndex](upsertId1)
       storedDocument1.gvcfPath should be(gvcfUri1)
 
-      val storedDocument2 = getJsonFrom[DocumentGvcf](upsertId2)
+      val storedDocument2 = getJsonFrom[GvcfIndex](upsertId2)
       storedDocument2.gvcfPath should be(gvcfUri2)
 
       storedDocument1.copy(upsertId = upsertId2, gvcfPath = gvcfUri2) should be(
@@ -179,8 +178,8 @@ trait GvcfTests {
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
-      val storedDocument2 = getJsonFrom[DocumentGvcf](upsertId2)
+      val storedDocument1 = getJsonFrom[GvcfIndex](upsertId1)
+      val storedDocument2 = getJsonFrom[GvcfIndex](upsertId2)
       storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
     }
   }
@@ -739,7 +738,7 @@ trait GvcfTests {
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
+      val storedDocument1 = getJsonFrom[GvcfIndex](upsertId1)
       storedDocument1.notes should be(Some("I'm a note"))
     }
   }
@@ -763,8 +762,8 @@ trait GvcfTests {
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
-      val storedDocument2 = getJsonFrom[DocumentGvcf](upsertId2)
+      val storedDocument1 = getJsonFrom[GvcfIndex](upsertId1)
+      val storedDocument2 = getJsonFrom[GvcfIndex](upsertId2)
       storedDocument1.notes should be(Some("I'm a note"))
       storedDocument2.gvcfSize should be(Some(12345))
     }
@@ -791,7 +790,7 @@ trait GvcfTests {
         )
       }
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
+      val storedDocument1 = getJsonFrom[GvcfIndex](upsertId1)
       storedDocument1.notes should be(Some("I'm a note"))
     }
   }

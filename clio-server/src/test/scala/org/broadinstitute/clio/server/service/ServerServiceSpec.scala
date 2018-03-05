@@ -1,13 +1,16 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentMock
+import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchFieldMapper, ElasticsearchIndex}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.status.model.ClioStatus
+import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockKey, ModelMockMetadata}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
 
-class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
+class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") with ModelAutoDerivation {
   behavior of "ServerService"
 
   it should "beginStartup" in {
@@ -90,23 +93,32 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
     val numDocs = 1000
     val initInSearch = numDocs / 2
 
+    val key = ModelMockKey(1L, "mock-key-1")
+    val metadata = ModelMockMetadata(None, None, None, None, None, None)
+    val document = key.asJson.deepMerge(metadata.asJson)
+
+    val index = new ElasticsearchIndex[ModelMockIndex](
+      "mock",
+      ModelMockIndex(),
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+    )
+
     val serverService = ServerService(app)
-    val initStoredDocuments = Seq.fill(numDocs)(DocumentMock.default)
+    val initStoredDocuments = Seq.fill(numDocs)(document)
     val initSearchDocuments = initStoredDocuments.take(initInSearch)
 
     for {
-      _ <- persistenceDAO.initialize(Seq(DocumentMock.index), "fake-version")
+      _ <- persistenceDAO.initialize(Seq(index), "fake-version")
       _ <- Future.sequence(
-        initStoredDocuments.map(persistenceDAO.writeUpdate[DocumentMock](_))
+        initStoredDocuments.map(persistenceDAO.writeUpdate(_, index))
       )
       _ <- Future.sequence(
-        initSearchDocuments.map(searchDAO.updateMetadata[DocumentMock])
+        initSearchDocuments.map(searchDAO.updateMetadata(_)(index))
       )
-      _ <- serverService.recoverMetadata(DocumentMock.index)
+      _ <- serverService.recoverMetadata(index)
     } yield {
       val upsertedDocs = searchDAO.updateCalls
         .flatMap(_._1)
-        .map(_.as[DocumentMock](DocumentMock.index.decoder).fold(throw _, identity))
       upsertedDocs should contain theSameElementsAs initStoredDocuments
     }
   }
