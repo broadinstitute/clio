@@ -6,21 +6,10 @@ import java.time.OffsetDateTime
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.webclient.CredentialsGenerator
-import org.broadinstitute.clio.transfer.model.gvcf.{
-  GvcfExtensions,
-  TransferGvcfV1Key,
-  TransferGvcfV1QueryInput
-}
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  TransferWgsCramV1Key,
-  TransferWgsCramV1QueryInput,
-  WgsCramExtensions
-}
-import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1QueryInput,
-  UbamExtensions
-}
+import org.broadinstitute.clio.transfer.model.arrays.TransferArraysV1Key
+import org.broadinstitute.clio.transfer.model.gvcf.{GvcfExtensions, TransferGvcfV1Key, TransferGvcfV1QueryInput}
+import org.broadinstitute.clio.transfer.model.ubam.{TransferUbamV1Key, TransferUbamV1QueryInput, UbamExtensions}
+import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1Key, TransferWgsCramV1QueryInput, WgsCramExtensions}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.duration._
@@ -207,6 +196,23 @@ trait TestData {
 
   val goodCramDeleteCommand =
     DeleteWgsCram(key = testCramTransferV1Key, note = "Good delete for test")
+
+  val testChipwellBarcode = 'chipwellBarcode
+  val testAnalysisVersionNumber = 23
+  val testArraysTransferV1Key = TransferArraysV1Key(
+    location = Location.namesToValuesMap(testLocation),
+    chipwellBarcode = testChipwellBarcode,
+    analysisVersionNumber = testAnalysisVersionNumber,
+    version = testVersion
+  )
+
+  val arraysMetadataFileLocation: URI =
+    URI.create("clio-client/src/test/resources/testdata/arraysMetadata")
+
+  val goodArraysAddCommand = AddArrays(
+    metadataLocation = arraysMetadataFileLocation,
+    key = testArraysTransferV1Key
+  )
 
   val testServerPort: Int = 8080
   val testMaxQueued: Int = 4
