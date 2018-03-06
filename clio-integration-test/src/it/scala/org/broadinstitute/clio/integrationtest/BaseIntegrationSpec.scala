@@ -10,7 +10,10 @@ import akka.testkit.TestKit
 import better.files.File
 import com.bettercloud.vault.{Vault, VaultConfig}
 import com.google.cloud.storage.StorageOptions
-import com.google.cloud.storage.contrib.nio.{CloudStorageConfiguration, CloudStorageFileSystem}
+import com.google.cloud.storage.contrib.nio.{
+  CloudStorageConfiguration,
+  CloudStorageFileSystem
+}
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
@@ -283,9 +286,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     val expectedPath = rootPersistenceDir / index.currentPersistenceDir / expectedId.persistenceFilename
 
     expectedPath should exist
-    val json = parse(expectedPath.contentAsString)
-      .toTry
-      .get
+    val json = parse(expectedPath.contentAsString).toTry.get
 
     ElasticsearchIndex.getUpsertId(json) should be(expectedId)
     json

@@ -157,7 +157,15 @@ trait GvcfTests {
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)
       getUriByName(storedDocument2, "gvcfPath") should be(gvcfUri2)
 
-      storedDocument1.deepMerge(Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2).asJson).deepMerge(Map(ElasticsearchUtil.toElasticsearchName("gvcfPath") -> gvcfUri2).asJson) should be(
+      storedDocument1
+        .deepMerge(
+          Map(
+            ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+          ).asJson
+        )
+        .deepMerge(
+          Map(ElasticsearchUtil.toElasticsearchName("gvcfPath") -> gvcfUri2).asJson
+        ) should be(
         storedDocument2
       )
     }
@@ -182,7 +190,11 @@ trait GvcfTests {
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)
-      storedDocument1.deepMerge(Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2).asJson) should be(
+      storedDocument1.deepMerge(
+        Map(
+          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+        ).asJson
+      ) should be(
         storedDocument2
       )
     }

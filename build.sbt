@@ -102,7 +102,8 @@ lazy val `clio-dataaccess-model` = project
 lazy val `clio-server` = project
   .dependsOn(
     `clio-transfer-model`,
-    `clio-dataaccess-model` % "compile->compile;test->test"
+    `clio-dataaccess-model` % "compile->compile;test->test",
+    `clio-util` % "compile->compile;test->test"
   )
   .settings(
     libraryDependencies ++= Dependencies.ServerDependencies,
@@ -145,7 +146,11 @@ lazy val `clio-client` = project
   * Integration tests for the clio-server and the clio-client.
   */
 lazy val `clio-integration-test` = project
-  .dependsOn(`clio-client`, `clio-dataaccess-model`)
+  .dependsOn(
+    `clio-client`,
+    `clio-dataaccess-model`,
+    `clio-util` % "compile->compile;it->test"
+  )
   .enablePlugins(ClioIntegrationTestPlugin)
   .disablePlugins(AssemblyPlugin)
   .settings(commonSettings)

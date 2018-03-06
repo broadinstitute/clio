@@ -11,9 +11,18 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo}
-import org.broadinstitute.clio.transfer.model.gvcf.{TransferGvcfV1Key, TransferGvcfV1Metadata}
-import org.broadinstitute.clio.transfer.model.ubam.{TransferUbamV1Key, TransferUbamV1Metadata}
-import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1Key, TransferWgsCramV1Metadata}
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  TransferGvcfV1Key,
+  TransferGvcfV1Metadata
+}
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata
+}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1Metadata
+}
 import org.broadinstitute.clio.util.model.{DocumentStatus, EntityId, Location, UpsertId}
 import org.scalatest.OptionValues
 
@@ -30,7 +39,8 @@ class RecoveryIntegrationSpec
   private def updateDoc(json: Json, pathFieldName: String): Json = {
     val oldUri = json.hcursor.get[String](pathFieldName).fold(throw _, identity)
     val updates = Seq(
-      ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> Json.fromString(UpsertId.nextId().id),
+      ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> Json
+        .fromString(UpsertId.nextId().id),
       pathFieldName -> Json.fromString(s"$oldUri/$randomId")
     )
     json.deepMerge(Json.fromFields(updates))
@@ -50,7 +60,11 @@ class RecoveryIntegrationSpec
       documentStatus = Some(DocumentStatus.Normal)
     ).asJson
     val upsertIdJson = Map(UpsertId.UpsertIdFieldName -> UpsertId.nextId()).asJson
-    val entityIdJson = Map(EntityId.EntityIdFieldName -> Symbol(s"$flowcellBarcode.$i.$libraryName.${location.entryName}")).asJson
+    val entityIdJson = Map(
+      EntityId.EntityIdFieldName -> Symbol(
+        s"$flowcellBarcode.$i.$libraryName.${location.entryName}"
+      )
+    ).asJson
     keyJson.deepMerge(metadataJson).deepMerge(upsertIdJson).deepMerge(entityIdJson)
   }
 
@@ -70,7 +84,11 @@ class RecoveryIntegrationSpec
       documentStatus = Some(DocumentStatus.Normal)
     ).asJson
     val upsertIdJson = Map(UpsertId.UpsertIdFieldName -> UpsertId.nextId()).asJson
-    val entityIdJson = Map(EntityId.EntityIdFieldName -> Symbol(s"${location.entryName}.$project.$sampleAlias.$i")).asJson
+    val entityIdJson = Map(
+      EntityId.EntityIdFieldName -> Symbol(
+        s"${location.entryName}.$project.$sampleAlias.$i"
+      )
+    ).asJson
     keyJson.deepMerge(metadataJson).deepMerge(upsertIdJson).deepMerge(entityIdJson)
   }
 
@@ -90,7 +108,11 @@ class RecoveryIntegrationSpec
       documentStatus = Some(DocumentStatus.Normal)
     ).asJson
     val upsertIdJson = Map(UpsertId.UpsertIdFieldName -> UpsertId.nextId()).asJson
-    val entityIdJson = Map(EntityId.EntityIdFieldName -> Symbol(s"${location.entryName}.$project.$sampleAlias.$i")).asJson
+    val entityIdJson = Map(
+      EntityId.EntityIdFieldName -> Symbol(
+        s"${location.entryName}.$project.$sampleAlias.$i"
+      )
+    ).asJson
     keyJson.deepMerge(metadataJson).deepMerge(upsertIdJson).deepMerge(entityIdJson)
   }
 
@@ -163,7 +185,10 @@ class RecoveryIntegrationSpec
   }
 
   private val keysToDrop =
-    Set(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName), ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName))
+    Set(
+      ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName),
+      ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName)
+    )
 
   Seq(
     ("wgs-ubam", ClioCommand.queryWgsUbamName, "lane", updatedUbams),

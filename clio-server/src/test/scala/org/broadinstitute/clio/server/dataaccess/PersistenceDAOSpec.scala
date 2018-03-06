@@ -15,16 +15,15 @@ import org.broadinstitute.clio.transfer.model.{
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchFieldMapper,
-  ElasticsearchIndex
+  ElasticsearchIndex,
+  ElasticsearchUtil
 }
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.UpsertId
+import org.broadinstitute.clio.util.json.DecodingUtil
+import org.broadinstitute.clio.util.model.{DocumentStatus, EntityId, UpsertId}
 
 import scala.concurrent.Future
 
-class PersistenceDAOSpec
-    extends TestKitSuite("PersistenceDAOSpec")
-    with ModelAutoDerivation {
+class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") with DecodingUtil {
   behavior of "PersistenceDAO"
 
   implicit val index: ElasticsearchIndex[ModelMockIndex] = new ElasticsearchIndex(
@@ -54,15 +53,65 @@ class PersistenceDAOSpec
   it should "write metadata updates to storage using the upsertId" in {
     val dao = new MemoryPersistenceDAO()
 
-    val key1 = ModelMockKey(1L, "mock-key-1")
-    val metadata1 = ModelMockMetadata(None, None, None, None, None, None)
+    val key1Long = 1L
+    val key1String = "mock-key-1"
+    val key1 = ModelMockKey(key1Long, key1String)
+    val metadata1 = ModelMockMetadata(
+      Some(1.234),
+      Some(1234),
+      Some(OffsetDateTime.now()),
+      Some(Seq.empty[String]),
+      Some(Seq.empty[URI]),
+      Some(DocumentStatus.Normal),
+      Some('md5),
+      Some(URI.create("gs://the-file")),
+      Some(1234L)
+    )
     val document1 = key1.asJson
       .deepMerge(metadata1.asJson)
-      .deepMerge(Map("mockFilePath" -> Some(URI.create("gs://the-file"))).asJson)
+      .deepMerge(
+        Map(
+          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> UpsertId
+            .nextId()
+        ).asJson
+      )
+      .deepMerge(
+        Map(
+          ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName) -> Symbol(
+            s"$key1Long.$key1String"
+          )
+        ).asJson
+      )
 
-    val key2 = ModelMockKey(2L, "mock-key-2")
-    val metadata2 = ModelMockMetadata(Some(0.9876), None, None, None, None, None)
-    val document2 = key2.asJson.deepMerge(metadata2.asJson)
+    val key2Long = 2L
+    val key2String = "mock-key-2"
+    val key2 = ModelMockKey(key2Long, key2String)
+    val metadata2 = ModelMockMetadata(
+      Some(0.9876),
+      Some(9876),
+      Some(OffsetDateTime.now()),
+      Some(Seq.empty[String]),
+      Some(Seq.empty[URI]),
+      Some(DocumentStatus.Normal),
+      Some('md5),
+      Some(URI.create("no")),
+      Some(9876L)
+    )
+    val document2 = key2.asJson
+      .deepMerge(metadata2.asJson)
+      .deepMerge(
+        Map(
+          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> UpsertId
+            .nextId()
+        ).asJson
+      )
+      .deepMerge(
+        Map(
+          ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName) -> Symbol(
+            s"$key2Long.$key2String"
+          )
+        ).asJson
+      )
 
     for {
       _ <- initIndex(dao)
@@ -85,9 +134,39 @@ class PersistenceDAOSpec
     }
   }
 
-  val mockKeyJson = ModelMockKey(0L, "mock").asJson
-  val mockMetadataJson = ModelMockMetadata(None, None, None, None, None, None).asJson
-  val testDocs: List[Json] = List.fill(25)(mockKeyJson.deepMerge(mockMetadataJson))
+  val mockKeyLong = 0L
+  val mockKeyString = "mock"
+  val mockKeyJson = ModelMockKey(mockKeyLong, mockKeyString).asJson
+
+  val mockMetadataJson = ModelMockMetadata(
+    Some(0.0),
+    Some(0),
+    Some(OffsetDateTime.now()),
+    Some(Seq.empty[String]),
+    Some(Seq.empty[URI]),
+    Some(DocumentStatus.Normal),
+    Some('md5),
+    Some(URI.create("no")),
+    Some(0L)
+  ).asJson
+
+  val testDocs: List[Json] = List.fill(1)(
+    mockKeyJson
+      .deepMerge(mockMetadataJson)
+      .deepMerge(
+        Map(
+          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> UpsertId
+            .nextId()
+        ).asJson
+      )
+      .deepMerge(
+        Map(
+          ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName) -> Symbol(
+            s"$mockKeyLong.$mockKeyString"
+          )
+        ).asJson
+      )
+  )
   (None :: testDocs.map(Some.apply)).foreach {
     it should behave like recoveryTest(testDocs, _)
   }

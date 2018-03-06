@@ -161,11 +161,19 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))
       )
 
-      storedDocument1.deepMerge(
-        Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2).asJson
-      ).deepMerge(
-        Map("cramPath" -> Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))).asJson
-      ) should be(storedDocument2)
+      storedDocument1
+        .deepMerge(
+          Map(
+            ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+          ).asJson
+        )
+        .deepMerge(
+          Map(
+            "cramPath" -> Some(
+              URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}")
+            )
+          ).asJson
+        ) should be(storedDocument2)
     }
   }
 
@@ -188,7 +196,11 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsCram)
-      storedDocument1.deepMerge(Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2).asJson) should be(storedDocument2)
+      storedDocument1.deepMerge(
+        Map(
+          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+        ).asJson
+      ) should be(storedDocument2)
     }
   }
 

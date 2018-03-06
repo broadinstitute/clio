@@ -210,7 +210,9 @@ trait UbamTests { self: BaseIntegrationSpec =>
         queryResponse should be(Seq(expected))
 
         val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.WgsUbam)
-        getStringByName(storedDocument, "flowcellBarcode") should be(expected.flowcellBarcode)
+        getStringByName(storedDocument, "flowcellBarcode") should be(
+          expected.flowcellBarcode
+        )
         getIntByName(storedDocument, "lane") should be(expected.lane)
         getStringByName(storedDocument, "libraryName") should be(expected.libraryName)
         getLocation(storedDocument) should be(expected.location)
@@ -247,7 +249,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
       getStringByName(storedDocument2, "project") should be(Some("testProject2"))
 
-      storedDocument1.deepMerge(Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2).asJson).deepMerge(Map("project" -> Some("testProject2")).asJson) should be(
+      storedDocument1
+        .deepMerge(
+          Map(
+            ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+          ).asJson
+        )
+        .deepMerge(Map("project" -> Some("testProject2")).asJson) should be(
         storedDocument2
       )
     }
@@ -271,7 +279,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
-      storedDocument1.deepMerge(Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2).asJson) should be(storedDocument2)
+      storedDocument1.deepMerge(
+        Map(
+          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+        ).asJson
+      ) should be(storedDocument2)
     }
   }
 

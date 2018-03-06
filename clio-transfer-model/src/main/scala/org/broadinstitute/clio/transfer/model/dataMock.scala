@@ -10,12 +10,13 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.reflect.ClassTag
 
-case class ModelMockIndex(name: String = "mock")
-    extends TransferIndex
+case class ModelMockIndex(
+  name: String = "mock",
+  commandName: String = "mock",
+  urlSegment: String = "mock",
+  jsonSchema: Json = Json.Null,
+) extends TransferIndex
     with ModelAutoDerivation {
-  override val urlSegment: String = "mock"
-  override val jsonSchema: Json = Json.Null
-  override val commandName: String = "mock"
 
   override type KeyType = ModelMockKey
   override type MetadataType = ModelMockMetadata
@@ -51,7 +52,10 @@ case class ModelMockMetadata(
   mockFieldDate: Option[OffsetDateTime],
   mockStringArray: Option[Seq[String]] = None,
   mockPathArray: Option[Seq[URI]] = None,
-  mockDocumentStatus: Option[DocumentStatus] = None
+  mockDocumentStatus: Option[DocumentStatus] = None,
+  mockFileMd5: Option[Symbol] = None,
+  mockFilePath: Option[URI] = None,
+  mockFileSize: Option[Long] = None,
 ) extends TransferMetadata[ModelMockMetadata] {
   override val documentStatus: Option[DocumentStatus] = mockDocumentStatus
   override val notes: Option[String] = None

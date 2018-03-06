@@ -39,14 +39,14 @@ class HttpElasticsearchDAOSpec
   it should "create an index and update the index field types" in {
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
-        "test_index_update_type_1",
-        ModelMockIndex("test_index_update_type_1"),
+        "test_index_update_type",
+        ModelMockIndex("test_index_update_type"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
-        "test_index_update_type_2",
-        ModelMockIndex("test_index_update_type_2"),
+        "test_index_update_type",
+        ModelMockIndex("test_index_update_type", "command_name"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
@@ -64,14 +64,14 @@ class HttpElasticsearchDAOSpec
   it should "fail to recreate an index twice when skipping check for existence" in {
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
-        "test_index_fail_recreate_1",
-        ModelMockIndex("test_index_fail_recreate_1"),
+        "test_index_fail_recreate",
+        ModelMockIndex("test_index_fail_recreate"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
-        "test_index_fail_recreate_2",
-        ModelMockIndex("test_index_fail_recreate_2"),
+        "test_index_fail_recreate",
+        ModelMockIndex("test_index_fail_recreate", "command_name"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
@@ -91,14 +91,14 @@ class HttpElasticsearchDAOSpec
   it should "fail to change the index field types" in {
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
-        "test_index_fail_change_types_1",
-        ModelMockIndex("test_index_fail_change_types_1"),
+        "test_index_fail_change_types",
+        ModelMockIndex("test_index_fail_change_types"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
-        "test_index_fail_change_types_2",
-        ModelMockIndex("test_index_fail_change_types_2"),
+        "test_index_fail_change_types",
+        ModelMockIndex("test_index_fail_change_types"),
         ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
       )
     for {
@@ -111,7 +111,7 @@ class HttpElasticsearchDAOSpec
         val error = exception.requestFailure.error
         error.`type` should be("illegal_argument_exception")
         error.reason should be(
-          "mapper [foo] of different type, current_type [keyword], merged_type [long]"
+          "mapper [mock_string_array] of different type, current_type [keyword], merged_type [text]"
         )
       }
     } yield succeed
@@ -131,8 +131,16 @@ class HttpElasticsearchDAOSpec
         .map("document-" + _)
         .map(
           s =>
-            Map(UpsertId.UpsertIdFieldName -> UpsertId.nextId()).asJson
-              .deepMerge(Map(EntityId.EntityIdFieldName -> Symbol(s)).asJson)
+            Map(
+              ElasticsearchUtil
+                .toElasticsearchName(UpsertId.UpsertIdFieldName) -> UpsertId.nextId()
+            ).asJson
+              .deepMerge(
+                Map(
+                  ElasticsearchUtil
+                    .toElasticsearchName(EntityId.EntityIdFieldName) -> Symbol(s)
+                ).asJson
+            )
         )
 
     for {
