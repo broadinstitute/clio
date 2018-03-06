@@ -3,6 +3,7 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 
 import com.sksamuel.elastic4s.IndexAndType
+import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -112,12 +113,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       } yield {
         outputs should be(Seq(expected))
 
-        val storedDocument = getJsonFrom[WgsCramIndex](returnedUpsertId)
-        storedDocument.location should be(expected.location)
-        storedDocument.project should be(expected.project)
-        storedDocument.sampleAlias should be(expected.sampleAlias)
-        storedDocument.version should be(expected.version)
-        storedDocument.cramPath should be(expected.cramPath)
+        val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.WgsCram)
+        getLocation(storedDocument) should be(expected.location)
+        getStringByName(storedDocument, "project") should be(expected.project)
+        getStringByName(storedDocument, "sampleAlias") should be(expected.sampleAlias)
+        getIntByName(storedDocument, "version") should be(expected.version)
+        getUriByName(storedDocument, "cramPath") should be(expected.cramPath)
       }
     }
   }
@@ -150,19 +151,20 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[WgsCramIndex](upsertId1)
-      storedDocument1.cramPath should be(
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
+      getUriByName(storedDocument1, "cramPath") should be(
         Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
       )
 
-      val storedDocument2 = getJsonFrom[WgsCramIndex](upsertId2)
-      storedDocument2.cramPath should be(
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsCram)
+      getUriByName(storedDocument2, "cramPath") should be(
         Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))
       )
 
-      storedDocument1.copy(
-        upsertId = upsertId2,
-        cramPath = Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))
+      storedDocument1.deepMerge(
+        Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2).asJson
+      ).deepMerge(
+        Map("cramPath" -> Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))).asJson
       ) should be(storedDocument2)
     }
   }
@@ -184,9 +186,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[WgsCramIndex](upsertId1)
-      val storedDocument2 = getJsonFrom[WgsCramIndex](upsertId2)
-      storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsCram)
+      storedDocument1.deepMerge(Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2).asJson) should be(storedDocument2)
     }
   }
 
@@ -1149,8 +1151,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[WgsCramIndex](upsertId1)
-      storedDocument1.notes should be(Some("I'm a note"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
+      getStringByName(storedDocument1, "notes") should be(Some("I'm a note"))
     }
   }
 
@@ -1173,10 +1175,10 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[WgsCramIndex](upsertId1)
-      val storedDocument2 = getJsonFrom[WgsCramIndex](upsertId2)
-      storedDocument1.notes should be(Some("I'm a note"))
-      storedDocument2.cramSize should be(Some(12345))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsCram)
+      getStringByName(storedDocument1, "notes") should be(Some("I'm a note"))
+      getIntByName(storedDocument2, "cramSize") should be(Some(12345))
     }
   }
 
@@ -1203,8 +1205,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         )
       }
     } yield {
-      val storedDocument1 = getJsonFrom[WgsCramIndex](upsertId1)
-      storedDocument1.notes should be(Some("I'm a note"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
+      getStringByName(storedDocument1, "notes") should be(Some("I'm a note"))
     }
   }
 }

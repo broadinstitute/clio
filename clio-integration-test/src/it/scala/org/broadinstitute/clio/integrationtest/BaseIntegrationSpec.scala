@@ -23,7 +23,7 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.client.{ClioClient, ClioClientConfig}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.json.DecodingUtil
 import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
 import org.elasticsearch.client.RestClient
 import org.scalatest.enablers.Existence
@@ -42,9 +42,9 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     with AsyncFlatSpecLike
     with BeforeAndAfterAll
     with Matchers
-    with ModelAutoDerivation
     with ErrorAccumulatingCirceSupport
-    with LazyLogging {
+    with LazyLogging
+    with DecodingUtil {
 
   behavior of clioDescription
 
