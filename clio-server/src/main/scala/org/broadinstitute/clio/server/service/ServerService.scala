@@ -21,9 +21,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class ServerService private (
   serverStatusDAO: ServerStatusDAO,
-  httpServerDAO: HttpServerDAO,
   persistenceDAO: PersistenceDAO,
   searchDAO: SearchDAO,
+  httpServerDAO: HttpServerDAO,
   version: String
 )(implicit executionContext: ExecutionContext, mat: Materializer)
     extends ModelAutoDerivation
@@ -163,13 +163,14 @@ object ServerService {
   val RecoveryMaxBulkSize: Long = 1000L
 
   def apply(
-    app: ClioApp
+    app: ClioApp,
+    httpServerDAO: HttpServerDAO
   )(implicit executionContext: ExecutionContext, mat: Materializer): ServerService = {
     new ServerService(
       app.serverStatusDAO,
-      app.httpServerDAO,
       app.persistenceDAO,
       app.searchDAO,
+      httpServerDAO,
       ClioServerConfig.Version.value
     )
   }

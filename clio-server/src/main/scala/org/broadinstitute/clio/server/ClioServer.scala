@@ -49,12 +49,9 @@ object ClioServer
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
   private val infoRoutes: Route = concat(swaggerRoutes, statusRoutes)
-  private lazy val apiRoutes: Route =
-    concat(wgsUbamWebService.routes, gvcfWebService.routes, wgsCramWebService.routes)
 
   private val serverStatusDAO = CachedServerStatusDAO()
   private val auditDAO = LoggingAuditDAO()
-  private val httpServerDAO = AkkaHttpServerDAO(wrapperDirectives, infoRoutes, apiRoutes)
   private val searchDAO = HttpElasticsearchDAO()
   private val persistenceDAO = PersistenceDAO(
     ClioServerConfig.Persistence.config,
@@ -65,16 +62,13 @@ object ClioServer
     new ClioApp(
       serverStatusDAO,
       auditDAO,
-      httpServerDAO,
       persistenceDAO,
       searchDAO
     )
 
-  private val serverService = ServerService(app)
   private val persistenceService = PersistenceService(app)
   private val searchService = SearchService(app)
   override val auditService = AuditService(app)
-  override val statusService = StatusService(app)
 
   val wgsUbamWebService =
     new WgsUbamWebService(
@@ -90,6 +84,14 @@ object ClioServer
     new WgsCramWebService(
       new WgsCramService(persistenceService, searchService)
     )
+
+  private val apiRoutes: Route =
+    concat(wgsUbamWebService.routes, gvcfWebService.routes, wgsCramWebService.routes)
+
+  private val httpServerDAO = AkkaHttpServerDAO(wrapperDirectives, infoRoutes, apiRoutes)
+
+  private val serverService = ServerService(app, httpServerDAO)
+  override val statusService = StatusService(app, httpServerDAO)
 
   def beginStartup(): Unit = serverService.beginStartup()
 

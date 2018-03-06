@@ -13,8 +13,8 @@ import scala.util.{Success, Try}
 
 class StatusService private (
   serverStatusDAO: ServerStatusDAO,
-  httpServerDAO: HttpServerDAO,
-  searchDAO: SearchDAO
+  searchDAO: SearchDAO,
+  httpServerDAO: HttpServerDAO
 )(implicit executionContext: ExecutionContext) {
 
   def getStatus: Future[StatusInfo] = {
@@ -32,9 +32,10 @@ class StatusService private (
 object StatusService {
 
   def apply(
-    app: ClioApp
+    app: ClioApp,
+    httpServerDAO: HttpServerDAO
   )(implicit executionContext: ExecutionContext): StatusService = {
-    new StatusService(app.serverStatusDAO, app.httpServerDAO, app.searchDAO)
+    new StatusService(app.serverStatusDAO, app.searchDAO, httpServerDAO)
   }
 
   private def toSystemStatusInfo(status: Try[_]): Try[SearchStatus] = {
