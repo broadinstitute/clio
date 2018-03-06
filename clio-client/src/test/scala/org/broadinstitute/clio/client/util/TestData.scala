@@ -229,6 +229,11 @@ trait TestData {
     key = testArraysTransferV1Key
   )
 
+  val goodArraysMoveCommand = MoveArrays(
+    key = testArraysTransferV1Key,
+    destination = testCloudDestinationDirectoryPath
+  )
+
   val goodArraysDeleteCommand =
     DeleteArrays(key = testArraysTransferV1Key, note = "Good delete for test")
 
