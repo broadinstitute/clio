@@ -23,9 +23,9 @@ class MoveArraysSpec extends BaseClientSpec {
   }
 
   /**
-    * FIXME: Bogus
+    * FIXME: Bogus because server does not support Arrays yet.
     */
-  it should "throw an exception if Clio can't upsert the new arrays record" in {
+  it should "throw an exception if Clio can't upsert a new arrays record" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testArraysCloudSourcePath)
     recoverToSucceededIf[RuntimeException] {

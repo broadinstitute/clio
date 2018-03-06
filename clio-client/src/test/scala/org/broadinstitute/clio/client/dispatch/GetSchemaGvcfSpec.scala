@@ -16,7 +16,7 @@ class GetSchemaGvcfSpec extends BaseClientSpec {
     }
   }
 
-  it should "return the schema as JSON" in {
+  it should "return the Gvcf schema as JSON" in {
     succeedingDispatcher()
       .dispatch(GetSchemaGvcf)
       .map(_ should be(GvcfIndex.jsonSchema))

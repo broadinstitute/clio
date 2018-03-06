@@ -16,7 +16,7 @@ class GetSchemaWgsUbamSpec extends BaseClientSpec {
     }
   }
 
-  it should "return the schema as JSON if the server response is OK" in {
+  it should "return the WgsUbam schema as JSON" in {
     succeedingDispatcher()
       .dispatch(GetSchemaWgsUbam)
       .map(_ should be(WgsUbamIndex.jsonSchema))

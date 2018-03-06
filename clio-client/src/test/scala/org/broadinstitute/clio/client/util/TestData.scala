@@ -191,13 +191,13 @@ trait TestData {
     key = testGvcfTransferV1Key
   )
 
-  val goodGvcfDeleteCommand =
-    DeleteGvcf(key = testTransferGvcfV1Key, note = "Good delete for gvcf test")
-
   val goodGvcfMoveCommand = MoveGvcf(
     key = testGvcfTransferV1Key,
     destination = testCloudDestinationDirectoryPath
   )
+
+  val goodGvcfDeleteCommand =
+    DeleteGvcf(key = testTransferGvcfV1Key, note = "Good delete for gvcf test")
 
   val goodCramQueryCommand = QueryWgsCram(
     queryInput = TransferWgsCramV1QueryInput()

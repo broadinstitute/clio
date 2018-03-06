@@ -21,7 +21,7 @@ class DeleteArraysSpec extends BaseClientSpec {
     recoverToSucceededIf[UnsupportedOperationException] {
       val command = DeleteArrays(
         key = testArraysTransferV1Key,
-        note = "Deleting for test"
+        note = "Deleting for arrays test"
       )
       succeedingDispatcher().dispatch(command)
     }
