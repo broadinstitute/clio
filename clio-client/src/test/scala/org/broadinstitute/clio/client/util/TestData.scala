@@ -7,9 +7,21 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.webclient.CredentialsGenerator
 import org.broadinstitute.clio.transfer.model.arrays.TransferArraysV1Key
-import org.broadinstitute.clio.transfer.model.gvcf.{GvcfExtensions, TransferGvcfV1Key, TransferGvcfV1QueryInput}
-import org.broadinstitute.clio.transfer.model.ubam.{TransferUbamV1Key, TransferUbamV1QueryInput, UbamExtensions}
-import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1Key, TransferWgsCramV1QueryInput, WgsCramExtensions}
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  GvcfExtensions,
+  TransferGvcfV1Key,
+  TransferGvcfV1QueryInput
+}
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1QueryInput,
+  UbamExtensions
+}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1QueryInput,
+  WgsCramExtensions
+}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.concurrent.duration._
