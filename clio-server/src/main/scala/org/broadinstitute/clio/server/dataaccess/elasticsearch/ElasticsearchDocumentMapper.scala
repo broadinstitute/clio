@@ -12,7 +12,11 @@ import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
   * @tparam Key      The type of the TransferKey.
   * @tparam Metadata The type of the TransferMetadata.
   */
-class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata <: TransferMetadata[Metadata]: Encoder] (genId: () => UpsertId) extends ModelAutoDerivation {
+class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata <: TransferMetadata[
+  Metadata
+]: Encoder](genId: () => UpsertId)
+    extends ModelAutoDerivation {
+
   /**
     *
     * @param key      The TransferKey from which to create the document.
@@ -38,7 +42,11 @@ class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata <: TransferM
 }
 
 object ElasticsearchDocumentMapper {
-  def apply[Key <: Product: Encoder, Metadata <: TransferMetadata[Metadata]: Encoder]: ElasticsearchDocumentMapper[Key, Metadata] = {
+
+  def apply[Key <: Product: Encoder, Metadata <: TransferMetadata[Metadata]: Encoder]: ElasticsearchDocumentMapper[
+    Key,
+    Metadata
+  ] = {
     new ElasticsearchDocumentMapper(UpsertId.nextId)
   }
 }

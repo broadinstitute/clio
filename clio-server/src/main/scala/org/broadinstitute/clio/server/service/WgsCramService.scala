@@ -21,7 +21,10 @@ import scala.concurrent.{ExecutionContext, Future}
 class WgsCramService(
   persistenceService: PersistenceService,
   searchService: SearchService
-)(implicit executionContext: ExecutionContext, index: ElasticsearchIndex[WgsCramIndex.type]) {
+)(
+  implicit executionContext: ExecutionContext,
+  index: ElasticsearchIndex[WgsCramIndex.type]
+) {
 
   def upsertMetadata(
     transferKey: TransferWgsCramV1Key,
@@ -69,5 +72,6 @@ object WgsCramService {
       TransferWgsCramV1Metadata,
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[TransferWgsCramV1QueryInput] = ElasticsearchQueryMapper[TransferWgsCramV1QueryInput]
+  val v1QueryConverter: ElasticsearchQueryMapper[TransferWgsCramV1QueryInput] =
+    ElasticsearchQueryMapper[TransferWgsCramV1QueryInput]
 }

@@ -5,7 +5,10 @@ import akka.stream.scaladsl.Source
 import io.circe.Json
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.SearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchIndex, ElasticsearchQueryMapper}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchIndex,
+  ElasticsearchQueryMapper
+}
 import org.broadinstitute.clio.transfer.model.TransferIndex
 
 /**

@@ -111,7 +111,9 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation 
       ElasticsearchIndex.getUpsertId(firstUpdate) should be(responseAs[UpsertId])
       getStringByName(firstUpdate, "project") should be(Some("G123"))
       getStringByName(firstUpdate, "sampleAlias") should be(Some("sample1"))
-      getUriByName(firstUpdate, "ubamPath") should be(Some(URI.create("gs://path/ubam.bam")))
+      getUriByName(firstUpdate, "ubamPath") should be(
+        Some(URI.create("gs://path/ubam.bam"))
+      )
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement

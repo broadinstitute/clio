@@ -21,7 +21,11 @@ class MemoryPersistenceDAO extends PersistenceDAO {
     Jimfs.newFileSystem(Configuration.unix())
   override val rootPath: File = File(memFS.getPath("/"))
 
-  override def writeUpdate(document: Json, index: ElasticsearchIndex[_], dt: OffsetDateTime)(
+  override def writeUpdate(
+    document: Json,
+    index: ElasticsearchIndex[_],
+    dt: OffsetDateTime
+  )(
     implicit ec: ExecutionContext
   ): Future[Unit] = {
     writeCalls += ((document, index.asInstanceOf[ElasticsearchIndex[TransferIndex]]))

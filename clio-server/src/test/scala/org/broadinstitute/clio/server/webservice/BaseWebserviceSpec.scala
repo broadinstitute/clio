@@ -12,5 +12,4 @@ abstract class BaseWebserviceSpec
     with Matchers
     with ScalatestRouteTest
     with JsonWebService
-    with DecodingUtil {
-}
+    with DecodingUtil {}

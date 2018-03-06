@@ -1,7 +1,10 @@
 package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.ClioApp
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchDocumentMapper, ElasticsearchIndex}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchDocumentMapper,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
 import org.broadinstitute.clio.util.model.UpsertId

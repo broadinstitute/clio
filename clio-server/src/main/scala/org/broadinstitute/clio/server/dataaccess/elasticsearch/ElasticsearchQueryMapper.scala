@@ -77,4 +77,3 @@ object ElasticsearchQueryMapper {
     new ElasticsearchQueryMapper[Input]
   }
 }
-

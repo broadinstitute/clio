@@ -7,9 +7,16 @@ import akka.stream.scaladsl.Sink
 import io.circe.Json
 import io.circe.syntax._
 import io.circe.parser._
-import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockKey, ModelMockMetadata}
+import org.broadinstitute.clio.transfer.model.{
+  ModelMockIndex,
+  ModelMockKey,
+  ModelMockMetadata
+}
 import org.broadinstitute.clio.server.TestKitSuite
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchFieldMapper, ElasticsearchIndex}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchFieldMapper,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -49,7 +56,9 @@ class PersistenceDAOSpec
 
     val key1 = ModelMockKey(1L, "mock-key-1")
     val metadata1 = ModelMockMetadata(None, None, None, None, None, None)
-    val document1 = key1.asJson.deepMerge(metadata1.asJson).deepMerge(Map("mockFilePath" -> Some(URI.create("gs://the-file"))).asJson)
+    val document1 = key1.asJson
+      .deepMerge(metadata1.asJson)
+      .deepMerge(Map("mockFilePath" -> Some(URI.create("gs://the-file"))).asJson)
 
     val key2 = ModelMockKey(2L, "mock-key-2")
     val metadata2 = ModelMockMetadata(Some(0.9876), None, None, None, None, None)
@@ -62,8 +71,7 @@ class PersistenceDAOSpec
     } yield {
       Seq(document1, document2).foreach { doc =>
         val expectedPath =
-          dao.rootPath / s"${index.currentPersistenceDir}/${ElasticsearchIndex.getUpsertId(doc)
-            .persistenceFilename}"
+          dao.rootPath / s"${index.currentPersistenceDir}/${ElasticsearchIndex.getUpsertId(doc).persistenceFilename}"
 
         expectedPath.exists should be(true)
         expectedPath.isRegularFile should be(true)
@@ -123,7 +131,9 @@ class PersistenceDAOSpec
             case (day, docs) => docs.map(dao.writeUpdate(_, index, day))
           }
         }
-        result <- dao.getAllSince(lastKnown.map(ElasticsearchIndex.getUpsertId(_))).runWith(Sink.seq)
+        result <- dao
+          .getAllSince(lastKnown.map(ElasticsearchIndex.getUpsertId(_)))
+          .runWith(Sink.seq)
       } yield {
         result should contain theSameElementsInOrderAs documents.slice(
           lastKnown.fold(-1)(documents.indexOf) + 1,

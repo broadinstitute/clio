@@ -12,7 +12,10 @@ import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.service.GvcfService
 import org.broadinstitute.clio.transfer.model.GvcfIndex
-import org.broadinstitute.clio.transfer.model.gvcf.{GvcfExtensions, TransferGvcfV1QueryInput}
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  GvcfExtensions,
+  TransferGvcfV1QueryInput
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 class GvcfWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation {

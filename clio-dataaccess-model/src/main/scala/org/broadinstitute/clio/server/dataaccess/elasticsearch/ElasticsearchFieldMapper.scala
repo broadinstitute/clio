@@ -31,8 +31,7 @@ private[dataaccess] sealed abstract class ElasticsearchFieldMapper(
   }
 }
 
-object ElasticsearchFieldMapper
-    extends IntEnum[ElasticsearchFieldMapper] {
+object ElasticsearchFieldMapper extends IntEnum[ElasticsearchFieldMapper] {
   import com.sksamuel.elastic4s.http.ElasticDsl._
 
   override val values: immutable.IndexedSeq[ElasticsearchFieldMapper] = findValues

@@ -4,14 +4,24 @@ import java.net.URI
 
 import akka.stream.scaladsl.Sink
 import io.circe.syntax._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchIndex, ElasticsearchUtil}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchIndex,
+  ElasticsearchUtil
+}
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
-import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1Key, TransferWgsCramV1Metadata, TransferWgsCramV1QueryInput, WgsCramExtensions}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1Metadata,
+  TransferWgsCramV1QueryInput,
+  WgsCramExtensions
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 
-class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") with ModelAutoDerivation {
+class WgsCramServiceSpec
+    extends TestKitSuite("WgsCramServiceSpec")
+    with ModelAutoDerivation {
   behavior of "WgsCramService"
 
   it should "upsertMetadata" in {
@@ -93,7 +103,13 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") with ModelAu
         .document(
           transferKey,
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
-        ).deepMerge(Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> returnedUpsertId).asJson)
+        )
+        .deepMerge(
+          Map(
+            ElasticsearchUtil
+              .toElasticsearchName(UpsertId.UpsertIdFieldName) -> returnedUpsertId
+          ).asJson
+        )
 
       memoryPersistenceDAO.writeCalls should be(Seq((expectedDocument, index)))
       memorySearchDAO.updateCalls should be(

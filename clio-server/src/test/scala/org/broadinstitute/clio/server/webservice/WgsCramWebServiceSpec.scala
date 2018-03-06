@@ -11,7 +11,10 @@ import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.service.WgsCramService
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1QueryInput, WgsCramExtensions}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1QueryInput,
+  WgsCramExtensions
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 

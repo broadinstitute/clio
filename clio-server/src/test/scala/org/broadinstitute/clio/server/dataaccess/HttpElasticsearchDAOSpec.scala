@@ -129,7 +129,11 @@ class HttpElasticsearchDAOSpec
     val documents =
       (1 to 4)
         .map("document-" + _)
-        .map(s => Map(UpsertId.UpsertIdFieldName -> UpsertId.nextId()).asJson.deepMerge(Map(EntityId.EntityIdFieldName -> Symbol(s)).asJson))
+        .map(
+          s =>
+            Map(UpsertId.UpsertIdFieldName -> UpsertId.nextId()).asJson
+              .deepMerge(Map(EntityId.EntityIdFieldName -> Symbol(s)).asJson)
+        )
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)

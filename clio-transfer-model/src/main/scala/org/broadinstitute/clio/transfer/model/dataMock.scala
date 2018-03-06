@@ -10,7 +10,9 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.reflect.ClassTag
 
-case class ModelMockIndex (name: String = "mock") extends TransferIndex with ModelAutoDerivation {
+case class ModelMockIndex(name: String = "mock")
+    extends TransferIndex
+    with ModelAutoDerivation {
   override val urlSegment: String = "mock"
   override val jsonSchema: Json = Json.Null
   override val commandName: String = "mock"
@@ -22,15 +24,20 @@ case class ModelMockIndex (name: String = "mock") extends TransferIndex with Mod
 
   override val keyTag: ClassTag[KeyType] = implicitly[ClassTag[KeyType]]
   override val metadataTag: ClassTag[MetadataType] = implicitly[ClassTag[MetadataType]]
-  override val queryInputTag: ClassTag[QueryInputType] = implicitly[ClassTag[QueryInputType]]
-  override val queryOutputTag: ClassTag[QueryOutputType] = implicitly[ClassTag[QueryOutputType]]
+  override val queryInputTag: ClassTag[QueryInputType] =
+    implicitly[ClassTag[QueryInputType]]
+  override val queryOutputTag: ClassTag[QueryOutputType] =
+    implicitly[ClassTag[QueryOutputType]]
   override val keyEncoder: Encoder[KeyType] = implicitly[Encoder[KeyType]]
   override val metadataDecoder: Decoder[MetadataType] = implicitly[Decoder[MetadataType]]
   override val metadataEncoder: Encoder[MetadataType] = implicitly[Encoder[MetadataType]]
-  override val queryInputEncoder: Encoder[QueryInputType] = implicitly[Encoder[QueryInputType]]
-  override val queryOutputDecoder: Decoder[QueryOutputType] = implicitly[Decoder[QueryOutputType]]
+  override val queryInputEncoder: Encoder[QueryInputType] =
+    implicitly[Encoder[QueryInputType]]
+  override val queryOutputDecoder: Decoder[QueryOutputType] =
+    implicitly[Decoder[QueryOutputType]]
   override val keyMapper: FieldMapper[KeyType] = implicitly[FieldMapper[KeyType]]
-  override val metadataMapper: FieldMapper[MetadataType] = implicitly[FieldMapper[MetadataType]]
+  override val metadataMapper: FieldMapper[MetadataType] =
+    implicitly[FieldMapper[MetadataType]]
 }
 
 case class ModelMockKey(mockKeyLong: Long, mockKeyString: String) extends TransferKey {
@@ -50,7 +57,9 @@ case class ModelMockMetadata(
   override val notes: Option[String] = None
   override def pathsToDelete: Seq[URI] = Seq.empty[URI]
   override def markDeleted(deletionNote: String): ModelMockMetadata = this
-  override protected def mapMove(pathMapper: (Option[URI], String) => Option[URI]): ModelMockMetadata = this
+  override protected def mapMove(
+    pathMapper: (Option[URI], String) => Option[URI]
+  ): ModelMockMetadata = this
 }
 
 case class ModelMockQueryInput(

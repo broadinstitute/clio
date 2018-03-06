@@ -1,14 +1,26 @@
 package org.broadinstitute.clio.server.service
 
 import io.circe.syntax._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchIndex, ElasticsearchUtil}
-import org.broadinstitute.clio.server.dataaccess.{FailingPersistenceDAO, MemoryPersistenceDAO, MemorySearchDAO}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchIndex,
+  ElasticsearchUtil
+}
+import org.broadinstitute.clio.server.dataaccess.{
+  FailingPersistenceDAO,
+  MemoryPersistenceDAO,
+  MemorySearchDAO
+}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
-import org.broadinstitute.clio.transfer.model.ubam.{TransferUbamV1Key, TransferUbamV1Metadata}
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
-class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") with ModelAutoDerivation {
+class PersistenceServiceSpec
+    extends TestKitSuite("PersistenceServiceSpec")
+    with ModelAutoDerivation {
   behavior of "PersistenceService"
 
   val mockKey = TransferUbamV1Key(Location.OnPrem, "barcode", 1, "library")
@@ -31,7 +43,9 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") with
     } yield {
       val expectedDocument = WgsUbamService.v1DocumentConverter
         .document(mockKey, mockMetadata)
-        .deepMerge(Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> uuid).asJson)
+        .deepMerge(
+          Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> uuid).asJson
+        )
 
       val expectedIndex = ElasticsearchIndex.WgsUbam
 

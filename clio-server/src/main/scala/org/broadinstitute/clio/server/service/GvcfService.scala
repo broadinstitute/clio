@@ -21,7 +21,10 @@ import scala.concurrent.{ExecutionContext, Future}
 class GvcfService(
   persistenceService: PersistenceService,
   searchService: SearchService
-)(implicit executionContext: ExecutionContext, index: ElasticsearchIndex[GvcfIndex.type]) {
+)(
+  implicit executionContext: ExecutionContext,
+  index: ElasticsearchIndex[GvcfIndex.type]
+) {
 
   def upsertMetadata(
     transferKey: TransferGvcfV1Key,
@@ -69,5 +72,6 @@ object GvcfService {
       TransferGvcfV1Metadata,
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[TransferGvcfV1QueryInput] = ElasticsearchQueryMapper[TransferGvcfV1QueryInput]
+  val v1QueryConverter: ElasticsearchQueryMapper[TransferGvcfV1QueryInput] =
+    ElasticsearchQueryMapper[TransferGvcfV1QueryInput]
 }

@@ -6,6 +6,7 @@ import io.circe.Json
 import org.broadinstitute.clio.util.model.Location
 
 trait DecodingUtil extends ModelAutoDerivation {
+
   def getStringByName(json: Json, name: String): String = {
     json.hcursor
       .get[String](name)

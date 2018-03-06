@@ -2,15 +2,24 @@ package org.broadinstitute.clio.server.service
 
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchFieldMapper, ElasticsearchIndex}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchFieldMapper,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.status.model.ClioStatus
-import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockKey, ModelMockMetadata}
+import org.broadinstitute.clio.transfer.model.{
+  ModelMockIndex,
+  ModelMockKey,
+  ModelMockMetadata
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
 
-class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") with ModelAutoDerivation {
+class ServerServiceSpec
+    extends TestKitSuite("ServerServiceSpec")
+    with ModelAutoDerivation {
   behavior of "ServerService"
 
   it should "beginStartup" in {

@@ -13,7 +13,11 @@ class FailingPersistenceDAO extends PersistenceDAO {
 
   override def rootPath: File = throw ex
 
-  override def writeUpdate(document: Json, index: ElasticsearchIndex[_], dt: OffsetDateTime)(
+  override def writeUpdate(
+    document: Json,
+    index: ElasticsearchIndex[_],
+    dt: OffsetDateTime
+  )(
     implicit ec: ExecutionContext
   ): Future[Unit] = Future.failed(ex)
 }

@@ -21,7 +21,10 @@ import scala.concurrent.{ExecutionContext, Future}
 class WgsUbamService(
   persistenceService: PersistenceService,
   searchService: SearchService
-)(implicit executionContext: ExecutionContext, index: ElasticsearchIndex[WgsUbamIndex.type]) {
+)(
+  implicit executionContext: ExecutionContext,
+  index: ElasticsearchIndex[WgsUbamIndex.type]
+) {
 
   def upsertMetadata(
     transferKey: TransferUbamV1Key,
@@ -69,5 +72,6 @@ object WgsUbamService {
       TransferUbamV1Metadata,
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[TransferUbamV1QueryInput] = ElasticsearchQueryMapper[TransferUbamV1QueryInput]
+  val v1QueryConverter: ElasticsearchQueryMapper[TransferUbamV1QueryInput] =
+    ElasticsearchQueryMapper[TransferUbamV1QueryInput]
 }

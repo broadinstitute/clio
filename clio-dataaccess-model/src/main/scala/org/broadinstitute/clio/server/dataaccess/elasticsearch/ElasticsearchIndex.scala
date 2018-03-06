@@ -73,6 +73,7 @@ class ElasticsearchIndex[Index <: TransferIndex](
 }
 
 object ElasticsearchIndex extends ModelAutoDerivation {
+
   def getEntityId(json: Json): String =
     json.hcursor
       .get[String](toElasticsearchName(EntityId.EntityIdFieldName))

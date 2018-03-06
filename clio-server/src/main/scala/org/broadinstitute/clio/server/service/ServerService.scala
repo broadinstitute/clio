@@ -5,7 +5,12 @@ import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import org.broadinstitute.clio.server.dataaccess.{HttpServerDAO, PersistenceDAO, SearchDAO, ServerStatusDAO}
+import org.broadinstitute.clio.server.dataaccess.{
+  HttpServerDAO,
+  PersistenceDAO,
+  SearchDAO,
+  ServerStatusDAO
+}
 import org.broadinstitute.clio.status.model.ClioStatus
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
@@ -58,19 +63,22 @@ class ServerService private (
 
       persistenceDAO
         .getAllSince(latestUpsert)
-        .batch(ServerService.RecoveryMaxBulkSize, json => Map(ElasticsearchIndex.getEntityId(json) -> json)) {
-          (idMap, json) =>
-            val id = ElasticsearchIndex.getEntityId(json)
-            val newJson = idMap.get(id) match {
-              case Some(oldJson) => {
-                logger.debug(
-                  s"Merging upserts ${ElasticsearchIndex.getUpsertId(oldJson)} and ${ElasticsearchIndex.getUpsertId(json)} for id $id"
-                )
-                oldJson.deepMerge(json)
-              }
-              case None => json
+        .batch(
+          ServerService.RecoveryMaxBulkSize,
+          json => Map(ElasticsearchIndex.getEntityId(json) -> json)
+        ) { (idMap, json) =>
+          val id = ElasticsearchIndex.getEntityId(json)
+          val newJson = idMap.get(id) match {
+            case Some(oldJson) => {
+              logger.debug(
+                s"Merging upserts ${ElasticsearchIndex.getUpsertId(oldJson)} and ${ElasticsearchIndex
+                  .getUpsertId(json)} for id $id"
+              )
+              oldJson.deepMerge(json)
             }
-            idMap.updated(id, newJson)
+            case None => json
+          }
+          idMap.updated(id, newJson)
         }
         .runWith(Sink.foldAsync(()) { (_, jsonMap) =>
           val jsons = jsonMap.valuesIterator.toVector

@@ -4,10 +4,18 @@ import java.net.URI
 
 import akka.stream.scaladsl.Sink
 import io.circe.syntax._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchIndex, ElasticsearchUtil}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchIndex,
+  ElasticsearchUtil
+}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
-import org.broadinstitute.clio.transfer.model.gvcf.{GvcfExtensions, TransferGvcfV1Key, TransferGvcfV1Metadata, TransferGvcfV1QueryInput}
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  GvcfExtensions,
+  TransferGvcfV1Key,
+  TransferGvcfV1Metadata,
+  TransferGvcfV1QueryInput
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 
@@ -94,7 +102,12 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") with ModelAutoDeri
           transferKey,
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
-        .deepMerge(Map(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> returnedUpsertId).asJson)
+        .deepMerge(
+          Map(
+            ElasticsearchUtil
+              .toElasticsearchName(UpsertId.UpsertIdFieldName) -> returnedUpsertId
+          ).asJson
+        )
 
       memoryPersistenceDAO.writeCalls should be(Seq((expectedDocument, index)))
       memorySearchDAO.updateCalls should be(

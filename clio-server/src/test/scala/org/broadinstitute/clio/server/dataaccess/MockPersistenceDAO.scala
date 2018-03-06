@@ -16,7 +16,11 @@ class MockPersistenceDAO extends PersistenceDAO {
     version: String
   )(implicit ec: ExecutionContext): Future[Unit] = Future.unit
 
-  override def writeUpdate(document: Json, index: ElasticsearchIndex[_], dt: OffsetDateTime)(
+  override def writeUpdate(
+    document: Json,
+    index: ElasticsearchIndex[_],
+    dt: OffsetDateTime
+  )(
     implicit ec: ExecutionContext
   ): Future[Unit] = Future.unit
 }
