@@ -3,7 +3,7 @@ package org.broadinstitute.clio.util.json
 import java.net.URI
 
 import io.circe.Json
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 trait DecodingUtil extends ModelAutoDerivation {
 
@@ -23,9 +23,9 @@ trait DecodingUtil extends ModelAutoDerivation {
     json.hcursor.get[Int](name).fold(throw _, identity)
   }
 
-  def getDocumentStatus(json: Json): URI = {
+  def getDocumentStatus(json: Json): DocumentStatus = {
     json.hcursor
-      .get[URI]("documentStatus")
+      .get[DocumentStatus]("document_status")
       .fold(throw _, identity)
   }
 

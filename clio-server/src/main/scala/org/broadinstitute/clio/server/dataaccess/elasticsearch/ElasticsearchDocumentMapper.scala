@@ -25,10 +25,10 @@ class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata <: TransferM
     */
   def document(key: Key, metadata: Metadata): Json = {
     val upsertIdMap = Map(
-      UpsertId.UpsertIdFieldName -> genId()
+      ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> genId()
     )
     val entityIdMap = Map(
-      EntityId.EntityIdFieldName -> Symbol(
+      ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName) -> Symbol(
         key.productIterator.mkString(".")
       )
     )
@@ -47,6 +47,6 @@ object ElasticsearchDocumentMapper {
     Key,
     Metadata
   ] = {
-    new ElasticsearchDocumentMapper(UpsertId.nextId)
+    new ElasticsearchDocumentMapper[Key, Metadata](UpsertId.nextId)
   }
 }

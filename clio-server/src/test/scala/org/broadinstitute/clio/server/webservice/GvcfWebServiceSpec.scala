@@ -115,10 +115,10 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation {
         }
 
       ElasticsearchIndex.getUpsertId(firstUpdate) should be(responseAs[UpsertId])
-      getStringByName(firstUpdate, "gvcfMd5") should be(Some('abcgithashdef))
-      getStringByName(firstUpdate, "notes") should be(Some("some note"))
-      getUriByName(firstUpdate, "gvcfPath") should be(
-        Some(URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"))
+      getStringByName(firstUpdate, "gvcf_md5") should be("abcgithashdef")
+      getStringByName(firstUpdate, "notes") should be("some note")
+      getUriByName(firstUpdate, "gvcf_path") should be(
+        URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}")
       )
     }
 
@@ -151,10 +151,10 @@ class GvcfWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation {
         .flatMap(_._1.headOption)
         .apply(1)
 
-      getStringByName(secondUpdate, "gvcfMd5") should be(Some('abcgithashdef))
-      getStringByName(secondUpdate, "notes") should be(Some("some note"))
-      getDocumentStatus(secondUpdate) should be(Some(DocumentStatus.Deleted))
-      getUriByName(secondUpdate, "gvcfPath") should be(Some(URI.create("")))
+      getStringByName(secondUpdate, "gvcf_md5") should be("abcgithashdef")
+      getStringByName(secondUpdate, "notes") should be("some note")
+      getDocumentStatus(secondUpdate) should be(DocumentStatus.Deleted)
+      getUriByName(secondUpdate, "gvcf_path") should be(URI.create(""))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
