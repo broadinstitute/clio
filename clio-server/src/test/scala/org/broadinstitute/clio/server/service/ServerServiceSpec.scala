@@ -1,10 +1,14 @@
 package org.broadinstitute.clio.server.service
 
+import java.net.URI
+import java.time.OffsetDateTime
+
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchFieldMapper,
-  ElasticsearchIndex
+  ElasticsearchIndex,
+  ElasticsearchUtil
 }
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.status.model.ClioStatus
@@ -14,6 +18,7 @@ import org.broadinstitute.clio.transfer.model.{
   ModelMockMetadata
 }
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.{DocumentStatus, EntityId, UpsertId}
 
 import scala.concurrent.Future
 
@@ -99,12 +104,25 @@ class ServerServiceSpec
     val app =
       MockClioApp(persistenceDAO = persistenceDAO, searchDAO = searchDAO)
 
-    val numDocs = 1000
+    val numDocs = 5
     val initInSearch = numDocs / 2
 
-    val key = ModelMockKey(1L, "mock-key-1")
-    val metadata = ModelMockMetadata(None, None, None, None, None, None)
-    val document = key.asJson.deepMerge(metadata.asJson)
+    val keyLong = 1L
+    val keyString = "mock-key"
+    val key = ModelMockKey(keyLong, keyString)
+    val metadata = ModelMockMetadata(
+      Some(1.0),
+      Some(1),
+      Some(OffsetDateTime.now()),
+      Some(Seq.empty[String]),
+      Some(Seq.empty[URI]),
+      Some(DocumentStatus.Normal),
+      Some('md5),
+      Some(URI.create("/mock")),
+      Some(1L)
+    )
+    val document = key.asJson
+      .deepMerge(metadata.asJson)
 
     val index = new ElasticsearchIndex[ModelMockIndex](
       "mock",
@@ -113,7 +131,25 @@ class ServerServiceSpec
     )
 
     val serverService = ServerService(app)
-    val initStoredDocuments = Seq.fill(numDocs)(document)
+
+    var counter = 0
+    val initStoredDocuments = Seq.fill(numDocs)({
+      counter = counter + 1
+      // This generation is done inside this block because UpsertIds and EntityIds need to be unique.
+      document
+        .deepMerge(
+          Map(
+            ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> UpsertId
+              .nextId()
+          ).asJson
+        )
+        .deepMerge(
+          Map(
+            ElasticsearchUtil
+              .toElasticsearchName(EntityId.EntityIdFieldName) -> s"$keyLong.$keyString-$counter"
+          ).asJson
+        )
+    })
     val initSearchDocuments = initStoredDocuments.take(initInSearch)
 
     for {
