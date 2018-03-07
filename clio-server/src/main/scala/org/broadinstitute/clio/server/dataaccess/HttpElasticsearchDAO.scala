@@ -18,7 +18,6 @@ import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
 import org.elasticsearch.client.RestClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -72,7 +71,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   ): Future[Option[Json]] = {
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .size(1)
-      .sortByFieldDesc(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName))
+      .sortByFieldDesc(ElasticsearchIndex.UpsertIdElasticsearchName)
     httpClient
       .executeAndUnpack(searchDefinition)
       .map(_.to[Json].headOption)
@@ -156,7 +155,7 @@ class HttpElasticsearchDAO private[dataaccess] (
     document: Json
   ): BulkCompatibleDefinition = {
     val id = document.hcursor
-      .get[String](ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName))
+      .get[String](ElasticsearchIndex.EntityIdElasticsearchName)
       .fold(throw _, identity)
 
     update(id)

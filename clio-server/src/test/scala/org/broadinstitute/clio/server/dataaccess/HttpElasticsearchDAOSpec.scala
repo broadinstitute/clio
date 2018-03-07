@@ -15,7 +15,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.transfer.model.ModelMockIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
+import org.broadinstitute.clio.util.model.UpsertId
 import org.scalatest._
 
 import scala.concurrent.Future
@@ -132,13 +132,11 @@ class HttpElasticsearchDAOSpec
         .map(
           s =>
             Map(
-              ElasticsearchUtil
-                .toElasticsearchName(UpsertId.UpsertIdFieldName) -> UpsertId.nextId()
+              ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
             ).asJson
               .deepMerge(
                 Map(
-                  ElasticsearchUtil
-                    .toElasticsearchName(EntityId.EntityIdFieldName) -> Symbol(s)
+                  ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(s)
                 ).asJson
             )
         )

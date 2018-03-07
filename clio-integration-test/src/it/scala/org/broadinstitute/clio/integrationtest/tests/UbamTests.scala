@@ -252,7 +252,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       storedDocument1
         .deepMerge(
           Map(
-            ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
           ).asJson
         )
         .deepMerge(Map("project" -> Some("testProject2")).asJson) should be(
@@ -281,7 +281,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
       storedDocument1.deepMerge(
         Map(
-          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+          ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
         ).asJson
       ) should be(storedDocument2)
     }

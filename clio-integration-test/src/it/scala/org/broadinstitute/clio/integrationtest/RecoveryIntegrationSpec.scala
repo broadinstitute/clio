@@ -23,7 +23,7 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1Key,
   TransferWgsCramV1Metadata
 }
-import org.broadinstitute.clio.util.model.{DocumentStatus, EntityId, Location, UpsertId}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import org.scalatest.OptionValues
 
 /** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
@@ -39,7 +39,7 @@ class RecoveryIntegrationSpec
   private def updateDoc(json: Json, pathFieldName: String): Json = {
     val oldUri = json.hcursor.get[String](pathFieldName).fold(throw _, identity)
     val updates = Seq(
-      ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> Json
+      ElasticsearchIndex.UpsertIdElasticsearchName -> Json
         .fromString(UpsertId.nextId().id),
       pathFieldName -> Json.fromString(s"$oldUri/$randomId")
     )
@@ -59,9 +59,9 @@ class RecoveryIntegrationSpec
       ubamPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     ).asJson
-    val upsertIdJson = Map(UpsertId.UpsertIdFieldName -> UpsertId.nextId()).asJson
+    val upsertIdJson = Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
     val entityIdJson = Map(
-      EntityId.EntityIdFieldName -> Symbol(
+      ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
         s"$flowcellBarcode.$i.$libraryName.${location.entryName}"
       )
     ).asJson
@@ -83,9 +83,9 @@ class RecoveryIntegrationSpec
       gvcfPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     ).asJson
-    val upsertIdJson = Map(UpsertId.UpsertIdFieldName -> UpsertId.nextId()).asJson
+    val upsertIdJson = Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
     val entityIdJson = Map(
-      EntityId.EntityIdFieldName -> Symbol(
+      ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
         s"${location.entryName}.$project.$sampleAlias.$i"
       )
     ).asJson
@@ -107,9 +107,9 @@ class RecoveryIntegrationSpec
       cramPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     ).asJson
-    val upsertIdJson = Map(UpsertId.UpsertIdFieldName -> UpsertId.nextId()).asJson
+    val upsertIdJson = Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
     val entityIdJson = Map(
-      EntityId.EntityIdFieldName -> Symbol(
+      ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
         s"${location.entryName}.$project.$sampleAlias.$i"
       )
     ).asJson
@@ -186,8 +186,8 @@ class RecoveryIntegrationSpec
 
   private val keysToDrop =
     Set(
-      ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName),
-      ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName)
+      ElasticsearchIndex.UpsertIdElasticsearchName,
+      ElasticsearchIndex.EntityIdElasticsearchName
     )
 
   Seq(

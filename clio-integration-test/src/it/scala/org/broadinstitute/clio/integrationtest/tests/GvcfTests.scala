@@ -160,7 +160,7 @@ trait GvcfTests {
       storedDocument1
         .deepMerge(
           Map(
-            ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
           ).asJson
         )
         .deepMerge(
@@ -192,7 +192,7 @@ trait GvcfTests {
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)
       storedDocument1.deepMerge(
         Map(
-          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+          ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
         ).asJson
       ) should be(
         storedDocument2

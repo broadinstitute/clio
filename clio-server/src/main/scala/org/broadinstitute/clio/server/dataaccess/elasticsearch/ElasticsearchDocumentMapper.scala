@@ -4,7 +4,7 @@ import io.circe.{Encoder, Json}
 import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model.TransferMetadata
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
+import org.broadinstitute.clio.util.model.UpsertId
 
 /**
   * Maps metadata to an Elasticsearch document.
@@ -25,10 +25,10 @@ class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata <: TransferM
     */
   def document(key: Key, metadata: Metadata): Json = {
     val upsertIdMap = Map(
-      ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> genId()
+      ElasticsearchIndex.UpsertIdElasticsearchName -> genId()
     )
     val entityIdMap = Map(
-      ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName) -> Symbol(
+      ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
         key.productIterator.mkString(".")
       )
     )

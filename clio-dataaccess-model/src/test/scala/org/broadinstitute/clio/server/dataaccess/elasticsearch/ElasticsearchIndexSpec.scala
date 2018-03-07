@@ -3,7 +3,6 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import org.broadinstitute.clio.transfer.model.ModelMockIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
 import org.scalatest.{FlatSpec, Matchers}
 
 class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDerivation {
@@ -36,7 +35,10 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
     it should "fields for v1 document" in {
       // Snake-case-ify the bookkeeping fields.
       val bookkeeping =
-        Seq(UpsertId.UpsertIdFieldName, EntityId.EntityIdFieldName).map { name =>
+        Seq(
+          ElasticsearchIndex.UpsertIdElasticsearchName,
+          ElasticsearchIndex.EntityIdElasticsearchName
+        ).map { name =>
           keywordField(name.replaceAll("([A-Z])", "_$1").toLowerCase)
         }
 
@@ -68,7 +70,10 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
     it should "fields for v2 document" in {
       // Snake-case-ify the bookkeeping fields.
       val bookkeeping =
-        Seq(UpsertId.UpsertIdFieldName, EntityId.EntityIdFieldName).map { name =>
+        Seq(
+          ElasticsearchIndex.UpsertIdElasticsearchName,
+          ElasticsearchIndex.EntityIdElasticsearchName
+        ).map { name =>
           keywordField(ElasticsearchUtil.toElasticsearchName(name))
         }
 

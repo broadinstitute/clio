@@ -15,11 +15,10 @@ import org.broadinstitute.clio.transfer.model.{
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchFieldMapper,
-  ElasticsearchIndex,
-  ElasticsearchUtil
+  ElasticsearchIndex
 }
 import org.broadinstitute.clio.util.json.DecodingUtil
-import org.broadinstitute.clio.util.model.{DocumentStatus, EntityId, UpsertId}
+import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.Future
 
@@ -71,13 +70,13 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") with Decodin
       .deepMerge(metadata1.asJson)
       .deepMerge(
         Map(
-          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> UpsertId
+          ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId
             .nextId()
         ).asJson
       )
       .deepMerge(
         Map(
-          ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName) -> Symbol(
+          ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
             s"$key1Long.$key1String"
           )
         ).asJson
@@ -101,13 +100,13 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") with Decodin
       .deepMerge(metadata2.asJson)
       .deepMerge(
         Map(
-          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> UpsertId
+          ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId
             .nextId()
         ).asJson
       )
       .deepMerge(
         Map(
-          ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName) -> Symbol(
+          ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
             s"$key2Long.$key2String"
           )
         ).asJson
@@ -155,13 +154,13 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") with Decodin
       .deepMerge(mockMetadataJson)
       .deepMerge(
         Map(
-          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> UpsertId
+          ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId
             .nextId()
         ).asJson
       )
       .deepMerge(
         Map(
-          ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName) -> Symbol(
+          ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
             s"$mockKeyLong.$mockKeyString"
           )
         ).asJson

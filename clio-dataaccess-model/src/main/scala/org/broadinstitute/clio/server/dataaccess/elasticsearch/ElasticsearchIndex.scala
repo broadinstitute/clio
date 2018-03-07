@@ -11,7 +11,7 @@ import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.transfer.model.{GvcfIndex, WgsCramIndex, WgsUbamIndex}
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{EntityId, UpsertId}
+import org.broadinstitute.clio.util.model.UpsertId
 
 /**
   * An index for an Elasticsearch document.
@@ -59,7 +59,7 @@ class ElasticsearchIndex[Index <: TransferIndex](
 
   /** The fields for the index. */
   def fields: Seq[FieldDefinition] =
-    (FieldMapper[index.KeyType].fields.toSeq ++ FieldMapper[index.MetadataType].fields.toSeq).sortBy {
+    (FieldMapper[index.KeyType].fields ++ FieldMapper[index.MetadataType].fields).toSeq.sortBy {
       case (name, _) => name
     }.map({
       case (name, value) =>
@@ -67,21 +67,24 @@ class ElasticsearchIndex[Index <: TransferIndex](
           ElasticsearchUtil.toElasticsearchName(name)
         )
     }) ++ Seq(
-      keywordField(ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName)),
-      keywordField(ElasticsearchUtil.toElasticsearchName(EntityId.EntityIdFieldName))
+      keywordField(ElasticsearchIndex.UpsertIdElasticsearchName),
+      keywordField(ElasticsearchIndex.EntityIdElasticsearchName)
     )
 }
 
 object ElasticsearchIndex extends ModelAutoDerivation {
+  val EntityIdElasticsearchName = "entity_id"
+
+  val UpsertIdElasticsearchName = "upsert_id"
 
   def getEntityId(json: Json): String =
     json.hcursor
-      .get[String](toElasticsearchName(EntityId.EntityIdFieldName))
+      .get[String](toElasticsearchName(EntityIdElasticsearchName))
       .fold(throw _, identity)
 
   def getUpsertId(json: Json): UpsertId =
     json.hcursor
-      .get[UpsertId](toElasticsearchName(UpsertId.UpsertIdFieldName))
+      .get[UpsertId](toElasticsearchName(UpsertIdElasticsearchName))
       .fold(throw _, identity)
 
   /** Format the directory path for the indexed meta-data files. */

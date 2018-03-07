@@ -7,10 +7,7 @@ import akka.http.scaladsl.model.Uri
 import better.files.File
 import com.dimafeng.testcontainers.DockerComposeContainer
 import io.circe.Json
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchIndex,
-  ElasticsearchUtil
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 import org.junit.runner.Description
@@ -117,7 +114,7 @@ class ClioDockerComposeContainer(
               val writeDir = (rootPersistenceDir / s"$dateDir/").createDirectories()
               val upsertId = json.hcursor
                 .get[UpsertId](
-                  ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName)
+                  ElasticsearchIndex.UpsertIdElasticsearchName
                 )
                 .fold(throw _, identity)
 

@@ -80,11 +80,6 @@ object UpsertId {
   private val next6bitIndex = (_: Int) => source.nextInt(Encoding.length)
 
   /**
-    * Clio name for an upsert ID.
-    */
-  val UpsertIdFieldName: String = "upsertId"
-
-  /**
     * Return with new values for was, timestamp, and randomCharacters.
     *
     * @param now is the current system time

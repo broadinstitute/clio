@@ -17,7 +17,7 @@ import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1QueryInput
 }
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") with ModelAutoDerivation {
   behavior of "GvcfService"
@@ -105,7 +105,7 @@ class GvcfServiceSpec extends TestKitSuite("GvcfServiceSpec") with ModelAutoDeri
         .deepMerge(
           Map(
             ElasticsearchUtil
-              .toElasticsearchName(UpsertId.UpsertIdFieldName) -> returnedUpsertId
+              .toElasticsearchName(ElasticsearchIndex.UpsertIdElasticsearchName) -> returnedUpsertId
           ).asJson
         )
 

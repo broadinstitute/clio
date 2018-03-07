@@ -164,7 +164,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       storedDocument1
         .deepMerge(
           Map(
-            ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
           ).asJson
         )
         .deepMerge(
@@ -198,7 +198,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsCram)
       storedDocument1.deepMerge(
         Map(
-          ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> upsertId2
+          ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
         ).asJson
       ) should be(storedDocument2)
     }

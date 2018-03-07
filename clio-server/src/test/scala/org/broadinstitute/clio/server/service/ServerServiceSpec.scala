@@ -7,8 +7,7 @@ import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchFieldMapper,
-  ElasticsearchIndex,
-  ElasticsearchUtil
+  ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.status.model.ClioStatus
@@ -18,7 +17,7 @@ import org.broadinstitute.clio.transfer.model.{
   ModelMockMetadata
 }
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{DocumentStatus, EntityId, UpsertId}
+import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.Future
 
@@ -134,19 +133,17 @@ class ServerServiceSpec
 
     var counter = 0
     val initStoredDocuments = Seq.fill(numDocs)({
-      counter = counter + 1
       // This generation is done inside this block because UpsertIds and EntityIds need to be unique.
+      counter = counter + 1
       document
         .deepMerge(
           Map(
-            ElasticsearchUtil.toElasticsearchName(UpsertId.UpsertIdFieldName) -> UpsertId
-              .nextId()
+            ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
           ).asJson
         )
         .deepMerge(
           Map(
-            ElasticsearchUtil
-              .toElasticsearchName(EntityId.EntityIdFieldName) -> s"$keyLong.$keyString-$counter"
+            ElasticsearchIndex.EntityIdElasticsearchName -> s"$keyLong.$keyString-$counter"
           ).asJson
         )
     })

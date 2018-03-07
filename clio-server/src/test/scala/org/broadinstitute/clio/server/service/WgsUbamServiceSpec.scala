@@ -14,7 +14,7 @@ import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1QueryInput
 }
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 class WgsUbamServiceSpec
     extends TestKitSuite("WgsUbamServiceSpec")
@@ -102,7 +102,7 @@ class WgsUbamServiceSpec
         .deepMerge(
           Map(
             ElasticsearchUtil
-              .toElasticsearchName(UpsertId.UpsertIdFieldName) -> returnedUpsertId
+              .toElasticsearchName(ElasticsearchIndex.UpsertIdElasticsearchName) -> returnedUpsertId
           ).asJson
         )
 
