@@ -23,6 +23,14 @@ trait DecodingUtil extends ModelAutoDerivation {
     json.hcursor.get[Int](name).fold(throw _, identity)
   }
 
+  def getDoubleByName(json: Json, name: String): Double = {
+    json.hcursor.get[Double](name).fold(throw _, identity)
+  }
+
+  def getLongByName(json: Json, name: String): Long = {
+    json.hcursor.get[Long](name).fold(throw _, identity)
+  }
+
   def getDocumentStatus(json: Json): DocumentStatus = {
     json.hcursor
       .get[DocumentStatus]("document_status")

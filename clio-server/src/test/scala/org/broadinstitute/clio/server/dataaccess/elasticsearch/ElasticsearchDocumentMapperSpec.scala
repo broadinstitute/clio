@@ -1,16 +1,11 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import org.broadinstitute.clio.util.model.UpsertId
-import io.circe.Json
-import io.circe.parser.parse
 import org.broadinstitute.clio.transfer.model.{ModelMockKey, ModelMockMetadata}
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.json.DecodingUtil
 import org.scalatest.{FlatSpec, Matchers}
 
-class ElasticsearchDocumentMapperSpec
-    extends FlatSpec
-    with Matchers
-    with ModelAutoDerivation {
+class ElasticsearchDocumentMapperSpec extends FlatSpec with Matchers with DecodingUtil {
   behavior of "AutoElasticsearchDocumentMapper"
 
   val expectedId: UpsertId = UpsertId.nextId()
@@ -20,7 +15,7 @@ class ElasticsearchDocumentMapperSpec
     ModelMockMetadata
   ](() => expectedId)
 
-  it should "document" in {
+  it should "create a document" in {
     val keyLong = 12345L
     val keyString = "key"
 
@@ -33,20 +28,13 @@ class ElasticsearchDocumentMapperSpec
       mockFieldInt = mockFieldInt,
       mockFieldDate = None
     )
-    val json =
-      parse("""
-        "mockFieldDate": None,
-        "mockFieldDouble": mockFieldDouble,
-        "mockFieldInt": mockFieldInt,
-        "mockFieldDate": None,
-        "mockFileMd5": None,
-        "mockFilePath": None,
-        "mockFileSize": None,
-        "mockKeyLong": keyLong,
-        "mockKeyString": keyString
-      """)
-    mapper.document(key, metadata) should be(
-      json.getOrElse(Json.Null)
-    )
+
+    val document = mapper.document(key, metadata)
+    ElasticsearchIndex.getUpsertId(document) should be(expectedId)
+    ElasticsearchIndex.getEntityId(document) should be(s"$keyLong.$keyString")
+    getDoubleByName(document, "mock_field_double") should be(mockFieldDouble.get)
+    getIntByName(document, "mock_field_int") should be(mockFieldInt.get)
+    getLongByName(document, "mock_key_long") should be(keyLong)
+    getStringByName(document, "mock_key_string") should be(keyString)
   }
 }
