@@ -163,6 +163,8 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec {
         .as[DocumentWgsCram]
         .fold(throw _, identity)
 
+
+
       secondUpdate.cramMd5 should be(Some('abcgithashdef))
       secondUpdate.notes should be(Some("some note"))
       secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))

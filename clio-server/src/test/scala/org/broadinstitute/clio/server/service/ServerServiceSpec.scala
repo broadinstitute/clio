@@ -12,28 +12,32 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
 
   it should "beginStartup" in {
     val app = MockClioApp()
-    val serverService = ServerService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val serverService = ServerService(app, httpServerDAO)
     serverService.beginStartup()
     succeed
   }
 
   it should "awaitShutdown" in {
     val app = MockClioApp()
-    val serverService = ServerService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val serverService = ServerService(app, httpServerDAO)
     serverService.awaitShutdown()
     succeed
   }
 
   it should "awaitShutdownInf" in {
     val app = MockClioApp()
-    val serverService = ServerService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val serverService = ServerService(app, httpServerDAO)
     serverService.awaitShutdownInf()
     succeed
   }
 
   it should "shutdownAndWait" in {
     val app = MockClioApp()
-    val serverService = ServerService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val serverService = ServerService(app, httpServerDAO)
     serverService.shutdownAndWait()
     succeed
   }
@@ -43,7 +47,8 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
     val persistenceDAO = new MemoryPersistenceDAO()
     val app =
       MockClioApp(serverStatusDAO = statusDAO, persistenceDAO = persistenceDAO)
-    val serverService = ServerService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val serverService = ServerService(app, httpServerDAO)
     serverService.startup().map { _ =>
       statusDAO.setCalls should be(
         Seq(ClioStatus.Starting, ClioStatus.Recovering, ClioStatus.Started)
@@ -57,7 +62,8 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
       persistenceDAO = new FailingPersistenceDAO(),
       serverStatusDAO = statusDAO
     )
-    val serverService = ServerService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val serverService = ServerService(app, httpServerDAO)
 
     recoverToSucceededIf[Exception] {
       serverService.startup()
@@ -72,7 +78,8 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
       searchDAO = new FailingSearchDAO(),
       serverStatusDAO = statusDAO
     )
-    val serverService = ServerService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val serverService = ServerService(app, httpServerDAO)
 
     recoverToSucceededIf[Exception] {
       serverService.startup()
@@ -90,7 +97,8 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
     val numDocs = 1000
     val initInSearch = numDocs / 2
 
-    val serverService = ServerService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val serverService = ServerService(app, httpServerDAO)
     val initStoredDocuments = Seq.fill(numDocs)(DocumentMock.default)
     val initSearchDocuments = initStoredDocuments.take(initInSearch)
 
@@ -113,7 +121,8 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
 
   it should "shutdown" in {
     val app = MockClioApp()
-    val serverService = ServerService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val serverService = ServerService(app, httpServerDAO)
     for {
       _ <- serverService.shutdown()
     } yield succeed

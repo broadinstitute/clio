@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.server.webservice
 
+import org.broadinstitute.clio.server.dataaccess.MockHttpServerDAO
 import org.broadinstitute.clio.server.service.StatusService
 import org.broadinstitute.clio.server.{ClioApp, MockClioApp}
 
@@ -9,5 +10,6 @@ class MockStatusWebService(app: ClioApp = MockClioApp())(
   implicit executionContext: ExecutionContext
 ) extends StatusWebService
     with JsonWebService {
-  override lazy val statusService: StatusService = StatusService(app)
+  override lazy val statusService: StatusService =
+    StatusService(app, new MockHttpServerDAO())
 }

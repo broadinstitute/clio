@@ -11,7 +11,8 @@ class StatusServiceSpec extends AsyncFlatSpec with Matchers {
 
   it should "getVersion" in {
     val app = MockClioApp()
-    val statusService = StatusService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val statusService = StatusService(app, httpServerDAO)
     for {
       version <- statusService.getVersion
       _ = version should be(VersionInfo(MockHttpServerDAO.VersionMock))
@@ -20,7 +21,8 @@ class StatusServiceSpec extends AsyncFlatSpec with Matchers {
 
   it should "getStatus" in {
     val app = MockClioApp()
-    val statusService = StatusService(app)
+    val httpServerDAO = new MockHttpServerDAO()
+    val statusService = StatusService(app, httpServerDAO)
     for {
       status <- statusService.getStatus
       _ = status should be(
