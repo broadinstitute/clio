@@ -26,7 +26,6 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") with Decodin
   behavior of "PersistenceDAO"
 
   implicit val index: ElasticsearchIndex[ModelMockIndex] = new ElasticsearchIndex(
-    "mock",
     ModelMockIndex(),
     ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
   )

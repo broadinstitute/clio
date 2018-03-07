@@ -54,7 +54,6 @@ class ElasticsearchQueryMapperSpec extends FlatSpec with Matchers {
       mockKeyString = Option("hello")
     )
     val index = new ElasticsearchIndex(
-      "mock",
       ModelMockIndex(),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )

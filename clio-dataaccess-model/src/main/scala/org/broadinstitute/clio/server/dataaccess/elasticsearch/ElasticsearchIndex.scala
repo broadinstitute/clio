@@ -16,12 +16,10 @@ import org.broadinstitute.clio.util.model.UpsertId
 /**
   * An index for an Elasticsearch document.
   *
-  * @param indexName The name of the index in Elasticsearch.
   * @param fieldMapper The version of the mapping used to generate the index.
   * @tparam Index The TransferIndex of the document.
   */
 class ElasticsearchIndex[Index <: TransferIndex](
-  val indexName: String,
   val index: Index,
   private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper
 ) extends ModelAutoDerivation {
@@ -34,7 +32,7 @@ class ElasticsearchIndex[Index <: TransferIndex](
     * addition, but in GCS's filesystem adapter it's the only indication that this
     * should be treated as a directory, not a file.
     */
-  lazy val rootDir: String = indexName + "/"
+  lazy val rootDir: String = index.elasticsearchIndexName + "/"
 
   /**
     * The source-of-truth directory in which updates to this index
@@ -50,6 +48,8 @@ class ElasticsearchIndex[Index <: TransferIndex](
     val dir = dt.format(ElasticsearchIndex.dateTimeFormatter)
     s"$rootDir$dir/"
   }
+
+  final val indexName: String = index.elasticsearchIndexName
 
   /**
     * The name of the index type. Always default until ES 7 when there will be no index types.
@@ -93,7 +93,6 @@ object ElasticsearchIndex extends ModelAutoDerivation {
 
   implicit val WgsUbam: ElasticsearchIndex[WgsUbamIndex.type] =
     new ElasticsearchIndex(
-      "wgs-ubam",
       WgsUbamIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
@@ -102,7 +101,6 @@ object ElasticsearchIndex extends ModelAutoDerivation {
     // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
     // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
     new ElasticsearchIndex(
-      "gvcf-v2",
       GvcfIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
@@ -111,7 +109,6 @@ object ElasticsearchIndex extends ModelAutoDerivation {
     // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
     // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
     new ElasticsearchIndex(
-      "wgs-cram-v2",
       WgsCramIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )

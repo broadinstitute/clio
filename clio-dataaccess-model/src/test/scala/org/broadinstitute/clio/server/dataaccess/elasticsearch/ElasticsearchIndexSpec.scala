@@ -10,15 +10,13 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
 
   it should behave like aV1Index(
     new ElasticsearchIndex[ModelMockIndex](
-      "mock",
-      ModelMockIndex(),
+      ModelMockIndex("mock"),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
   )
   it should behave like aV2Index(
     new ElasticsearchIndex[ModelMockIndex](
-      "mock-v2",
-      ModelMockIndex(),
+      ModelMockIndex("mock-v2"),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
   )

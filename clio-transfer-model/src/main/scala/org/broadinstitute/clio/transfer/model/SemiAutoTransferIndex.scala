@@ -63,6 +63,7 @@ case object GvcfIndex
   override val urlSegment: String = "gvcf"
   override val name: String = "Gvcf"
   override val commandName: String = "gvcf"
+  override val elasticsearchIndexName = "gvcf-v2"
 }
 
 case object WgsUbamIndex
@@ -75,6 +76,7 @@ case object WgsUbamIndex
   override val urlSegment: String = "wgsubam"
   override val name: String = "WgsUbam"
   override val commandName: String = "wgs-ubam"
+  override val elasticsearchIndexName: String = "wgs-ubam"
 }
 
 case object WgsCramIndex
@@ -87,6 +89,7 @@ case object WgsCramIndex
   override val urlSegment: String = "wgscram"
   override val name: String = "WgsCram"
   override val commandName: String = "wgs-cram"
+  override val elasticsearchIndexName: String = "wgs-cram-v2"
 }
 
 case object HybselUbamIndex
@@ -99,4 +102,5 @@ case object HybselUbamIndex
   override val urlSegment: String = "hybselubam"
   override val name: String = "HybselUbam"
   override val commandName: String = "hybsel-ubam"
+  override val elasticsearchIndexName: String = "hybsel-ubam"
 }

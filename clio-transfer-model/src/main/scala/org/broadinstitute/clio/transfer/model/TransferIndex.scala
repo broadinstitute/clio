@@ -23,6 +23,8 @@ trait TransferIndex {
 
   val commandName: String
 
+  val elasticsearchIndexName: String
+
   type KeyType <: TransferKey
 
   type MetadataType <: TransferMetadata[MetadataType]

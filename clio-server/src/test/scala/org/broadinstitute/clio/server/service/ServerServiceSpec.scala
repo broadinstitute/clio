@@ -124,7 +124,6 @@ class ServerServiceSpec
       .deepMerge(metadata.asJson)
 
     val index = new ElasticsearchIndex[ModelMockIndex](
-      "mock",
       ModelMockIndex(),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
