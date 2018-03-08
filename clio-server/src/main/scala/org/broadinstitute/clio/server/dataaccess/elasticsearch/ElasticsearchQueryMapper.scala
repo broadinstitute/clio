@@ -2,6 +2,7 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import com.sksamuel.elastic4s.http.ElasticDsl.boolQuery
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
+import io.circe.Json
 import org.broadinstitute.clio.util.generic.{CaseClassMapperWithTypes, FieldMapper}
 
 import scala.reflect.ClassTag
@@ -45,6 +46,24 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
       }
     }
     boolQuery must queries
+  }
+
+  private val keysToDrop =
+    Set(
+      ElasticsearchIndex.UpsertIdElasticsearchName,
+      ElasticsearchIndex.EntityIdElasticsearchName
+    )
+
+  /**
+    * Munges the query result document into the appropriate form for the query output.
+    *
+    * @param document A query result document.
+    * @return The query output.
+    */
+  def toQueryOutput(document: Json): Json = {
+    document.mapObject(_.filterKeys({ key =>
+      !keysToDrop.contains(key)
+    }))
   }
 
   /**
