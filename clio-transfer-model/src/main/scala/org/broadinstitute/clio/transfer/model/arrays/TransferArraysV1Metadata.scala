@@ -165,4 +165,11 @@ case class TransferArraysV1Metadata(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
     )
+
+  override def withDocumentStatus(
+    documentStatus: Option[DocumentStatus]
+  ): TransferArraysV1Metadata =
+    this.copy(
+      documentStatus = documentStatus
+    )
 }
