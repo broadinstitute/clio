@@ -63,6 +63,8 @@ case object GvcfIndex
   override val urlSegment: String = "gvcf"
   override val name: String = "Gvcf"
   override val commandName: String = "gvcf"
+  // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
+  // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
   override val elasticsearchIndexName = "gvcf-v2"
 }
 
@@ -89,6 +91,8 @@ case object WgsCramIndex
   override val urlSegment: String = "wgscram"
   override val name: String = "WgsCram"
   override val commandName: String = "wgs-cram"
+  // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
+  // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
   override val elasticsearchIndexName: String = "wgs-cram-v2"
 }
 

@@ -98,16 +98,12 @@ object ElasticsearchIndex extends ModelAutoDerivation {
     )
 
   implicit val Gvcf: ElasticsearchIndex[GvcfIndex.type] =
-    // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
-    // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
     new ElasticsearchIndex(
       GvcfIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
   implicit val WgsCram: ElasticsearchIndex[WgsCramIndex.type] =
-    // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
-    // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
     new ElasticsearchIndex(
       WgsCramIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
