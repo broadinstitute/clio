@@ -192,7 +192,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
                 s"""The old files associated with $prettyKey were not able to be deleted.
                  |Please manually delete the old files at:
                  |${notDeleted.mkString(",\n")}
-                 |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
+                 |If you cannot delete the files, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
               )
             }
           })
