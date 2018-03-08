@@ -59,7 +59,8 @@ class RecoveryIntegrationSpec
       ubamPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     ).asJson
-    val upsertIdJson = Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
+    val upsertIdJson =
+      Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
     val entityIdJson = Map(
       ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
         s"$flowcellBarcode.$i.$libraryName.${location.entryName}"
@@ -83,7 +84,8 @@ class RecoveryIntegrationSpec
       gvcfPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     ).asJson
-    val upsertIdJson = Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
+    val upsertIdJson =
+      Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
     val entityIdJson = Map(
       ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
         s"${location.entryName}.$project.$sampleAlias.$i"
@@ -107,7 +109,8 @@ class RecoveryIntegrationSpec
       cramPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     ).asJson
-    val upsertIdJson = Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
+    val upsertIdJson =
+      Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
     val entityIdJson = Map(
       ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
         s"${location.entryName}.$project.$sampleAlias.$i"
@@ -222,14 +225,22 @@ class RecoveryIntegrationSpec
         _ <- recoveryDoneFuture
         docs <- runClient(queryCommand, "--location", location.entryName).mapTo[Json]
       } yield {
-        // Sort before comparing so we can do a pairwise comparison, which saves a ton of time.
-        val sortedActual = docs.asArray.value.sorted
-
-        // Remove null & internal values before comparing; already sorted by construction.
-        val sortedExpected = expected
-          .map(_.mapObject(_.filter {
+        // Helper function for filtering out values we don't care about matching.
+        def mapper(json: Json): Json = {
+          json.mapObject(_.filter({
             case (k, v) => !v.isNull && !keysToDrop.contains(k)
           }))
+        }
+
+        // Sort before comparing so we can do a pairwise comparison, which saves a ton of time.
+        // Remove null and internal values before comparing.
+        val sortedActual = docs.asArray.value.map(mapper).sorted
+
+        // Already sorted by construction. Remove null and internal values here too.
+        val sortedExpected = expected.map(mapper)
+//          .map(_.mapObject(_.filter({
+//            case (k, v) => !v.isNull && !keysToDrop.contains(k)
+//          })))
 
         sortedActual should contain theSameElementsInOrderAs sortedExpected
       }
