@@ -12,6 +12,7 @@ import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     extends Executor[Option[UpsertId]] {
@@ -143,8 +144,15 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
 
       // VERY IMPORTANT that this is lazy; we cannot delete anything
       // until Clio has been updated successfully.
-      lazy val googleDeletes = oldPaths.map { oldPath =>
-        Future(deleteGoogleObject(oldPath, ioUtil))
+      lazy val googleDeletes: Iterable[Future[Either[URI, Unit]]] = oldPaths.map {
+        oldPath =>
+          Future(deleteGoogleObject(oldPath, ioUtil)).transformWith {
+            case Success(_) =>
+              Future.successful(Right(()))
+            case Failure(ex) =>
+              logger.error(s"Failed to delete ${oldPath.toString}", ex)
+              Future.successful(Left(oldPath))
+          }
       }
 
       for {
@@ -175,16 +183,19 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
           }
         _ <- Future
           .sequence(googleDeletes)
-          .recover {
-            case ex =>
+          .map((moves: Iterable[Either[URI, Unit]]) => {
+            if (moves.forall(_.isRight)) {
+              logger.info("All objects were successfully deleted in gcloud.")
+            } else {
+              val notDeleted = moves.filter(_.isLeft)
               throw new RuntimeException(
                 s"""The old files associated with $prettyKey were not able to be deleted.
-                   |Please manually delete the old files at:
-                   |${oldPaths.mkString(",\n")}
-                   |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin,
-                ex
+                 |Please manually delete the old files at:
+                 |${notDeleted.mkString(",\n")}
+                 |If you cannot delete the files, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
               )
-          }
+            }
+          })
       } yield {
         val sourcesAsString = movesToPerform.keys.mkString("'", "', '", "'")
         logger.info(s"Successfully moved $sourcesAsString to '$destination'")
