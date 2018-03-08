@@ -210,13 +210,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
         queryResponse should be(Seq(expected))
 
         val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.WgsUbam)
-        getStringByName(storedDocument, "flowcellBarcode") should be(
+        getStringByName(storedDocument, "flowcell_barcode") should be(
           expected.flowcellBarcode
         )
         getIntByName(storedDocument, "lane") should be(expected.lane)
-        getStringByName(storedDocument, "libraryName") should be(expected.libraryName)
+        getStringByName(storedDocument, "library_name") should be(expected.libraryName)
         getLocation(storedDocument) should be(expected.location)
-        getStringByName(storedDocument, "project") should be(expected.project)
+        getStringByName(storedDocument, "project") should be(expected.project.get)
       }
     }
   }
@@ -244,10 +244,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      getStringByName(storedDocument1, "project") should be(Some("testProject1"))
+      getStringByName(storedDocument1, "project") should be("testProject1")
 
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
-      getStringByName(storedDocument2, "project") should be(Some("testProject2"))
+      getStringByName(storedDocument2, "project") should be("testProject2")
 
       storedDocument1
         .deepMerge(
@@ -765,7 +765,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      getStringByName(storedDocument1, "project") should be(Some("testProject1"))
+      getStringByName(storedDocument1, "project") should be("testProject1")
     }
   }
 
@@ -796,8 +796,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
-      getStringByName(storedDocument1, "project") should be(Some("testProject1"))
-      getStringByName(storedDocument2, "sampleAlias") should be(Some("sampleAlias1"))
+      getStringByName(storedDocument1, "project") should be("testProject1")
+      getStringByName(storedDocument2, "sample_alias") should be("sampleAlias1")
     }
   }
 
@@ -825,7 +825,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       }
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      getStringByName(storedDocument1, "project") should be(Some("testProject1"))
+      getStringByName(storedDocument1, "project") should be("testProject1")
     }
   }
 }
