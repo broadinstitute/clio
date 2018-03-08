@@ -47,7 +47,7 @@ class MoveGvcfSpec extends BaseClientSpec {
     }
   }
 
-  it should "throw an exception if Clio can't upsert the new gvcf" in {
+  it should "throw an exception if Clio can't upsert a new gvcf record" in {
     val mockIoUtil = new MockIoUtil
     mockIoUtil.putFileInCloud(testGvcfCloudSourcePath)
     recoverToSucceededIf[RuntimeException] {
