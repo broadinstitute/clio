@@ -3,26 +3,34 @@ package org.broadinstitute.clio.server.service
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import org.broadinstitute.clio.server.{ClioApp, MockClioApp}
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ClioDocument, ElasticsearchIndex}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ClioDocument,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.ClassTag
 
-abstract class MockIndexService[TI <: TransferIndex, D <: ClioDocument: ElasticsearchIndex](
+abstract class MockIndexService[
+  TI <: TransferIndex,
+  D <: ClioDocument: ElasticsearchIndex
+](
   app: ClioApp = MockClioApp(),
   override val transferIndex: TI,
   elasticsearchIndex: ElasticsearchIndex[D]
 )(
   implicit
-  executionContext: ExecutionContext
+  executionContext: ExecutionContext,
+  documentTag: ClassTag[D]
 ) extends IndexService(
-  PersistenceService(app),
-  SearchService(app),
-  transferIndex,
-  elasticsearchIndex
-) {
+      PersistenceService(app),
+      SearchService(app),
+      transferIndex,
+      elasticsearchIndex
+    ) {
   val queryCalls: ArrayBuffer[transferIndex.QueryInputType]
   val queryAllCalls: ArrayBuffer[transferIndex.QueryInputType]
   val upsertCalls: ArrayBuffer[(transferIndex.KeyType, transferIndex.MetadataType)]
