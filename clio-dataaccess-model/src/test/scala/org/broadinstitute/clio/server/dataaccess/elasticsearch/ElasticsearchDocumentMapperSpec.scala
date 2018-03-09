@@ -1,8 +1,8 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import org.broadinstitute.clio.util.model.UpsertId
 import org.broadinstitute.clio.transfer.model.{ModelMockKey, ModelMockMetadata}
 import org.broadinstitute.clio.util.json.DecodingUtil
+import org.broadinstitute.clio.util.model.UpsertId
 import org.scalatest.{FlatSpec, Matchers}
 
 class ElasticsearchDocumentMapperSpec extends FlatSpec with Matchers with DecodingUtil {

@@ -31,16 +31,8 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
     }
 
     it should "fields for v1 document" in {
-      // Snake-case-ify the bookkeeping fields.
-      val bookkeeping =
-        Seq(
-          ElasticsearchIndex.UpsertIdElasticsearchName,
-          ElasticsearchIndex.EntityIdElasticsearchName
-        ).map { name =>
-          keywordField(name.replaceAll("([A-Z])", "_$1").toLowerCase)
-        }
-
-      index.fields should contain theSameElementsAs bookkeeping ++ Seq(
+      index.fields should contain theSameElementsAs ElasticsearchIndex.BookkeepingNames
+        .map(keywordField) ++ Seq(
         dateField("mock_field_date"),
         doubleField("mock_field_double"),
         intField("mock_field_int"),
@@ -66,18 +58,10 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
     }
 
     it should "fields for v2 document" in {
-      // Snake-case-ify the bookkeeping fields.
-      val bookkeeping =
-        Seq(
-          ElasticsearchIndex.UpsertIdElasticsearchName,
-          ElasticsearchIndex.EntityIdElasticsearchName
-        ).map { name =>
-          keywordField(ElasticsearchUtil.toElasticsearchName(name))
-        }
-
       import ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords.TextExactMatchFieldName
 
-      index.fields should contain theSameElementsAs bookkeeping ++ Seq(
+      index.fields should contain theSameElementsAs ElasticsearchIndex.BookkeepingNames
+        .map(keywordField) ++ Seq(
         dateField("mock_field_date"),
         doubleField("mock_field_double"),
         intField("mock_field_int"),

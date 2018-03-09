@@ -149,7 +149,7 @@ lazy val `clio-integration-test` = project
   .dependsOn(
     `clio-client`,
     `clio-dataaccess-model`,
-    `clio-util` % "compile->compile;it->test"
+    `clio-util` % "it->compile,test"
   )
   .enablePlugins(ClioIntegrationTestPlugin)
   .disablePlugins(AssemblyPlugin)

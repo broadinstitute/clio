@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
-import io.circe.{Encoder, Json}
 import io.circe.syntax._
+import io.circe.{Encoder, Json}
 import org.broadinstitute.clio.transfer.model.TransferMetadata
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
