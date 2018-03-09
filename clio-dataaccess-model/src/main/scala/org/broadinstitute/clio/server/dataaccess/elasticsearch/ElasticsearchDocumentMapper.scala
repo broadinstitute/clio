@@ -24,20 +24,20 @@ class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata <: TransferM
     * @return
     */
   def document(key: Key, metadata: Metadata): Json = {
-    val upsertIdMap = Map(
-      ElasticsearchIndex.UpsertIdElasticsearchName -> genId()
-    )
-    val entityIdMap = Map(
-      ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
-        key.productIterator.mkString(".")
+    val bookkeeping = Json.fromFields(
+      Seq(
+        ElasticsearchIndex.UpsertIdElasticsearchName -> genId().asJson,
+        ElasticsearchIndex.EntityIdElasticsearchName -> key.productIterator
+          .mkString(".")
+          .asJson
       )
     )
 
     val keyJson = key.asJson
     val metadataJson = metadata.asJson
-    val upsertIdJson = upsertIdMap.asJson
-    val entityIdJson = entityIdMap.asJson
-    keyJson.deepMerge(metadataJson).deepMerge(upsertIdJson).deepMerge(entityIdJson)
+    keyJson
+      .deepMerge(metadataJson)
+      .deepMerge(bookkeeping)
   }
 }
 
