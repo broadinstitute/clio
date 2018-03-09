@@ -32,9 +32,9 @@ class ElasticsearchDocumentMapperSpec extends FlatSpec with Matchers with Decodi
     val document = mapper.document(key, metadata)
     ElasticsearchIndex.getUpsertId(document) should be(expectedId)
     ElasticsearchIndex.getEntityId(document) should be(s"$keyLong.$keyString")
-    getDoubleByName(document, "mock_field_double") should be(mockFieldDouble.get)
-    getIntByName(document, "mock_field_int") should be(mockFieldInt.get)
-    getLongByName(document, "mock_key_long") should be(keyLong)
-    getStringByName(document, "mock_key_string") should be(keyString)
+    getByName[Double](document, "mock_field_double") should be(mockFieldDouble.get)
+    getByName[Int](document, "mock_field_int") should be(mockFieldInt.get)
+    getByName[Long](document, "mock_key_long") should be(keyLong)
+    getByName[String](document, "mock_key_string") should be(keyString)
   }
 }

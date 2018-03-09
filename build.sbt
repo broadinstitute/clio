@@ -91,7 +91,7 @@ lazy val `clio-transfer-model` = project
   *   2. Auto-derived elasticsearch index models for our documents.
   */
 lazy val `clio-dataaccess-model` = project
-  .dependsOn(`clio-util`, `clio-transfer-model`)
+  .dependsOn(`clio-util` % "compile->compile;test->test", `clio-transfer-model`)
   .settings(commonSettings)
   .disablePlugins(AssemblyPlugin)
   .settings(libraryDependencies ++= Dependencies.DataaccessModelDependencies)

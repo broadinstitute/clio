@@ -115,9 +115,9 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation 
         }
 
       ElasticsearchIndex.getUpsertId(firstUpdate) should be(responseAs[UpsertId])
-      getStringByName(firstUpdate, "cram_md5") should be("abcgithashdef")
-      getStringByName(firstUpdate, "notes") should be("some note")
-      getUriByName(firstUpdate, "cram_path") should be(
+      getByName[String](firstUpdate, "cram_md5") should be("abcgithashdef")
+      getByName[String](firstUpdate, "notes") should be("some note")
+      getByName[URI](firstUpdate, "cram_path") should be(
         URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
       )
     }
@@ -151,10 +151,12 @@ class WgsCramWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation 
         .flatMap(_._1.headOption)
         .apply(1)
 
-      getStringByName(secondUpdate, "cram_md5") should be("abcgithashdef")
-      getStringByName(secondUpdate, "notes") should be("some note")
-      getDocumentStatus(secondUpdate) should be(DocumentStatus.Deleted)
-      getUriByName(secondUpdate, "cram_path") should be(URI.create(""))
+      getByName[String](secondUpdate, "cram_md5") should be("abcgithashdef")
+      getByName[String](secondUpdate, "notes") should be("some note")
+      getByName[DocumentStatus](secondUpdate, "document_status") should be(
+        DocumentStatus.Deleted
+      )
+      getByName[URI](secondUpdate, "cram_path") should be(URI.create(""))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement

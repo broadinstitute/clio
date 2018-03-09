@@ -119,11 +119,11 @@ trait GvcfTests {
         outputs should be(Seq(expected))
 
         val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.Gvcf)
-        getLocation(storedDocument) should be(expected.location)
-        getStringByName(storedDocument, "project") should be(expected.project)
-        getStringByName(storedDocument, "sample_alias") should be(expected.sampleAlias)
-        getIntByName(storedDocument, "version") should be(expected.version)
-        getUriByName(storedDocument, "gvcf_path") should be(expected.gvcfPath.get)
+        getByName[Location](storedDocument, "location") should be(expected.location)
+        getByName[String](storedDocument, "project") should be(expected.project)
+        getByName[String](storedDocument, "sample_alias") should be(expected.sampleAlias)
+        getByName[Int](storedDocument, "version") should be(expected.version)
+        getByName[URI](storedDocument, "gvcf_path") should be(expected.gvcfPath.get)
       }
     }
   }
@@ -152,10 +152,10 @@ trait GvcfTests {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
-      getUriByName(storedDocument1, "gvcf_path") should be(gvcfUri1.get)
+      getByName[URI](storedDocument1, "gvcf_path") should be(gvcfUri1.get)
 
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)
-      getUriByName(storedDocument2, "gvcf_path") should be(gvcfUri2.get)
+      getByName[URI](storedDocument2, "gvcf_path") should be(gvcfUri2.get)
 
       storedDocument1
         .deepMerge(
@@ -755,7 +755,7 @@ trait GvcfTests {
       )
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
-      getStringByName(storedDocument1, "notes") should be("I'm a note")
+      getByName[String](storedDocument1, "notes") should be("I'm a note")
     }
   }
 
@@ -780,8 +780,8 @@ trait GvcfTests {
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)
-      getStringByName(storedDocument1, "notes") should be("I'm a note")
-      getIntByName(storedDocument2, "gvcf_size") should be(12345)
+      getByName[String](storedDocument1, "notes") should be("I'm a note")
+      getByName[Int](storedDocument2, "gvcf_size") should be(12345)
     }
   }
 
@@ -807,7 +807,7 @@ trait GvcfTests {
       }
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
-      getStringByName(storedDocument1, "notes") should be("I'm a note")
+      getByName[String](storedDocument1, "notes") should be("I'm a note")
     }
   }
 }
