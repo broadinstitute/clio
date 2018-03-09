@@ -2,7 +2,6 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import io.circe.syntax._
 import io.circe.{Encoder, Json}
-import org.broadinstitute.clio.transfer.model.TransferMetadata
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -12,10 +11,9 @@ import org.broadinstitute.clio.util.model.UpsertId
   * @tparam Key      The type of the TransferKey.
   * @tparam Metadata The type of the TransferMetadata.
   */
-class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata <: TransferMetadata[
-  Metadata
-]: Encoder](genId: () => UpsertId)
-    extends ModelAutoDerivation {
+class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata: Encoder](
+  genId: () => UpsertId
+) extends ModelAutoDerivation {
 
   /**
     *
@@ -43,7 +41,7 @@ class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata <: TransferM
 
 object ElasticsearchDocumentMapper {
 
-  def apply[Key <: Product: Encoder, Metadata <: TransferMetadata[Metadata]: Encoder]: ElasticsearchDocumentMapper[
+  def apply[Key <: Product: Encoder, Metadata: Encoder]: ElasticsearchDocumentMapper[
     Key,
     Metadata
   ] = {

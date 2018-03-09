@@ -9,7 +9,7 @@ class ElasticsearchDocumentMapperSpec
     extends FlatSpec
     with Matchers
     with ModelAutoDerivation {
-  behavior of "AutoElasticsearchDocumentMapper"
+  behavior of "ElasticsearchDocumentMapper"
 
   val expectedId: UpsertId = UpsertId.nextId()
 
