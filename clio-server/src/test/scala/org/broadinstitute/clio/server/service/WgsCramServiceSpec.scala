@@ -2,8 +2,6 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 
-import io.circe.Json
-import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentWgsCram,
   ElasticsearchIndex
@@ -52,9 +50,5 @@ class WgsCramServiceSpec
     originalDocument.copy(
       upsertId = upsertId
     )
-  }
-
-  def documentToJson(document: DocumentWgsCram): Json = {
-    document.asJson(index.encoder)
   }
 }

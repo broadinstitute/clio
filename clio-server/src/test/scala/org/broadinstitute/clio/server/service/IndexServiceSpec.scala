@@ -1,7 +1,6 @@
 package org.broadinstitute.clio.server.service
 
 import akka.stream.scaladsl.Sink
-import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
@@ -10,6 +9,7 @@ import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
+import io.circe.syntax._
 
 abstract class IndexServiceSpec[
   TI <: TransferIndex,
@@ -44,7 +44,6 @@ abstract class IndexServiceSpec[
   ): IndexService[TI, D]
 
   def copyDocumentWithUpsertId(originalDocument: D, upsertId: UpsertId): D
-  def documentToJson(document: D): Json
 
   behavior of specificService
 
@@ -104,7 +103,7 @@ abstract class IndexServiceSpec[
 
       memoryPersistenceDAO.writeCalls should be(Seq((expectedDocument, index)))
       memorySearchDAO.updateCalls should be(
-        Seq((Seq(documentToJson(expectedDocument)), index))
+        Seq((Seq(expectedDocument.asJson(index.encoder)), index))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

@@ -2,8 +2,6 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 
-import io.circe.Json
-import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentGvcf,
   ElasticsearchIndex
@@ -52,9 +50,5 @@ class GvcfServiceSpec
     originalDocument.copy(
       upsertId = upsertId
     )
-  }
-
-  def documentToJson(document: DocumentGvcf): Json = {
-    document.asJson(index.encoder)
   }
 }

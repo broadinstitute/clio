@@ -1,7 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import io.circe.Json
-import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   DocumentWgsUbam,
   ElasticsearchIndex
@@ -45,9 +43,5 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
     originalDocument.copy(
       upsertId = upsertId
     )
-  }
-
-  def documentToJson(document: DocumentWgsUbam): Json = {
-    document.asJson(index.encoder)
   }
 }
