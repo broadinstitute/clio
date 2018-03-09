@@ -146,14 +146,12 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
       // until Clio has been updated successfully.
       lazy val googleDeletes: Iterable[Future[Either[URI, Unit]]] = oldPaths.map {
         oldPath =>
-          Future(deleteGoogleObject(oldPath, ioUtil)).transformWith { del =>
-            del match {
-              case Success(_) =>
-                Future.successful(Right(()))
-              case Failure(ex) =>
-                logger.error(s"Failed to delete ${oldPath.toString}", ex)
-                Future.successful(Left(oldPath))
-            }
+          Future(deleteGoogleObject(oldPath, ioUtil)).transformWith {
+            case Success(_) =>
+              Future.successful(Right(()))
+            case Failure(ex) =>
+              logger.error(s"Failed to delete ${oldPath.toString}", ex)
+              Future.successful(Left(oldPath))
           }
       }
 
