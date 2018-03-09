@@ -70,9 +70,10 @@ class ServerService private (
           val id = ElasticsearchIndex.getEntityId(json)
           val newJson = idMap.get(id) match {
             case Some(oldJson) => {
+              val oldId = ElasticsearchIndex.getUpsertId(oldJson)
+              val newId = ElasticsearchIndex.getUpsertId(json)
               logger.debug(
-                s"Merging upserts ${ElasticsearchIndex.getUpsertId(oldJson)} and ${ElasticsearchIndex
-                  .getUpsertId(json)} for id $id"
+                s"Merging upserts $oldId and $newId for id $id"
               )
               oldJson.deepMerge(json)
             }
