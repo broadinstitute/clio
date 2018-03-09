@@ -104,8 +104,7 @@ class PersistenceDAOSpec
         ).asJson
       )
       .deepMerge(
-        Map(
-          ElasticsearchIndex.EntityIdElasticsearchName -> s"$key2Long.$key2String").asJson
+        Map(ElasticsearchIndex.EntityIdElasticsearchName -> s"$key2Long.$key2String").asJson
       )
 
     for {

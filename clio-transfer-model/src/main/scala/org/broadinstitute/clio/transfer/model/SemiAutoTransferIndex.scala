@@ -125,4 +125,5 @@ case object ArraysIndex
   override val urlSegment: String = "arrays"
   override val name: String = "Arrays"
   override val commandName: String = "arrays"
+  override val elasticsearchIndexName: String = "arrays"
 }
