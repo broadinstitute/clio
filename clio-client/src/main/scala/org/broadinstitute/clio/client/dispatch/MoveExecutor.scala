@@ -146,12 +146,14 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
       // until Clio has been updated successfully.
       lazy val googleDeletes: Iterable[Future[Either[URI, Unit]]] = oldPaths.map {
         oldPath =>
-          Future(deleteGoogleObject(oldPath, ioUtil)).transformWith {
-            case Success(_) =>
-              Future.successful(Right(()))
-            case Failure(ex) =>
-              logger.error(s"Failed to delete ${oldPath.toString}", ex)
-              Future.successful(Left(oldPath))
+          Future(deleteGoogleObject(oldPath, ioUtil)).transformWith { del =>
+            del match {
+              case Success(_) =>
+                Future.successful(Right(()))
+              case Failure(ex) =>
+                logger.error(s"Failed to delete ${oldPath.toString}", ex)
+                Future.successful(Left(oldPath))
+            }
           }
       }
 
@@ -187,7 +189,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
             if (moves.forall(_.isRight)) {
               logger.info("All objects were successfully deleted in gcloud.")
             } else {
-              val notDeleted = moves.filter(_.isLeft)
+              val notDeleted = moves.filter(_.isLeft).map(_.left.get)
               throw new RuntimeException(
                 s"""The old files associated with $prettyKey were not able to be deleted.
                  |Please manually delete the old files at:
