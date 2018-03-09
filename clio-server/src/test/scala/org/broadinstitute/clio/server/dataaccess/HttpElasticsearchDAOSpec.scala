@@ -10,6 +10,7 @@ import com.sksamuel.elastic4s.delete.DeleteByIdDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.CreateIndexDefinition
 import com.sksamuel.elastic4s.searches.SearchDefinition
+import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.RequestException
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
@@ -119,20 +120,20 @@ class HttpElasticsearchDAOSpec
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
+    def generateBookkeeping(s: String): Json =
+      Map(
+        ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
+      ).asJson
+        .deepMerge(
+          Map(
+            ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(s)
+          ).asJson
+        )
+
     val documents =
       (1 to 4)
         .map("document-" + _)
-        .map(
-          s =>
-            Map(
-              ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
-            ).asJson
-              .deepMerge(
-                Map(
-                  ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(s)
-                ).asJson
-            )
-        )
+        .map(generateBookkeeping)
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
