@@ -10,10 +10,7 @@ import akka.testkit.TestKit
 import better.files.File
 import com.bettercloud.vault.{Vault, VaultConfig}
 import com.google.cloud.storage.StorageOptions
-import com.google.cloud.storage.contrib.nio.{
-  CloudStorageConfiguration,
-  CloudStorageFileSystem
-}
+import com.google.cloud.storage.contrib.nio.{CloudStorageConfiguration, CloudStorageFileSystem}
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
@@ -26,7 +23,7 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.client.{ClioClient, ClioClientConfig}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.util.json.DecodingUtil
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
 import org.elasticsearch.client.RestClient
 import org.scalatest.enablers.Existence
@@ -47,7 +44,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     with Matchers
     with ErrorAccumulatingCirceSupport
     with LazyLogging
-    with DecodingUtil {
+    with ModelAutoDerivation {
 
   behavior of clioDescription
 

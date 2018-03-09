@@ -7,22 +7,15 @@ import akka.stream.scaladsl.Sink
 import io.circe.Json
 import io.circe.syntax._
 import io.circe.parser._
-import org.broadinstitute.clio.transfer.model.{
-  ModelMockIndex,
-  ModelMockKey,
-  ModelMockMetadata
-}
+import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockKey, ModelMockMetadata}
 import org.broadinstitute.clio.server.TestKitSuite
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchFieldMapper,
-  ElasticsearchIndex
-}
-import org.broadinstitute.clio.util.json.DecodingUtil
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchFieldMapper, ElasticsearchIndex}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.Future
 
-class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") with DecodingUtil {
+class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") with ModelAutoDerivation{
   behavior of "PersistenceDAO"
 
   implicit val index: ElasticsearchIndex[ModelMockIndex] = new ElasticsearchIndex(
@@ -209,7 +202,7 @@ class PersistenceDAOSpec extends TestKitSuite("PersistenceDAOSpec") with Decodin
           }
         }
         result <- dao
-          .getAllSince(lastKnown.map(ElasticsearchIndex.getUpsertId(_)))
+          .getAllSince(lastKnown.map(ElasticsearchIndex.getUpsertId))
           .runWith(Sink.seq)
       } yield {
         result should contain theSameElementsInOrderAs documents.slice(

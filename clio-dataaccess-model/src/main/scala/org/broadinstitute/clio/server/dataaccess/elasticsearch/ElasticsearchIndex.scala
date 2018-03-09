@@ -5,7 +5,7 @@ import java.time.format.DateTimeFormatter
 
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
-import io.circe.Json
+import io.circe.{Decoder, Json}
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.transfer.model.{GvcfIndex, WgsCramIndex, WgsUbamIndex}
 import org.broadinstitute.clio.util.generic.FieldMapper
@@ -79,14 +79,14 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   )
 
   def getEntityId(json: Json): String =
-    json.hcursor
-      .get[String](EntityIdElasticsearchName)
-      .fold(throw _, identity)
+    getByName[String](json, "entity_id")
 
   def getUpsertId(json: Json): UpsertId = {
-    json.hcursor
-      .get[UpsertId](UpsertIdElasticsearchName)
-      .fold(throw _, identity)
+    getByName[UpsertId](json, "upsert_id")
+  }
+
+  def getByName[A: Decoder](json: Json, name: String): A = {
+    json.hcursor.get[A](name).fold(throw _, identity)
   }
 
   /** Format the directory path for the indexed meta-data files. */

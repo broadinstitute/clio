@@ -1,11 +1,11 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import org.broadinstitute.clio.transfer.model.{ModelMockKey, ModelMockMetadata}
-import org.broadinstitute.clio.util.json.DecodingUtil
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 import org.scalatest.{FlatSpec, Matchers}
 
-class ElasticsearchDocumentMapperSpec extends FlatSpec with Matchers with DecodingUtil {
+class ElasticsearchDocumentMapperSpec extends FlatSpec with Matchers with ModelAutoDerivation {
   behavior of "AutoElasticsearchDocumentMapper"
 
   val expectedId: UpsertId = UpsertId.nextId()
@@ -32,9 +32,9 @@ class ElasticsearchDocumentMapperSpec extends FlatSpec with Matchers with Decodi
     val document = mapper.document(key, metadata)
     ElasticsearchIndex.getUpsertId(document) should be(expectedId)
     ElasticsearchIndex.getEntityId(document) should be(s"$keyLong.$keyString")
-    getByName[Double](document, "mock_field_double") should be(mockFieldDouble.get)
-    getByName[Int](document, "mock_field_int") should be(mockFieldInt.get)
-    getByName[Long](document, "mock_key_long") should be(keyLong)
-    getByName[String](document, "mock_key_string") should be(keyString)
+    ElasticsearchIndex.getByName[Double](document, "mock_field_double") should be(mockFieldDouble.get)
+    ElasticsearchIndex.getByName[Int](document, "mock_field_int") should be(mockFieldInt.get)
+    ElasticsearchIndex.getByName[Long](document, "mock_key_long") should be(keyLong)
+    ElasticsearchIndex.getByName[String](document, "mock_key_string") should be(keyString)
   }
 }

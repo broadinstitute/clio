@@ -109,9 +109,9 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation 
         }
 
       ElasticsearchIndex.getUpsertId(firstUpdate) should be(responseAs[UpsertId])
-      getByName[String](firstUpdate, "project") should be("G123")
-      getByName[String](firstUpdate, "sample_alias") should be("sample1")
-      getByName[URI](firstUpdate, "ubam_path") should be(
+      ElasticsearchIndex.getByName[String](firstUpdate, "project") should be("G123")
+      ElasticsearchIndex.getByName[String](firstUpdate, "sample_alias") should be("sample1")
+      ElasticsearchIndex.getByName[URI](firstUpdate, "ubam_path") should be(
         URI.create("gs://path/ubam.bam")
       )
     }
@@ -145,12 +145,12 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation 
         .flatMap(_._1.headOption)
         .apply(1)
 
-      getByName[String](secondUpdate, "project") should be("G123")
-      getByName[String](secondUpdate, "sample_alias") should be("sample1")
-      getByName[DocumentStatus](secondUpdate, "document_status") should be(
+      ElasticsearchIndex.getByName[String](secondUpdate, "project") should be("G123")
+      ElasticsearchIndex.getByName[String](secondUpdate, "sample_alias") should be("sample1")
+      ElasticsearchIndex.getByName[DocumentStatus](secondUpdate, "document_status") should be(
         DocumentStatus.Deleted
       )
-      getByName[URI](secondUpdate, "ubam_path") should be(URI.create(""))
+      ElasticsearchIndex.getByName[URI](secondUpdate, "ubam_path") should be(URI.create(""))
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
