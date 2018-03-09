@@ -187,7 +187,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
             if (moves.forall(_.isRight)) {
               logger.info("All objects were successfully deleted in gcloud.")
             } else {
-              val notDeleted = moves.filter(_.isLeft)
+              val notDeleted = moves.filter(_.isLeft).flatMap(_.left.toOption)
               throw new RuntimeException(
                 s"""The old files associated with $prettyKey were not able to be deleted.
                  |Please manually delete the old files at:
