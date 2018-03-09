@@ -16,6 +16,5 @@ class GvcfService(
     extends IndexService[GvcfIndex.type, DocumentGvcf](
       persistenceService,
       searchService,
-      GvcfIndex,
-      ElasticsearchIndex.Gvcf
+      GvcfIndex
     )

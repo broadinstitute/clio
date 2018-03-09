@@ -1,9 +1,6 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentWgsCram,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsCram
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1Key,
@@ -18,8 +15,7 @@ import scala.concurrent.ExecutionContext
 
 class MockWgsCramService()(implicit executionContext: ExecutionContext)
     extends MockIndexService[WgsCramIndex.type, DocumentWgsCram](
-      transferIndex = WgsCramIndex,
-      elasticsearchIndex = ElasticsearchIndex.WgsCram
+      transferIndex = WgsCramIndex
     ) {
 
   val queryCalls: ArrayBuffer[TransferWgsCramV1QueryInput] =

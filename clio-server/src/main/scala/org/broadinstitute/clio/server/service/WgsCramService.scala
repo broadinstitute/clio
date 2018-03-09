@@ -16,6 +16,5 @@ class WgsCramService(
     extends IndexService[WgsCramIndex.type, DocumentWgsCram](
       persistenceService,
       searchService,
-      WgsCramIndex,
-      ElasticsearchIndex.WgsCram
+      WgsCramIndex
     )

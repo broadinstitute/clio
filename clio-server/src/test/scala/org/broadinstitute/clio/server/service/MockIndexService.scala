@@ -19,8 +19,7 @@ abstract class MockIndexService[
   D <: ClioDocument: ElasticsearchIndex
 ](
   app: ClioApp = MockClioApp(),
-  override val transferIndex: TI,
-  elasticsearchIndex: ElasticsearchIndex[D]
+  override val transferIndex: TI
 )(
   implicit
   executionContext: ExecutionContext,
@@ -28,8 +27,7 @@ abstract class MockIndexService[
 ) extends IndexService(
       PersistenceService(app),
       SearchService(app),
-      transferIndex,
-      elasticsearchIndex
+      transferIndex
     ) {
   val queryCalls: ArrayBuffer[transferIndex.QueryInputType]
   val queryAllCalls: ArrayBuffer[transferIndex.QueryInputType]

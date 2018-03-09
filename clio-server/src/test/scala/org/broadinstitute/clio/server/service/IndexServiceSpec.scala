@@ -12,7 +12,8 @@ import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 abstract class IndexServiceSpec[
-  TI <: TransferIndex, D <: ClioDocument: ElasticsearchIndex
+  TI <: TransferIndex,
+  D <: ClioDocument: ElasticsearchIndex
 ](specificService: String)
     extends TestKitSuite(specificService + "Spec") {
 
@@ -29,9 +30,9 @@ abstract class IndexServiceSpec[
     getService(persistenceService, searchService)
   }
 
-  val index: ElasticsearchIndex[D]
-  val dummyKey: indexService.transferIndex.KeyType
-  val dummyInput: indexService.transferIndex.QueryInputType
+  def index: ElasticsearchIndex[D]
+  def dummyKey: indexService.transferIndex.KeyType
+  def dummyInput: indexService.transferIndex.QueryInputType
 
   def getDummyMetadata(
     documentStatus: Option[DocumentStatus]
@@ -41,6 +42,7 @@ abstract class IndexServiceSpec[
     persistenceService: PersistenceService,
     searchService: SearchService
   ): IndexService[TI, D]
+
   def copyDocumentWithUpsertId(originalDocument: D, upsertId: UpsertId): D
   def documentToJson(document: D): Json
 
@@ -48,13 +50,12 @@ abstract class IndexServiceSpec[
 
   it should "upsertMetadata" in {
     clearMemory()
-    upsertMetadataTest(None, Option(DocumentStatus.Normal))
+    upsertMetadataTest(None)
   }
 
   it should "upsertMetadata with document_status explicitly set to Normal" in {
     clearMemory()
     upsertMetadataTest(
-      Option(DocumentStatus.Normal),
       Option(DocumentStatus.Normal)
     )
   }
@@ -62,7 +63,6 @@ abstract class IndexServiceSpec[
   it should "upsertMetadata with document_status explicitly set to Deleted" in {
     clearMemory()
     upsertMetadataTest(
-      Option(DocumentStatus.Deleted),
       Option(DocumentStatus.Deleted)
     )
   }
@@ -84,10 +84,10 @@ abstract class IndexServiceSpec[
   }
 
   private def upsertMetadataTest(
-    documentStatus: Option[DocumentStatus],
-    expectedDocumentStatus: Option[DocumentStatus]
+    documentStatus: Option[DocumentStatus]
   ) = {
     val transferMetadata = getDummyMetadata(documentStatus)
+    val expectedDocumentStatus = Option(documentStatus.getOrElse(DocumentStatus.Normal))
     for {
       returnedUpsertId <- indexService.upsertMetadata(
         dummyKey,

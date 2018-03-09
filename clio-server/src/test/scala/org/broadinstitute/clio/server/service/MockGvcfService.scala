@@ -1,9 +1,6 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentGvcf,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentGvcf
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Key,
@@ -18,8 +15,7 @@ import scala.concurrent.ExecutionContext
 
 class MockGvcfService()(implicit executionContext: ExecutionContext)
     extends MockIndexService[GvcfIndex.type, DocumentGvcf](
-      transferIndex = GvcfIndex,
-      elasticsearchIndex = ElasticsearchIndex.Gvcf
+      transferIndex = GvcfIndex
     ) {
 
   val queryCalls: ArrayBuffer[TransferGvcfV1QueryInput] =

@@ -1,9 +1,6 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentWgsUbam,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsUbam
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1Key,
@@ -18,8 +15,7 @@ import scala.concurrent.ExecutionContext
 
 class MockWgsUbamService()(implicit executionContext: ExecutionContext)
     extends MockIndexService[WgsUbamIndex.type, DocumentWgsUbam](
-      transferIndex = WgsUbamIndex,
-      elasticsearchIndex = ElasticsearchIndex.WgsUbam
+      transferIndex = WgsUbamIndex
     ) {
 
   val queryCalls: ArrayBuffer[TransferUbamV1QueryInput] =

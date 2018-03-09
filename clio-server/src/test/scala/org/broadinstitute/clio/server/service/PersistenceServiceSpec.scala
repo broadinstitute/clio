@@ -41,8 +41,7 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       uuid <- persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
-        mockDocConverter,
-        ElasticsearchIndex.WgsUbam
+        mockDocConverter
       )
     } yield {
       val expectedDocument = mockDocConverter
@@ -71,8 +70,7 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
-        mockDocConverter,
-        ElasticsearchIndex.WgsUbam
+        mockDocConverter
       )
     }.map { _ =>
       searchDAO.updateCalls should be(empty)

@@ -20,12 +20,12 @@ abstract class IndexWebServiceSpec[
   val memorySearchDAO = new MemorySearchDAO()
 
   def webServiceName: String
-  val mockService: MockIndexService[TI, D]
+  def mockService: MockIndexService[TI, D]
   val webService: IndexWebService[TI, D]
-  val onPremKey: webService.indexService.transferIndex.KeyType
-  val cloudKey: webService.indexService.transferIndex.KeyType
-  val badMetadataMap: Map[String, String]
-  val badQueryInputMap: Map[String, String]
+  def onPremKey: webService.indexService.transferIndex.KeyType
+  def cloudKey: webService.indexService.transferIndex.KeyType
+  def badMetadataMap: Map[String, String]
+  def badQueryInputMap: Map[String, String]
 
   behavior of webServiceName
 

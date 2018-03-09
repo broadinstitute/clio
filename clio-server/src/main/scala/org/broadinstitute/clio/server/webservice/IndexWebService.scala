@@ -15,17 +15,15 @@ abstract class IndexWebService[TI <: TransferIndex, D <: ClioDocument: Elasticse
 
   import indexService.transferIndex.implicits._
 
-  val servicePathPrefix: String
-
   lazy val routes: Route = {
     pathPrefix("v1") {
-      pathPrefix(servicePathPrefix) {
+      pathPrefix(indexService.transferIndex.urlSegment) {
         concat(getSchema, postMetadata, query, queryall)
       }
     }
   }
 
-  private[webservice] val pathPrefixKey: Directive1[indexService.transferIndex.KeyType]
+  private[webservice] def pathPrefixKey: Directive1[indexService.transferIndex.KeyType]
 
   private[webservice] val postMetadata: Route = {
     pathPrefix("metadata") {

@@ -10,15 +10,16 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
-abstract class IndexService[TI <: TransferIndex, D <: ClioDocument: ElasticsearchIndex](
+abstract class IndexService[
+  TI <: TransferIndex,
+  D <: ClioDocument: ElasticsearchIndex: ClassTag
+](
   persistenceService: PersistenceService,
   searchService: SearchService,
-  val transferIndex: TI,
-  elasticsearchIndex: ElasticsearchIndex[D]
+  val transferIndex: TI
 )(
   implicit
-  executionContext: ExecutionContext,
-  documentTag: ClassTag[D]
+  executionContext: ExecutionContext
 ) {
 
   import transferIndex.implicits._
@@ -54,7 +55,6 @@ abstract class IndexService[TI <: TransferIndex, D <: ClioDocument: Elasticsearc
         transferKey,
         updatedTransferMetadata,
         v1DocumentConverter,
-        elasticsearchIndex
       )
   }
 
@@ -71,8 +71,7 @@ abstract class IndexService[TI <: TransferIndex, D <: ClioDocument: Elasticsearc
   ): Source[transferIndex.QueryOutputType, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
-      v1QueryConverter,
-      elasticsearchIndex
+      v1QueryConverter
     )
   }
 

@@ -16,6 +16,5 @@ class WgsUbamService(
     extends IndexService[WgsUbamIndex.type, DocumentWgsUbam](
       persistenceService,
       searchService,
-      WgsUbamIndex,
-      ElasticsearchIndex.WgsUbam
+      WgsUbamIndex
     )
