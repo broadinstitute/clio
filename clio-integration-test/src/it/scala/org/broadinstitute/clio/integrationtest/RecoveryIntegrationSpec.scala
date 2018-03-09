@@ -39,84 +39,68 @@ class RecoveryIntegrationSpec
   private def updateDoc(json: Json, pathFieldName: String): Json = {
     val oldUri = json.hcursor.get[String](pathFieldName).fold(throw _, identity)
     val updates = Seq(
-      ElasticsearchIndex.UpsertIdElasticsearchName -> Json
-        .fromString(UpsertId.nextId().id),
-      pathFieldName -> Json.fromString(s"$oldUri/$randomId")
+      ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId().asJson,
+      pathFieldName -> s"$oldUri/$randomId".asJson
     )
     json.deepMerge(Json.fromFields(updates))
   }
 
+  private val ubamMapper =
+    ElasticsearchDocumentMapper[TransferUbamV1Key, TransferUbamV1Metadata]
   private val initUbams = Seq.tabulate(documentCount) { i =>
     val flowcellBarcode = s"flowcell$randomId"
     val libraryName = s"library$randomId"
-    val keyJson = TransferUbamV1Key(
+    val key = TransferUbamV1Key(
       flowcellBarcode = flowcellBarcode,
       lane = i,
       libraryName = libraryName,
       location = location
-    ).asJson
-    val metadataJson = TransferUbamV1Metadata(
+    )
+    val metadata = TransferUbamV1Metadata(
       ubamPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
-    ).asJson
-    val upsertIdJson =
-      Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
-    val entityIdJson = Map(
-      ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
-        s"$flowcellBarcode.$i.$libraryName.${location.entryName}"
-      )
-    ).asJson
-    keyJson.deepMerge(metadataJson).deepMerge(upsertIdJson).deepMerge(entityIdJson)
+    )
+    ubamMapper.document(key, metadata)
   }
 
   private val updatedUbams = initUbams.map(updateDoc(_, "ubam_path"))
 
+  private val gvcfMapper =
+    ElasticsearchDocumentMapper[TransferGvcfV1Key, TransferGvcfV1Metadata]
   private val initGvcfs = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
-    val keyJson = TransferGvcfV1Key(
+    val key = TransferGvcfV1Key(
       location = location,
       project = project,
       sampleAlias = sampleAlias,
       version = i
-    ).asJson
-    val metadataJson = TransferGvcfV1Metadata(
+    )
+    val metadata = TransferGvcfV1Metadata(
       gvcfPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
-    ).asJson
-    val upsertIdJson =
-      Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
-    val entityIdJson = Map(
-      ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
-        s"${location.entryName}.$project.$sampleAlias.$i"
-      )
-    ).asJson
-    keyJson.deepMerge(metadataJson).deepMerge(upsertIdJson).deepMerge(entityIdJson)
+    )
+    gvcfMapper.document(key, metadata)
   }
 
   private val updatedGvcfs = initGvcfs.map(updateDoc(_, "gvcf_path"))
 
+  private val cramMapper =
+    ElasticsearchDocumentMapper[TransferWgsCramV1Key, TransferWgsCramV1Metadata]
   private val initCrams = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
-    val keyJson = TransferWgsCramV1Key(
+    val key = TransferWgsCramV1Key(
       location = location,
       project = project,
       sampleAlias = sampleAlias,
       version = i
-    ).asJson
-    val metadataJson = TransferWgsCramV1Metadata(
+    )
+    val metadata = TransferWgsCramV1Metadata(
       cramPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
-    ).asJson
-    val upsertIdJson =
-      Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
-    val entityIdJson = Map(
-      ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
-        s"${location.entryName}.$project.$sampleAlias.$i"
-      )
-    ).asJson
-    keyJson.deepMerge(metadataJson).deepMerge(upsertIdJson).deepMerge(entityIdJson)
+    )
+    cramMapper.document(key, metadata)
   }
 
   private val updatedCrams = initCrams.map(updateDoc(_, "cram_path"))
