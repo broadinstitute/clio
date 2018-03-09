@@ -1,6 +1,12 @@
 package org.broadinstitute.clio.transfer.model
 
 import io.circe.{Decoder, Encoder, Json}
+import org.broadinstitute.clio.transfer.model.arrays.{
+  TransferArraysV1Key,
+  TransferArraysV1Metadata,
+  TransferArraysV1QueryInput,
+  TransferArraysV1QueryOutput
+}
 import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
@@ -107,4 +113,16 @@ case object HybselUbamIndex
   override val name: String = "HybselUbam"
   override val commandName: String = "hybsel-ubam"
   override val elasticsearchIndexName: String = "hybsel-ubam"
+}
+
+case object ArraysIndex
+    extends SemiAutoTransferIndex[
+      TransferArraysV1Key,
+      TransferArraysV1Metadata,
+      TransferArraysV1QueryInput,
+      TransferArraysV1QueryOutput
+    ] {
+  override val urlSegment: String = "arrays"
+  override val name: String = "Arrays"
+  override val commandName: String = "arrays"
 }

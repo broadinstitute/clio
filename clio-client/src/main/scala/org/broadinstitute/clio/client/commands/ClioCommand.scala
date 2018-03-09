@@ -18,6 +18,10 @@ import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1Key,
   TransferUbamV1QueryInput
 }
+import org.broadinstitute.clio.transfer.model.arrays.{
+  TransferArraysV1Key,
+  TransferArraysV1QueryInput
+}
 
 /**
   * A specific operation to perform against Clio.
@@ -204,6 +208,38 @@ final case class DeleteHybselUbam(
   force: Boolean = false
 ) extends DeleteCommand(HybselUbamIndex)
 
+// ARRAYS commands.
+
+@CommandName(ClioCommand.getArraysSchemaName)
+case object GetSchemaArrays extends GetSchemaCommand(ArraysIndex)
+
+@CommandName(ClioCommand.addArraysName)
+final case class AddArrays(
+  @Recurse key: TransferArraysV1Key,
+  metadataLocation: URI,
+  force: Boolean = false
+) extends AddCommand(ArraysIndex)
+
+@CommandName(ClioCommand.queryArraysName)
+final case class QueryArrays(
+  @Recurse queryInput: TransferArraysV1QueryInput,
+  includeDeleted: Boolean = false
+) extends QueryCommand(ArraysIndex)
+
+@CommandName(ClioCommand.moveArraysName)
+final case class MoveArrays(
+  @Recurse key: TransferArraysV1Key,
+  destination: URI,
+  newBasename: Option[String] = None
+) extends MoveCommand(ArraysIndex)
+
+@CommandName(ClioCommand.deleteArraysName)
+final case class DeleteArrays(
+  @Recurse key: TransferArraysV1Key,
+  note: String,
+  force: Boolean = false
+) extends DeleteCommand(ArraysIndex)
+
 object ClioCommand extends ClioParsers {
 
   // Names for generic commands.
@@ -245,6 +281,13 @@ object ClioCommand extends ClioParsers {
   val queryHybselUbamName: String = queryPrefix + HybselUbamIndex.commandName
   val moveHybselUbamName: String = movePrefix + HybselUbamIndex.commandName
   val deleteHybselUbamName: String = deletePrefix + HybselUbamIndex.commandName
+
+  // Names for Arrays commands.
+  val getArraysSchemaName: String = getSchemaPrefix + ArraysIndex.commandName
+  val addArraysName: String = addPrefix + ArraysIndex.commandName
+  val queryArraysName: String = queryPrefix + ArraysIndex.commandName
+  val moveArraysName: String = movePrefix + ArraysIndex.commandName
+  val deleteArraysName: String = deletePrefix + ArraysIndex.commandName
 
   /** The caseapp parser to use for all Clio sub-commands. */
   val parser: CommandParser[ClioCommand] =
