@@ -222,9 +222,6 @@ class RecoveryIntegrationSpec
 
         // Already sorted by construction. Remove null and internal values here too.
         val sortedExpected = expected.map(mapper)
-//          .map(_.mapObject(_.filter({
-//            case (k, v) => !v.isNull && !keysToDrop.contains(k)
-//          })))
 
         sortedActual should contain theSameElementsInOrderAs sortedExpected
       }
