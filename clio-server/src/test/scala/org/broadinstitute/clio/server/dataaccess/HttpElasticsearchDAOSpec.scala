@@ -125,9 +125,7 @@ class HttpElasticsearchDAOSpec
         ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
       ).asJson
         .deepMerge(
-          Map(
-            ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(s)
-          ).asJson
+          Map(ElasticsearchIndex.EntityIdElasticsearchName -> s).asJson
         )
 
     val documents =

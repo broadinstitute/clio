@@ -77,9 +77,7 @@ class PersistenceDAOSpec
       )
       .deepMerge(
         Map(
-          ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
-            s"$key1Long.$key1String"
-          )
+          ElasticsearchIndex.EntityIdElasticsearchName -> s"$key1Long.$key1String"
         ).asJson
       )
 
@@ -107,10 +105,7 @@ class PersistenceDAOSpec
       )
       .deepMerge(
         Map(
-          ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
-            s"$key2Long.$key2String"
-          )
-        ).asJson
+          ElasticsearchIndex.EntityIdElasticsearchName -> s"$key2Long.$key2String").asJson
       )
 
     for {
@@ -161,9 +156,7 @@ class PersistenceDAOSpec
       )
       .deepMerge(
         Map(
-          ElasticsearchIndex.EntityIdElasticsearchName -> Symbol(
-            s"$mockKeyLong.$mockKeyString"
-          )
+          ElasticsearchIndex.EntityIdElasticsearchName -> s"$mockKeyLong.$mockKeyString"
         ).asJson
       )
   )
