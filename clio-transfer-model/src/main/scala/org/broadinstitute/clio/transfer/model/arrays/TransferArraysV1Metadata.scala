@@ -22,8 +22,8 @@ case class TransferArraysV1Metadata(
   clusterPath: Option[URI] = None,
   controlSampleName: Option[String] = None,
   cromwellId: Option[UUID] = None,
-  dbSnpVcf: Option[URI] = None,
-  dbSnpVcfIndex: Option[URI] = None,
+  dbSnpVcfPath: Option[URI] = None,
+  dbSnpVcfIndexPath: Option[URI] = None,
   documentStatus: Option[DocumentStatus] = None,
   extendedChipManifestPath: Option[URI] = None,
   filteredSnps: Option[Long] = None,
@@ -33,10 +33,10 @@ case class TransferArraysV1Metadata(
   fpGender: Option[Symbol] = None,
   genderClusterPath: Option[URI] = None,
   genderConcordancePf: Option[Boolean] = None,
-  genotypeConcordanceContingencyMetrics: Option[URI] = None,
-  genotypeConcordanceDetailMetrics: Option[URI] = None,
-  genotypeConcordanceSummaryMetrics: Option[URI] = None,
-  grnIdat: Option[URI] = None,
+  genotypeConcordanceContingencyMetricsPath: Option[URI] = None,
+  genotypeConcordanceDetailMetricsPath: Option[URI] = None,
+  genotypeConcordanceSummaryMetricsPath: Option[URI] = None,
+  grnIdatPath: Option[URI] = None,
   gtcPath: Option[URI] = None,
   haplotypeDatabasePath: Option[URI] = None,
   hetHomvarRatio: Option[Float] = None,
@@ -57,12 +57,12 @@ case class TransferArraysV1Metadata(
   pctDbsnp: Option[Float] = None,
   pipelineVersion: Option[Symbol] = None,
   project: Option[String] = None,
-  redIdat: Option[URI] = None,
-  refDict: Option[URI] = None,
-  refFasta: Option[URI] = None,
-  refFastaIndex: Option[URI] = None,
-  referenceFingerprint: Option[URI] = None,
-  referenceFingerprintIndex: Option[URI] = None,
+  redIdatPath: Option[URI] = None,
+  refDictPath: Option[URI] = None,
+  refFastaPath: Option[URI] = None,
+  refFastaIndexPath: Option[URI] = None,
+  referenceFingerprintPath: Option[URI] = None,
+  referenceFingerprintIndexPath: Option[URI] = None,
   reportedGender: Option[Symbol] = None,
   researchProjectId: Option[String] = None,
   sampleAlias: Option[String] = None,
@@ -70,94 +70,52 @@ case class TransferArraysV1Metadata(
   totalAssays: Option[Long] = None,
   totalIndels: Option[Long] = None,
   totalSnps: Option[Long] = None,
-  variantCallingDetailMetrics: Option[URI] = None,
-  variantCallingSummaryMetrics: Option[URI] = None,
+  variantCallingDetailMetricsPath: Option[URI] = None,
+  variantCallingSummaryMetricsPath: Option[URI] = None,
+  vcfPath: Option[URI] = None,
+  vcfIndexPath: Option[URI] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
   workflowStartDate: Option[OffsetDateTime] = None,
   workspaceName: Option[String] = None,
-  zcallPed: Option[URI] = None,
+  zcallPedPath: Option[URI] = None,
   zcallThresholdsPath: Option[URI] = None,
   zcallVersion: Option[Symbol] = None
 ) extends TransferMetadata[TransferArraysV1Metadata] {
 
   /**
-    * FIXME: Deletes everything now, but Gvcf and WgsCram do not
-    * delete everything.
-    *
     * @return paths to delete
     */
   override def pathsToDelete: Seq[URI] =
     Seq.concat(
-      beadPoolManifestPath,
-      clusterPath,
-      dbSnpVcf,
-      dbSnpVcfIndex,
-      extendedChipManifestPath,
       fingerprintPath,
       fingerprintingDetailMetricsPath,
       fingerprintingSummaryMetricsPath,
-      genderClusterPath,
-      genotypeConcordanceContingencyMetrics,
-      genotypeConcordanceDetailMetrics,
-      genotypeConcordanceSummaryMetrics,
-      grnIdat,
+      genotypeConcordanceContingencyMetricsPath,
+      genotypeConcordanceDetailMetricsPath,
+      genotypeConcordanceSummaryMetricsPath,
       gtcPath,
-      haplotypeDatabasePath,
       paramsPath,
-      redIdat,
-      refDict,
-      referenceFingerprint,
-      referenceFingerprintIndex,
-      refFasta,
-      refFastaIndex,
-      variantCallingDetailMetrics,
-      variantCallingSummaryMetrics,
-      zcallPed,
-      zcallThresholdsPath
+      referenceFingerprintPath,
+      referenceFingerprintIndexPath,
+      variantCallingDetailMetricsPath,
+      variantCallingSummaryMetricsPath,
+      vcfPath,
+      vcfIndexPath,
+      zcallPedPath
     )
 
   /**
-    * FIXME: Includes everything now, which again is not done for
-    * other indexes.
-    *
     * @param pathMapper of files from source to destination URI
     * @return new metadata
     */
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
   ): TransferArraysV1Metadata = this.copy(
-    beadPoolManifestPath = pathMapper(beadPoolManifestPath, ArraysExtensions.BpmExtension),
-    clusterPath = pathMapper(clusterPath, ArraysExtensions.EgtExtension),
-    dbSnpVcf = pathMapper(dbSnpVcf, ArraysExtensions.VcfGzExtension),
-    dbSnpVcfIndex = pathMapper(dbSnpVcfIndex, ArraysExtensions.VcfGzTbiExtension),
-    extendedChipManifestPath =
-      pathMapper(extendedChipManifestPath, ArraysExtensions.CsvExtension),
-    fingerprintPath = pathMapper(fingerprintPath, ""),
-    fingerprintingDetailMetricsPath = pathMapper(fingerprintingDetailMetricsPath, ""),
-    fingerprintingSummaryMetricsPath = pathMapper(fingerprintingSummaryMetricsPath, ""),
-    genderClusterPath = pathMapper(genderClusterPath, ArraysExtensions.EgtExtension),
-    genotypeConcordanceContingencyMetrics =
-      pathMapper(genotypeConcordanceContingencyMetrics, ""),
-    genotypeConcordanceDetailMetrics = pathMapper(genotypeConcordanceDetailMetrics, ""),
-    genotypeConcordanceSummaryMetrics = pathMapper(genotypeConcordanceSummaryMetrics, ""),
-    grnIdat = pathMapper(grnIdat, ArraysExtensions.IdatExtension),
+    grnIdatPath = pathMapper(grnIdatPath, ArraysExtensions.IdatExtension),
     gtcPath = pathMapper(gtcPath, ""),
-    haplotypeDatabasePath =
-      pathMapper(haplotypeDatabasePath, ArraysExtensions.TxtExtension),
-    paramsPath = pathMapper(paramsPath, ArraysExtensions.TxtExtension),
-    redIdat = pathMapper(grnIdat, ArraysExtensions.IdatExtension),
-    refDict = pathMapper(refDict, ArraysExtensions.DictExtension),
-    referenceFingerprint =
-      pathMapper(referenceFingerprint, ArraysExtensions.VcfGzExtension),
-    referenceFingerprintIndex =
-      pathMapper(referenceFingerprintIndex, ArraysExtensions.VcfGzTbiExtension),
-    refFasta = pathMapper(refFasta, ArraysExtensions.FastaExtension),
-    refFastaIndex = pathMapper(refFastaIndex, ArraysExtensions.FastaFaiExtension),
-    variantCallingDetailMetrics = pathMapper(variantCallingDetailMetrics, ""),
-    variantCallingSummaryMetrics = pathMapper(variantCallingSummaryMetrics, ""),
-    zcallPed = pathMapper(zcallPed, ""),
-    zcallThresholdsPath =
-      pathMapper(zcallThresholdsPath, ArraysExtensions.EgtThresholdsTxtExtension)
+    redIdatPath = pathMapper(grnIdatPath, ArraysExtensions.IdatExtension),
+    vcfPath = pathMapper(vcfPath, ArraysExtensions.VcfGzExtension),
+    vcfIndexPath = pathMapper(vcfIndexPath, ArraysExtensions.VcfGzTbiExtension)
   )
 
   override def markDeleted(deletionNote: String): TransferArraysV1Metadata =
