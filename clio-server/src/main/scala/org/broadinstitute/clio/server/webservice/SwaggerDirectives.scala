@@ -4,9 +4,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 
-trait SwaggerDirectives {
-
-  lazy val swaggerRoutes: Route = concat(swaggerUiService, swaggerApiDocs)
+class SwaggerDirectives {
 
   private val swaggerUiPath = "META-INF/resources/webjars/swagger-ui/3.1.5"
 
@@ -32,4 +30,5 @@ trait SwaggerDirectives {
     }
   }
 
+  val swaggerRoutes: Route = concat(swaggerUiService, swaggerApiDocs)
 }

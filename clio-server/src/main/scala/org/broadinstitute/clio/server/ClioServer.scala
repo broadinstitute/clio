@@ -18,15 +18,7 @@ import org.broadinstitute.clio.server.webservice._
 
 import scala.concurrent.ExecutionContext
 
-object ClioServer
-    extends JsonWebService
-    with AuditDirectives
-    with ExceptionDirectives
-    with RejectionDirectives
-    with SwaggerDirectives
-    with StrictLogging {
-
-  override val serverStartTime: OffsetDateTime = OffsetDateTime.now()
+object ClioServer extends StrictLogging {
 
   private implicit val system: ActorSystem = ActorSystem("clio")
 
@@ -44,10 +36,6 @@ object ClioServer
     actorMaterializerSettings
   )
 
-  private val wrapperDirectives: Directive0 = {
-    auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
-  }
-
   private val serverStatusDAO = CachedServerStatusDAO()
   private val auditDAO = LoggingAuditDAO()
   private val searchDAO = HttpElasticsearchDAO()
@@ -56,20 +44,34 @@ object ClioServer
     ClioServerConfig.Persistence.recoveryParallelism
   )
 
-  val statusService = StatusService(
+  private val persistenceService = PersistenceService(persistenceDAO, searchDAO)
+  private val searchService = SearchService(searchDAO)
+  private val statusService = StatusService(
     serverStatusDAO,
     searchDAO
   )
 
+  private val exceptionDirectives = new ExceptionDirectives
+  private val swaggerDirectives = new SwaggerDirectives
+  private val rejectionDirectives =
+    new RejectionDirectives(
+      OffsetDateTime.now()
+    )
+  private val auditDirectives =
+    new AuditDirectives(
+      AuditService(auditDAO)
+    )
+
+  private val wrapperDirectives: Directive0 = {
+    auditDirectives.auditRequest &
+      auditDirectives.auditResult &
+      exceptionDirectives.completeWithInternalErrorJson &
+      auditDirectives.auditException &
+      rejectionDirectives.mapRejectionsToJson
+  }
+
   val statusWebService =
     new StatusWebService(statusService)
-
-  private val infoRoutes: Route =
-    concat(swaggerRoutes, statusWebService.statusRoutes)
-
-  private val persistenceService = PersistenceService(persistenceDAO, searchDAO)
-  private val searchService = SearchService(searchDAO)
-  override val auditService = AuditService(auditDAO)
 
   val wgsUbamWebService =
     new WgsUbamWebService(
@@ -85,6 +87,9 @@ object ClioServer
     new WgsCramWebService(
       new WgsCramService(persistenceService, searchService)
     )
+
+  private val infoRoutes: Route =
+    concat(swaggerDirectives.swaggerRoutes, statusWebService.statusRoutes)
 
   private val apiRoutes: Route =
     concat(wgsUbamWebService.routes, gvcfWebService.routes, wgsCramWebService.routes)

@@ -7,12 +7,10 @@ import org.broadinstitute.clio.server.model.{ClioRequest, ClioResponse}
 import org.broadinstitute.clio.server.service.AuditService
 
 /** An audit trail of request and responses. */
-trait AuditDirectives {
-
-  def auditService: AuditService
+class AuditDirectives(auditService: AuditService) {
 
   /** Audits the request. */
-  lazy val auditRequest: Directive0 = {
+  val auditRequest: Directive0 = {
     extractRequestContext flatMap { requestContext =>
       val request = toClioRequest(requestContext)
       onSuccess(auditService.auditRequest(request))
@@ -20,7 +18,7 @@ trait AuditDirectives {
   }
 
   /** Audits the request result. */
-  lazy val auditResult: Directive0 = {
+  val auditResult: Directive0 = {
     extractRequestContext flatMap { requestContext =>
       mapRouteResultFuture { routeResultFut =>
         import requestContext.executionContext
@@ -35,7 +33,7 @@ trait AuditDirectives {
   }
 
   /** Audits an exception, and then re-throws the exception. */
-  lazy val auditException: Directive0 = {
+  val auditException: Directive0 = {
     extractRequestContext flatMap { requestContext =>
       handleExceptions(auditExceptionHandler(requestContext))
     }
