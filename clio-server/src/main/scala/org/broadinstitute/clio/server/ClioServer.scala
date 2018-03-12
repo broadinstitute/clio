@@ -20,7 +20,6 @@ import scala.concurrent.ExecutionContext
 
 object ClioServer
     extends JsonWebService
-    with StatusWebService
     with AuditDirectives
     with ExceptionDirectives
     with RejectionDirectives
@@ -48,7 +47,8 @@ object ClioServer
   private val wrapperDirectives: Directive0 = {
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
-  private val infoRoutes: Route = concat(swaggerRoutes, statusRoutes)
+  private lazy val infoRoutes: Route =
+    concat(swaggerRoutes, statusWebService.statusRoutes)
 
   private val serverStatusDAO = CachedServerStatusDAO()
   private val auditDAO = LoggingAuditDAO()
@@ -88,11 +88,15 @@ object ClioServer
     searchDAO,
     httpServerDAO
   )
-  override val statusService = StatusService(
+
+  val statusService = StatusService(
     serverStatusDAO,
     searchDAO,
     httpServerDAO
   )
+
+  val statusWebService =
+    new StatusWebService(statusService)
 
   def beginStartup(): Unit = serverService.beginStartup()
 

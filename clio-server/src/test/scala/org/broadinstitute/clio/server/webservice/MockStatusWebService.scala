@@ -11,12 +11,10 @@ class MockStatusWebService(
   httpDao: HttpServerDAO = new MockHttpServerDAO()
 )(
   implicit executionContext: ExecutionContext
-) extends StatusWebService
-    with JsonWebService {
-  override lazy val statusService: StatusService =
-    StatusService(
-      serverStatusDao,
-      searchDao,
-      httpDao
+) extends StatusWebService(
+      StatusService(
+        serverStatusDao,
+        searchDao,
+        httpDao
+      )
     )
-}
