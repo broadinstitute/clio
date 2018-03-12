@@ -32,7 +32,7 @@ trait SearchDAO {
   /**
     * Update-or-insert (upsert) metadata into an index.
     *
-    * @param documents One or more(potentially partial) metadata documents containing
+    * @param documents One or more (potentially partial) metadata documents containing
     *                  new fields to set on the document in the index.
     * @param index    The index in which to update the document.
     */
