@@ -88,17 +88,10 @@ case class TransferArraysV1Metadata(
   override def pathsToDelete: Seq[URI] =
     Seq.concat(
       fingerprintPath,
-      fingerprintingDetailMetricsPath,
-      fingerprintingSummaryMetricsPath,
-      genotypeConcordanceContingencyMetricsPath,
-      genotypeConcordanceDetailMetricsPath,
-      genotypeConcordanceSummaryMetricsPath,
       gtcPath,
       paramsPath,
       referenceFingerprintPath,
       referenceFingerprintIndexPath,
-      variantCallingDetailMetricsPath,
-      variantCallingSummaryMetricsPath,
       vcfPath,
       vcfIndexPath,
       zcallPedPath
