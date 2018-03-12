@@ -4,10 +4,7 @@ import java.net.URI
 
 import akka.stream.scaladsl.Sink
 import io.circe.syntax._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchIndex,
-  ElasticsearchUtil
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.transfer.model.wgscram.{
@@ -59,9 +56,7 @@ class WgsCramServiceSpec
         Seq(
           WgsCramService.v1QueryConverter.buildQuery(
             transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
-          )(
-            ElasticsearchIndex.WgsCram
-          )
+          )(ElasticsearchIndex.WgsCram)
         )
       )
     }
@@ -105,10 +100,7 @@ class WgsCramServiceSpec
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
         .deepMerge(
-          Map(
-            ElasticsearchUtil
-              .toElasticsearchName(ElasticsearchIndex.UpsertIdElasticsearchName) -> returnedUpsertId
-          ).asJson
+          Map(ElasticsearchIndex.UpsertIdElasticsearchName -> returnedUpsertId).asJson
         )
 
       memoryPersistenceDAO.writeCalls should be(Seq((expectedDocument, index)))

@@ -41,10 +41,10 @@ class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata: Encoder](
 
 object ElasticsearchDocumentMapper {
 
-  def apply[Key <: Product: Encoder, Metadata: Encoder]: ElasticsearchDocumentMapper[
-    Key,
-    Metadata
-  ] = {
+  def apply[
+    Key <: Product: Encoder,
+    Metadata: Encoder
+  ]: ElasticsearchDocumentMapper[Key, Metadata] = {
     new ElasticsearchDocumentMapper[Key, Metadata](UpsertId.nextId)
   }
 }

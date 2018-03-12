@@ -79,10 +79,10 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   )
 
   def getEntityId(json: Json): String =
-    getByName[String](json, "entity_id")
+    getByName[String](json, EntityIdElasticsearchName)
 
   def getUpsertId(json: Json): UpsertId = {
-    getByName[UpsertId](json, "upsert_id")
+    getByName[UpsertId](json, UpsertIdElasticsearchName)
   }
 
   def getByName[A: Decoder](json: Json, name: String): A = {

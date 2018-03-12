@@ -22,13 +22,13 @@ class ElasticsearchDocumentMapperSpec
     val keyLong = 12345L
     val keyString = "key"
 
-    val mockFieldDouble = Option(1.23)
-    val mockFieldInt = Option(456)
+    val mockFieldDouble = 1.23
+    val mockFieldInt = 456
 
     val key = ModelMockKey(keyLong, keyString)
     val metadata = ModelMockMetadata(
-      mockFieldDouble = mockFieldDouble,
-      mockFieldInt = mockFieldInt,
+      mockFieldDouble = Option(mockFieldDouble),
+      mockFieldInt = Option(mockFieldInt),
       mockFieldDate = None
     )
 
@@ -36,11 +36,9 @@ class ElasticsearchDocumentMapperSpec
     ElasticsearchIndex.getUpsertId(document) should be(expectedId)
     ElasticsearchIndex.getEntityId(document) should be(s"$keyLong.$keyString")
     ElasticsearchIndex.getByName[Double](document, "mock_field_double") should be(
-      mockFieldDouble.get
+      mockFieldDouble
     )
-    ElasticsearchIndex.getByName[Int](document, "mock_field_int") should be(
-      mockFieldInt.get
-    )
+    ElasticsearchIndex.getByName[Int](document, "mock_field_int") should be(mockFieldInt)
     ElasticsearchIndex.getByName[Long](document, "mock_key_long") should be(keyLong)
     ElasticsearchIndex.getByName[String](document, "mock_key_string") should be(keyString)
   }

@@ -21,7 +21,7 @@ final class UpsertId private (val id: String) extends Ordered[UpsertId] {
     *
     * @return the filename where the upsert with the given ID's data is stored
     */
-  def persistenceFilename: String = s"${id}.json"
+  def persistenceFilename: String = s"$id.json"
 }
 
 /**

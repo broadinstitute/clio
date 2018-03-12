@@ -56,9 +56,7 @@ class WgsUbamServiceSpec
         Seq(
           WgsUbamService.v1QueryConverter.buildQuery(
             transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
-          )(
-            ElasticsearchIndex.WgsUbam
-          )
+          )(ElasticsearchIndex.WgsUbam)
         )
       )
     }
