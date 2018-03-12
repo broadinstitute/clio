@@ -13,9 +13,12 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1QueryInput,
   WgsCramExtensions
 }
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
-class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
+class WgsCramServiceSpec
+    extends TestKitSuite("WgsCramServiceSpec")
+    with ModelAutoDerivation {
   behavior of "WgsCramService"
 
   it should "upsertMetadata" in {
@@ -53,7 +56,7 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
         Seq(
           WgsCramService.v1QueryConverter.buildQuery(
             transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
-          )
+          )(ElasticsearchIndex.WgsCram)
         )
       )
     }
@@ -92,15 +95,17 @@ class WgsCramServiceSpec extends TestKitSuite("WgsCramServiceSpec") {
       )
     } yield {
       val expectedDocument = WgsCramService.v1DocumentConverter
-        .withMetadata(
-          WgsCramService.v1DocumentConverter.empty(transferKey),
+        .document(
+          transferKey,
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
-        .copy(upsertId = returnedUpsertId)
+        .deepMerge(
+          Map(ElasticsearchIndex.UpsertIdElasticsearchName -> returnedUpsertId).asJson
+        )
 
       memoryPersistenceDAO.writeCalls should be(Seq((expectedDocument, index)))
       memorySearchDAO.updateCalls should be(
-        Seq((Seq(expectedDocument.asJson(index.encoder)), index))
+        Seq((Seq(expectedDocument), index))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

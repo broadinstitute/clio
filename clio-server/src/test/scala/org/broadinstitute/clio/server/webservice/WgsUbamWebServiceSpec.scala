@@ -7,14 +7,15 @@ import akka.http.scaladsl.server.Route
 import io.circe.Json
 import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsUbam
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.service.WgsUbamService
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1QueryInput
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
-class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
+class WgsUbamWebServiceSpec extends BaseWebserviceSpec with ModelAutoDerivation {
   behavior of "WgsUbamWebService"
 
   it should "postMetadata with OnPrem location" in {
@@ -70,7 +71,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
             project = Some("testProject1"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(WgsUbamService.v1QueryConverter.buildQuery)
+        ).map(WgsUbamService.v1QueryConverter.buildQuery(_)(ElasticsearchIndex.WgsUbam))
       )
     }
 
@@ -106,13 +107,15 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
           // scolds us for using .head
           fail("Impossible because of the above check")
         }
-        .as[DocumentWgsUbam]
-        .fold(throw _, identity)
 
-      firstUpdate.upsertId should be(responseAs[UpsertId])
-      firstUpdate.project should be(Some("G123"))
-      firstUpdate.sampleAlias should be(Some("sample1"))
-      firstUpdate.ubamPath should be(Some(URI.create("gs://path/ubam.bam")))
+      ElasticsearchIndex.getUpsertId(firstUpdate) should be(responseAs[UpsertId])
+      ElasticsearchIndex.getByName[String](firstUpdate, "project") should be("G123")
+      ElasticsearchIndex.getByName[String](firstUpdate, "sample_alias") should be(
+        "sample1"
+      )
+      ElasticsearchIndex.getByName[URI](firstUpdate, "ubam_path") should be(
+        URI.create("gs://path/ubam.bam")
+      )
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
@@ -125,7 +128,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
             flowcellBarcode = Some("FC123"),
             documentStatus = Some(DocumentStatus.Normal)
           )
-        ).map(WgsUbamService.v1QueryConverter.buildQuery)
+        ).map(WgsUbamService.v1QueryConverter.buildQuery(_)(ElasticsearchIndex.WgsUbam))
       )
     }
 
@@ -143,13 +146,18 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
       val secondUpdate = memorySearchDAO.updateCalls
         .flatMap(_._1.headOption)
         .apply(1)
-        .as[DocumentWgsUbam]
-        .fold(throw _, identity)
 
-      secondUpdate.project should be(Some("G123"))
-      secondUpdate.sampleAlias should be(Some("sample1"))
-      secondUpdate.documentStatus should be(Some(DocumentStatus.Deleted))
-      secondUpdate.ubamPath should be(Some(URI.create("")))
+      ElasticsearchIndex.getByName[String](secondUpdate, "project") should be("G123")
+      ElasticsearchIndex.getByName[String](secondUpdate, "sample_alias") should be(
+        "sample1"
+      )
+      ElasticsearchIndex
+        .getByName[DocumentStatus](secondUpdate, "document_status") should be(
+        DocumentStatus.Deleted
+      )
+      ElasticsearchIndex.getByName[URI](secondUpdate, "ubam_path") should be(
+        URI.create("")
+      )
     }
 
     // We have to test the MemorySearchDAO because we're not going to implement
@@ -165,7 +173,7 @@ class WgsUbamWebServiceSpec extends BaseWebserviceSpec {
           ),
           // No documentStatus restriction from /queryall
           TransferUbamV1QueryInput(flowcellBarcode = Some("FC123"))
-        ).map(WgsUbamService.v1QueryConverter.buildQuery)
+        ).map(WgsUbamService.v1QueryConverter.buildQuery(_)(ElasticsearchIndex.WgsUbam))
       )
     }
   }

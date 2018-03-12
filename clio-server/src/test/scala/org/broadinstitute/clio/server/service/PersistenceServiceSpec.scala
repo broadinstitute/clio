@@ -12,9 +12,12 @@ import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1Key,
   TransferUbamV1Metadata
 }
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.Location
 
-class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
+class PersistenceServiceSpec
+    extends TestKitSuite("PersistenceServiceSpec")
+    with ModelAutoDerivation {
   behavior of "PersistenceService"
 
   val mockKey = TransferUbamV1Key(Location.OnPrem, "barcode", 1, "library")
@@ -31,12 +34,15 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       uuid <- persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
-        WgsUbamService.v1DocumentConverter
+        WgsUbamService.v1DocumentConverter,
+        ElasticsearchIndex.WgsUbam
       )
     } yield {
       val expectedDocument = WgsUbamService.v1DocumentConverter
-        .empty(mockKey)
-        .copy(upsertId = uuid)
+        .document(mockKey, mockMetadata)
+        .deepMerge(
+          Map(ElasticsearchIndex.UpsertIdElasticsearchName -> uuid).asJson
+        )
 
       val expectedIndex = ElasticsearchIndex.WgsUbam
 
@@ -44,7 +50,7 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
         Seq((expectedDocument, expectedIndex))
       )
       searchDAO.updateCalls.flatMap { case (jsons, index) => jsons.map(_ -> index) } should be(
-        Seq((expectedDocument.asJson(expectedIndex.encoder), expectedIndex))
+        Seq((expectedDocument, expectedIndex))
       )
     }
   }
@@ -60,7 +66,8 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
-        WgsUbamService.v1DocumentConverter
+        WgsUbamService.v1DocumentConverter,
+        ElasticsearchIndex.WgsUbam
       )
     }.map { _ =>
       searchDAO.updateCalls should be(empty)

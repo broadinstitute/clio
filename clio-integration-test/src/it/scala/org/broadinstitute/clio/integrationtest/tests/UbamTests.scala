@@ -3,12 +3,12 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import io.circe.syntax._
 import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentWgsUbam,
   ElasticsearchIndex,
   ElasticsearchUtil
 }
@@ -149,7 +149,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
-    val expected = ElasticsearchIndex[DocumentWgsUbam]
+    val expected = ElasticsearchIndex.WgsUbam
     val getRequest = getMapping(IndexAndType(expected.indexName, expected.indexType))
 
     elasticsearchClient.executeAndUnpack(getRequest).map {
@@ -209,12 +209,21 @@ trait UbamTests { self: BaseIntegrationSpec =>
       } yield {
         queryResponse should be(Seq(expected))
 
-        val storedDocument = getJsonFrom[DocumentWgsUbam](returnedUpsertId)
-        storedDocument.flowcellBarcode should be(expected.flowcellBarcode)
-        storedDocument.lane should be(expected.lane)
-        storedDocument.libraryName should be(expected.libraryName)
-        storedDocument.location should be(expected.location)
-        storedDocument.project should be(expected.project)
+        val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.WgsUbam)
+        ElasticsearchIndex
+          .getByName[String](storedDocument, "flowcell_barcode") should be(
+          expected.flowcellBarcode
+        )
+        ElasticsearchIndex.getByName[Int](storedDocument, "lane") should be(expected.lane)
+        ElasticsearchIndex.getByName[String](storedDocument, "library_name") should be(
+          expected.libraryName
+        )
+        ElasticsearchIndex.getByName[Location](storedDocument, "location") should be(
+          expected.location
+        )
+        ElasticsearchIndex.getByName[String](storedDocument, "project") should be(
+          expected.project.get
+        )
       }
     }
   }
@@ -241,13 +250,23 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
-      storedDocument1.project should be(Some("testProject1"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
+        "testProject1"
+      )
 
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](upsertId2)
-      storedDocument2.project should be(Some("testProject2"))
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
+      ElasticsearchIndex.getByName[String](storedDocument2, "project") should be(
+        "testProject2"
+      )
 
-      storedDocument1.copy(upsertId = upsertId2, project = Some("testProject2")) should be(
+      storedDocument1
+        .deepMerge(
+          Map(
+            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
+          ).asJson
+        )
+        .deepMerge(Map("project" -> Some("testProject2")).asJson) should be(
         storedDocument2
       )
     }
@@ -269,9 +288,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](upsertId2)
-      storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
+      storedDocument1.deepMerge(
+        Map(
+          ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
+        ).asJson
+      ) should be(storedDocument2)
     }
   }
 
@@ -752,8 +775,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
-      storedDocument1.project should be(Some("testProject1"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
+        "testProject1"
+      )
     }
   }
 
@@ -782,10 +807,14 @@ trait UbamTests { self: BaseIntegrationSpec =>
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](upsertId2)
-      storedDocument1.project should be(Some("testProject1"))
-      storedDocument2.sampleAlias should be(Some("sampleAlias1"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
+      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
+        "testProject1"
+      )
+      ElasticsearchIndex.getByName[String](storedDocument2, "sample_alias") should be(
+        "sampleAlias1"
+      )
     }
   }
 
@@ -812,8 +841,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
         )
       }
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
-      storedDocument1.project should be(Some("testProject1"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
+        "testProject1"
+      )
     }
   }
 }

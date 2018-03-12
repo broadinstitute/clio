@@ -8,8 +8,7 @@ import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
-  TransferGvcfV1QueryInput,
-  TransferGvcfV1QueryOutput
+  TransferGvcfV1QueryInput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
@@ -22,7 +21,10 @@ import scala.concurrent.{ExecutionContext, Future}
 class GvcfService(
   persistenceService: PersistenceService,
   searchService: SearchService
-)(implicit executionContext: ExecutionContext) {
+)(
+  implicit executionContext: ExecutionContext,
+  index: ElasticsearchIndex[GvcfIndex.type]
+) {
 
   def upsertMetadata(
     transferKey: TransferGvcfV1Key,
@@ -36,13 +38,14 @@ class GvcfService(
       .upsertMetadata(
         transferKey,
         updatedTransferMetadata,
-        GvcfService.v1DocumentConverter
+        GvcfService.v1DocumentConverter,
+        ElasticsearchIndex.Gvcf
       )
   }
 
   def queryMetadata(
     transferInput: TransferGvcfV1QueryInput
-  ): Source[TransferGvcfV1QueryOutput, NotUsed] = {
+  ): Source[Json, NotUsed] = {
     val transferInputNew =
       transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
     queryAllMetadata(transferInputNew)
@@ -50,7 +53,7 @@ class GvcfService(
 
   def queryAllMetadata(
     transferInput: TransferGvcfV1QueryInput
-  ): Source[TransferGvcfV1QueryOutput, NotUsed] = {
+  ): Source[Json, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
       GvcfService.v1QueryConverter
@@ -61,21 +64,14 @@ class GvcfService(
 }
 
 object GvcfService {
+  import GvcfIndex.implicits._
+
   private[service] val v1DocumentConverter =
-    AutoElasticsearchDocumentMapper[
-      TransferGvcfV1Key,
+    ElasticsearchDocumentMapper[
+      GvcfIndex.KeyType,
       TransferGvcfV1Metadata,
-      DocumentGvcf
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[
-    TransferGvcfV1QueryInput,
-    TransferGvcfV1QueryOutput,
-    DocumentGvcf
-  ] =
-    AutoElasticsearchQueryMapper[
-      TransferGvcfV1QueryInput,
-      TransferGvcfV1QueryOutput,
-      DocumentGvcf
-    ]
+  val v1QueryConverter: ElasticsearchQueryMapper[TransferGvcfV1QueryInput] =
+    ElasticsearchQueryMapper[TransferGvcfV1QueryInput]
 }
