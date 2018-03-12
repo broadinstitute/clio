@@ -47,8 +47,6 @@ object ClioServer
   private val wrapperDirectives: Directive0 = {
     auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
   }
-  private lazy val infoRoutes: Route =
-    concat(swaggerRoutes, statusWebService.statusRoutes)
 
   private val serverStatusDAO = CachedServerStatusDAO()
   private val auditDAO = LoggingAuditDAO()
@@ -57,6 +55,17 @@ object ClioServer
     ClioServerConfig.Persistence.config,
     ClioServerConfig.Persistence.recoveryParallelism
   )
+
+  val statusService = StatusService(
+    serverStatusDAO,
+    searchDAO
+  )
+
+  val statusWebService =
+    new StatusWebService(statusService)
+
+  private val infoRoutes: Route =
+    concat(swaggerRoutes, statusWebService.statusRoutes)
 
   private val persistenceService = PersistenceService(persistenceDAO, searchDAO)
   private val searchService = SearchService(searchDAO)
@@ -88,15 +97,6 @@ object ClioServer
     searchDAO,
     httpServerDAO
   )
-
-  val statusService = StatusService(
-    serverStatusDAO,
-    searchDAO,
-    httpServerDAO
-  )
-
-  val statusWebService =
-    new StatusWebService(statusService)
 
   def beginStartup(): Unit = serverService.beginStartup()
 

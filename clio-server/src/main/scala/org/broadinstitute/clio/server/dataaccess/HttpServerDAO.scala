@@ -19,11 +19,6 @@ trait HttpServerDAO {
   def enableApi(): Future[Unit]
 
   /**
-    * Returns the server version.
-    */
-  def getVersion: Future[String]
-
-  /**
     * Shuts down the server.
     */
   def shutdown(): Future[Unit]

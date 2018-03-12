@@ -7,26 +7,16 @@ import org.scalatest.{AsyncFlatSpec, Matchers}
 class StatusServiceSpec extends AsyncFlatSpec with Matchers {
   behavior of "StatusService"
 
-  def statusServiceWithMockDefaults(
-    statusDao: ServerStatusDAO = new MockServerStatusDAO(),
-    searchDAO: SearchDAO = new MockSearchDAO(),
-    httpServerDAO: HttpServerDAO = new MockHttpServerDAO
-  ) = StatusService(
-    statusDao,
-    searchDAO,
-    httpServerDAO
-  )
-
   it should "getVersion" in {
-    val statusService = statusServiceWithMockDefaults()
+    val statusService = new MockStatusService()
     for {
       version <- statusService.getVersion
-      _ = version should be(VersionInfo(MockHttpServerDAO.VersionMock))
+      _ = version should be(VersionInfo(MockServerStatusDAO.VersionMock))
     } yield succeed
   }
 
   it should "getStatus" in {
-    val statusService = statusServiceWithMockDefaults()
+    val statusService = new MockStatusService()
     for {
       status <- statusService.getStatus
       _ = status should be(

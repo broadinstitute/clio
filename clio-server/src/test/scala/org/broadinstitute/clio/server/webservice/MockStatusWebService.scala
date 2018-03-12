@@ -1,20 +1,11 @@
 package org.broadinstitute.clio.server.webservice
 
-import org.broadinstitute.clio.server.dataaccess._
-import org.broadinstitute.clio.server.service.StatusService
+import org.broadinstitute.clio.server.service.MockStatusService
 
 import scala.concurrent.ExecutionContext
 
-class MockStatusWebService(
-  serverStatusDao: ServerStatusDAO = new MockServerStatusDAO(),
-  searchDao: SearchDAO = new MockSearchDAO(),
-  httpDao: HttpServerDAO = new MockHttpServerDAO()
-)(
+class MockStatusWebService()(
   implicit executionContext: ExecutionContext
 ) extends StatusWebService(
-      StatusService(
-        serverStatusDao,
-        searchDao,
-        httpDao
-      )
+      new MockStatusService()
     )

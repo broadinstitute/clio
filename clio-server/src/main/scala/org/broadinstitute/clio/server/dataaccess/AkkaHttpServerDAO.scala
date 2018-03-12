@@ -64,9 +64,6 @@ class AkkaHttpServerDAO private[dataaccess] (
     Future.unit
   }
 
-  override def getVersion: Future[String] =
-    Future.successful(version)
-
   override def shutdown(): Future[Unit] = {
     val terminateFuture: Future[Terminated] =
       system.whenTerminated.value match {

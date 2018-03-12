@@ -14,4 +14,6 @@ class MockServerStatusDAO extends ServerStatusDAO {
 
 object MockServerStatusDAO {
   val StatusMock = ClioStatus.Started
+
+  val VersionMock = "Mock Server Version"
 }
