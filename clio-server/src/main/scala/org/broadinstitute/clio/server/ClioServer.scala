@@ -58,17 +58,9 @@ object ClioServer
     ClioServerConfig.Persistence.recoveryParallelism
   )
 
-  private val app =
-    new ClioApp(
-      serverStatusDAO,
-      auditDAO,
-      persistenceDAO,
-      searchDAO
-    )
-
-  private val persistenceService = PersistenceService(app)
-  private val searchService = SearchService(app)
-  override val auditService = AuditService(app)
+  private val persistenceService = PersistenceService(persistenceDAO, searchDAO)
+  private val searchService = SearchService(searchDAO)
+  override val auditService = AuditService(auditDAO)
 
   val wgsUbamWebService =
     new WgsUbamWebService(
@@ -90,8 +82,17 @@ object ClioServer
 
   private val httpServerDAO = AkkaHttpServerDAO(wrapperDirectives, infoRoutes, apiRoutes)
 
-  private val serverService = ServerService(app, httpServerDAO)
-  override val statusService = StatusService(app, httpServerDAO)
+  private val serverService = ServerService(
+    serverStatusDAO,
+    persistenceDAO,
+    searchDAO,
+    httpServerDAO
+  )
+  override val statusService = StatusService(
+    serverStatusDAO,
+    searchDAO,
+    httpServerDAO
+  )
 
   def beginStartup(): Unit = serverService.beginStartup()
 

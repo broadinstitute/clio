@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchDocumentMapper,
@@ -52,7 +51,7 @@ class PersistenceService private (persistenceDAO: PersistenceDAO, searchDAO: Sea
 
 object PersistenceService {
 
-  def apply(app: ClioApp): PersistenceService = {
-    new PersistenceService(app.persistenceDAO, app.searchDAO)
+  def apply(persistenceDAO: PersistenceDAO, searchDAO: SearchDAO): PersistenceService = {
+    new PersistenceService(persistenceDAO, searchDAO)
   }
 }

@@ -11,8 +11,6 @@ import org.broadinstitute.clio.util.model.Location
 class WgsUbamWebService(wgsUbamService: IndexService[WgsUbamIndex.type, DocumentWgsUbam])
     extends IndexWebService[WgsUbamIndex.type, DocumentWgsUbam](wgsUbamService) {
 
-  val servicePathPrefix = "wgsubam"
-
   private[webservice] val pathPrefixKey: Directive1[TransferUbamV1Key] = {
     for {
       location <- pathPrefix(Location.namesToValuesMap)

@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.{
   HttpServerDAO,
   SearchDAO,
@@ -32,10 +31,11 @@ class StatusService private (
 object StatusService {
 
   def apply(
-    app: ClioApp,
+    serverStatusDAO: ServerStatusDAO,
+    searchDAO: SearchDAO,
     httpServerDAO: HttpServerDAO
   )(implicit executionContext: ExecutionContext): StatusService = {
-    new StatusService(app.serverStatusDAO, app.searchDAO, httpServerDAO)
+    new StatusService(serverStatusDAO, searchDAO, httpServerDAO)
   }
 
   private def toSystemStatusInfo(status: Try[_]): Try[SearchStatus] = {

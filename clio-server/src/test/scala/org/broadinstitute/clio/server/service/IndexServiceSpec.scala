@@ -5,7 +5,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
+import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
@@ -21,12 +21,9 @@ abstract class IndexServiceSpec[
   val memorySearchDAO = new MemorySearchDAO()
 
   val indexService: IndexService[TI, D] = {
-    val app = MockClioApp(
-      searchDAO = memorySearchDAO,
-      persistenceDAO = memoryPersistenceDAO
-    )
-    val searchService = SearchService(app)
-    val persistenceService = PersistenceService(app)
+
+    val searchService = SearchService(memorySearchDAO)
+    val persistenceService = PersistenceService(memoryPersistenceDAO, memorySearchDAO)
     getService(persistenceService, searchService)
   }
 

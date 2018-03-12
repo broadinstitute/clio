@@ -4,7 +4,7 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Json
-import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
+import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.dataaccess.{
   HttpServerDAO,
@@ -163,13 +163,15 @@ object ServerService {
   val RecoveryMaxBulkSize: Long = 1000L
 
   def apply(
-    app: ClioApp,
+    serverStatusDAO: ServerStatusDAO,
+    persistenceDAO: PersistenceDAO,
+    searchDAO: SearchDAO,
     httpServerDAO: HttpServerDAO
   )(implicit executionContext: ExecutionContext, mat: Materializer): ServerService = {
     new ServerService(
-      app.serverStatusDAO,
-      app.persistenceDAO,
-      app.searchDAO,
+      serverStatusDAO,
+      persistenceDAO,
+      searchDAO,
       httpServerDAO,
       ClioServerConfig.Version.value
     )

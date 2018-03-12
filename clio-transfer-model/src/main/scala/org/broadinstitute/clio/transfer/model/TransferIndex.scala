@@ -27,7 +27,7 @@ trait TransferIndex {
 
   type MetadataType <: TransferMetadata[MetadataType]
 
-  type QueryInputType <: TransferInput[QueryInputType]
+  type QueryInputType <: TransferQueryInput[QueryInputType]
 
   type QueryOutputType
 

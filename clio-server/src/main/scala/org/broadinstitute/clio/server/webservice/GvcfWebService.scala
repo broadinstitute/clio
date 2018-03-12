@@ -11,8 +11,6 @@ import org.broadinstitute.clio.util.model.Location
 class GvcfWebService(gvcfService: IndexService[GvcfIndex.type, DocumentGvcf])
     extends IndexWebService[GvcfIndex.type, DocumentGvcf](gvcfService) {
 
-  val servicePathPrefix = "gvcf"
-
   private[webservice] val pathPrefixKey: Directive1[TransferGvcfV1Key] = {
     for {
       location <- pathPrefix(Location.namesToValuesMap)

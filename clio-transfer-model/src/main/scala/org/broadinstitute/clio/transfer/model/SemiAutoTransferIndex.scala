@@ -35,7 +35,7 @@ import scala.reflect.ClassTag
   * Convenience class for building [[TransferIndex]] instances
   * by summoning most required fields from implicit scope.
   */
-sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMetadata[MT], QI <: TransferInput[
+sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMetadata[MT], QI <: TransferQueryInput[
   QI
 ], QO](
   implicit

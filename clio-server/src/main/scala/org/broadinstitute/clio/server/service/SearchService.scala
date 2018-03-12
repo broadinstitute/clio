@@ -2,7 +2,6 @@ package org.broadinstitute.clio.server.service
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.SearchDAO
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
@@ -41,7 +40,7 @@ class SearchService private (searchDAO: SearchDAO) {
 
 object SearchService {
 
-  def apply(app: ClioApp): SearchService = {
-    new SearchService(app.searchDAO)
+  def apply(searchDAO: SearchDAO): SearchService = {
+    new SearchService(searchDAO)
   }
 }

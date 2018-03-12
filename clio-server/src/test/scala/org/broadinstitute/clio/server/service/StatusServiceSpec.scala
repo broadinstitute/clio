@@ -1,18 +1,24 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.MockClioApp
-import org.broadinstitute.clio.server.dataaccess.{MockHttpServerDAO, MockServerStatusDAO}
-import org.broadinstitute.clio.status.model.{StatusInfo, SearchStatus, VersionInfo}
-
+import org.broadinstitute.clio.server.dataaccess._
+import org.broadinstitute.clio.status.model.{SearchStatus, StatusInfo, VersionInfo}
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
 class StatusServiceSpec extends AsyncFlatSpec with Matchers {
   behavior of "StatusService"
 
+  def statusServiceWithMockDefaults(
+    statusDao: ServerStatusDAO = new MockServerStatusDAO(),
+    searchDAO: SearchDAO = new MockSearchDAO(),
+    httpServerDAO: HttpServerDAO = new MockHttpServerDAO
+  ) = StatusService(
+    statusDao,
+    searchDAO,
+    httpServerDAO
+  )
+
   it should "getVersion" in {
-    val app = MockClioApp()
-    val httpServerDAO = new MockHttpServerDAO()
-    val statusService = StatusService(app, httpServerDAO)
+    val statusService = statusServiceWithMockDefaults()
     for {
       version <- statusService.getVersion
       _ = version should be(VersionInfo(MockHttpServerDAO.VersionMock))
@@ -20,9 +26,7 @@ class StatusServiceSpec extends AsyncFlatSpec with Matchers {
   }
 
   it should "getStatus" in {
-    val app = MockClioApp()
-    val httpServerDAO = new MockHttpServerDAO()
-    val statusService = StatusService(app, httpServerDAO)
+    val statusService = statusServiceWithMockDefaults()
     for {
       status <- statusService.getStatus
       _ = status should be(

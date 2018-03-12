@@ -3,7 +3,7 @@ package org.broadinstitute.clio.transfer.model.arrays
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.transfer.model.TransferInput
+import org.broadinstitute.clio.transfer.model.TransferQueryInput
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 /* The Key and Metadata fields that can be queried.
@@ -28,7 +28,7 @@ case class TransferArraysV1QueryInput(
   workflowEndDate: Option[OffsetDateTime] = None,
   workflowStartDate: Option[OffsetDateTime] = None,
   workspaceName: Option[String] = None
-) extends TransferInput[TransferArraysV1QueryInput] {
+) extends TransferQueryInput[TransferArraysV1QueryInput] {
 
   def withDocumentStatus(
     documentStatus: Option[DocumentStatus]

@@ -11,8 +11,6 @@ import org.broadinstitute.clio.util.model.Location
 class WgsCramWebService(wgsCramService: IndexService[WgsCramIndex.type, DocumentWgsCram])
     extends IndexWebService[WgsCramIndex.type, DocumentWgsCram](wgsCramService) {
 
-  val servicePathPrefix = "wgscram"
-
   private[webservice] val pathPrefixKey: Directive1[TransferWgsCramV1Key] = {
     for {
       location <- pathPrefix(Location.namesToValuesMap)

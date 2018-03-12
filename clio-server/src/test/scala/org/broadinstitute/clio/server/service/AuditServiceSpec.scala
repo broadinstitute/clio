@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.MockClioApp
 import org.broadinstitute.clio.server.dataaccess.{
   FailingAuditDAO,
   MemoryAuditDAO,
@@ -14,8 +13,7 @@ class AuditServiceSpec extends AsyncFlatSpec with Matchers {
 
   it should "auditRequest" in {
     val memoryAuditDAO = new MemoryAuditDAO()
-    val app = MockClioApp(auditDAO = memoryAuditDAO)
-    val auditService = AuditService(app)
+    val auditService = AuditService(memoryAuditDAO)
     for {
       _ <- auditService.auditRequest(
         ClioRequest(MockAuditDAO.RequestContentMock)
@@ -30,8 +28,7 @@ class AuditServiceSpec extends AsyncFlatSpec with Matchers {
 
   it should "auditResponse" in {
     val memoryAuditDAO = new MemoryAuditDAO()
-    val app = MockClioApp(auditDAO = memoryAuditDAO)
-    val auditService = AuditService(app)
+    val auditService = AuditService(memoryAuditDAO)
     for {
       _ <- auditService.auditResponse(
         ClioRequest(MockAuditDAO.RequestContentMock),
@@ -50,8 +47,7 @@ class AuditServiceSpec extends AsyncFlatSpec with Matchers {
 
   it should "auditException" in {
     val memoryAuditDAO = new MemoryAuditDAO()
-    val app = MockClioApp(auditDAO = memoryAuditDAO)
-    val auditService = AuditService(app)
+    val auditService = AuditService(memoryAuditDAO)
     for {
       _ <- auditService.auditException(
         ClioRequest(MockAuditDAO.RequestContentMock),
@@ -70,8 +66,7 @@ class AuditServiceSpec extends AsyncFlatSpec with Matchers {
 
   it should "fail when auditRequest fails" in {
     val failingAuditDAO = new FailingAuditDAO()
-    val app = MockClioApp(auditDAO = failingAuditDAO)
-    val auditService = AuditService(app)
+    val auditService = AuditService(failingAuditDAO)
 
     recoverToSucceededIf[FailingAuditDAO.AuditRequestFailure] {
       auditService.auditRequest(ClioRequest(MockAuditDAO.RequestContentMock))
@@ -80,8 +75,7 @@ class AuditServiceSpec extends AsyncFlatSpec with Matchers {
 
   it should "fail when auditResponse fails" in {
     val failingAuditDAO = new FailingAuditDAO()
-    val app = MockClioApp(auditDAO = failingAuditDAO)
-    val auditService = AuditService(app)
+    val auditService = AuditService(failingAuditDAO)
 
     recoverToSucceededIf[FailingAuditDAO.AuditResponseFailure] {
       auditService.auditResponse(
@@ -93,8 +87,7 @@ class AuditServiceSpec extends AsyncFlatSpec with Matchers {
 
   it should "fail when auditException fails" in {
     val failingAuditDAO = new FailingAuditDAO()
-    val app = MockClioApp(auditDAO = failingAuditDAO)
-    val auditService = AuditService(app)
+    val auditService = AuditService(failingAuditDAO)
 
     recoverToSucceededIf[FailingAuditDAO.AuditExceptionFailure] {
       auditService.auditException(

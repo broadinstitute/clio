@@ -2,7 +2,12 @@ package org.broadinstitute.clio.server.service
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import org.broadinstitute.clio.server.{ClioApp, MockClioApp}
+import org.broadinstitute.clio.server.dataaccess.{
+  MockPersistenceDAO,
+  MockSearchDAO,
+  PersistenceDAO,
+  SearchDAO
+}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ClioDocument,
   ElasticsearchIndex
@@ -18,20 +23,21 @@ abstract class MockIndexService[
   TI <: TransferIndex,
   D <: ClioDocument: ElasticsearchIndex
 ](
-  app: ClioApp = MockClioApp(),
+  persistenceDAO: PersistenceDAO = new MockPersistenceDAO(),
+  searchDAO: SearchDAO = new MockSearchDAO(),
   override val transferIndex: TI
 )(
   implicit
   executionContext: ExecutionContext,
   documentTag: ClassTag[D]
 ) extends IndexService(
-      PersistenceService(app),
-      SearchService(app),
+      PersistenceService(persistenceDAO, searchDAO),
+      SearchService(searchDAO),
       transferIndex
     ) {
-  val queryCalls: ArrayBuffer[transferIndex.QueryInputType]
-  val queryAllCalls: ArrayBuffer[transferIndex.QueryInputType]
-  val upsertCalls: ArrayBuffer[(transferIndex.KeyType, transferIndex.MetadataType)]
+  val queryCalls = ArrayBuffer.empty[transferIndex.QueryInputType]
+  val queryAllCalls = ArrayBuffer.empty[transferIndex.QueryInputType]
+  val upsertCalls = ArrayBuffer.empty[(transferIndex.KeyType, transferIndex.MetadataType)]
 
   def emptyOutput: transferIndex.QueryOutputType
 

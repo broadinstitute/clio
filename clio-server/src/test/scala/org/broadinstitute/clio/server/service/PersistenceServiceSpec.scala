@@ -11,7 +11,7 @@ import org.broadinstitute.clio.server.dataaccess.{
   MemoryPersistenceDAO,
   MemorySearchDAO
 }
-import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
+import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1Key,
   TransferUbamV1Metadata
@@ -33,9 +33,7 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
   it should "upsertMetadata" in {
     val persistenceDAO = new MemoryPersistenceDAO()
     val searchDAO = new MemorySearchDAO()
-    val app =
-      MockClioApp(persistenceDAO = persistenceDAO, searchDAO = searchDAO)
-    val persistenceService = PersistenceService(app)
+    val persistenceService = PersistenceService(persistenceDAO, searchDAO)
 
     for {
       uuid <- persistenceService.upsertMetadata(
@@ -62,9 +60,7 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
   it should "not update search if writing to storage fails" in {
     val persistenceDAO = new FailingPersistenceDAO()
     val searchDAO = new MemorySearchDAO()
-    val app =
-      MockClioApp(persistenceDAO = persistenceDAO, searchDAO = searchDAO)
-    val persistenceService = PersistenceService(app)
+    val persistenceService = PersistenceService(persistenceDAO, searchDAO)
 
     recoverToSucceededIf[Exception] {
       persistenceService.upsertMetadata(
