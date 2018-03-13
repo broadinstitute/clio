@@ -1,13 +1,29 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentMock
+import java.net.URI
+import java.time.OffsetDateTime
+
+import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchFieldMapper,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.status.model.ClioStatus
+import org.broadinstitute.clio.transfer.model.{
+  ModelMockIndex,
+  ModelMockKey,
+  ModelMockMetadata
+}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.Future
 
-class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
+class ServerServiceSpec
+    extends TestKitSuite("ServerServiceSpec")
+    with ModelAutoDerivation {
   behavior of "ServerService"
 
   def serverServiceWithMockDefaults(
@@ -94,29 +110,65 @@ class ServerServiceSpec extends TestKitSuite("ServerServiceSpec") {
     val persistenceDAO = new MemoryPersistenceDAO()
     val searchDAO = new MemorySearchDAO()
 
-    val numDocs = 1000
-    val initInSearch = numDocs / 2
-
     val serverService = serverServiceWithMockDefaults(
       persistenceDAO = persistenceDAO,
       searchDAO = searchDAO
     )
-    val initStoredDocuments = Seq.fill(numDocs)(DocumentMock.default)
+
+    val numDocs = 5
+    val initInSearch = numDocs / 2
+    val keyLong = 1L
+    val keyString = "mock-key"
+    val key = ModelMockKey(keyLong, keyString)
+    val metadata = ModelMockMetadata(
+      Some(1.0),
+      Some(1),
+      Some(OffsetDateTime.now()),
+      Some(Seq.empty[String]),
+      Some(Seq.empty[URI]),
+      Some(DocumentStatus.Normal),
+      Some('md5),
+      Some(URI.create("/mock")),
+      Some(1L)
+    )
+    val document = key.asJson
+      .deepMerge(metadata.asJson)
+
+    val index = new ElasticsearchIndex[ModelMockIndex](
+      ModelMockIndex(),
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+    )
+
+    var counter = 0
+    val initStoredDocuments = Seq.fill(numDocs)({
+      // This generation is done inside this block because UpsertIds and EntityIds need to be unique.
+      counter = counter + 1
+      document
+        .deepMerge(
+          Map(
+            ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
+          ).asJson
+        )
+        .deepMerge(
+          Map(
+            ElasticsearchIndex.EntityIdElasticsearchName -> s"$keyLong.$keyString-$counter"
+          ).asJson
+        )
+    })
     val initSearchDocuments = initStoredDocuments.take(initInSearch)
 
     for {
-      _ <- persistenceDAO.initialize(Seq(DocumentMock.index), "fake-version")
+      _ <- persistenceDAO.initialize(Seq(index), "fake-version")
       _ <- Future.sequence(
-        initStoredDocuments.map(persistenceDAO.writeUpdate[DocumentMock](_))
+        initStoredDocuments.map(persistenceDAO.writeUpdate(_, index))
       )
       _ <- Future.sequence(
-        initSearchDocuments.map(searchDAO.updateMetadata[DocumentMock])
+        initSearchDocuments.map(searchDAO.updateMetadata(_)(index))
       )
-      _ <- serverService.recoverMetadata(DocumentMock.index)
+      _ <- serverService.recoverMetadata(index)
     } yield {
       val upsertedDocs = searchDAO.updateCalls
         .flatMap(_._1)
-        .map(_.as[DocumentMock](DocumentMock.index.decoder).fold(throw _, identity))
       upsertedDocs should contain theSameElementsAs initStoredDocuments
     }
   }

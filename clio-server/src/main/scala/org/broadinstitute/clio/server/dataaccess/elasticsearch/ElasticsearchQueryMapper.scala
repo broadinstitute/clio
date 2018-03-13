@@ -1,15 +1,22 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
+import com.sksamuel.elastic4s.http.ElasticDsl.boolQuery
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
+import io.circe.Json
+import org.broadinstitute.clio.util.generic.{CaseClassMapperWithTypes, FieldMapper}
+
+import scala.reflect.ClassTag
 
 /**
-  * Maps query input and outputs.
+  * Builds an ElasticsearchQueryMapper using shapeless and reflection.
   *
-  * @tparam ModelQueryInput  The type of the query input.
-  * @tparam ModelQueryOutput The type of the query output.
-  * @tparam Document         The Elasticsearch documents being queried.
+  * @tparam Input            The type of the query input, with a context bound also specifying that both an
+  *                          `implicit ctagQueryInput: ClassTag[Input]` exists, plus an
+  *                          `implicit fieldMapper: FieldMapper[Input]` exists.
+  *                          https://www.scala-lang.org/files/archive/spec/2.12/07-implicits.html#context-bounds-and-view-bounds
   */
-abstract class ElasticsearchQueryMapper[ModelQueryInput, ModelQueryOutput, Document] {
+class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
+  val inputMapper = new CaseClassMapperWithTypes[Input]
 
   /**
     * Returns true if the client sent a query that doesn't contain any filters.
@@ -17,7 +24,9 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput, ModelQueryOutput, Docum
     * @param queryInput The query input.
     * @return True if the client sent a query that doesn't contain any filters.
     */
-  def isEmpty(queryInput: ModelQueryInput): Boolean
+  def isEmpty(queryInput: Input): Boolean = {
+    flattenVals(queryInput).isEmpty
+  }
 
   /**
     * Builds an elastic4s query definition from the query input.
@@ -25,15 +34,65 @@ abstract class ElasticsearchQueryMapper[ModelQueryInput, ModelQueryOutput, Docum
     * @param queryInput The query input.
     * @return An elastic4s query definition from the query input.
     */
-  def buildQuery(queryInput: ModelQueryInput)(
-    implicit index: ElasticsearchIndex[Document]
-  ): QueryDefinition
+  def buildQuery(queryInput: Input)(
+    implicit index: ElasticsearchIndex[_]
+  ): QueryDefinition = {
+    val queries = flattenVals(queryInput) map {
+      case (name, value) => {
+        index.fieldMapper.valueToQuery(
+          ElasticsearchUtil.toElasticsearchName(name),
+          inputMapper.types(name)
+        )(value)
+      }
+    }
+    boolQuery must queries
+  }
+
+  private val keysToDrop =
+    Set(
+      ElasticsearchIndex.UpsertIdElasticsearchName,
+      ElasticsearchIndex.EntityIdElasticsearchName
+    )
 
   /**
-    * Converts the query result document to a query output.
+    * Munges the query result document into the appropriate form for the query output.
     *
     * @param document A query result document.
     * @return The query output.
     */
-  def toQueryOutput(document: Document): ModelQueryOutput
+  def toQueryOutput(document: Json): Json = {
+    document.mapObject(_.filterKeys({ key =>
+      !keysToDrop.contains(key)
+    }))
+  }
+
+  /**
+    * Returns the unwrapped values of a query input that are not None, sorted by name.
+    *
+    * @param queryInput The query input.
+    * @return The sequence of field names and field values where the values weren't None.
+    */
+  private def flattenVals(queryInput: Input): Seq[(String, _)] = {
+    val vals = inputMapper.vals(queryInput).toSeq
+    val flattened = vals flatMap {
+      case (name, valueOption) =>
+        val tpe = inputMapper.types(name)
+        if (!valueOption.isInstanceOf[Option[_]]) {
+          throw new IllegalArgumentException(
+            s"Unexpected non-Option value '$valueOption' for $name: $tpe"
+          )
+        }
+        valueOption.asInstanceOf[Option[_]].map(name -> _)
+    }
+    flattened sortBy {
+      case (name, _) => name
+    }
+  }
+}
+
+object ElasticsearchQueryMapper {
+
+  def apply[Input: ClassTag: FieldMapper]: ElasticsearchQueryMapper[Input] = {
+    new ElasticsearchQueryMapper[Input]
+  }
 }

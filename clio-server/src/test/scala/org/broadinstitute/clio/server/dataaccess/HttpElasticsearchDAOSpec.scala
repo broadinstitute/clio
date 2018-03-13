@@ -10,8 +10,11 @@ import com.sksamuel.elastic4s.delete.DeleteByIdDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.CreateIndexDefinition
 import com.sksamuel.elastic4s.searches.SearchDefinition
+import io.circe.Json
+import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.RequestException
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import org.broadinstitute.clio.transfer.model.ModelMockIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 import org.scalatest._
@@ -35,17 +38,14 @@ class HttpElasticsearchDAOSpec
   }
 
   it should "create an index and update the index field types" in {
-    case class IndexVersion1(bar: String)
-    case class IndexVersion2(foo: Long, bar: String)
-
     val indexVersion1: ElasticsearchIndex[_] =
-      new ElasticsearchIndex[IndexVersion1](
-        "test_index_update_type",
+      new ElasticsearchIndex[ModelMockIndex](
+        ModelMockIndex("test_index_update_type"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
-      new ElasticsearchIndex[IndexVersion2](
-        "test_index_update_type",
+      new ElasticsearchIndex[ModelMockIndex](
+        ModelMockIndex("test_index_update_type", "command_name"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
@@ -61,17 +61,14 @@ class HttpElasticsearchDAOSpec
   }
 
   it should "fail to recreate an index twice when skipping check for existence" in {
-    case class IndexVersion1(foo: String)
-    case class IndexVersion2(foo: Long, bar: String)
-
     val indexVersion1: ElasticsearchIndex[_] =
-      new ElasticsearchIndex[IndexVersion1](
-        "test_index_fail_recreate",
+      new ElasticsearchIndex[ModelMockIndex](
+        ModelMockIndex("test_index_fail_recreate"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
-      new ElasticsearchIndex[IndexVersion2](
-        "test_index_fail_recreate",
+      new ElasticsearchIndex[ModelMockIndex](
+        ModelMockIndex("test_index_fail_recreate", "command_name"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
@@ -89,18 +86,15 @@ class HttpElasticsearchDAOSpec
   }
 
   it should "fail to change the index field types" in {
-    case class IndexVersion1(foo: String)
-    case class IndexVersion2(foo: Long)
-
     val indexVersion1: ElasticsearchIndex[_] =
-      new ElasticsearchIndex[IndexVersion1](
-        "test_index_fail_change_types",
+      new ElasticsearchIndex[ModelMockIndex](
+        ModelMockIndex("test_index_fail_change_types"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
-      new ElasticsearchIndex[IndexVersion2](
-        "test_index_fail_change_types",
-        ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
+      new ElasticsearchIndex[ModelMockIndex](
+        ModelMockIndex("test_index_fail_change_types"),
+        ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
       )
     for {
       _ <- httpElasticsearchDAO.createIndexType(indexVersion1)
@@ -112,25 +106,32 @@ class HttpElasticsearchDAOSpec
         val error = exception.requestFailure.error
         error.`type` should be("illegal_argument_exception")
         error.reason should be(
-          "mapper [foo] of different type, current_type [keyword], merged_type [long]"
+          "mapper [mock_string_array] of different type, current_type [keyword], merged_type [text]"
         )
       }
     } yield succeed
   }
 
   it should "return the most recent document" in {
-    import HttpElasticsearchDAOSpec._
     import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 
-    val index = new ElasticsearchIndex[Document](
-      "docs-" + UUID.randomUUID(),
+    val index = new ElasticsearchIndex[ModelMockIndex](
+      ModelMockIndex("docs-" + UUID.randomUUID()),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
+
+    def generateBookkeeping(s: String): Json =
+      Map(
+        ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
+      ).asJson
+        .deepMerge(
+          Map(ElasticsearchIndex.EntityIdElasticsearchName -> s).asJson
+        )
 
     val documents =
       (1 to 4)
         .map("document-" + _)
-        .map(s => Document(UpsertId.nextId(), Symbol(s)))
+        .map(generateBookkeeping)
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
@@ -138,15 +139,14 @@ class HttpElasticsearchDAOSpec
         documents.map(httpElasticsearchDAO.updateMetadata(_)(index))
       )
       document <- httpElasticsearchDAO.getMostRecentDocument(index)
-    } yield document.value.as[Document].right.value should be(documents.last)
+    } yield document.value should be(documents.last)
   }
 
   it should "not throw an exception if no documents exist" in {
-    import HttpElasticsearchDAOSpec._
     import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 
-    val index = new ElasticsearchIndex[Document](
-      "docs-" + UUID.randomUUID(),
+    val index = new ElasticsearchIndex[ModelMockIndex](
+      ModelMockIndex("docs-" + UUID.randomUUID()),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
@@ -244,8 +244,4 @@ class HttpElasticsearchDAOSpec
       delete2.result shouldNot be("deleted")
     }
   }
-}
-
-object HttpElasticsearchDAOSpec {
-  case class Document(upsertId: UpsertId, entityId: Symbol) extends ClioDocument
 }

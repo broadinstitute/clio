@@ -2,23 +2,19 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentGvcf,
-  ElasticsearchIndex
-}
 import org.broadinstitute.clio.transfer.model.GvcfIndex
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
   GvcfExtensions,
   TransferGvcfV1Key,
   TransferGvcfV1Metadata,
   TransferGvcfV1QueryInput
 }
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
-class GvcfServiceSpec
-    extends IndexServiceSpec[GvcfIndex.type, DocumentGvcf]("GvcfService") {
+class GvcfServiceSpec extends IndexServiceSpec[GvcfIndex.type]("GvcfService") {
 
-  val index: ElasticsearchIndex[DocumentGvcf] = ElasticsearchIndex.Gvcf
+  val elasticsearchIndex: ElasticsearchIndex[_] = ElasticsearchIndex.Gvcf
 
   val dummyKey = TransferGvcfV1Key(Location.GCP, "project1", "sample1", 1)
 
@@ -41,14 +37,5 @@ class GvcfServiceSpec
     searchService: SearchService
   ): GvcfService = {
     new GvcfService(persistenceService, searchService)
-  }
-
-  def copyDocumentWithUpsertId(
-    originalDocument: DocumentGvcf,
-    upsertId: UpsertId
-  ): DocumentGvcf = {
-    originalDocument.copy(
-      upsertId = upsertId
-    )
   }
 }

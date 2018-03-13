@@ -2,15 +2,11 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
 import org.broadinstitute.clio.server.service.IndexService
 import org.broadinstitute.clio.transfer.model.TransferIndex
 
-abstract class IndexWebService[TI <: TransferIndex, D <: ClioDocument: ElasticsearchIndex](
-  val indexService: IndexService[TI, D]
+abstract class IndexWebService[TI <: TransferIndex](
+  val indexService: IndexService[TI]
 ) extends JsonWebService {
 
   import indexService.transferIndex.implicits._

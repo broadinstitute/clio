@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 
 import scala.concurrent.ExecutionContext
@@ -13,8 +13,9 @@ class WgsCramService(
   persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext)
-    extends IndexService[WgsCramIndex.type, DocumentWgsCram](
+    extends IndexService[WgsCramIndex.type](
       persistenceService,
       searchService,
+      ElasticsearchIndex.WgsCram,
       WgsCramIndex
     )

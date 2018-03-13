@@ -44,13 +44,16 @@ sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMet
   override val metadataTag: ClassTag[MT],
   override val queryInputTag: ClassTag[QI],
   override val queryOutputTag: ClassTag[QO],
+  override val keyEncoder: Encoder[KT],
   override val metadataDecoder: Decoder[MT],
   override val metadataEncoder: Encoder[MT],
   override val queryInputEncoder: Encoder[QI],
   override val queryInputDecoder: Decoder[QI],
   override val queryOutputEncoder: Encoder[QO],
   override val queryOutputDecoder: Decoder[QO],
-  override val queryInputFieldMapper: FieldMapper[QI]
+  override val keyMapper: FieldMapper[KT],
+  override val metadataMapper: FieldMapper[MT],
+  override val queryInputMapper: FieldMapper[QI]
 ) extends TransferIndex {
 
   override type KeyType = KT
@@ -71,6 +74,9 @@ case object GvcfIndex
   override val urlSegment: String = "gvcf"
   override val name: String = "Gvcf"
   override val commandName: String = "gvcf"
+  // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
+  // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
+  override val elasticsearchIndexName = "gvcf-v2"
 }
 
 case object WgsUbamIndex
@@ -83,6 +89,7 @@ case object WgsUbamIndex
   override val urlSegment: String = "wgsubam"
   override val name: String = "WgsUbam"
   override val commandName: String = "wgs-ubam"
+  override val elasticsearchIndexName: String = "wgs-ubam"
 }
 
 case object WgsCramIndex
@@ -95,6 +102,9 @@ case object WgsCramIndex
   override val urlSegment: String = "wgscram"
   override val name: String = "WgsCram"
   override val commandName: String = "wgs-cram"
+  // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
+  // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
+  override val elasticsearchIndexName: String = "wgs-cram-v2"
 }
 
 case object HybselUbamIndex
@@ -107,6 +117,7 @@ case object HybselUbamIndex
   override val urlSegment: String = "hybselubam"
   override val name: String = "HybselUbam"
   override val commandName: String = "hybsel-ubam"
+  override val elasticsearchIndexName: String = "hybsel-ubam"
 }
 
 case object ArraysIndex
@@ -119,4 +130,5 @@ case object ArraysIndex
   override val urlSegment: String = "arrays"
   override val name: String = "Arrays"
   override val commandName: String = "arrays"
+  override val elasticsearchIndexName: String = "arrays"
 }

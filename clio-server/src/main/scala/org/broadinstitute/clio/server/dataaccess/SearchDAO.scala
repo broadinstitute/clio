@@ -4,11 +4,7 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import io.circe.Json
-import io.circe.syntax._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -36,15 +32,10 @@ trait SearchDAO {
   /**
     * Update-or-insert (upsert) metadata into an index.
     *
-    * @param document A (potentially partial) metadata document containing
-    *                 new fields to set on the document in the index.
+    * @param documents One or more (potentially partial) metadata documents containing
+    *                  new fields to set on the document in the index.
     * @param index    The index in which to update the document.
-    * @tparam D The type of the document.
     */
-  final def updateMetadata[D <: ClioDocument](document: D)(
-    implicit index: ElasticsearchIndex[D]
-  ): Future[Unit] = updateMetadata(document.asJson(index.encoder))
-
   def updateMetadata(documents: Json*)(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit]
@@ -54,11 +45,10 @@ trait SearchDAO {
     *
     * @param queryDefinition       The query to run.
     * @param index       The index to run the query against.
-    * @tparam D          The type of the document to query.
     */
-  def queryMetadata[D <: ClioDocument](queryDefinition: QueryDefinition)(
-    implicit index: ElasticsearchIndex[D]
-  ): Source[D, NotUsed]
+  def queryMetadata(queryDefinition: QueryDefinition)(
+    implicit index: ElasticsearchIndex[_]
+  ): Source[Json, NotUsed]
 
   /**
     * Given an elastic search index, return the most recent document for that index.

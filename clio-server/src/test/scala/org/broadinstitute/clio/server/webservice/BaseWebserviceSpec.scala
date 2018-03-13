@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.testkit.ScalatestRouteTest
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.scalatest.{FlatSpec, Matchers}
 
 /**
@@ -11,3 +12,4 @@ abstract class BaseWebserviceSpec
     with Matchers
     with ScalatestRouteTest
     with JsonWebService
+    with ModelAutoDerivation {}

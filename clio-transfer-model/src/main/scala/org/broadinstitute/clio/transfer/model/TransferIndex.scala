@@ -23,6 +23,8 @@ trait TransferIndex {
 
   val commandName: String
 
+  val elasticsearchIndexName: String
+
   type KeyType <: TransferKey
 
   type MetadataType <: TransferMetadata[MetadataType]
@@ -39,6 +41,8 @@ trait TransferIndex {
 
   val queryOutputTag: ClassTag[QueryOutputType]
 
+  val keyEncoder: Encoder[KeyType]
+
   val metadataDecoder: Decoder[MetadataType]
 
   val metadataEncoder: Encoder[MetadataType]
@@ -51,7 +55,11 @@ trait TransferIndex {
 
   val queryOutputDecoder: Decoder[QueryOutputType]
 
-  val queryInputFieldMapper: FieldMapper[QueryInputType]
+  val keyMapper: FieldMapper[KeyType]
+
+  val metadataMapper: FieldMapper[MetadataType]
+
+  val queryInputMapper: FieldMapper[QueryInputType]
 
   /**
     * Container for all index parameters that are typically
@@ -66,12 +74,15 @@ trait TransferIndex {
     implicit val mt: ClassTag[MetadataType] = metadataTag
     implicit val qit: ClassTag[QueryInputType] = queryInputTag
     implicit val qot: ClassTag[QueryOutputType] = queryOutputTag
+    implicit val ke: Encoder[KeyType] = keyEncoder
     implicit val md: Decoder[MetadataType] = metadataDecoder
     implicit val me: Encoder[MetadataType] = metadataEncoder
     implicit val qie: Encoder[QueryInputType] = queryInputEncoder
     implicit val qid: Decoder[QueryInputType] = queryInputDecoder
     implicit val qoe: Encoder[QueryOutputType] = queryOutputEncoder
     implicit val qod: Decoder[QueryOutputType] = queryOutputDecoder
-    implicit val qifm: FieldMapper[QueryInputType] = queryInputFieldMapper
+    implicit val qim: FieldMapper[QueryInputType] = queryInputMapper
+    implicit val km: FieldMapper[KeyType] = keyMapper
+    implicit val mm: FieldMapper[MetadataType] = metadataMapper
   }
 }

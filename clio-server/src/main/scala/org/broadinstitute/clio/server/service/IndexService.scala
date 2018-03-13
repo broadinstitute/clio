@@ -8,14 +8,11 @@ import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.ClassTag
 
-abstract class IndexService[
-  TI <: TransferIndex,
-  D <: ClioDocument: ElasticsearchIndex: ClassTag
-](
+abstract class IndexService[TI <: TransferIndex](
   persistenceService: PersistenceService,
   searchService: SearchService,
+  elasticsearchIndex: ElasticsearchIndex[TI],
   val transferIndex: TI
 )(
   implicit
@@ -25,21 +22,16 @@ abstract class IndexService[
   import transferIndex.implicits._
 
   private[service] val v1DocumentConverter =
-    AutoElasticsearchDocumentMapper[
+    ElasticsearchDocumentMapper[
       transferIndex.KeyType,
-      transferIndex.MetadataType,
-      D
+      transferIndex.MetadataType
     ]
 
   val v1QueryConverter: ElasticsearchQueryMapper[
-    transferIndex.QueryInputType,
-    transferIndex.QueryOutputType,
-    D
+    transferIndex.QueryInputType
   ] =
-    AutoElasticsearchQueryMapper[
-      transferIndex.QueryInputType,
-      transferIndex.QueryOutputType,
-      D
+    ElasticsearchQueryMapper[
+      transferIndex.QueryInputType
     ]
 
   def upsertMetadata(
@@ -55,12 +47,13 @@ abstract class IndexService[
         transferKey,
         updatedTransferMetadata,
         v1DocumentConverter,
+        elasticsearchIndex
       )
   }
 
   def queryMetadata(
     transferInput: transferIndex.QueryInputType
-  ): Source[transferIndex.QueryOutputType, NotUsed] = {
+  ): Source[Json, NotUsed] = {
     val transferInputNew =
       transferInput.withDocumentStatus(Option(DocumentStatus.Normal))
     queryAllMetadata(transferInputNew)
@@ -68,10 +61,12 @@ abstract class IndexService[
 
   def queryAllMetadata(
     transferInput: transferIndex.QueryInputType
-  ): Source[transferIndex.QueryOutputType, NotUsed] = {
+  ): Source[Json, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
       v1QueryConverter
+    )(
+      elasticsearchIndex
     )
   }
 

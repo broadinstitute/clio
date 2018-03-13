@@ -2,32 +2,31 @@ package org.broadinstitute.clio.server.service
 
 import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
+  ElasticsearchIndex,
+  ElasticsearchUtil
 }
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.transfer.model.TransferIndex
-import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
+import org.broadinstitute.clio.util.model.DocumentStatus
 import io.circe.syntax._
 
 abstract class IndexServiceSpec[
-  TI <: TransferIndex,
-  D <: ClioDocument: ElasticsearchIndex
+  TI <: TransferIndex
 ](specificService: String)
     extends TestKitSuite(specificService + "Spec") {
 
   val memoryPersistenceDAO = new MemoryPersistenceDAO()
   val memorySearchDAO = new MemorySearchDAO()
 
-  val indexService: IndexService[TI, D] = {
+  val indexService: IndexService[TI] = {
 
     val searchService = SearchService(memorySearchDAO)
     val persistenceService = PersistenceService(memoryPersistenceDAO, memorySearchDAO)
     getService(persistenceService, searchService)
   }
 
-  def index: ElasticsearchIndex[D]
+  def elasticsearchIndex: ElasticsearchIndex[TI]
   def dummyKey: indexService.transferIndex.KeyType
   def dummyInput: indexService.transferIndex.QueryInputType
 
@@ -38,9 +37,7 @@ abstract class IndexServiceSpec[
   def getService(
     persistenceService: PersistenceService,
     searchService: SearchService
-  ): IndexService[TI, D]
-
-  def copyDocumentWithUpsertId(originalDocument: D, upsertId: UpsertId): D
+  ): IndexService[TI]
 
   behavior of specificService
 
@@ -73,6 +70,8 @@ abstract class IndexServiceSpec[
         Seq(
           indexService.v1QueryConverter.buildQuery(
             dummyInput.withDocumentStatus(Option(DocumentStatus.Normal))
+          )(
+            elasticsearchIndex
           )
         )
       )
@@ -90,17 +89,24 @@ abstract class IndexServiceSpec[
         transferMetadata
       )
     } yield {
-      val expectedDocument = copyDocumentWithUpsertId(
-        indexService.v1DocumentConverter.withMetadata(
-          indexService.v1DocumentConverter.empty(dummyKey),
-          transferMetadata.withDocumentStatus(expectedDocumentStatus)
-        ),
-        returnedUpsertId
-      )
+      val expectedDocument =
+        indexService.v1DocumentConverter
+          .document(
+            dummyKey,
+            transferMetadata.withDocumentStatus(expectedDocumentStatus)
+          )
+          .deepMerge(
+            Map(
+              ElasticsearchUtil
+                .toElasticsearchName(ElasticsearchIndex.UpsertIdElasticsearchName) -> returnedUpsertId
+            ).asJson
+          )
 
-      memoryPersistenceDAO.writeCalls should be(Seq((expectedDocument, index)))
+      memoryPersistenceDAO.writeCalls should be(
+        Seq((expectedDocument, elasticsearchIndex))
+      )
       memorySearchDAO.updateCalls should be(
-        Seq((Seq(expectedDocument.asJson(index.encoder)), index))
+        Seq((Seq(expectedDocument), elasticsearchIndex))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

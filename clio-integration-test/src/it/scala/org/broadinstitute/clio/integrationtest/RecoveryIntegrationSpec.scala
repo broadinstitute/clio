@@ -11,7 +11,18 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo}
-import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1Metadata
+import org.broadinstitute.clio.transfer.model.gvcf.{
+  TransferGvcfV1Key,
+  TransferGvcfV1Metadata
+}
+import org.broadinstitute.clio.transfer.model.ubam.{
+  TransferUbamV1Key,
+  TransferUbamV1Metadata
+}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Key,
+  TransferWgsCramV1Metadata
+}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import org.scalatest.OptionValues
 
@@ -28,59 +39,68 @@ class RecoveryIntegrationSpec
   private def updateDoc(json: Json, pathFieldName: String): Json = {
     val oldUri = json.hcursor.get[String](pathFieldName).fold(throw _, identity)
     val updates = Seq(
-      ClioDocument.UpsertIdElasticSearchName -> Json.fromString(UpsertId.nextId().id),
-      pathFieldName -> Json.fromString(s"$oldUri/$randomId")
+      ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId().asJson,
+      pathFieldName -> s"$oldUri/$randomId".asJson
     )
     json.deepMerge(Json.fromFields(updates))
   }
 
+  private val ubamMapper =
+    ElasticsearchDocumentMapper[TransferUbamV1Key, TransferUbamV1Metadata]
   private val initUbams = Seq.tabulate(documentCount) { i =>
     val flowcellBarcode = s"flowcell$randomId"
     val libraryName = s"library$randomId"
-    DocumentWgsUbam(
-      upsertId = UpsertId.nextId(),
-      entityId = Symbol(s"$flowcellBarcode.$i.$libraryName.${location.entryName}"),
+    val key = TransferUbamV1Key(
       flowcellBarcode = flowcellBarcode,
       lane = i,
       libraryName = libraryName,
-      location = location,
+      location = location
+    )
+    val metadata = TransferUbamV1Metadata(
       ubamPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
-    ).asJson(ElasticsearchIndex.WgsUbam.encoder)
+    )
+    ubamMapper.document(key, metadata)
   }
 
   private val updatedUbams = initUbams.map(updateDoc(_, "ubam_path"))
 
+  private val gvcfMapper =
+    ElasticsearchDocumentMapper[TransferGvcfV1Key, TransferGvcfV1Metadata]
   private val initGvcfs = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
-    DocumentGvcf(
-      upsertId = UpsertId.nextId(),
-      entityId = Symbol(s"${location.entryName}.$project.$sampleAlias.$i"),
+    val key = TransferGvcfV1Key(
       location = location,
       project = project,
       sampleAlias = sampleAlias,
-      version = i,
+      version = i
+    )
+    val metadata = TransferGvcfV1Metadata(
       gvcfPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
-    ).asJson(ElasticsearchIndex.Gvcf.encoder)
+    )
+    gvcfMapper.document(key, metadata)
   }
 
   private val updatedGvcfs = initGvcfs.map(updateDoc(_, "gvcf_path"))
 
+  private val cramMapper =
+    ElasticsearchDocumentMapper[TransferWgsCramV1Key, TransferWgsCramV1Metadata]
   private val initCrams = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
-    DocumentWgsCram(
-      upsertId = UpsertId.nextId(),
-      entityId = Symbol(s"${location.entryName}.$project.$sampleAlias.$i"),
+    val key = TransferWgsCramV1Key(
       location = location,
       project = project,
       sampleAlias = sampleAlias,
-      version = i,
+      version = i
+    )
+    val metadata = TransferWgsCramV1Metadata(
       cramPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
-    ).asJson(ElasticsearchIndex.WgsCram.encoder)
+    )
+    cramMapper.document(key, metadata)
   }
 
   private val updatedCrams = initCrams.map(updateDoc(_, "cram_path"))
@@ -152,7 +172,10 @@ class RecoveryIntegrationSpec
   }
 
   private val keysToDrop =
-    Set(ClioDocument.UpsertIdElasticSearchName, ClioDocument.EntityIdElasticSearchName)
+    Set(
+      ElasticsearchIndex.UpsertIdElasticsearchName,
+      ElasticsearchIndex.EntityIdElasticsearchName
+    )
 
   Seq(
     ("wgs-ubam", ClioCommand.queryWgsUbamName, "lane", updatedUbams),
@@ -186,14 +209,19 @@ class RecoveryIntegrationSpec
         _ <- recoveryDoneFuture
         docs <- runClient(queryCommand, "--location", location.entryName).mapTo[Json]
       } yield {
-        // Sort before comparing so we can do a pairwise comparison, which saves a ton of time.
-        val sortedActual = docs.asArray.value.sorted
-
-        // Remove null & internal values before comparing; already sorted by construction.
-        val sortedExpected = expected
-          .map(_.mapObject(_.filter {
+        // Helper function for filtering out values we don't care about matching.
+        def mapper(json: Json): Json = {
+          json.mapObject(_.filter({
             case (k, v) => !v.isNull && !keysToDrop.contains(k)
           }))
+        }
+
+        // Sort before comparing so we can do a pairwise comparison, which saves a ton of time.
+        // Remove null and internal values before comparing.
+        val sortedActual = docs.asArray.value.map(mapper).sorted
+
+        // Already sorted by construction. Remove null and internal values here too.
+        val sortedExpected = expected.map(mapper)
 
         sortedActual should contain theSameElementsInOrderAs sortedExpected
       }

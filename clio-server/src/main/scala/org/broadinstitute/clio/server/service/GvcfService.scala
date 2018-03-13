@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 
 import scala.concurrent.ExecutionContext
@@ -13,8 +13,9 @@ class GvcfService(
   persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext)
-    extends IndexService[GvcfIndex.type, DocumentGvcf](
+    extends IndexService[GvcfIndex.type](
       persistenceService,
       searchService,
+      ElasticsearchIndex.Gvcf,
       GvcfIndex
     )

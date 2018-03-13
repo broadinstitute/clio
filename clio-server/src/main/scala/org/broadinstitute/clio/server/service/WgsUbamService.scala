@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 
 import scala.concurrent.ExecutionContext
@@ -13,8 +13,9 @@ class WgsUbamService(
   persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext)
-    extends IndexService[WgsUbamIndex.type, DocumentWgsUbam](
+    extends IndexService[WgsUbamIndex.type](
       persistenceService,
       searchService,
+      ElasticsearchIndex.WgsUbam,
       WgsUbamIndex
     )

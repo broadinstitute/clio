@@ -1,13 +1,11 @@
 package org.broadinstitute.clio.server.webservice
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsCram
 import org.broadinstitute.clio.server.service.MockWgsCramService
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1Key
 import org.broadinstitute.clio.util.model.Location
 
-class WgsCramWebServiceSpec
-    extends IndexWebServiceSpec[WgsCramIndex.type, DocumentWgsCram] {
+class WgsCramWebServiceSpec extends IndexWebServiceSpec[WgsCramIndex.type] {
   def webServiceName = "WgsCramWebService"
   val mockService = new MockWgsCramService()
   val webService = new WgsCramWebService(mockService)

@@ -12,12 +12,8 @@ import better.files.File
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Json
 import io.circe.jawn.JawnParser
-import io.circe.syntax._
 import org.broadinstitute.clio.server.ClioServerConfig.Persistence
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -73,23 +69,24 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
   /**
     * Write a metadata update to storage.
     *
-    * @param document A partial metadata document representing an upsert.
+    * @param document A JSON object representing an upsert.
     * @param index    Typeclass providing information on where to persist the
     *                 metadata update.
     */
-  def writeUpdate[D <: ClioDocument](
-    document: D,
+  def writeUpdate(
+    document: Json,
+    index: ElasticsearchIndex[_],
     dt: OffsetDateTime = OffsetDateTime.now()
   )(
-    implicit ec: ExecutionContext,
-    index: ElasticsearchIndex[D]
+    implicit ec: ExecutionContext
   ): Future[Unit] = Future {
-    val jsonString =
-      ModelAutoDerivation.defaultPrinter.pretty(document.asJson(index.encoder))
-
     val writePath = (rootPath / index.persistenceDirForDatetime(dt)).createDirectories()
 
-    val written = (writePath / ClioDocument.persistenceFilename(document.upsertId))
+    val upsertId = ElasticsearchIndex.getUpsertId(document)
+
+    val jsonString = ModelAutoDerivation.defaultPrinter.pretty(document)
+
+    val written = (writePath / upsertId.persistenceFilename)
       .write(jsonString)(Seq(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE))
     logger.debug(s"Wrote document $document to ${written.uri}")
   }
@@ -217,7 +214,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
       // If Elasticsearch contained no documents, load every JSON file in storage.
       getAllAfter(rootDir, None)
     ) { upsert =>
-      val filename = ClioDocument.persistenceFilename(upsert)
+      val filename = upsert.persistenceFilename
 
       /*
        * Pull the stream until we find the path corresponding to the last

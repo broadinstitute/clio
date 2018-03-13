@@ -2,10 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentWgsCram,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1Key,
@@ -13,12 +10,11 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1QueryInput,
   WgsCramExtensions
 }
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
-class WgsCramServiceSpec
-    extends IndexServiceSpec[WgsCramIndex.type, DocumentWgsCram]("WgsCramService") {
+class WgsCramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramService") {
 
-  val index: ElasticsearchIndex[DocumentWgsCram] = ElasticsearchIndex.WgsCram
+  val elasticsearchIndex: ElasticsearchIndex[_] = ElasticsearchIndex.WgsCram
 
   val dummyKey = TransferWgsCramV1Key(Location.GCP, "project1", "sample1", 1)
 
@@ -41,14 +37,5 @@ class WgsCramServiceSpec
     searchService: SearchService
   ): WgsCramService = {
     new WgsCramService(persistenceService, searchService)
-  }
-
-  def copyDocumentWithUpsertId(
-    originalDocument: DocumentWgsCram,
-    upsertId: UpsertId
-  ): DocumentWgsCram = {
-    originalDocument.copy(
-      upsertId = upsertId
-    )
   }
 }

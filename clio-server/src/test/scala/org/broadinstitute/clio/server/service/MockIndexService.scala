@@ -8,31 +8,27 @@ import org.broadinstitute.clio.server.dataaccess.{
   PersistenceDAO,
   SearchDAO
 }
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.ClassTag
 
 abstract class MockIndexService[
-  TI <: TransferIndex,
-  D <: ClioDocument: ElasticsearchIndex
+  TI <: TransferIndex
 ](
   persistenceDAO: PersistenceDAO = new MockPersistenceDAO(),
   searchDAO: SearchDAO = new MockSearchDAO(),
+  elasticsearchIndex: ElasticsearchIndex[TI],
   override val transferIndex: TI
 )(
   implicit
-  executionContext: ExecutionContext,
-  documentTag: ClassTag[D]
+  executionContext: ExecutionContext
 ) extends IndexService(
       PersistenceService(persistenceDAO, searchDAO),
       SearchService(searchDAO),
+      elasticsearchIndex,
       transferIndex
     ) {
   val queryCalls = ArrayBuffer.empty[transferIndex.QueryInputType]

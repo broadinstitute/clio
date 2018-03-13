@@ -1,13 +1,11 @@
 package org.broadinstitute.clio.server.webservice
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentGvcf
 import org.broadinstitute.clio.server.service.MockGvcfService
 import org.broadinstitute.clio.util.model.Location
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1Key
 
-class GvcfWebServiceSpec extends IndexWebServiceSpec[GvcfIndex.type, DocumentGvcf] {
-
+class GvcfWebServiceSpec extends IndexWebServiceSpec[GvcfIndex.type] {
   def webServiceName = "GvcfWebService"
   val mockService = new MockGvcfService()
   val webService = new GvcfWebService(mockService)

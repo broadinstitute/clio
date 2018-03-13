@@ -2,14 +2,13 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.DocumentWgsCram
 import org.broadinstitute.clio.server.service.IndexService
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1Key
 import org.broadinstitute.clio.util.model.Location
 
-class WgsCramWebService(wgsCramService: IndexService[WgsCramIndex.type, DocumentWgsCram])
-    extends IndexWebService[WgsCramIndex.type, DocumentWgsCram](wgsCramService) {
+class WgsCramWebService(wgsCramService: IndexService[WgsCramIndex.type])
+    extends IndexWebService[WgsCramIndex.type](wgsCramService) {
 
   private[webservice] val pathPrefixKey: Directive1[TransferWgsCramV1Key] = {
     for {

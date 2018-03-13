@@ -4,24 +4,19 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
-  ElasticsearchIndex
-}
 import org.broadinstitute.clio.server.service.MockIndexService
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.model.UpsertId
 
 abstract class IndexWebServiceSpec[
-  TI <: TransferIndex,
-  D <: ClioDocument: ElasticsearchIndex
+  TI <: TransferIndex
 ] extends BaseWebserviceSpec {
 
   val memorySearchDAO = new MemorySearchDAO()
 
   def webServiceName: String
-  def mockService: MockIndexService[TI, D]
-  val webService: IndexWebService[TI, D]
+  def mockService: MockIndexService[TI]
+  val webService: IndexWebService[TI]
   def onPremKey: webService.indexService.transferIndex.KeyType
   def cloudKey: webService.indexService.transferIndex.KeyType
   def badMetadataMap: Map[String, String]

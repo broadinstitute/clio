@@ -2,8 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  AutoElasticsearchDocumentMapper,
-  DocumentWgsUbam,
+  ElasticsearchDocumentMapper,
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.dataaccess.{
@@ -16,18 +15,25 @@ import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1Key,
   TransferUbamV1Metadata
 }
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.Location
 
-class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
+class PersistenceServiceSpec
+    extends TestKitSuite("PersistenceServiceSpec")
+    with ModelAutoDerivation {
   behavior of "PersistenceService"
 
   val mockKey = TransferUbamV1Key(Location.OnPrem, "barcode", 1, "library")
   val mockMetadata = TransferUbamV1Metadata()
 
-  val mockDocConverter = AutoElasticsearchDocumentMapper[
+  val expectedIndex: ElasticsearchIndex[_] = ElasticsearchIndex.WgsUbam
+
+  val mockDocConverter: ElasticsearchDocumentMapper[
     TransferUbamV1Key,
-    TransferUbamV1Metadata,
-    DocumentWgsUbam
+    TransferUbamV1Metadata
+  ] = ElasticsearchDocumentMapper[
+    TransferUbamV1Key,
+    TransferUbamV1Metadata
   ]
 
   it should "upsertMetadata" in {
@@ -39,20 +45,21 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       uuid <- persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
-        mockDocConverter
+        mockDocConverter,
+        expectedIndex
       )
     } yield {
       val expectedDocument = mockDocConverter
-        .empty(mockKey)
-        .copy(upsertId = uuid)
-
-      val expectedIndex = ElasticsearchIndex.WgsUbam
+        .document(mockKey, mockMetadata)
+        .deepMerge(
+          Map(ElasticsearchIndex.UpsertIdElasticsearchName -> uuid).asJson
+        )
 
       persistenceDAO.writeCalls should be(
         Seq((expectedDocument, expectedIndex))
       )
       searchDAO.updateCalls.flatMap { case (jsons, index) => jsons.map(_ -> index) } should be(
-        Seq((expectedDocument.asJson(expectedIndex.encoder), expectedIndex))
+        Seq((expectedDocument, expectedIndex))
       )
     }
   }
@@ -66,7 +73,8 @@ class PersistenceServiceSpec extends TestKitSuite("PersistenceServiceSpec") {
       persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
-        mockDocConverter
+        mockDocConverter,
+        expectedIndex
       )
     }.map { _ =>
       searchDAO.updateCalls should be(empty)
