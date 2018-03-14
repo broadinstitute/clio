@@ -72,6 +72,7 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
 }
 
 object TransferMetadata {
+
   /**
     * Given a `source` path, a `destination` directory, and an extension, figure out what
     * the new file name should be were the source file to be moved into the destination path,
@@ -95,4 +96,3 @@ object TransferMetadata {
     destination.resolve(s"${newBasename.getOrElse(srcBase)}$extension")
   }
 }
-

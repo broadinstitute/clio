@@ -55,7 +55,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
       }
       case _ => {
         throw new IllegalStateException(
-        s"Cram record with key ${deliverCommand.key} is missing either its cram path or cram md5"
+          s"Cram record with key ${deliverCommand.key} is missing either its cram path or cram md5"
         )
       }
     }

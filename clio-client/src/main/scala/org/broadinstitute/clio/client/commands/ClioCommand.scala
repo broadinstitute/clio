@@ -68,7 +68,8 @@ sealed abstract class DeliverCommand[+TI <: TransferIndex](override val index: T
     extends MoveCommand(index) {
   def key: index.KeyType
   def workspaceName: String
-  def destination: URI
+  def workspacePath: URI
+  def destination: URI = workspacePath
   def newBasename: Option[String]
 }
 
@@ -180,7 +181,7 @@ final case class DeleteWgsCram(
 final case class DeliverWgsCram(
   @Recurse key: TransferWgsCramV1Key,
   workspaceName: String,
-  destination: URI,
+  workspacePath: URI,
   newBasename: Option[String]
 ) extends DeliverCommand(WgsCramIndex)
 
@@ -252,7 +253,7 @@ final case class DeleteArrays(
 final case class DeliverArrays(
   @Recurse key: TransferArraysV1Key,
   workspaceName: String,
-  destination: URI,
+  workspacePath: URI,
   newBasename: Option[String]
 ) extends DeliverCommand(ArraysIndex)
 

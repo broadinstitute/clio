@@ -156,6 +156,8 @@ class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[T
           }
       }
 
+      System.out.println("movedMetadata: " + movedMetadata.toString)
+
       for {
         _ <- pathCheck
         _ <- Future
@@ -229,6 +231,6 @@ class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[T
     // ioUtil is used to create new files in subclass implementations, but not in the default case.
     // Unless it is touched by default, Scala will helpfully throw compile errors to point this out to us.
     val _ = ioUtil
-    Future{metadata}
+    Future { metadata }
   }
 }
