@@ -2,7 +2,10 @@ package org.broadinstitute.clio.server.service
 
 import akka.stream.scaladsl.Sink
 import io.circe.syntax._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchIndex,
+  ElasticsearchUtil
+}
 import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.transfer.model.ubam.{
@@ -10,9 +13,12 @@ import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1Metadata,
   TransferUbamV1QueryInput
 }
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
-class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
+class WgsUbamServiceSpec
+    extends TestKitSuite("WgsUbamServiceSpec")
+    with ModelAutoDerivation {
   behavior of "WgsUbamService"
 
   it should "upsertMetadata" in {
@@ -50,7 +56,7 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
         Seq(
           WgsUbamService.v1QueryConverter.buildQuery(
             transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
-          )
+          )(ElasticsearchIndex.WgsUbam)
         )
       )
     }
@@ -87,15 +93,20 @@ class WgsUbamServiceSpec extends TestKitSuite("WgsUbamServiceSpec") {
       )
     } yield {
       val expectedDocument = WgsUbamService.v1DocumentConverter
-        .withMetadata(
-          WgsUbamService.v1DocumentConverter.empty(transferKey),
+        .document(
+          transferKey,
           transferMetadata.copy(documentStatus = expectedDocumentStatus)
         )
-        .copy(upsertId = returnedUpsertId)
+        .deepMerge(
+          Map(
+            ElasticsearchUtil
+              .toElasticsearchName(ElasticsearchIndex.UpsertIdElasticsearchName) -> returnedUpsertId
+          ).asJson
+        )
 
       memoryPersistenceDAO.writeCalls should be(Seq((expectedDocument, index)))
       memorySearchDAO.updateCalls should be(
-        Seq((Seq(expectedDocument.asJson(index.encoder)), index))
+        Seq((Seq(expectedDocument), index))
       )
       memorySearchDAO.queryCalls should be(empty)
     }

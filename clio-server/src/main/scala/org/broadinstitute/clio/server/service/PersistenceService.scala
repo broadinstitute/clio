@@ -2,11 +2,11 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ClioDocument,
   ElasticsearchDocumentMapper,
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
+import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -23,26 +23,25 @@ class PersistenceService private (persistenceDAO: PersistenceDAO, searchDAO: Sea
   /**
     * Update-or-insert (upsert) metadata for a given key.
     *
-    * @param transferKey      The DTO for the key.
+    * @param transferKey      The DTO for the key
     * @param transferMetadata The DTO for the metadata.
-    * @tparam TK The type of the Transfer Key DTO.
-    * @tparam TM The type of the Transfer Metadata DTO.
-    * @tparam D  The type of the Document.
+    * @tparam Key      The type of the TransferKey DTO.
+    * @tparam Metadata The type of the TransferMetadata DTO.
     * @return the ID for this upsert
     */
-  def upsertMetadata[TK, TM, D <: ClioDocument: ElasticsearchIndex](
-    transferKey: TK,
-    transferMetadata: TM,
-    documentMapper: ElasticsearchDocumentMapper[TK, TM, D]
+  def upsertMetadata[Key <: TransferKey, Metadata <: TransferMetadata[Metadata]](
+    transferKey: Key,
+    transferMetadata: Metadata,
+    documentMapper: ElasticsearchDocumentMapper[Key, Metadata],
+    index: ElasticsearchIndex[_]
   )(implicit ec: ExecutionContext): Future[UpsertId] = {
-    val empty = documentMapper.empty(transferKey)
-    val document = documentMapper.withMetadata(empty, transferMetadata)
+    val document = documentMapper.document(transferKey, transferMetadata)
 
     for {
-      _ <- persistenceDAO.writeUpdate(document)
-      _ <- searchDAO.updateMetadata(document)
+      _ <- persistenceDAO.writeUpdate(document, index)
+      _ <- searchDAO.updateMetadata(document)(index)
     } yield {
-      document.upsertId
+      ElasticsearchIndex.getUpsertId(document)
     }
   }
 }

@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
+import org.broadinstitute.clio.transfer.model.ModelMockIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -8,19 +9,19 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
   behavior of "ElasticsearchIndex"
 
   it should behave like aV1Index(
-    new ElasticsearchIndex[DocumentMock](
-      "mock",
+    new ElasticsearchIndex[ModelMockIndex](
+      ModelMockIndex("mock"),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
   )
   it should behave like aV2Index(
-    new ElasticsearchIndex[DocumentMock](
-      "mock-v2",
+    new ElasticsearchIndex[ModelMockIndex](
+      ModelMockIndex("mock-v2"),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
   )
 
-  def aV1Index(index: ElasticsearchIndex[DocumentMock]): Unit = {
+  def aV1Index(index: ElasticsearchIndex[ModelMockIndex]): Unit = {
     it should "indexName for v1 document" in {
       index.indexName should be("mock")
     }
@@ -30,13 +31,8 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
     }
 
     it should "fields for v1 document" in {
-      // Snake-case-ify the bookkeeping fields.
-      val bookkeeping =
-        Seq(ClioDocument.UpsertIdFieldName, ClioDocument.EntityIdFieldName).map { name =>
-          keywordField(name.replaceAll("([A-Z])", "_$1").toLowerCase)
-        }
-
-      index.fields should contain theSameElementsAs bookkeeping ++ Seq(
+      index.fields should contain theSameElementsAs ElasticsearchIndex.BookkeepingNames
+        .map(keywordField) ++ Seq(
         dateField("mock_field_date"),
         doubleField("mock_field_double"),
         intField("mock_field_int"),
@@ -52,7 +48,7 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
     }
   }
 
-  def aV2Index(index: ElasticsearchIndex[DocumentMock]): Unit = {
+  def aV2Index(index: ElasticsearchIndex[ModelMockIndex]): Unit = {
     it should "indexName for v2 document" in {
       index.indexName should be("mock-v2")
     }
@@ -62,15 +58,10 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
     }
 
     it should "fields for v2 document" in {
-      // Snake-case-ify the bookkeeping fields.
-      val bookkeeping =
-        Seq(ClioDocument.UpsertIdFieldName, ClioDocument.EntityIdFieldName).map { name =>
-          keywordField(ElasticsearchUtil.toElasticsearchName(name))
-        }
-
       import ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords.TextExactMatchFieldName
 
-      index.fields should contain theSameElementsAs bookkeeping ++ Seq(
+      index.fields should contain theSameElementsAs ElasticsearchIndex.BookkeepingNames
+        .map(keywordField) ++ Seq(
         dateField("mock_field_date"),
         doubleField("mock_field_double"),
         intField("mock_field_int"),

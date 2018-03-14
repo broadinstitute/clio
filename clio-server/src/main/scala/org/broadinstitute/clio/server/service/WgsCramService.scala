@@ -8,8 +8,7 @@ import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{
   TransferWgsCramV1Key,
   TransferWgsCramV1Metadata,
-  TransferWgsCramV1QueryInput,
-  TransferWgsCramV1QueryOutput
+  TransferWgsCramV1QueryInput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
@@ -22,7 +21,10 @@ import scala.concurrent.{ExecutionContext, Future}
 class WgsCramService(
   persistenceService: PersistenceService,
   searchService: SearchService
-)(implicit executionContext: ExecutionContext) {
+)(
+  implicit executionContext: ExecutionContext,
+  index: ElasticsearchIndex[WgsCramIndex.type]
+) {
 
   def upsertMetadata(
     transferKey: TransferWgsCramV1Key,
@@ -36,13 +38,14 @@ class WgsCramService(
       .upsertMetadata(
         transferKey,
         updatedTransferMetadata,
-        WgsCramService.v1DocumentConverter
+        WgsCramService.v1DocumentConverter,
+        ElasticsearchIndex.WgsCram
       )
   }
 
   def queryMetadata(
     transferInput: TransferWgsCramV1QueryInput
-  ): Source[TransferWgsCramV1QueryOutput, NotUsed] = {
+  ): Source[Json, NotUsed] = {
     val transferInputNew =
       transferInput.copy(documentStatus = Option(DocumentStatus.Normal))
     queryAllMetadata(transferInputNew)
@@ -50,7 +53,7 @@ class WgsCramService(
 
   def queryAllMetadata(
     transferInput: TransferWgsCramV1QueryInput
-  ): Source[TransferWgsCramV1QueryOutput, NotUsed] = {
+  ): Source[Json, NotUsed] = {
     searchService.queryMetadata(
       transferInput,
       WgsCramService.v1QueryConverter
@@ -61,21 +64,14 @@ class WgsCramService(
 }
 
 object WgsCramService {
+  import WgsCramIndex.implicits._
+
   private[service] val v1DocumentConverter =
-    AutoElasticsearchDocumentMapper[
+    ElasticsearchDocumentMapper[
       TransferWgsCramV1Key,
       TransferWgsCramV1Metadata,
-      DocumentWgsCram
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[
-    TransferWgsCramV1QueryInput,
-    TransferWgsCramV1QueryOutput,
-    DocumentWgsCram
-  ] =
-    AutoElasticsearchQueryMapper[
-      TransferWgsCramV1QueryInput,
-      TransferWgsCramV1QueryOutput,
-      DocumentWgsCram
-    ]
+  val v1QueryConverter: ElasticsearchQueryMapper[TransferWgsCramV1QueryInput] =
+    ElasticsearchQueryMapper[TransferWgsCramV1QueryInput]
 }
