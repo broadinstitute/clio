@@ -11,6 +11,7 @@ import org.broadinstitute.clio.server.dataaccess.{
   MemorySearchDAO
 }
 import org.broadinstitute.clio.server.TestKitSuite
+import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{
   TransferUbamV1Key,
   TransferUbamV1Metadata
@@ -26,7 +27,7 @@ class PersistenceServiceSpec
   val mockKey = TransferUbamV1Key(Location.OnPrem, "barcode", 1, "library")
   val mockMetadata = TransferUbamV1Metadata()
 
-  val expectedIndex: ElasticsearchIndex[_] = ElasticsearchIndex.WgsUbam
+  val expectedIndex: ElasticsearchIndex[WgsUbamIndex.type] = ElasticsearchIndex.WgsUbam
 
   val mockDocConverter: ElasticsearchDocumentMapper[
     TransferUbamV1Key,

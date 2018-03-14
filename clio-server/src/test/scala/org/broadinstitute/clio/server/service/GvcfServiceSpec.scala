@@ -14,7 +14,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 class GvcfServiceSpec extends IndexServiceSpec[GvcfIndex.type]("GvcfService") {
 
-  val elasticsearchIndex: ElasticsearchIndex[_] = ElasticsearchIndex.Gvcf
+  val elasticsearchIndex: ElasticsearchIndex[GvcfIndex.type] = ElasticsearchIndex.Gvcf
 
   val dummyKey = TransferGvcfV1Key(Location.GCP, "project1", "sample1", 1)
 

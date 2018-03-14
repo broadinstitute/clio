@@ -14,7 +14,8 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 class WgsCramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramService") {
 
-  val elasticsearchIndex: ElasticsearchIndex[_] = ElasticsearchIndex.WgsCram
+  val elasticsearchIndex: ElasticsearchIndex[WgsCramIndex.type] =
+    ElasticsearchIndex.WgsCram
 
   val dummyKey = TransferWgsCramV1Key(Location.GCP, "project1", "sample1", 1)
 

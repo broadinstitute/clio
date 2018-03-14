@@ -10,11 +10,13 @@ import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySe
 import org.broadinstitute.clio.transfer.model.TransferIndex
 import org.broadinstitute.clio.util.model.DocumentStatus
 import io.circe.syntax._
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 abstract class IndexServiceSpec[
   TI <: TransferIndex
 ](specificService: String)
-    extends TestKitSuite(specificService + "Spec") {
+    extends TestKitSuite(specificService + "Spec")
+    with ModelAutoDerivation {
 
   val memoryPersistenceDAO = new MemoryPersistenceDAO()
   val memorySearchDAO = new MemorySearchDAO()

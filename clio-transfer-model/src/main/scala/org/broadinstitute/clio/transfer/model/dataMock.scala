@@ -72,19 +72,7 @@ case class ModelMockMetadata(
     pathMapper: (Option[URI], String) => Option[URI]
   ): ModelMockMetadata = this
 
-  def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockMetadata = {
-    this.copy(
-      mockFieldDouble,
-      mockFieldInt,
-      mockFieldDate,
-      mockStringArray,
-      mockPathArray,
-      documentStatus,
-      mockFileMd5,
-      mockFilePath,
-      mockFileSize
-    )
-  }
+  def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockMetadata = this
 }
 
 case class ModelMockQueryInput(
@@ -94,22 +82,11 @@ case class ModelMockQueryInput(
   mockFieldInt: Option[Int],
   mockKeyLong: Option[Long],
   mockKeyString: Option[String],
-  mockDocumentStatus: Option[DocumentStatus] = None
+  documentStatus: Option[DocumentStatus] = None
 ) extends TransferQueryInput[ModelMockQueryInput] {
 
-  override val documentStatus: Option[DocumentStatus] = mockDocumentStatus
-
-  def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockQueryInput = {
-    this.copy(
-      mockFieldDouble,
-      mockFieldDateEnd,
-      mockFieldDateStart,
-      mockFieldInt,
-      mockKeyLong,
-      mockKeyString,
-      documentStatus
-    )
-  }
+  def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockQueryInput =
+    this
 }
 
 case class ModelMockQueryOutput(

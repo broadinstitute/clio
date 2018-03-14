@@ -21,14 +21,14 @@ class SearchService private (searchDAO: SearchDAO) {
     * @param transferInput The DTO for the query input.
     * @param queryMapper   Converts the DTO into a search query.
     * @tparam Input The type of the Transfer Query Input DTO.
-    * @tparam Index The type of the TransferKey to query.
+    * @tparam TI The type of the TransferKey to query.
     * @return The result of the query.
     */
-  def queryMetadata[Input, Index <: TransferIndex](
+  def queryMetadata[Input, TI <: TransferIndex](
     transferInput: Input,
     queryMapper: ElasticsearchQueryMapper[Input]
   )(
-    implicit index: ElasticsearchIndex[Index]
+    implicit index: ElasticsearchIndex[TI]
   ): Source[Json, NotUsed] = {
     if (queryMapper.isEmpty(transferInput)) {
       Source.empty[Json]

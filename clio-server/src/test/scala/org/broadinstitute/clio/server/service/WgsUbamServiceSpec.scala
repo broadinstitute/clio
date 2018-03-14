@@ -10,7 +10,9 @@ import org.broadinstitute.clio.transfer.model.ubam.{
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 class WgsUbamServiceSpec extends IndexServiceSpec[WgsUbamIndex.type]("WgsUbamService") {
-  val elasticsearchIndex: ElasticsearchIndex[_] = ElasticsearchIndex.WgsUbam
+
+  val elasticsearchIndex: ElasticsearchIndex[WgsUbamIndex.type] =
+    ElasticsearchIndex.WgsUbam
 
   val dummyKey = TransferUbamV1Key(Location.GCP, "barcode1", 2, "library3")
 
