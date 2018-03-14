@@ -14,7 +14,8 @@ import org.broadinstitute.clio.util.model.{Location, UpsertId}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
+// Constructor arguments are private by default and we want to be able to pass aspects of moveCommand into protected methods.
+class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[TI])
     extends Executor[Option[UpsertId]] {
 
   import moveCommand.index.implicits._
@@ -219,7 +220,7 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     }
   }
 
-  private def customMetadataOperations(
+  protected def customMetadataOperations(
     metadata: moveCommand.index.MetadataType,
     ioUtil: IoUtil
   )(

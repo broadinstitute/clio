@@ -2,7 +2,8 @@ package org.broadinstitute.clio.client.dispatch
 
 import org.broadinstitute.clio.client.commands.DeliverArrays
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.transfer.model.arrays.TransferArraysV1Metadata
+import org.broadinstitute.clio.transfer.model.TransferMetadata
+import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, TransferArraysV1Metadata}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -19,5 +20,23 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)
 
   override def customMetadataOperations(metadata: TransferArraysV1Metadata, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
-  ): Future[Unit] = ???
+  ): Future[TransferArraysV1Metadata] = {
+    metadata.grnIdat match {
+      case Some(path) => ioUtil.copyGoogleObject(path, deliverCommand.destination)
+      case None => throw new IllegalStateException(
+        s"Arrays record with key ${deliverCommand.key} is missing its grnIdatPath"
+      )
+    }
+    metadata.redIdat match {
+      case Some(path) => ioUtil.copyGoogleObject(path, deliverCommand.destination)
+      case None => throw new IllegalStateException(
+        s"Arrays record with key ${deliverCommand.key} is missing its redIdatPath"
+      )
+    }
+
+    val movedGrnIdat = TransferMetadata.findNewPathForMove(metadata.grnIdat.get, deliverCommand.destination, ArraysExtensions.IdatExtension)
+    val movedRedIdat = TransferMetadata.findNewPathForMove(metadata.redIdat.get, deliverCommand.destination, ArraysExtensions.IdatExtension)
+
+    Future{metadata.withMovedIdats(movedGrnIdat, movedRedIdat)}
+  }
 }

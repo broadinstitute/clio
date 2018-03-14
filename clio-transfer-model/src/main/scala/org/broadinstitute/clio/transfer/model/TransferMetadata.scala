@@ -43,7 +43,7 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
 
     mapMove {
       case (pathOpt, ext) =>
-        pathOpt.map(moveIntoDirectory(_, destination, ext, newBasename))
+        pathOpt.map(TransferMetadata.findNewPathForMove(_, destination, ext, newBasename))
     }
   }
 
@@ -62,7 +62,19 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
   protected def mapMove(pathMapper: (Option[URI], String) => Option[URI]): M
 
   /**
-    * Move the file at `source` into the directory `destination`,
+    * Return a copy of this object's notes with the given note appended.
+    */
+  protected def appendNote(note: String): Some[String] =
+    notes match {
+      case Some(existing) => Some(s"$existing\n$note")
+      case None           => Some(note)
+    }
+}
+
+object TransferMetadata {
+  /**
+    * Given a `source` path, a `destination` directory, and an extension, figure out what
+    * the new file name should be were the source file to be moved into the destination path,
     * optionally changing the base-name in the process.
     *
     * NOTE: Because we use '.' liberally in both our file names and file extensions,
@@ -71,7 +83,7 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
     * extension. Rather than make dangerous guesses, we require that the code calling
     * the move operation provide the file extension to retain during the move operation.
     */
-  protected def moveIntoDirectory(
+  def findNewPathForMove(
     source: URI,
     destination: URI,
     extension: String,
@@ -82,13 +94,5 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
     val srcBase = srcName.take(srcName.toLowerCase.lastIndexOf(extension))
     destination.resolve(s"${newBasename.getOrElse(srcBase)}$extension")
   }
-
-  /**
-    * Return a copy of this object's notes with the given note appended.
-    */
-  protected def appendNote(note: String): Some[String] =
-    notes match {
-      case Some(existing) => Some(s"$existing\n$note")
-      case None           => Some(note)
-    }
 }
+

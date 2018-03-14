@@ -172,4 +172,11 @@ case class TransferArraysV1Metadata(
       workspaceName = Some(name)
     )
   }
+
+  def withMovedIdats(grnIdatPath: URI, redIdatPath: URI): TransferArraysV1Metadata = {
+    this.copy(
+      grnIdat = Some(grnIdatPath),
+      redIdat = Some(redIdatPath)
+    )
+  }
 }
