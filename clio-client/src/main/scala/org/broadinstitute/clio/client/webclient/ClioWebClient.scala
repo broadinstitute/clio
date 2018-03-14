@@ -184,7 +184,7 @@ class ClioWebClient(
 
   def upsert[TI <: TransferIndex](transferIndex: TI)(
     key: transferIndex.KeyType,
-    metadata: transferIndex.MetadataType
+    metadata: transferIndex.type#MetadataType
   ): Future[UpsertId] = {
     import transferIndex.implicits._
 

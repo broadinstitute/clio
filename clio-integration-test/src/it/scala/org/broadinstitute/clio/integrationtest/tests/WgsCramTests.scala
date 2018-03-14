@@ -772,6 +772,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       _ <- runUpsertCram(key, metadata)
       _ <- runClient(
         ClioCommand.deliverWgsCramName,
+        "--destination",
+        rootDestination.uri.toString,
         "--location",
         Location.GCP.entryName,
         "--project",
@@ -782,8 +784,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         version.toString,
         "--workspace-name",
         workspaceName,
-        "--workspace-path",
-        rootDestination.uri.toString,
         "--new-basename",
         newBasename
       )
@@ -871,6 +871,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       _ <- runUpsertCram(key, metadata)
       _ <- runClient(
         ClioCommand.deliverWgsCramName,
+        "--destination",
+        rootSource.uri.toString,
         "--location",
         Location.GCP.entryName,
         "--project",
@@ -880,9 +882,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--version",
         version.toString,
         "--workspace-name",
-        workspaceName,
-        "--workspace-path",
-        rootSource.uri.toString
+        workspaceName
       )
       outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
@@ -1012,6 +1012,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       _ <- runUpsertCram(key, metadata)
       _ <- runClient(
         ClioCommand.deliverWgsCramName,
+        "--destination",
+        rootDestination.uri.toString,
         "--location",
         Location.GCP.entryName,
         "--project",
@@ -1021,9 +1023,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--version",
         version.toString,
         "--workspace-name",
-        workspaceName,
-        "--workspace-path",
-        rootDestination.uri.toString
+        workspaceName
       )
       outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
         ClioCommand.queryWgsCramName,
@@ -1106,6 +1106,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         // Should fail because the source files don't exist.
         deliverResponse <- runClient(
           ClioCommand.deliverWgsCramName,
+          "--destination",
+          rootDestination.uri.toString,
           "--location",
           Location.GCP.entryName,
           "--project",
@@ -1115,9 +1117,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           "--version",
           version.toString,
           "--workspace-name",
-          workspaceName,
-          "--workspace-path",
-          rootDestination.uri.toString
+          workspaceName
         )
       } yield {
         deliverResponse

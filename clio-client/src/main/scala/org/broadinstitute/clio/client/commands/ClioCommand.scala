@@ -50,7 +50,7 @@ sealed abstract class QueryCommand[TI <: TransferIndex](val index: TI)
   def includeDeleted: Boolean
 }
 
-sealed abstract class MoveCommand[TI <: TransferIndex](val index: TI)
+sealed abstract class MoveCommand[+TI <: TransferIndex](val index: TI)
     extends ClioCommand {
   def key: index.KeyType
   def destination: URI
@@ -62,6 +62,14 @@ sealed abstract class DeleteCommand[TI <: TransferIndex](val index: TI)
   def key: index.KeyType
   def note: String
   def force: Boolean
+}
+
+sealed abstract class DeliverCommand[+TI <: TransferIndex](override val index: TI)
+    extends MoveCommand(index) {
+  def key: index.KeyType
+  def workspaceName: String
+  def destination: URI
+  def newBasename: Option[String]
 }
 
 // Generic commands.
@@ -172,9 +180,9 @@ final case class DeleteWgsCram(
 final case class DeliverWgsCram(
   @Recurse key: TransferWgsCramV1Key,
   workspaceName: String,
-  workspacePath: URI,
+  destination: URI,
   newBasename: Option[String]
-) extends ClioCommand
+) extends DeliverCommand(WgsCramIndex)
 
 // Hybsel-uBAM commands.
 
@@ -240,6 +248,14 @@ final case class DeleteArrays(
   force: Boolean = false
 ) extends DeleteCommand(ArraysIndex)
 
+@CommandName(ClioCommand.deliverArraysName)
+final case class DeliverArrays(
+  @Recurse key: TransferArraysV1Key,
+  workspaceName: String,
+  destination: URI,
+  newBasename: Option[String]
+) extends DeliverCommand(ArraysIndex)
+
 object ClioCommand extends ClioParsers {
 
   // Names for generic commands.
@@ -288,6 +304,7 @@ object ClioCommand extends ClioParsers {
   val queryArraysName: String = queryPrefix + ArraysIndex.commandName
   val moveArraysName: String = movePrefix + ArraysIndex.commandName
   val deleteArraysName: String = deletePrefix + ArraysIndex.commandName
+  val deliverArraysName: String = deliverPrefix + ArraysIndex.commandName
 
   /** The caseapp parser to use for all Clio sub-commands. */
   val parser: CommandParser[ClioCommand] =

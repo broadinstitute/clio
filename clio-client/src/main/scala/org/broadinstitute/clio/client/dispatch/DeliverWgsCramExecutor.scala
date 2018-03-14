@@ -3,15 +3,9 @@ package org.broadinstitute.clio.client.dispatch
 import java.net.URI
 
 import better.files.File
-import org.broadinstitute.clio.client.commands.{DeliverWgsCram, MoveWgsCram}
+import org.broadinstitute.clio.client.commands.DeliverWgsCram
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.WgsCramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  TransferWgsCramV1Metadata,
-  WgsCramExtensions
-}
-import org.broadinstitute.clio.util.model.UpsertId
+import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1Metadata, WgsCramExtensions}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -23,33 +17,10 @@ import scala.concurrent.{ExecutionContext, Future}
   *   1. Writes the cram md5 value to file at the target path
   *   2. Records the workspace name in the metadata for the delivered cram
   */
-class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor[UpsertId] {
+class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
+    extends DeliverExecutor(deliverCommand) {
 
-  override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext
-  ): Future[UpsertId] = {
-
-    val moveCommand = MoveWgsCram(
-      deliverCommand.key,
-      deliverCommand.workspacePath,
-      deliverCommand.newBasename
-    )
-
-    val moveExecutor = new MoveExecutor(moveCommand)
-
-    for {
-      _ <- moveExecutor.execute(webClient, ioUtil)
-      // Metadata must exist at this point because it's required by the move executor.
-      Some(cramData) <- webClient.getMetadataForKey(WgsCramIndex)(deliverCommand.key)
-      _ <- writeCramMd5(cramData, ioUtil)
-      updated = cramData.copy(workspaceName = Some(deliverCommand.workspaceName))
-      upsertId <- webClient.upsert(WgsCramIndex)(deliverCommand.key, updated)
-    } yield {
-      upsertId
-    }
-  }
-
-  private def writeCramMd5(metadata: TransferWgsCramV1Metadata, ioUtil: IoUtil)(
+  override def writeMd5(metadata: TransferWgsCramV1Metadata, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[Unit] = Future {
     (metadata.cramMd5, metadata.cramPath) match {
