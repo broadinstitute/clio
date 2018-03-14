@@ -2,7 +2,6 @@ package org.broadinstitute.clio.transfer.model.arrays
 
 import java.net.URI
 import java.time.OffsetDateTime
-import java.util.UUID
 
 import org.broadinstitute.clio.transfer.model.TransferMetadata
 import org.broadinstitute.clio.util.model.DocumentStatus
