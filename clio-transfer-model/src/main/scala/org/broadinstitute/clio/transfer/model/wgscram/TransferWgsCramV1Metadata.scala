@@ -58,7 +58,8 @@ case class TransferWgsCramV1Metadata(
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   // TODO: Move these to top-level named fields in the wgs-ubam index?
   readgroupLevelMetricsFiles: Option[List[URI]] = None
-) extends TransferMetadata[TransferWgsCramV1Metadata] with DeliverableMetadata[TransferWgsCramV1Metadata] {
+) extends TransferMetadata[TransferWgsCramV1Metadata]
+    with DeliverableMetadata[TransferWgsCramV1Metadata] {
 
   override def pathsToDelete: Seq[URI] =
     Seq.concat(

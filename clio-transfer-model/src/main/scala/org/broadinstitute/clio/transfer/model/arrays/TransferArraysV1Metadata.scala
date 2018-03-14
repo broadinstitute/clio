@@ -78,7 +78,8 @@ case class TransferArraysV1Metadata(
   zcallPed: Option[URI] = None,
   zcallThresholdsPath: Option[URI] = None,
   zcallVersion: Option[Symbol] = None
-) extends TransferMetadata[TransferArraysV1Metadata] with DeliverableMetadata[TransferArraysV1Metadata] {
+) extends TransferMetadata[TransferArraysV1Metadata]
+    with DeliverableMetadata[TransferArraysV1Metadata] {
 
   /**
     * FIXME: Deletes everything now, but Gvcf and WgsCram do not

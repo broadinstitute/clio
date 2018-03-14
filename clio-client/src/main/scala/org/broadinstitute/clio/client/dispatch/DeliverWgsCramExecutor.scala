@@ -5,7 +5,10 @@ import java.net.URI
 import better.files.File
 import org.broadinstitute.clio.client.commands.DeliverWgsCram
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.transfer.model.wgscram.{TransferWgsCramV1Metadata, WgsCramExtensions}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  TransferWgsCramV1Metadata,
+  WgsCramExtensions
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -20,9 +23,12 @@ import scala.concurrent.{ExecutionContext, Future}
 class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
     extends DeliverExecutor(deliverCommand) {
 
-  override def writeMd5(metadata: TransferWgsCramV1Metadata, ioUtil: IoUtil)(
+  override def customMetadataOperations(
+    metadata: TransferWgsCramV1Metadata,
+    ioUtil: IoUtil
+  )(
     implicit ec: ExecutionContext
-  ): Future[Unit] = Future {
+  ): Future[TransferWgsCramV1Metadata] = Future {
     (metadata.cramMd5, metadata.cramPath) match {
       case (Some(cramMd5), Some(cramPath)) => {
         /*
@@ -49,9 +55,10 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
       }
       case _ => {
         throw new IllegalStateException(
-          s"Cram record with key ${deliverCommand.key} is missing either its cram path or cram md5"
+        s"Cram record with key ${deliverCommand.key} is missing either its cram path or cram md5"
         )
       }
     }
+    metadata
   }
 }

@@ -98,10 +98,10 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     existingMetadata: moveCommand.index.MetadataType
   )(implicit ec: ExecutionContext): Future[Option[UpsertId]] = {
 
-    val newMetadata =
+    val movedMetadata =
       existingMetadata.moveInto(destination, moveCommand.newBasename)
     val preMovePaths = extractPaths(existingMetadata)
-    val postMovePaths = extractPaths(newMetadata)
+    val postMovePaths = extractPaths(movedMetadata)
 
     val movesToPerform = preMovePaths.flatMap {
       case (fieldName, path) => {
@@ -169,8 +169,9 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
                 ex
               )
           }
+        mungedMetadata <- customMetadataOperations(movedMetadata, ioUtil)
         upsertResponse <- client
-          .upsert(moveCommand.index)(moveCommand.key, newMetadata)
+          .upsert(moveCommand.index)(moveCommand.key, mungedMetadata)
           .recover {
             case ex =>
               throw new RuntimeException(
@@ -216,5 +217,17 @@ class MoveExecutor[TI <: TransferIndex](moveCommand: MoveCommand[TI])
     if (ioUtil.deleteGoogleObject(path) != 0) {
       throw new RuntimeException(s"Deleting file in the cloud failed for path '$path'")
     }
+  }
+
+  private def customMetadataOperations(
+    metadata: moveCommand.index.MetadataType,
+    ioUtil: IoUtil
+  )(
+    implicit ec: ExecutionContext
+  ): Future[moveCommand.index.MetadataType] = {
+    // ioUtil is used to create new files in subclass implementations, but not in the default case.
+    // Unless it is touched by default, Scala will helpfully throw compile errors to point this out to us.
+    val _ = ioUtil
+    Future{metadata}
   }
 }
