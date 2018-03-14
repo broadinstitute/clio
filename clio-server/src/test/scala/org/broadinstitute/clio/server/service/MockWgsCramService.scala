@@ -8,7 +8,7 @@ import org.broadinstitute.clio.util.model.Location
 import scala.concurrent.ExecutionContext
 
 class MockWgsCramService()(implicit executionContext: ExecutionContext)
-    extends MockIndexService[WgsCramIndex.type](
+    extends MockIndexService(
       elasticsearchIndex = ElasticsearchIndex.WgsCram,
       transferIndex = WgsCramIndex
     ) {

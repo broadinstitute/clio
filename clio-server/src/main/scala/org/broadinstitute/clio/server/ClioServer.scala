@@ -44,9 +44,9 @@ object ClioServer extends StrictLogging {
     ClioServerConfig.Persistence.recoveryParallelism
   )
 
-  private val persistenceService = PersistenceService(persistenceDAO, searchDAO)
-  private val searchService = SearchService(searchDAO)
-  private val statusService = StatusService(
+  private val persistenceService = new PersistenceService(persistenceDAO, searchDAO)
+  private val searchService = new SearchService(searchDAO)
+  private val statusService = new StatusService(
     serverStatusDAO,
     searchDAO
   )
@@ -96,11 +96,12 @@ object ClioServer extends StrictLogging {
 
   private val httpServerDAO = AkkaHttpServerDAO(wrapperDirectives, infoRoutes, apiRoutes)
 
-  private val serverService = ServerService(
+  private val serverService = new ServerService(
     serverStatusDAO,
     persistenceDAO,
     searchDAO,
-    httpServerDAO
+    httpServerDAO,
+    ClioServerConfig.Version.value
   )
 
   def beginStartup(): Unit = serverService.beginStartup()

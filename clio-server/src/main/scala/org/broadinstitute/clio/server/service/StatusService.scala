@@ -7,7 +7,7 @@ import org.broadinstitute.clio.status.model.{SearchStatus, StatusInfo, VersionIn
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
 
-class StatusService private[service] (
+class StatusService private[server] (
   serverStatusDAO: ServerStatusDAO,
   searchDAO: SearchDAO
 )(implicit executionContext: ExecutionContext) {
@@ -29,13 +29,6 @@ class StatusService private[service] (
 }
 
 object StatusService {
-
-  def apply(
-    serverStatusDAO: ServerStatusDAO,
-    searchDAO: SearchDAO
-  )(implicit executionContext: ExecutionContext): StatusService = {
-    new StatusService(serverStatusDAO, searchDAO)
-  }
 
   private def toSystemStatusInfo(status: Try[_]): Try[SearchStatus] = {
     status.transform(

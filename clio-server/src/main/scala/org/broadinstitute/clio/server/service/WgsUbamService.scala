@@ -13,7 +13,7 @@ class WgsUbamService(
   persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext)
-    extends IndexService[WgsUbamIndex.type](
+    extends IndexService(
       persistenceService,
       searchService,
       ElasticsearchIndex.WgsUbam,

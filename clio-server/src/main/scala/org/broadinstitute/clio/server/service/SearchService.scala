@@ -13,7 +13,7 @@ import org.broadinstitute.clio.transfer.model.TransferIndex
 /**
   * Service responsible for running queries against a search DAO.
   */
-class SearchService private (searchDAO: SearchDAO) {
+class SearchService private[server] (searchDAO: SearchDAO) {
 
   /**
     * Run a query.
@@ -37,12 +37,5 @@ class SearchService private (searchDAO: SearchDAO) {
         .queryMetadata(queryMapper.buildQuery(transferInput))
         .map(queryMapper.toQueryOutput)
     }
-  }
-}
-
-object SearchService {
-
-  def apply(searchDAO: SearchDAO): SearchService = {
-    new SearchService(searchDAO)
   }
 }

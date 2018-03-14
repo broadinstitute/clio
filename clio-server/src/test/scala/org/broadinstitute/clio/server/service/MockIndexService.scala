@@ -28,8 +28,8 @@ abstract class MockIndexService[
   implicit
   executionContext: ExecutionContext
 ) extends IndexService(
-      PersistenceService(persistenceDAO, searchDAO),
-      SearchService(searchDAO),
+      new PersistenceService(persistenceDAO, searchDAO),
+      new SearchService(searchDAO),
       elasticsearchIndex,
       transferIndex
     ) {

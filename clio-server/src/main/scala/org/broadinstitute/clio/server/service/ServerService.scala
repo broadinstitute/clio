@@ -3,7 +3,6 @@ package org.broadinstitute.clio.server.service
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
-import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.dataaccess.{
   HttpServerDAO,
@@ -17,7 +16,7 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
-class ServerService private (
+class ServerService private[server] (
   serverStatusDAO: ServerStatusDAO,
   persistenceDAO: PersistenceDAO,
   searchDAO: SearchDAO,
@@ -153,19 +152,4 @@ object ServerService {
     * to Elasticsearch during document recovery.
     */
   val RecoveryMaxBulkSize: Long = 1000L
-
-  def apply(
-    serverStatusDAO: ServerStatusDAO,
-    persistenceDAO: PersistenceDAO,
-    searchDAO: SearchDAO,
-    httpServerDAO: HttpServerDAO
-  )(implicit executionContext: ExecutionContext, mat: Materializer): ServerService = {
-    new ServerService(
-      serverStatusDAO,
-      persistenceDAO,
-      searchDAO,
-      httpServerDAO,
-      ClioServerConfig.Version.value
-    )
-  }
 }

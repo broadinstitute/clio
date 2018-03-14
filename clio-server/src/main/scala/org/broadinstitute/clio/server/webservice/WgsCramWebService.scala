@@ -8,7 +8,7 @@ import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1Key
 import org.broadinstitute.clio.util.model.Location
 
 class WgsCramWebService(wgsCramService: IndexService[WgsCramIndex.type])
-    extends IndexWebService[WgsCramIndex.type](wgsCramService) {
+    extends IndexWebService(wgsCramService) {
 
   private[webservice] val pathPrefixKey: Directive1[TransferWgsCramV1Key] = {
     for {

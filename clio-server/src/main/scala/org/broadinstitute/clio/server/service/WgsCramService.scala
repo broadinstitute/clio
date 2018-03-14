@@ -13,7 +13,7 @@ class WgsCramService(
   persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext)
-    extends IndexService[WgsCramIndex.type](
+    extends IndexService(
       persistenceService,
       searchService,
       ElasticsearchIndex.WgsCram,

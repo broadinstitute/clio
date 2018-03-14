@@ -8,7 +8,7 @@ import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1Key
 import org.broadinstitute.clio.util.model.Location
 
 class GvcfWebService(gvcfService: IndexService[GvcfIndex.type])
-    extends IndexWebService[GvcfIndex.type](gvcfService) {
+    extends IndexWebService(gvcfService) {
 
   private[webservice] val pathPrefixKey: Directive1[TransferGvcfV1Key] = {
     for {

@@ -8,7 +8,7 @@ import org.broadinstitute.clio.util.model.Location
 import scala.concurrent.ExecutionContext
 
 class MockWgsUbamService()(implicit executionContext: ExecutionContext)
-    extends MockIndexService[WgsUbamIndex.type](
+    extends MockIndexService(
       elasticsearchIndex = ElasticsearchIndex.WgsUbam,
       transferIndex = WgsUbamIndex
     ) {

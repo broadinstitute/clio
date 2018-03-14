@@ -27,9 +27,7 @@ abstract class IndexService[TI <: TransferIndex](
       transferIndex.MetadataType
     ]
 
-  val v1QueryConverter: ElasticsearchQueryMapper[
-    transferIndex.QueryInputType
-  ] =
+  private[service] val v1QueryConverter =
     ElasticsearchQueryMapper[
       transferIndex.QueryInputType
     ]

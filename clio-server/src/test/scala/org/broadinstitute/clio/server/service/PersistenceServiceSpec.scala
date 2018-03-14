@@ -40,7 +40,7 @@ class PersistenceServiceSpec
   it should "upsertMetadata" in {
     val persistenceDAO = new MemoryPersistenceDAO()
     val searchDAO = new MemorySearchDAO()
-    val persistenceService = PersistenceService(persistenceDAO, searchDAO)
+    val persistenceService = new PersistenceService(persistenceDAO, searchDAO)
 
     for {
       uuid <- persistenceService.upsertMetadata(
@@ -68,7 +68,7 @@ class PersistenceServiceSpec
   it should "not update search if writing to storage fails" in {
     val persistenceDAO = new FailingPersistenceDAO()
     val searchDAO = new MemorySearchDAO()
-    val persistenceService = PersistenceService(persistenceDAO, searchDAO)
+    val persistenceService = new PersistenceService(persistenceDAO, searchDAO)
 
     recoverToSucceededIf[Exception] {
       persistenceService.upsertMetadata(

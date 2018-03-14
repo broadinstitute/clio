@@ -9,7 +9,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchFieldMapper,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.server.TestKitSuite
+import org.broadinstitute.clio.server.{ClioServerConfig, TestKitSuite}
 import org.broadinstitute.clio.status.model.ClioStatus
 import org.broadinstitute.clio.transfer.model.{
   ModelMockIndex,
@@ -31,11 +31,12 @@ class ServerServiceSpec
     persistenceDAO: PersistenceDAO = new MockPersistenceDAO(),
     searchDAO: SearchDAO = new MockSearchDAO(),
     httpServerDAO: HttpServerDAO = new MockHttpServerDAO()
-  ) = ServerService(
+  ) = new ServerService(
     serverStatusDAO,
     persistenceDAO,
     searchDAO,
-    httpServerDAO
+    httpServerDAO,
+    ClioServerConfig.Version.value
   )
 
   it should "beginStartup" in {

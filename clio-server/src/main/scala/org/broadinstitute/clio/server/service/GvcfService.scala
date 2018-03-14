@@ -13,7 +13,7 @@ class GvcfService(
   persistenceService: PersistenceService,
   searchService: SearchService
 )(implicit executionContext: ExecutionContext)
-    extends IndexService[GvcfIndex.type](
+    extends IndexService(
       persistenceService,
       searchService,
       ElasticsearchIndex.Gvcf,

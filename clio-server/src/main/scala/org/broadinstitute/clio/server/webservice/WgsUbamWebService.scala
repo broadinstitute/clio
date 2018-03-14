@@ -8,7 +8,7 @@ import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1Key
 import org.broadinstitute.clio.util.model.Location
 
 class WgsUbamWebService(wgsUbamService: IndexService[WgsUbamIndex.type])
-    extends IndexWebService[WgsUbamIndex.type](wgsUbamService) {
+    extends IndexWebService(wgsUbamService) {
 
   private[webservice] val pathPrefixKey: Directive1[TransferUbamV1Key] = {
     for {

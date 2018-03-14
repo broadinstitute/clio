@@ -8,7 +8,7 @@ import org.broadinstitute.clio.util.model.Location
 import scala.concurrent.ExecutionContext
 
 class MockGvcfService()(implicit executionContext: ExecutionContext)
-    extends MockIndexService[GvcfIndex.type](
+    extends MockIndexService(
       elasticsearchIndex = ElasticsearchIndex.Gvcf,
       transferIndex = GvcfIndex
     ) {

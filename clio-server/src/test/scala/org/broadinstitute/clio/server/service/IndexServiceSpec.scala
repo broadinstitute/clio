@@ -23,8 +23,8 @@ abstract class IndexServiceSpec[
 
   val indexService: IndexService[TI] = {
 
-    val searchService = SearchService(memorySearchDAO)
-    val persistenceService = PersistenceService(memoryPersistenceDAO, memorySearchDAO)
+    val searchService = new SearchService(memorySearchDAO)
+    val persistenceService = new PersistenceService(memoryPersistenceDAO, memorySearchDAO)
     getService(persistenceService, searchService)
   }
 
