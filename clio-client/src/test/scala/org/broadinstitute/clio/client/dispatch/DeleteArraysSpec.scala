@@ -20,7 +20,7 @@ class DeleteArraysSpec extends BaseClientSpec {
   it should "throw an exception if the location is not GCP" in {
     recoverToSucceededIf[UnsupportedOperationException] {
       val command = DeleteArrays(
-        key = testArraysTransferV1Key,
+        key = testArraysKey,
         note = "Deleting for arrays test"
       )
       succeedingDispatcher().dispatch(command)

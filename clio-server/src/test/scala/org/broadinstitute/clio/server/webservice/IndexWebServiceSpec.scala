@@ -5,20 +5,20 @@ import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.service.MockIndexService
-import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.model.UpsertId
 
 abstract class IndexWebServiceSpec[
-  TI <: TransferIndex
+  CI <: ClioIndex
 ] extends BaseWebserviceSpec {
 
   val memorySearchDAO = new MemorySearchDAO()
 
   def webServiceName: String
-  def mockService: MockIndexService[TI]
-  val webService: IndexWebService[TI]
-  def onPremKey: webService.indexService.transferIndex.KeyType
-  def cloudKey: webService.indexService.transferIndex.KeyType
+  def mockService: MockIndexService[CI]
+  val webService: IndexWebService[CI]
+  def onPremKey: webService.indexService.clioIndex.KeyType
+  def cloudKey: webService.indexService.clioIndex.KeyType
   def badMetadataMap: Map[String, String]
   def badQueryInputMap: Map[String, String]
 
@@ -116,11 +116,11 @@ abstract class IndexWebServiceSpec[
 
   it should "return a JSON schema" in {
     Get("/schema") ~> webService.getSchema ~> check {
-      responseAs[Json] should be(webService.indexService.transferIndex.jsonSchema)
+      responseAs[Json] should be(webService.indexService.clioIndex.jsonSchema)
     }
   }
 
-  def metadataRouteFromKey(key: webService.indexService.transferIndex.KeyType): String = {
+  def metadataRouteFromKey(key: webService.indexService.clioIndex.KeyType): String = {
     (Seq("/metadata") ++ key.getUrlSegments).mkString("/")
   }
 

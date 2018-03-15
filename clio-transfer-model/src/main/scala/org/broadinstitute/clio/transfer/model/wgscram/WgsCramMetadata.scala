@@ -4,10 +4,10 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.transfer.model.TransferMetadata
+import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
-case class TransferWgsCramV1Metadata(
+case class WgsCramMetadata(
   documentStatus: Option[DocumentStatus] = None,
   pipelineVersion: Option[Symbol] = None,
   workflowStartDate: Option[OffsetDateTime] = None,
@@ -58,7 +58,7 @@ case class TransferWgsCramV1Metadata(
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   // TODO: Move these to top-level named fields in the wgs-ubam index?
   readgroupLevelMetricsFiles: Option[List[URI]] = None
-) extends TransferMetadata[TransferWgsCramV1Metadata] {
+) extends Metadata[WgsCramMetadata] {
 
   override def pathsToDelete: Seq[URI] =
     Seq.concat(
@@ -77,7 +77,7 @@ case class TransferWgsCramV1Metadata(
   // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
-  ): TransferWgsCramV1Metadata = {
+  ): WgsCramMetadata = {
     val movedCram = pathMapper(cramPath, WgsCramExtensions.CramExtension)
     this.copy(
       cramPath = movedCram,
@@ -89,7 +89,7 @@ case class TransferWgsCramV1Metadata(
     )
   }
 
-  override def markDeleted(deletionNote: String): TransferWgsCramV1Metadata =
+  override def markDeleted(deletionNote: String): WgsCramMetadata =
     this.copy(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
@@ -97,7 +97,7 @@ case class TransferWgsCramV1Metadata(
 
   override def withDocumentStatus(
     documentStatus: Option[DocumentStatus]
-  ): TransferWgsCramV1Metadata =
+  ): WgsCramMetadata =
     this.copy(
       documentStatus = documentStatus
     )

@@ -7,10 +7,7 @@ import org.broadinstitute.clio.client.commands.{DeliverWgsCram, MoveWgsCram}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  TransferWgsCramV1Metadata,
-  WgsCramExtensions
-}
+import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramMetadata, WgsCramExtensions}
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -49,7 +46,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor[Up
     }
   }
 
-  private def writeCramMd5(metadata: TransferWgsCramV1Metadata, ioUtil: IoUtil)(
+  private def writeCramMd5(metadata: WgsCramMetadata, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
   ): Future[Unit] = Future {
     (metadata.cramMd5, metadata.cramPath) match {

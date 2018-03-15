@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.webservice
 
 import org.broadinstitute.clio.server.service.MockWgsCramService
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.TransferWgsCramV1Key
+import org.broadinstitute.clio.transfer.model.wgscram.WgsCramKey
 import org.broadinstitute.clio.util.model.Location
 
 class WgsCramWebServiceSpec extends IndexWebServiceSpec[WgsCramIndex.type] {
@@ -10,14 +10,14 @@ class WgsCramWebServiceSpec extends IndexWebServiceSpec[WgsCramIndex.type] {
   val mockService = new MockWgsCramService()
   val webService = new WgsCramWebService(mockService)
 
-  val onPremKey = TransferWgsCramV1Key(
+  val onPremKey = WgsCramKey(
     Location.OnPrem,
     "project",
     "sample_alias",
     1
   )
 
-  val cloudKey: TransferWgsCramV1Key = onPremKey
+  val cloudKey: WgsCramKey = onPremKey
     .copy(
       location = Location.GCP
     )

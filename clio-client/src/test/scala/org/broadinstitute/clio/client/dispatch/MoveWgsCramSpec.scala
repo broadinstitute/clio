@@ -18,7 +18,7 @@ class MoveWgsCramSpec extends BaseClientSpec {
   it should "throw an exception if the destination path scheme is invalid" in {
     recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsCram(
-        key = testCramTransferV1Key,
+        key = testCramKey,
         destination = MockIoUtil.InvalidPath
       )
       succeedingDispatcher().dispatch(command)
@@ -29,7 +29,7 @@ class MoveWgsCramSpec extends BaseClientSpec {
     recoverToSucceededIf[RuntimeException] {
       val command =
         MoveWgsCram(
-          key = testCramTransferV1Key,
+          key = testCramKey,
           destination = testCramCloudSourcePath
         )
       succeedingDispatcher().dispatch(command)
@@ -40,7 +40,7 @@ class MoveWgsCramSpec extends BaseClientSpec {
     recoverToSucceededIf[RuntimeException] {
       val command =
         MoveWgsCram(
-          key = testCramTransferV1Key,
+          key = testCramKey,
           destination = testCramCloudSourcePath
         )
       failingDispatcher.dispatch(command)
@@ -51,7 +51,7 @@ class MoveWgsCramSpec extends BaseClientSpec {
     recoverToSucceededIf[IllegalStateException] {
       val command =
         MoveWgsCram(
-          key = testCramTransferV1Key,
+          key = testCramKey,
           destination = testCloudDestinationDirectoryPath
         )
       succeedingDispatcher().dispatch(command)
@@ -70,7 +70,7 @@ class MoveWgsCramSpec extends BaseClientSpec {
   it should "throw an exception if given a non-GCP cram" in {
     recoverToSucceededIf[UnsupportedOperationException] {
       val command = MoveWgsCram(
-        key = testCramTransferV1Key.copy(location = Location.OnPrem),
+        key = testCramKey.copy(location = Location.OnPrem),
         destination = testCramCloudSourcePath
       )
       succeedingDispatcher().dispatch(command)
@@ -80,7 +80,7 @@ class MoveWgsCramSpec extends BaseClientSpec {
   it should "throw an exception if the destination path is not in GCP" in {
     recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsCram(
-        key = testCramTransferV1Key,
+        key = testCramKey,
         destination = URI.create("/this/is/a/local/path")
       )
       succeedingDispatcher().dispatch(command)

@@ -2,28 +2,28 @@ package org.broadinstitute.clio.transfer.model
 
 import io.circe.{Decoder, Encoder, Json}
 import org.broadinstitute.clio.transfer.model.arrays.{
-  TransferArraysV1Key,
-  TransferArraysV1Metadata,
-  TransferArraysV1QueryInput,
-  TransferArraysV1QueryOutput
+  ArraysKey,
+  ArraysMetadata,
+  ArraysQueryInput,
+  ArraysQueryOutput
 }
 import org.broadinstitute.clio.transfer.model.gvcf.{
-  TransferGvcfV1Key,
-  TransferGvcfV1Metadata,
-  TransferGvcfV1QueryInput,
-  TransferGvcfV1QueryOutput
+  GvcfKey,
+  GvcfMetadata,
+  GvcfQueryInput,
+  GvcfQueryOutput
 }
 import org.broadinstitute.clio.transfer.model.wgscram.{
-  TransferWgsCramV1Key,
-  TransferWgsCramV1Metadata,
-  TransferWgsCramV1QueryInput,
-  TransferWgsCramV1QueryOutput
+  WgsCramKey,
+  WgsCramMetadata,
+  WgsCramQueryInput,
+  WgsCramQueryOutput
 }
 import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1Metadata,
-  TransferUbamV1QueryInput,
-  TransferUbamV1QueryOutput
+  UbamKey,
+  UbamMetadata,
+  UbamQueryInput,
+  UbamQueryOutput
 }
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.JsonSchema
@@ -32,10 +32,10 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation._
 import scala.reflect.ClassTag
 
 /**
-  * Convenience class for building [[TransferIndex]] instances
+  * Convenience class for building [[ClioIndex]] instances
   * by summoning most required fields from implicit scope.
   */
-sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMetadata[MT], QI <: TransferQueryInput[
+sealed abstract class SemiAutoClioIndex[KT <: IndexKey, MT <: Metadata[MT], QI <: QueryInput[
   QI
 ], QO](
   implicit
@@ -54,7 +54,7 @@ sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMet
   override val keyMapper: FieldMapper[KT],
   override val metadataMapper: FieldMapper[MT],
   override val queryInputMapper: FieldMapper[QI]
-) extends TransferIndex {
+) extends ClioIndex {
 
   override type KeyType = KT
   override type MetadataType = MT
@@ -65,11 +65,11 @@ sealed abstract class SemiAutoTransferIndex[KT <: TransferKey, MT <: TransferMet
 }
 
 case object GvcfIndex
-    extends SemiAutoTransferIndex[
-      TransferGvcfV1Key,
-      TransferGvcfV1Metadata,
-      TransferGvcfV1QueryInput,
-      TransferGvcfV1QueryOutput
+    extends SemiAutoClioIndex[
+      GvcfKey,
+      GvcfMetadata,
+      GvcfQueryInput,
+      GvcfQueryOutput
     ] {
   override val urlSegment: String = "gvcf"
   override val name: String = "Gvcf"
@@ -80,11 +80,11 @@ case object GvcfIndex
 }
 
 case object WgsUbamIndex
-    extends SemiAutoTransferIndex[
-      TransferUbamV1Key,
-      TransferUbamV1Metadata,
-      TransferUbamV1QueryInput,
-      TransferUbamV1QueryOutput
+    extends SemiAutoClioIndex[
+      UbamKey,
+      UbamMetadata,
+      UbamQueryInput,
+      UbamQueryOutput
     ] {
   override val urlSegment: String = "wgsubam"
   override val name: String = "WgsUbam"
@@ -93,11 +93,11 @@ case object WgsUbamIndex
 }
 
 case object WgsCramIndex
-    extends SemiAutoTransferIndex[
-      TransferWgsCramV1Key,
-      TransferWgsCramV1Metadata,
-      TransferWgsCramV1QueryInput,
-      TransferWgsCramV1QueryOutput
+    extends SemiAutoClioIndex[
+      WgsCramKey,
+      WgsCramMetadata,
+      WgsCramQueryInput,
+      WgsCramQueryOutput
     ] {
   override val urlSegment: String = "wgscram"
   override val name: String = "WgsCram"
@@ -108,11 +108,11 @@ case object WgsCramIndex
 }
 
 case object HybselUbamIndex
-    extends SemiAutoTransferIndex[
-      TransferUbamV1Key,
-      TransferUbamV1Metadata,
-      TransferUbamV1QueryInput,
-      TransferUbamV1QueryOutput
+    extends SemiAutoClioIndex[
+      UbamKey,
+      UbamMetadata,
+      UbamQueryInput,
+      UbamQueryOutput
     ] {
   override val urlSegment: String = "hybselubam"
   override val name: String = "HybselUbam"
@@ -121,11 +121,11 @@ case object HybselUbamIndex
 }
 
 case object ArraysIndex
-    extends SemiAutoTransferIndex[
-      TransferArraysV1Key,
-      TransferArraysV1Metadata,
-      TransferArraysV1QueryInput,
-      TransferArraysV1QueryOutput
+    extends SemiAutoClioIndex[
+      ArraysKey,
+      ArraysMetadata,
+      ArraysQueryInput,
+      ArraysQueryOutput
     ] {
   override val urlSegment: String = "arrays"
   override val name: String = "Arrays"

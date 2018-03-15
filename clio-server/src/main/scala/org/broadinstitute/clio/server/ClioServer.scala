@@ -46,21 +46,12 @@ object ClioServer extends StrictLogging {
 
   private val persistenceService = new PersistenceService(persistenceDAO, searchDAO)
   private val searchService = new SearchService(searchDAO)
-  private val statusService = new StatusService(
-    serverStatusDAO,
-    searchDAO
-  )
+  private val statusService = new StatusService(serverStatusDAO, searchDAO)
 
   private val exceptionDirectives = new ExceptionDirectives
   private val swaggerDirectives = new SwaggerDirectives
-  private val rejectionDirectives =
-    new RejectionDirectives(
-      OffsetDateTime.now()
-    )
-  private val auditDirectives =
-    new AuditDirectives(
-      AuditService(auditDAO)
-    )
+  private val rejectionDirectives = new RejectionDirectives(OffsetDateTime.now())
+  private val auditDirectives = new AuditDirectives(AuditService(auditDAO))
 
   private val wrapperDirectives: Directive0 = {
     auditDirectives.auditRequest &

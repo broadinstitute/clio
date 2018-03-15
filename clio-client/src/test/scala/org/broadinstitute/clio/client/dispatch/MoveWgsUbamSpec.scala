@@ -7,7 +7,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.MoveWgsUbam
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.ubam.TransferUbamV1Key
+import org.broadinstitute.clio.transfer.model.ubam.UbamKey
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 class MoveWgsUbamSpec extends BaseClientSpec {
@@ -18,7 +18,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   it should "throw an exception if the destination path scheme is invalid" in {
     recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsUbam(
-        key = testTransferV1Key,
+        key = testWgsUbamKey,
         destination = MockIoUtil.InvalidPath
       )
       succeedingDispatcher().dispatch(command)
@@ -29,7 +29,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     recoverToSucceededIf[RuntimeException] {
       val command =
         MoveWgsUbam(
-          key = testTransferV1Key,
+          key = testWgsUbamKey,
           destination = testUbamCloudSourcePath
         )
       succeedingDispatcher().dispatch(command)
@@ -40,7 +40,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     recoverToSucceededIf[RuntimeException] {
       val command =
         MoveWgsUbam(
-          key = testTransferV1Key,
+          key = testWgsUbamKey,
           destination = testUbamCloudSourcePath
         )
       failingDispatcher.dispatch(command)
@@ -51,7 +51,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
     recoverToSucceededIf[IllegalStateException] {
       val command =
         MoveWgsUbam(
-          key = testTransferV1Key,
+          key = testWgsUbamKey,
           destination = testCloudDestinationDirectoryPath
         )
       succeedingDispatcher().dispatch(command)
@@ -70,7 +70,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   it should "throw an exception if given a non-GCP unmapped bam" in {
     recoverToSucceededIf[UnsupportedOperationException] {
       val command = MoveWgsUbam(
-        key = TransferUbamV1Key(
+        key = UbamKey(
           flowcellBarcode = testFlowcell,
           lane = testLane,
           libraryName = testLibName,
@@ -85,7 +85,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   it should "throw an exception if the destination path is not in GCP" in {
     recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsUbam(
-        key = testTransferV1Key,
+        key = testWgsUbamKey,
         destination = URI.create("/this/is/a/local/path")
       )
       succeedingDispatcher().dispatch(command)
@@ -94,7 +94,7 @@ class MoveWgsUbamSpec extends BaseClientSpec {
   it should "throw an exception if given a non-directory destination" in {
     recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveWgsUbam(
-        key = testTransferV1Key,
+        key = testWgsUbamKey,
         destination = URI.create("gs://the-bucket/the/file.unmapped.bam")
       )
       succeedingDispatcher().dispatch(command)

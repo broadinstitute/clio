@@ -2,14 +2,14 @@ package org.broadinstitute.clio.transfer.model.ubam
 
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.transfer.model.TransferQueryInput
+import org.broadinstitute.clio.transfer.model.QueryInput
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
   Location,
   RegulatoryDesignation
 }
 
-case class TransferUbamV1QueryInput(
+case class UbamQueryInput(
   flowcellBarcode: Option[String] = None,
   lane: Option[Int] = None,
   libraryName: Option[String] = None,
@@ -25,11 +25,11 @@ case class TransferUbamV1QueryInput(
   baitSet: Option[Symbol] = None,
   baitIntervals: Option[Symbol] = None,
   targetIntervals: Option[Symbol] = None
-) extends TransferQueryInput[TransferUbamV1QueryInput] {
+) extends QueryInput[UbamQueryInput] {
 
   def withDocumentStatus(
     documentStatus: Option[DocumentStatus]
-  ): TransferUbamV1QueryInput =
+  ): UbamQueryInput =
     this.copy(
       documentStatus = documentStatus
     )

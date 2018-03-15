@@ -4,69 +4,69 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-abstract class IndexService[TI <: TransferIndex](
+abstract class IndexService[CI <: ClioIndex](
   persistenceService: PersistenceService,
   searchService: SearchService,
-  elasticsearchIndex: ElasticsearchIndex[TI],
-  val transferIndex: TI
+  elasticsearchIndex: ElasticsearchIndex[CI],
+  val clioIndex: CI
 )(
   implicit
   executionContext: ExecutionContext
 ) {
 
-  import transferIndex.implicits._
+  import clioIndex.implicits._
 
-  private[service] val v1DocumentConverter =
+  private[service] val documentConverter =
     ElasticsearchDocumentMapper[
-      transferIndex.KeyType,
-      transferIndex.MetadataType
+      clioIndex.KeyType,
+      clioIndex.MetadataType
     ]
 
-  private[service] val v1QueryConverter =
+  private[service] val queryConverter =
     ElasticsearchQueryMapper[
-      transferIndex.QueryInputType
+      clioIndex.QueryInputType
     ]
 
   def upsertMetadata(
-    transferKey: transferIndex.KeyType,
-    transferMetadata: transferIndex.MetadataType
+                      indexKey: clioIndex.KeyType,
+                      metadata: clioIndex.MetadataType
   ): Future[UpsertId] = {
-    val updatedTransferMetadata = transferMetadata.withDocumentStatus(
-      transferMetadata.documentStatus.orElse(Some(DocumentStatus.Normal))
+    val updatedMetadata = metadata.withDocumentStatus(
+      metadata.documentStatus.orElse(Some(DocumentStatus.Normal))
     )
 
     persistenceService
       .upsertMetadata(
-        transferKey,
-        updatedTransferMetadata,
-        v1DocumentConverter,
+        indexKey,
+        updatedMetadata,
+        documentConverter,
         elasticsearchIndex
       )
   }
 
   def queryMetadata(
-    transferInput: transferIndex.QueryInputType
+    input: clioIndex.QueryInputType
   ): Source[Json, NotUsed] = {
-    val transferInputNew =
-      transferInput.withDocumentStatus(Option(DocumentStatus.Normal))
-    queryAllMetadata(transferInputNew)
+    val newInput =
+      input.withDocumentStatus(Option(DocumentStatus.Normal))
+    queryAllMetadata(newInput)
   }
 
   def queryAllMetadata(
-    transferInput: transferIndex.QueryInputType
+    input: clioIndex.QueryInputType
   ): Source[Json, NotUsed] = {
     searchService.queryMetadata(
-      transferInput,
-      v1QueryConverter
+      input,
+      queryConverter
     )(
       elasticsearchIndex
     )
   }
 
-  def querySchema(): Future[Json] = Future(transferIndex.jsonSchema)
+  def querySchema(): Future[Json] = Future(clioIndex.jsonSchema)
 }

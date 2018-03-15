@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.{Decoder, Json}
-import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model.{GvcfIndex, WgsCramIndex, WgsUbamIndex}
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
@@ -16,13 +16,13 @@ import org.broadinstitute.clio.util.model.UpsertId
   * An index for an Elasticsearch document.
   *
   * @param fieldMapper The version of the mapping used to generate the index.
-  * @tparam TI The TransferIndex of the document.
+  * @tparam CI The ClioIndex of the document.
   */
-class ElasticsearchIndex[TI <: TransferIndex](
-  val transferIndex: TI,
+class ElasticsearchIndex[CI <: ClioIndex](
+  val clioIndex: CI,
   private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper
 ) extends ModelAutoDerivation {
-  import transferIndex.implicits._
+  import clioIndex.implicits._
 
   /**
     * The root directory to use when persisting updates of this index to storage.
@@ -31,7 +31,7 @@ class ElasticsearchIndex[TI <: TransferIndex](
     * addition, but in GCS's filesystem adapter it's the only indication that this
     * should be treated as a directory, not a file.
     */
-  lazy val rootDir: String = transferIndex.elasticsearchIndexName + "/"
+  lazy val rootDir: String = clioIndex.elasticsearchIndexName + "/"
 
   /**
     * The source-of-truth directory in which updates to this index
@@ -48,7 +48,7 @@ class ElasticsearchIndex[TI <: TransferIndex](
     s"$rootDir$dir/"
   }
 
-  final val indexName: String = transferIndex.elasticsearchIndexName
+  final val indexName: String = clioIndex.elasticsearchIndexName
 
   /**
     * The name of the index type. Always default until ES 7 when there will be no index types.
@@ -58,7 +58,7 @@ class ElasticsearchIndex[TI <: TransferIndex](
 
   /** The fields for the index. */
   def fields: Seq[FieldDefinition] =
-    (FieldMapper[transferIndex.KeyType].fields ++ FieldMapper[transferIndex.MetadataType].fields).toSeq.sortBy {
+    (FieldMapper[clioIndex.KeyType].fields ++ FieldMapper[clioIndex.MetadataType].fields).toSeq.sortBy {
       case (name, _) => name
     }.map({
       case (name, value) =>

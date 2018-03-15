@@ -8,8 +8,8 @@ import org.broadinstitute.clio.util.model.UpsertId
 /**
   * Maps metadata to an Elasticsearch document.
   *
-  * @tparam Key      The type of the TransferKey.
-  * @tparam Metadata The type of the TransferMetadata.
+  * @tparam Key      The type of the IndexKey.
+  * @tparam Metadata The type of the Metadata.
   */
 class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata: Encoder](
   genId: () => UpsertId
@@ -17,8 +17,8 @@ class ElasticsearchDocumentMapper[Key <: Product: Encoder, Metadata: Encoder](
 
   /**
     *
-    * @param key      The TransferKey from which to create the document.
-    * @param metadata The TransferMetadata from which to create the document.
+    * @param key      The IndexKey from which to create the document.
+    * @param metadata The Metadata from which to create the document.
     * @return
     */
   def document(key: Key, metadata: Metadata): Json = {

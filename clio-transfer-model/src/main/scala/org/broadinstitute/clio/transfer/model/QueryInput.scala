@@ -2,7 +2,7 @@ package org.broadinstitute.clio.transfer.model
 
 import org.broadinstitute.clio.util.model.DocumentStatus
 
-trait TransferQueryInput[IP <: TransferQueryInput[IP]] { self: IP =>
+trait QueryInput[IP <: QueryInput[IP]] { self: IP =>
 
   /**
     * Status of the document represented by this metadata,

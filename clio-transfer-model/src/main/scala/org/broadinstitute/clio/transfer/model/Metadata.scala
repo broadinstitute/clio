@@ -8,7 +8,7 @@ import org.broadinstitute.clio.util.model.DocumentStatus
 /**
   * Common information for metadata in all clio indexes.
   */
-trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
+trait Metadata[M <: Metadata[M]] { self: M =>
 
   /**
     * Status of the document represented by this metadata,

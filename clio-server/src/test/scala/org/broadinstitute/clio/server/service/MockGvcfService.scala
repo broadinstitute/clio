@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.GvcfIndex
-import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1QueryOutput
+import org.broadinstitute.clio.transfer.model.gvcf.GvcfQueryOutput
 import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.ExecutionContext
@@ -10,11 +10,11 @@ import scala.concurrent.ExecutionContext
 class MockGvcfService()(implicit executionContext: ExecutionContext)
     extends MockIndexService(
       elasticsearchIndex = ElasticsearchIndex.Gvcf,
-      transferIndex = GvcfIndex
+      clioIndex = GvcfIndex
     ) {
 
-  def emptyOutput: TransferGvcfV1QueryOutput = {
-    TransferGvcfV1QueryOutput(
+  def emptyOutput: GvcfQueryOutput = {
+    GvcfQueryOutput(
       Location.GCP,
       "project",
       "sample",

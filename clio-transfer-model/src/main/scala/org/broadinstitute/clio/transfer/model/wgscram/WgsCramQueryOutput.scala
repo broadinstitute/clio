@@ -10,7 +10,7 @@ import org.broadinstitute.clio.util.model.{
   RegulatoryDesignation
 }
 
-case class TransferWgsCramV1QueryOutput(
+case class WgsCramQueryOutput(
   location: Location,
   project: String,
   sampleAlias: String,

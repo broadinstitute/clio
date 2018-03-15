@@ -11,19 +11,19 @@ import org.broadinstitute.clio.server.dataaccess.{
   SearchDAO
 }
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{ExecutionContext, Future}
 
 abstract class MockIndexService[
-  TI <: TransferIndex
+  CI <: ClioIndex
 ](
   persistenceDAO: PersistenceDAO = new MockPersistenceDAO(),
   searchDAO: SearchDAO = new MockSearchDAO(),
-  elasticsearchIndex: ElasticsearchIndex[TI],
-  override val transferIndex: TI
+  elasticsearchIndex: ElasticsearchIndex[CI],
+  override val clioIndex: CI
 )(
   implicit
   executionContext: ExecutionContext
@@ -31,35 +31,35 @@ abstract class MockIndexService[
       new PersistenceService(persistenceDAO, searchDAO),
       new SearchService(searchDAO),
       elasticsearchIndex,
-      transferIndex
+      clioIndex
     ) {
-  val queryCalls = ArrayBuffer.empty[transferIndex.QueryInputType]
-  val queryAllCalls = ArrayBuffer.empty[transferIndex.QueryInputType]
-  val upsertCalls = ArrayBuffer.empty[(transferIndex.KeyType, transferIndex.MetadataType)]
+  val queryCalls = ArrayBuffer.empty[clioIndex.QueryInputType]
+  val queryAllCalls = ArrayBuffer.empty[clioIndex.QueryInputType]
+  val upsertCalls = ArrayBuffer.empty[(clioIndex.KeyType, clioIndex.MetadataType)]
 
-  import transferIndex.implicits._
+  import clioIndex.implicits._
 
-  def emptyOutput: transferIndex.QueryOutputType
+  def emptyOutput: clioIndex.QueryOutputType
 
   override def upsertMetadata(
-    transferKey: transferIndex.KeyType,
-    transferMetadata: transferIndex.MetadataType
+                               key: clioIndex.KeyType,
+                               metadata: clioIndex.MetadataType
   ): Future[UpsertId] = {
-    upsertCalls += ((transferKey, transferMetadata))
+    upsertCalls += ((key, metadata))
     Future.successful(UpsertId.nextId())
   }
 
   override def queryMetadata(
-    transferInput: transferIndex.QueryInputType
+    input: clioIndex.QueryInputType
   ): Source[Json, NotUsed] = {
-    queryCalls += transferInput
+    queryCalls += input
     Source.single(emptyOutput.asJson)
   }
 
   override def queryAllMetadata(
-    transferInput: transferIndex.QueryInputType
+    input: clioIndex.QueryInputType
   ): Source[Json, NotUsed] = {
-    queryAllCalls += transferInput
+    queryAllCalls += input
     Source.single(emptyOutput.asJson)
   }
 

@@ -53,7 +53,7 @@ paths:
           description: "Whole genome unmapped bam metadata to store"
           required: true
           schema:
-            $ref: '#/definitions/TransferWgsUbamV1Metadata'
+            $ref: '#/definitions/WgsUbamMetadata'
       responses:
         '200':
           description: "Successful Request"
@@ -76,12 +76,12 @@ paths:
           description: "Whole genome unmapped bam query to search for"
           required: true
           schema:
-            $ref: '#/definitions/TransferWgsUbamV1QueryInput'
+            $ref: '#/definitions/WgsUbamQueryInput'
       responses:
         '200':
           description: "Successful Request"
           schema:
-            $ref: '#/definitions/TransferWgsUbamV1QueryResponse'
+            $ref: '#/definitions/WgsUbamQueryResponse'
         '405':
           description: "Invalid input"
       security:
@@ -99,7 +99,7 @@ securityDefinitions:
       profile: "profile authorization"
 
 definitions:
-  TransferWgsUbamV1Key:
+  WgsUbamKey:
      type: "object"
      properties:
        flowcell_barcode:
@@ -119,7 +119,7 @@ definitions:
            - "GCP"
            - "OnPrem"
 
-  TransferWgsUbamV1QueryInput:
+  WgsUbamQueryInput:
     type: "object"
     properties:
       flowcell_barcode:
@@ -156,13 +156,13 @@ definitions:
         type: "string"
         description: "Sample alias"
 
-  TransferWgsUbamV1QueryResponse:
+  WgsUbamQueryResponse:
     description: "Response to a whole genome unmapped bam query"
     type: "array"
     items:
-        $ref: "#/definitions/TransferWgsUbamV1QueryOutput"
+        $ref: "#/definitions/WgsUbamQueryOutput"
 
-  TransferWgsUbamV1QueryOutput:
+  WgsUbamQueryOutput:
     type: "object"
     properties:
       flowcell_barcode:
@@ -280,7 +280,7 @@ definitions:
         format: "int64"
         description: "Unmapped bam size"
 
-  TransferWgsUbamV1Metadata:
+  WgsUbamMetadata:
     type: "object"
     properties:
       analysis_type:

@@ -8,7 +8,7 @@ import scala.reflect.ClassTag
 /**
   * This models an index in our database. An index is a table (schema) within our database.
   */
-trait TransferIndex {
+trait ClioIndex {
 
   /**
     * Encode the index as a url segment for making web service API calls
@@ -25,11 +25,11 @@ trait TransferIndex {
 
   val elasticsearchIndexName: String
 
-  type KeyType <: TransferKey
+  type KeyType <: IndexKey
 
-  type MetadataType <: TransferMetadata[MetadataType]
+  type MetadataType <: Metadata[MetadataType]
 
-  type QueryInputType <: TransferQueryInput[QueryInputType]
+  type QueryInputType <: QueryInput[QueryInputType]
 
   type QueryOutputType
 

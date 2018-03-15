@@ -18,7 +18,7 @@ class AddGvcfSpec extends BaseClientSpec {
       dispatcher.dispatch(
         AddGvcf(
           metadataLocation = badMetadataFileLocation,
-          key = testGvcfTransferV1Key
+          key = testGvcfKey
         )
       )
     }
@@ -29,7 +29,7 @@ class AddGvcfSpec extends BaseClientSpec {
       dispatcher.dispatch(
         AddGvcf(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
-          key = testGvcfTransferV1Key
+          key = testGvcfKey
         )
       )
     }

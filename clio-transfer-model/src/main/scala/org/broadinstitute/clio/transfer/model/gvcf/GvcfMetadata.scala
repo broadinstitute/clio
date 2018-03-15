@@ -3,10 +3,10 @@ package org.broadinstitute.clio.transfer.model.gvcf
 import java.net.URI
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.transfer.model.TransferMetadata
+import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
-case class TransferGvcfV1Metadata(
+case class GvcfMetadata(
   analysisDate: Option[OffsetDateTime] = None,
   contamination: Option[Float] = None,
   documentStatus: Option[DocumentStatus] = None,
@@ -19,14 +19,14 @@ case class TransferGvcfV1Metadata(
   pipelineVersion: Option[Symbol] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   notes: Option[String] = None
-) extends TransferMetadata[TransferGvcfV1Metadata] {
+) extends Metadata[GvcfMetadata] {
 
   override def pathsToDelete: Seq[URI] =
     Seq.concat(gvcfPath, gvcfIndexPath)
 
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
-  ): TransferGvcfV1Metadata = {
+  ): GvcfMetadata = {
     this.copy(
       gvcfPath = pathMapper(gvcfPath, GvcfExtensions.GvcfExtension),
       gvcfIndexPath = pathMapper(gvcfIndexPath, GvcfExtensions.IndexExtension),
@@ -39,7 +39,7 @@ case class TransferGvcfV1Metadata(
     )
   }
 
-  override def markDeleted(deletionNote: String): TransferGvcfV1Metadata =
+  override def markDeleted(deletionNote: String): GvcfMetadata =
     this.copy(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
@@ -47,7 +47,7 @@ case class TransferGvcfV1Metadata(
 
   override def withDocumentStatus(
     docStatus: Option[DocumentStatus]
-  ): TransferGvcfV1Metadata =
+  ): GvcfMetadata =
     this.copy(
       documentStatus = docStatus
     )

@@ -4,7 +4,7 @@ import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands.{AddCommand, ClioCommand}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.generic.{
   CaseClassMapper,
@@ -14,7 +14,7 @@ import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AddExecutor[TI <: TransferIndex](addCommand: AddCommand[TI])
+class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI])
     extends Executor[UpsertId] {
   import addCommand.index.implicits._
 

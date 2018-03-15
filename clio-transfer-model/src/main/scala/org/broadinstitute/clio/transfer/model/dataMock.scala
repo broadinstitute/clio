@@ -16,7 +16,7 @@ case class ModelMockIndex(
   commandName: String = "mock",
   urlSegment: String = "mock",
   jsonSchema: Json = Json.Null,
-) extends TransferIndex
+) extends ClioIndex
     with ModelAutoDerivation {
 
   override type KeyType = ModelMockKey
@@ -48,7 +48,7 @@ case class ModelMockIndex(
     implicitly[FieldMapper[QueryInputType]]
 }
 
-case class ModelMockKey(mockKeyLong: Long, mockKeyString: String) extends TransferKey {
+case class ModelMockKey(mockKeyLong: Long, mockKeyString: String) extends IndexKey {
   override val location = Location.OnPrem
   override def getUrlSegments = Seq.empty[String]
 }
@@ -63,7 +63,7 @@ case class ModelMockMetadata(
   mockFileMd5: Option[Symbol] = None,
   mockFilePath: Option[URI] = None,
   mockFileSize: Option[Long] = None,
-) extends TransferMetadata[ModelMockMetadata] {
+) extends Metadata[ModelMockMetadata] {
   override val documentStatus: Option[DocumentStatus] = mockDocumentStatus
   override val notes: Option[String] = None
   override def pathsToDelete: Seq[URI] = Seq.empty[URI]
@@ -83,7 +83,7 @@ case class ModelMockQueryInput(
   mockKeyLong: Option[Long],
   mockKeyString: Option[String],
   documentStatus: Option[DocumentStatus] = None
-) extends TransferQueryInput[ModelMockQueryInput] {
+) extends QueryInput[ModelMockQueryInput] {
 
   def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockQueryInput =
     this

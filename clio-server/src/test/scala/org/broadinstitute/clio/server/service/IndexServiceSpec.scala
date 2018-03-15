@@ -7,13 +7,13 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
-import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.model.DocumentStatus
 import io.circe.syntax._
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 abstract class IndexServiceSpec[
-  TI <: TransferIndex
+  CI <: ClioIndex
 ](specificService: String)
     extends TestKitSuite(specificService + "Spec")
     with ModelAutoDerivation {
@@ -21,25 +21,25 @@ abstract class IndexServiceSpec[
   val memoryPersistenceDAO = new MemoryPersistenceDAO()
   val memorySearchDAO = new MemorySearchDAO()
 
-  val indexService: IndexService[TI] = {
+  val indexService: IndexService[CI] = {
 
     val searchService = new SearchService(memorySearchDAO)
     val persistenceService = new PersistenceService(memoryPersistenceDAO, memorySearchDAO)
     getService(persistenceService, searchService)
   }
 
-  def elasticsearchIndex: ElasticsearchIndex[TI]
-  def dummyKey: indexService.transferIndex.KeyType
-  def dummyInput: indexService.transferIndex.QueryInputType
+  def elasticsearchIndex: ElasticsearchIndex[CI]
+  def dummyKey: indexService.clioIndex.KeyType
+  def dummyInput: indexService.clioIndex.QueryInputType
 
   def getDummyMetadata(
     documentStatus: Option[DocumentStatus]
-  ): indexService.transferIndex.MetadataType
+  ): indexService.clioIndex.MetadataType
 
   def getService(
     persistenceService: PersistenceService,
     searchService: SearchService
-  ): IndexService[TI]
+  ): IndexService[CI]
 
   behavior of specificService
 
@@ -70,7 +70,7 @@ abstract class IndexServiceSpec[
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(
         Seq(
-          indexService.v1QueryConverter.buildQuery(
+          indexService.queryConverter.buildQuery(
             dummyInput.withDocumentStatus(Option(DocumentStatus.Normal))
           )(
             elasticsearchIndex
@@ -83,19 +83,19 @@ abstract class IndexServiceSpec[
   private def upsertMetadataTest(
     documentStatus: Option[DocumentStatus]
   ) = {
-    val transferMetadata = getDummyMetadata(documentStatus)
+    val metadata = getDummyMetadata(documentStatus)
     val expectedDocumentStatus = Option(documentStatus.getOrElse(DocumentStatus.Normal))
     for {
       returnedUpsertId <- indexService.upsertMetadata(
         dummyKey,
-        transferMetadata
+        metadata
       )
     } yield {
       val expectedDocument =
-        indexService.v1DocumentConverter
+        indexService.documentConverter
           .document(
             dummyKey,
-            transferMetadata.withDocumentStatus(expectedDocumentStatus)
+            metadata.withDocumentStatus(expectedDocumentStatus)
           )
           .deepMerge(
             Map(

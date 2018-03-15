@@ -2,11 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1Metadata,
-  TransferUbamV1QueryInput
-}
+import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata, UbamQueryInput}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 class WgsUbamServiceSpec extends IndexServiceSpec[WgsUbamIndex.type]("WgsUbamService") {
@@ -14,14 +10,14 @@ class WgsUbamServiceSpec extends IndexServiceSpec[WgsUbamIndex.type]("WgsUbamSer
   val elasticsearchIndex: ElasticsearchIndex[WgsUbamIndex.type] =
     ElasticsearchIndex.WgsUbam
 
-  val dummyKey = TransferUbamV1Key(Location.GCP, "barcode1", 2, "library3")
+  val dummyKey = UbamKey(Location.GCP, "barcode1", 2, "library3")
 
-  val dummyInput = TransferUbamV1QueryInput(project = Option("testProject"))
+  val dummyInput = UbamQueryInput(project = Option("testProject"))
 
   def getDummyMetadata(
     documentStatus: Option[DocumentStatus]
-  ): TransferUbamV1Metadata = {
-    TransferUbamV1Metadata(
+  ): UbamMetadata = {
+    UbamMetadata(
       project = Option("testProject"),
       notes = Option("notable update"),
       documentStatus = documentStatus

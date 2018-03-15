@@ -6,22 +6,10 @@ import org.broadinstitute.clio.transfer.model._
 import caseapp.{CommandName, Recurse}
 import caseapp.core.help.CommandsHelp
 import caseapp.core.commandparser.CommandParser
-import org.broadinstitute.clio.transfer.model.gvcf.{
-  TransferGvcfV1Key,
-  TransferGvcfV1QueryInput
-}
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  TransferWgsCramV1Key,
-  TransferWgsCramV1QueryInput
-}
-import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1QueryInput
-}
-import org.broadinstitute.clio.transfer.model.arrays.{
-  TransferArraysV1Key,
-  TransferArraysV1QueryInput
-}
+import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfQueryInput}
+import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramQueryInput}
+import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
+import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysQueryInput}
 
 /**
   * A specific operation to perform against Clio.
@@ -35,29 +23,29 @@ sealed trait ClioCommand
 
 sealed trait RetrieveAndPrintCommand extends ClioCommand
 
-sealed abstract class GetSchemaCommand[TI <: TransferIndex](val index: TI)
+sealed abstract class GetSchemaCommand[CI <: ClioIndex](val index: CI)
     extends RetrieveAndPrintCommand
 
-sealed abstract class AddCommand[TI <: TransferIndex](val index: TI) extends ClioCommand {
+sealed abstract class AddCommand[CI <: ClioIndex](val index: CI) extends ClioCommand {
   def key: index.KeyType
   def metadataLocation: URI
   def force: Boolean
 }
 
-sealed abstract class QueryCommand[TI <: TransferIndex](val index: TI)
+sealed abstract class QueryCommand[CI <: ClioIndex](val index: CI)
     extends RetrieveAndPrintCommand {
   def queryInput: index.QueryInputType
   def includeDeleted: Boolean
 }
 
-sealed abstract class MoveCommand[TI <: TransferIndex](val index: TI)
+sealed abstract class MoveCommand[CI <: ClioIndex](val index: CI)
     extends ClioCommand {
   def key: index.KeyType
   def destination: URI
   def newBasename: Option[String]
 }
 
-sealed abstract class DeleteCommand[TI <: TransferIndex](val index: TI)
+sealed abstract class DeleteCommand[CI <: ClioIndex](val index: CI)
     extends ClioCommand {
   def key: index.KeyType
   def note: String
@@ -79,27 +67,27 @@ case object GetSchemaWgsUbam extends GetSchemaCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.addWgsUbamName)
 final case class AddWgsUbam(
-  @Recurse key: TransferUbamV1Key,
+  @Recurse key: UbamKey,
   metadataLocation: URI,
   force: Boolean = false
 ) extends AddCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.queryWgsUbamName)
 final case class QueryWgsUbam(
-  @Recurse queryInput: TransferUbamV1QueryInput,
+  @Recurse queryInput: UbamQueryInput,
   includeDeleted: Boolean = false
 ) extends QueryCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.moveWgsUbamName)
 final case class MoveWgsUbam(
-  @Recurse key: TransferUbamV1Key,
+  @Recurse key: UbamKey,
   destination: URI,
   newBasename: Option[String] = None
 ) extends MoveCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.deleteWgsUbamName)
 final case class DeleteWgsUbam(
-  @Recurse key: TransferUbamV1Key,
+  @Recurse key: UbamKey,
   note: String,
   force: Boolean = false
 ) extends DeleteCommand(WgsUbamIndex)
@@ -111,27 +99,27 @@ case object GetSchemaGvcf extends GetSchemaCommand(GvcfIndex)
 
 @CommandName(ClioCommand.addGvcfName)
 final case class AddGvcf(
-  @Recurse key: TransferGvcfV1Key,
+  @Recurse key: GvcfKey,
   metadataLocation: URI,
   force: Boolean = false
 ) extends AddCommand(GvcfIndex)
 
 @CommandName(ClioCommand.queryGvcfName)
 final case class QueryGvcf(
-  @Recurse queryInput: TransferGvcfV1QueryInput,
+  @Recurse queryInput: GvcfQueryInput,
   includeDeleted: Boolean = false
 ) extends QueryCommand(GvcfIndex)
 
 @CommandName(ClioCommand.moveGvcfName)
 final case class MoveGvcf(
-  @Recurse key: TransferGvcfV1Key,
+  @Recurse key: GvcfKey,
   destination: URI,
   newBasename: Option[String] = None
 ) extends MoveCommand(GvcfIndex)
 
 @CommandName(ClioCommand.deleteGvcfName)
 final case class DeleteGvcf(
-  @Recurse key: TransferGvcfV1Key,
+  @Recurse key: GvcfKey,
   note: String,
   force: Boolean = false
 ) extends DeleteCommand(GvcfIndex)
@@ -143,34 +131,34 @@ case object GetSchemaWgsCram extends GetSchemaCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.addWgsCramName)
 final case class AddWgsCram(
-  @Recurse key: TransferWgsCramV1Key,
+  @Recurse key: WgsCramKey,
   metadataLocation: URI,
   force: Boolean = false
 ) extends AddCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.queryWgsCramName)
 final case class QueryWgsCram(
-  @Recurse queryInput: TransferWgsCramV1QueryInput,
+  @Recurse queryInput: WgsCramQueryInput,
   includeDeleted: Boolean = false
 ) extends QueryCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.moveWgsCramName)
 final case class MoveWgsCram(
-  @Recurse key: TransferWgsCramV1Key,
+  @Recurse key: WgsCramKey,
   destination: URI,
   newBasename: Option[String] = None
 ) extends MoveCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.deleteWgsCramName)
 final case class DeleteWgsCram(
-  @Recurse key: TransferWgsCramV1Key,
+  @Recurse key: WgsCramKey,
   note: String,
   force: Boolean = false
 ) extends DeleteCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.deliverWgsCramName)
 final case class DeliverWgsCram(
-  @Recurse key: TransferWgsCramV1Key,
+  @Recurse key: WgsCramKey,
   workspaceName: String,
   workspacePath: URI,
   newBasename: Option[String]
@@ -183,27 +171,27 @@ case object GetSchemaHybselUbam extends GetSchemaCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.addHybselUbamName)
 final case class AddHybselUbam(
-  @Recurse key: TransferUbamV1Key,
+  @Recurse key: UbamKey,
   metadataLocation: URI,
   force: Boolean = false
 ) extends AddCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.queryHybselUbamName)
 final case class QueryHybselUbam(
-  @Recurse queryInput: TransferUbamV1QueryInput,
+  @Recurse queryInput: UbamQueryInput,
   includeDeleted: Boolean = false
 ) extends QueryCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.moveHybselUbamName)
 final case class MoveHybselUbam(
-  @Recurse key: TransferUbamV1Key,
+  @Recurse key: UbamKey,
   destination: URI,
   newBasename: Option[String] = None
 ) extends MoveCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.deleteHybselUbamName)
 final case class DeleteHybselUbam(
-  @Recurse key: TransferUbamV1Key,
+  @Recurse key: UbamKey,
   note: String,
   force: Boolean = false
 ) extends DeleteCommand(HybselUbamIndex)
@@ -215,27 +203,27 @@ case object GetSchemaArrays extends GetSchemaCommand(ArraysIndex)
 
 @CommandName(ClioCommand.addArraysName)
 final case class AddArrays(
-  @Recurse key: TransferArraysV1Key,
+  @Recurse key: ArraysKey,
   metadataLocation: URI,
   force: Boolean = false
 ) extends AddCommand(ArraysIndex)
 
 @CommandName(ClioCommand.queryArraysName)
 final case class QueryArrays(
-  @Recurse queryInput: TransferArraysV1QueryInput,
+  @Recurse queryInput: ArraysQueryInput,
   includeDeleted: Boolean = false
 ) extends QueryCommand(ArraysIndex)
 
 @CommandName(ClioCommand.moveArraysName)
 final case class MoveArrays(
-  @Recurse key: TransferArraysV1Key,
+  @Recurse key: ArraysKey,
   destination: URI,
   newBasename: Option[String] = None
 ) extends MoveCommand(ArraysIndex)
 
 @CommandName(ClioCommand.deleteArraysName)
 final case class DeleteArrays(
-  @Recurse key: TransferArraysV1Key,
+  @Recurse key: ArraysKey,
   note: String,
   force: Boolean = false
 ) extends DeleteCommand(ArraysIndex)

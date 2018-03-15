@@ -4,13 +4,13 @@ import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.DeleteCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class DeleteExecutor[TI <: TransferIndex](deleteCommand: DeleteCommand[TI])
+class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])
     extends Executor[UpsertId] {
 
   private val prettyKey = ClassUtil.formatFields(deleteCommand.key)
