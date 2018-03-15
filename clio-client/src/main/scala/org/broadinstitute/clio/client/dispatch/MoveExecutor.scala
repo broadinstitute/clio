@@ -98,7 +98,6 @@ class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[T
     ioUtil: IoUtil,
     existingMetadata: moveCommand.index.MetadataType
   )(implicit ec: ExecutionContext): Future[Option[UpsertId]] = {
-
     val movedMetadata =
       existingMetadata.moveInto(destination, moveCommand.newBasename)
     val preMovePaths = extractPaths(existingMetadata)
@@ -155,8 +154,6 @@ class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[T
               Future.successful(Left(oldPath))
           }
       }
-
-      System.out.println("movedMetadata: " + movedMetadata.toString)
 
       for {
         _ <- pathCheck
