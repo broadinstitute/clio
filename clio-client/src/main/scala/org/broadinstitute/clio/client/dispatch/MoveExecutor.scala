@@ -23,6 +23,11 @@ class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[T
   private[dispatch] val name: String = moveCommand.index.name
   private[dispatch] val prettyKey = ClassUtil.formatFields(moveCommand.key)
   private val destination: URI = moveCommand.destination
+  private val upsertExceptionText: String =
+    s"""An error occurred while updating the $name record in Clio. All files associated with
+                                               |$prettyKey exist at both the old and new locations, but Clio only knows about the old
+                                               |location. Try removing the file(s) at $destination and re-running this command.
+                                               |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
@@ -124,7 +129,14 @@ class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[T
       )
     } else if (movesToPerform.isEmpty) {
       logger.info(s"Nothing to move; all files already exist at $destination")
-      Future.successful(None)
+
+      // Although we don't need to actually perform the move, we may need to perform custom delivery or other steps.
+      for {
+        mungedMetadata <- customMetadataOperations(movedMetadata, ioUtil)
+        upsertResponse <- upsertWithException(client, mungedMetadata, upsertExceptionText)
+      } yield {
+        Some(upsertResponse)
+      }
     } else {
       val oldPaths = movesToPerform.keys
       val pathCheck = Future {
@@ -170,18 +182,7 @@ class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[T
               )
           }
         mungedMetadata <- customMetadataOperations(movedMetadata, ioUtil)
-        upsertResponse <- client
-          .upsert(moveCommand.index)(moveCommand.key, mungedMetadata)
-          .recover {
-            case ex =>
-              throw new RuntimeException(
-                s"""An error occurred while updating the $name record in Clio. All files associated with
-                   |$prettyKey exist at both the old and new locations, but Clio only knows about the old
-                   |location. Try removing the file(s) at $destination and re-running this command.
-                   |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin,
-                ex
-              )
-          }
+        upsertResponse <- upsertWithException(client, mungedMetadata, upsertExceptionText)
         _ <- Future
           .sequence(googleDeletes)
           .map((moves: Iterable[Either[URI, Unit]]) => {
@@ -217,6 +218,16 @@ class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[T
     if (ioUtil.deleteGoogleObject(path) != 0) {
       throw new RuntimeException(s"Deleting file in the cloud failed for path '$path'")
     }
+  }
+
+  private def upsertWithException(
+    client: ClioWebClient,
+    metadata: moveCommand.index.MetadataType,
+    exceptionText: String
+  )(implicit ec: ExecutionContext): Future[UpsertId] = {
+    client
+      .upsert(moveCommand.index)(moveCommand.key, metadata)
+      .recover({ case ex => throw new RuntimeException(exceptionText, ex) })
   }
 
   protected def customMetadataOperations(

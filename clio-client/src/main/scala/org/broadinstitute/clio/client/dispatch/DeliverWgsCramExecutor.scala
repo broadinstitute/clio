@@ -59,6 +59,6 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
         )
       }
     }
-    metadata
+    metadata.withWorkspaceName(deliverCommand.workspaceName)
   }
 }

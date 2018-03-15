@@ -53,6 +53,10 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)
       ArraysExtensions.IdatExtension
     )
 
-    Future { metadata.withMovedIdats(movedGrnIdat, movedRedIdat) }
+    Future {
+      metadata
+        .withWorkspaceName(deliverCommand.workspaceName)
+        .withMovedIdats(movedGrnIdat, movedRedIdat)
+    }
   }
 }
