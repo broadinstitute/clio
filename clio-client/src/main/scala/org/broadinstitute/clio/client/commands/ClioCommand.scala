@@ -38,15 +38,13 @@ sealed abstract class QueryCommand[CI <: ClioIndex](val index: CI)
   def includeDeleted: Boolean
 }
 
-sealed abstract class MoveCommand[CI <: ClioIndex](val index: CI)
-    extends ClioCommand {
+sealed abstract class MoveCommand[CI <: ClioIndex](val index: CI) extends ClioCommand {
   def key: index.KeyType
   def destination: URI
   def newBasename: Option[String]
 }
 
-sealed abstract class DeleteCommand[CI <: ClioIndex](val index: CI)
-    extends ClioCommand {
+sealed abstract class DeleteCommand[CI <: ClioIndex](val index: CI) extends ClioCommand {
   def key: index.KeyType
   def note: String
   def force: Boolean

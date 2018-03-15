@@ -33,8 +33,8 @@ abstract class IndexService[CI <: ClioIndex](
     ]
 
   def upsertMetadata(
-                      indexKey: clioIndex.KeyType,
-                      metadata: clioIndex.MetadataType
+    indexKey: clioIndex.KeyType,
+    metadata: clioIndex.MetadataType
   ): Future[UpsertId] = {
     val updatedMetadata = metadata.withDocumentStatus(
       metadata.documentStatus.orElse(Some(DocumentStatus.Normal))

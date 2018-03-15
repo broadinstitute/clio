@@ -42,8 +42,8 @@ abstract class MockIndexService[
   def emptyOutput: clioIndex.QueryOutputType
 
   override def upsertMetadata(
-                               key: clioIndex.KeyType,
-                               metadata: clioIndex.MetadataType
+    key: clioIndex.KeyType,
+    metadata: clioIndex.MetadataType
   ): Future[UpsertId] = {
     upsertCalls += ((key, metadata))
     Future.successful(UpsertId.nextId())

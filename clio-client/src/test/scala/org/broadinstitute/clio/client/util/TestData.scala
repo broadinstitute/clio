@@ -177,7 +177,7 @@ trait TestData {
   val goodDeleteCommand =
     DeleteWgsUbam(key = testWgsUbamKey, note = "Good delete for test")
 
-  val testGvcfKey = GvcfKey(
+  val testGvcfKey2 = GvcfKey(
     location = Location.GCP,
     project = "project",
     sampleAlias = "sampleAlias",
@@ -197,7 +197,7 @@ trait TestData {
   )
 
   val goodGvcfDeleteCommand =
-    DeleteGvcf(key = testGvcfKey, note = "Good delete for gvcf test")
+    DeleteGvcf(key = testGvcfKey2, note = "Good delete for gvcf test")
 
   val goodCramQueryCommand = QueryWgsCram(
     queryInput = WgsCramQueryInput()
