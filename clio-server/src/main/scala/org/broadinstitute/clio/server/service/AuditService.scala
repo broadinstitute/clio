@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.AuditDAO
 import org.broadinstitute.clio.server.model.{ClioRequest, ClioResponse}
 
@@ -23,7 +22,7 @@ class AuditService private (auditDAO: AuditDAO) {
 
 object AuditService {
 
-  def apply(app: ClioApp): AuditService = {
-    new AuditService(app.auditDAO)
+  def apply(auditDAO: AuditDAO): AuditService = {
+    new AuditService(auditDAO)
   }
 }

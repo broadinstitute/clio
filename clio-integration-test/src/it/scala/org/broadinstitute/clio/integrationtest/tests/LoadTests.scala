@@ -8,9 +8,9 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1Metadata,
-  TransferUbamV1QueryOutput,
+  UbamKey,
+  UbamMetadata,
+  UbamQueryOutput,
   UbamExtensions
 }
 import org.broadinstitute.clio.util.model.Location
@@ -29,7 +29,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
     val symbolId = Symbol(randomId)
     val randInt = Random.nextInt(100)
 
-    val key = TransferUbamV1Key(
+    val key = UbamKey(
       location = location,
       flowcellBarcode = s"flowcell$id",
       lane = randInt,
@@ -39,7 +39,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
       .fill(randInt)(id)
       .mkString("gs://", "/", UbamExtensions.UbamExtension)
 
-    val metadata = TransferUbamV1Metadata(
+    val metadata = UbamMetadata(
       ubamPath = Some(URI.create(ubamPath)),
       ubamSize = Some(randInt.toLong),
       analysisType = Some(symbolId),
@@ -83,7 +83,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
       .runWith(Sink.ignore)
 
     val queries = immutable.Seq.fill(maxConcurrentRequests) { () =>
-      runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+      runClientGetJsonAs[Seq[UbamQueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--location",
         location.entryName

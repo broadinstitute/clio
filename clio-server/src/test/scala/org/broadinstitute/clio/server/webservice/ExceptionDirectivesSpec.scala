@@ -7,8 +7,8 @@ class ExceptionDirectivesSpec extends BaseWebserviceSpec {
   behavior of "ExceptionDirectives"
 
   it should "complete with json on internal error" in {
-    val mockDirectives = MockExceptionDirectives
-    Get("/") ~> mockDirectives.completeWithInternalErrorJson(
+    val exceptionDirectives = new ExceptionDirectives
+    Get("/") ~> exceptionDirectives.completeWithInternalErrorJson(
       complete(throw new RuntimeException("expected"))
     ) ~> check {
       responseAs[ErrorResult] should be(
@@ -18,8 +18,8 @@ class ExceptionDirectivesSpec extends BaseWebserviceSpec {
   }
 
   it should "complete normally when no error" in {
-    val mockDirectives = MockExceptionDirectives
-    Get("/") ~> mockDirectives.completeWithInternalErrorJson(
+    val exceptionDirectives = new ExceptionDirectives
+    Get("/") ~> exceptionDirectives.completeWithInternalErrorJson(
       complete(MockResult("ok"))
     ) ~> check {
       responseAs[MockResult] should be(MockResult("ok"))

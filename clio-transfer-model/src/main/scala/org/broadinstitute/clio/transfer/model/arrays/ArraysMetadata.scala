@@ -4,13 +4,13 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.transfer.model.TransferMetadata
+import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.util.model.DocumentStatus
 
 /* Declare Metadata fields in lexicographic order.  Metadata is the
  * set difference of the QueryOutput and Key fields.
  */
-case class TransferArraysV1Metadata(
+case class ArraysMetadata(
   autocallCallRate: Option[Float] = None,
   autocallDate: Option[OffsetDateTime] = None,
   autocallGender: Option[Symbol] = None,
@@ -78,7 +78,7 @@ case class TransferArraysV1Metadata(
   zcallPed: Option[URI] = None,
   zcallThresholdsPath: Option[URI] = None,
   zcallVersion: Option[Symbol] = None
-) extends TransferMetadata[TransferArraysV1Metadata] {
+) extends Metadata[ArraysMetadata] {
 
   /**
     * FIXME: Deletes everything now, but Gvcf and WgsCram do not
@@ -125,7 +125,7 @@ case class TransferArraysV1Metadata(
     */
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
-  ): TransferArraysV1Metadata = this.copy(
+  ): ArraysMetadata = this.copy(
     beadPoolManifestPath = pathMapper(beadPoolManifestPath, ArraysExtensions.BpmExtension),
     clusterPath = pathMapper(clusterPath, ArraysExtensions.EgtExtension),
     dbSnpVcf = pathMapper(dbSnpVcf, ArraysExtensions.VcfGzExtension),
@@ -160,9 +160,16 @@ case class TransferArraysV1Metadata(
       pathMapper(zcallThresholdsPath, ArraysExtensions.EgtThresholdsTxtExtension)
   )
 
-  override def markDeleted(deletionNote: String): TransferArraysV1Metadata =
+  override def markDeleted(deletionNote: String): ArraysMetadata =
     this.copy(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
+    )
+
+  override def withDocumentStatus(
+    documentStatus: Option[DocumentStatus]
+  ): ArraysMetadata =
+    this.copy(
+      documentStatus = documentStatus
     )
 }

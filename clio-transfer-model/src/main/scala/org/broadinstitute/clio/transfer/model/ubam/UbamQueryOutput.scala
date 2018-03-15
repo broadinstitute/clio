@@ -3,10 +3,17 @@ package org.broadinstitute.clio.transfer.model.ubam
 import java.net.URI
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.transfer.model.TransferMetadata
-import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation
+}
 
-case class TransferUbamV1Metadata(
+case class UbamQueryOutput(
+  flowcellBarcode: String,
+  lane: Int,
+  libraryName: String,
+  location: Location,
   analysisType: Option[Symbol] = None,
   baitIntervals: Option[Symbol] = None,
   baitSet: Option[Symbol] = None,
@@ -42,19 +49,4 @@ case class TransferUbamV1Metadata(
   ubamPath: Option[URI] = None,
   ubamSize: Option[Long] = None,
   documentStatus: Option[DocumentStatus] = None
-) extends TransferMetadata[TransferUbamV1Metadata] {
-
-  override def pathsToDelete: Seq[URI] = ubamPath.toSeq
-
-  override def mapMove(
-    pathMapper: (Option[URI], String) => Option[URI]
-  ): TransferUbamV1Metadata = {
-    this.copy(ubamPath = pathMapper(ubamPath, UbamExtensions.UbamExtension))
-  }
-
-  override def markDeleted(deletionNote: String): TransferUbamV1Metadata =
-    this.copy(
-      notes = appendNote(deletionNote),
-      documentStatus = Some(DocumentStatus.Deleted)
-    )
-}
+)

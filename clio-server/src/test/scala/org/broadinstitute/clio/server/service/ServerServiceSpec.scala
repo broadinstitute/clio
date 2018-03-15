@@ -9,7 +9,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchFieldMapper,
   ElasticsearchIndex
 }
-import org.broadinstitute.clio.server.{MockClioApp, TestKitSuite}
+import org.broadinstitute.clio.server.{ClioServerConfig, TestKitSuite}
 import org.broadinstitute.clio.status.model.ClioStatus
 import org.broadinstitute.clio.transfer.model.{
   ModelMockIndex,
@@ -26,30 +26,39 @@ class ServerServiceSpec
     with ModelAutoDerivation {
   behavior of "ServerService"
 
+  def serverServiceWithMockDefaults(
+    serverStatusDAO: ServerStatusDAO = new MockServerStatusDAO(),
+    persistenceDAO: PersistenceDAO = new MockPersistenceDAO(),
+    searchDAO: SearchDAO = new MockSearchDAO(),
+    httpServerDAO: HttpServerDAO = new MockHttpServerDAO()
+  ) = new ServerService(
+    serverStatusDAO,
+    persistenceDAO,
+    searchDAO,
+    httpServerDAO,
+    ClioServerConfig.Version.value
+  )
+
   it should "beginStartup" in {
-    val app = MockClioApp()
-    val serverService = ServerService(app)
+    val serverService = serverServiceWithMockDefaults()
     serverService.beginStartup()
     succeed
   }
 
   it should "awaitShutdown" in {
-    val app = MockClioApp()
-    val serverService = ServerService(app)
+    val serverService = serverServiceWithMockDefaults()
     serverService.awaitShutdown()
     succeed
   }
 
   it should "awaitShutdownInf" in {
-    val app = MockClioApp()
-    val serverService = ServerService(app)
+    val serverService = serverServiceWithMockDefaults()
     serverService.awaitShutdownInf()
     succeed
   }
 
   it should "shutdownAndWait" in {
-    val app = MockClioApp()
-    val serverService = ServerService(app)
+    val serverService = serverServiceWithMockDefaults()
     serverService.shutdownAndWait()
     succeed
   }
@@ -57,9 +66,10 @@ class ServerServiceSpec
   it should "startup" in {
     val statusDAO = new MemoryServerStatusDAO()
     val persistenceDAO = new MemoryPersistenceDAO()
-    val app =
-      MockClioApp(serverStatusDAO = statusDAO, persistenceDAO = persistenceDAO)
-    val serverService = ServerService(app)
+    val serverService = serverServiceWithMockDefaults(
+      serverStatusDAO = statusDAO,
+      persistenceDAO = persistenceDAO
+    )
     serverService.startup().map { _ =>
       statusDAO.setCalls should be(
         Seq(ClioStatus.Starting, ClioStatus.Recovering, ClioStatus.Started)
@@ -69,11 +79,11 @@ class ServerServiceSpec
 
   it should "fail to start if persistence initialization fails" in {
     val statusDAO = new MemoryServerStatusDAO()
-    val app = MockClioApp(
-      persistenceDAO = new FailingPersistenceDAO(),
-      serverStatusDAO = statusDAO
+    val persistenceDAO = new FailingPersistenceDAO()
+    val serverService = serverServiceWithMockDefaults(
+      serverStatusDAO = statusDAO,
+      persistenceDAO = persistenceDAO
     )
-    val serverService = ServerService(app)
 
     recoverToSucceededIf[Exception] {
       serverService.startup()
@@ -84,11 +94,11 @@ class ServerServiceSpec
 
   it should "fail to start if search initialization fails" in {
     val statusDAO = new MemoryServerStatusDAO()
-    val app = MockClioApp(
-      searchDAO = new FailingSearchDAO(),
-      serverStatusDAO = statusDAO
+    val searchDAO = new FailingSearchDAO()
+    val serverService = serverServiceWithMockDefaults(
+      serverStatusDAO = statusDAO,
+      searchDAO = searchDAO
     )
-    val serverService = ServerService(app)
 
     recoverToSucceededIf[Exception] {
       serverService.startup()
@@ -100,12 +110,14 @@ class ServerServiceSpec
   it should "recover metadata from storage" in {
     val persistenceDAO = new MemoryPersistenceDAO()
     val searchDAO = new MemorySearchDAO()
-    val app =
-      MockClioApp(persistenceDAO = persistenceDAO, searchDAO = searchDAO)
+
+    val serverService = serverServiceWithMockDefaults(
+      persistenceDAO = persistenceDAO,
+      searchDAO = searchDAO
+    )
 
     val numDocs = 5
     val initInSearch = numDocs / 2
-
     val keyLong = 1L
     val keyString = "mock-key"
     val key = ModelMockKey(keyLong, keyString)
@@ -127,8 +139,6 @@ class ServerServiceSpec
       ModelMockIndex(),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
-
-    val serverService = ServerService(app)
 
     var counter = 0
     val initStoredDocuments = Seq.fill(numDocs)({
@@ -165,8 +175,7 @@ class ServerServiceSpec
   }
 
   it should "shutdown" in {
-    val app = MockClioApp()
-    val serverService = ServerService(app)
+    val serverService = serverServiceWithMockDefaults()
     for {
       _ <- serverService.shutdown()
     } yield succeed

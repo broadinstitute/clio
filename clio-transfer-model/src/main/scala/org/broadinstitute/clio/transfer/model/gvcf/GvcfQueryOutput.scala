@@ -9,7 +9,7 @@ import org.broadinstitute.clio.util.model.{
   RegulatoryDesignation
 }
 
-case class TransferGvcfV1QueryOutput(
+case class GvcfQueryOutput(
   location: Location,
   project: String,
   sampleAlias: String,

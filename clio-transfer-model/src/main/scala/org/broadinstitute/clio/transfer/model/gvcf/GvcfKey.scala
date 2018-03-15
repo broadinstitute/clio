@@ -1,14 +1,14 @@
-package org.broadinstitute.clio.transfer.model.wgscram
+package org.broadinstitute.clio.transfer.model.gvcf
 
-import org.broadinstitute.clio.transfer.model.TransferKey
+import org.broadinstitute.clio.transfer.model.IndexKey
 import org.broadinstitute.clio.util.model.Location
 
-case class TransferWgsCramV1Key(
+case class GvcfKey(
   location: Location,
   project: String,
   sampleAlias: String,
   version: Int
-) extends TransferKey {
+) extends IndexKey {
 
   override def getUrlSegments: Seq[String] =
     Seq(location.entryName, project, sampleAlias, version.toString)

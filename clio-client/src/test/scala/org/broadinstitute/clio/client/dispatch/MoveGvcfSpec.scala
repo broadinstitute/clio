@@ -7,7 +7,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.MoveGvcf
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1Key
+import org.broadinstitute.clio.transfer.model.gvcf.GvcfKey
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 class MoveGvcfSpec extends BaseClientSpec {
@@ -18,7 +18,7 @@ class MoveGvcfSpec extends BaseClientSpec {
   it should "throw an exception if the destination path scheme is invalid" in {
     recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveGvcf(
-        key = testGvcfTransferV1Key,
+        key = testGvcfKey,
         destination = MockIoUtil.InvalidPath
       )
       succeedingDispatcher().dispatch(command)
@@ -29,7 +29,7 @@ class MoveGvcfSpec extends BaseClientSpec {
     recoverToSucceededIf[RuntimeException] {
       val command =
         MoveGvcf(
-          key = testGvcfTransferV1Key,
+          key = testGvcfKey,
           destination = testGvcfCloudSourcePath
         )
       succeedingDispatcher().dispatch(command)
@@ -40,7 +40,7 @@ class MoveGvcfSpec extends BaseClientSpec {
     recoverToSucceededIf[IllegalStateException] {
       val command =
         MoveGvcf(
-          key = testGvcfTransferV1Key,
+          key = testGvcfKey,
           destination = testCloudDestinationDirectoryPath
         )
       succeedingDispatcher().dispatch(command)
@@ -59,7 +59,7 @@ class MoveGvcfSpec extends BaseClientSpec {
   it should "throw an exception if given a non-GCP gvcf" in {
     recoverToSucceededIf[UnsupportedOperationException] {
       val command = MoveGvcf(
-        key = TransferGvcfV1Key(
+        key = GvcfKey(
           location = Location.OnPrem,
           project = testProject,
           sampleAlias = testSampleAlias,
@@ -74,7 +74,7 @@ class MoveGvcfSpec extends BaseClientSpec {
   it should "throw an exception if the destination path is not in GCP" in {
     recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveGvcf(
-        key = testGvcfTransferV1Key,
+        key = testGvcfKey,
         destination = URI.create("/this/is/a/local/path")
       )
       succeedingDispatcher().dispatch(command)
@@ -84,7 +84,7 @@ class MoveGvcfSpec extends BaseClientSpec {
   it should "throw an exception if given a non-directory destination" in {
     recoverToSucceededIf[IllegalArgumentException] {
       val command = MoveGvcf(
-        key = testGvcfTransferV1Key,
+        key = testGvcfKey,
         destination = URI.create("gs://the-bucket/the/file.g.vcf.gz")
       )
       succeedingDispatcher().dispatch(command)

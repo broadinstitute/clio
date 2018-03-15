@@ -1,8 +1,7 @@
 package org.broadinstitute.clio.server.webservice
 
+import org.broadinstitute.clio.server.dataaccess.{AuditDAO, MockAuditDAO}
 import org.broadinstitute.clio.server.service.AuditService
-import org.broadinstitute.clio.server.{ClioApp, MockClioApp}
 
-class MockAuditDirectives(app: ClioApp = MockClioApp()) extends AuditDirectives {
-  override lazy val auditService: AuditService = AuditService(app)
-}
+class MockAuditDirectives(auditDAO: AuditDAO = new MockAuditDAO())
+    extends AuditDirectives(AuditService(auditDAO))

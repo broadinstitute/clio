@@ -7,7 +7,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeleteGvcf
 import org.broadinstitute.clio.client.util.MockIoUtil
 import org.broadinstitute.clio.client.webclient.MockClioWebClient
-import org.broadinstitute.clio.transfer.model.gvcf.TransferGvcfV1Key
+import org.broadinstitute.clio.transfer.model.gvcf.GvcfKey
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 
 class DeleteGvcfSpec extends BaseClientSpec {
@@ -18,7 +18,7 @@ class DeleteGvcfSpec extends BaseClientSpec {
   it should "throw an exception if the location is not GCP" in {
     recoverToSucceededIf[UnsupportedOperationException] {
       val command = DeleteGvcf(
-        key = TransferGvcfV1Key(
+        key = GvcfKey(
           location = Location.OnPrem,
           project = testProject,
           sampleAlias = testSampleAlias,

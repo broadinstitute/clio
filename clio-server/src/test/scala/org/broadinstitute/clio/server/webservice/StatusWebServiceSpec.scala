@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.server.webservice
 
-import org.broadinstitute.clio.server.dataaccess.{MockHttpServerDAO, MockServerStatusDAO}
+import org.broadinstitute.clio.server.dataaccess.MockServerStatusDAO
 import org.broadinstitute.clio.status.model.{StatusInfo, SearchStatus, VersionInfo}
 
 class StatusWebServiceSpec extends BaseWebserviceSpec {
@@ -10,7 +10,7 @@ class StatusWebServiceSpec extends BaseWebserviceSpec {
     val webService = new MockStatusWebService()
     Get("/version") ~> webService.versionRoute ~> check {
       responseAs[VersionInfo] should be(
-        VersionInfo(MockHttpServerDAO.VersionMock)
+        VersionInfo(MockServerStatusDAO.VersionMock)
       )
     }
   }

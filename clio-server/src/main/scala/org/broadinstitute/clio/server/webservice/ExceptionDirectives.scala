@@ -6,10 +6,7 @@ import akka.http.scaladsl.server._
 import io.circe.syntax._
 import org.broadinstitute.clio.server.model.ErrorResult
 
-trait ExceptionDirectives { self: JsonWebService =>
-  lazy val completeWithInternalErrorJson: Directive0 = {
-    handleExceptions(completeWithInternalErrorJsonHandler)
-  }
+class ExceptionDirectives extends JsonWebService {
 
   private val completeWithInternalErrorJsonRoute: Route = {
     val message = ErrorResult(StatusCodes.InternalServerError.defaultMessage)
@@ -24,5 +21,9 @@ trait ExceptionDirectives { self: JsonWebService =>
     ExceptionHandler {
       case _: Exception => completeWithInternalErrorJsonRoute
     }
+  }
+
+  val completeWithInternalErrorJson: Directive0 = {
+    handleExceptions(completeWithInternalErrorJsonHandler)
   }
 }

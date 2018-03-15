@@ -8,7 +8,7 @@ import scala.reflect.ClassTag
 /**
   * This models an index in our database. An index is a table (schema) within our database.
   */
-trait TransferIndex {
+trait ClioIndex {
 
   /**
     * Encode the index as a url segment for making web service API calls
@@ -25,11 +25,11 @@ trait TransferIndex {
 
   val elasticsearchIndexName: String
 
-  type KeyType <: TransferKey
+  type KeyType <: IndexKey
 
-  type MetadataType <: TransferMetadata[MetadataType]
+  type MetadataType <: Metadata[MetadataType]
 
-  type QueryInputType
+  type QueryInputType <: QueryInput[QueryInputType]
 
   type QueryOutputType
 
@@ -49,11 +49,17 @@ trait TransferIndex {
 
   val queryInputEncoder: Encoder[QueryInputType]
 
+  val queryInputDecoder: Decoder[QueryInputType]
+
+  val queryOutputEncoder: Encoder[QueryOutputType]
+
   val queryOutputDecoder: Decoder[QueryOutputType]
 
   val keyMapper: FieldMapper[KeyType]
 
   val metadataMapper: FieldMapper[MetadataType]
+
+  val queryInputMapper: FieldMapper[QueryInputType]
 
   /**
     * Container for all index parameters that are typically
@@ -72,7 +78,10 @@ trait TransferIndex {
     implicit val md: Decoder[MetadataType] = metadataDecoder
     implicit val me: Encoder[MetadataType] = metadataEncoder
     implicit val qie: Encoder[QueryInputType] = queryInputEncoder
+    implicit val qid: Decoder[QueryInputType] = queryInputDecoder
+    implicit val qoe: Encoder[QueryOutputType] = queryOutputEncoder
     implicit val qod: Decoder[QueryOutputType] = queryOutputDecoder
+    implicit val qim: FieldMapper[QueryInputType] = queryInputMapper
     implicit val km: FieldMapper[KeyType] = keyMapper
     implicit val mm: FieldMapper[MetadataType] = metadataMapper
   }
