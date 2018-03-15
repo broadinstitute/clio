@@ -6,8 +6,7 @@ import java.time.format.DateTimeFormatter
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.{Decoder, Json}
-import org.broadinstitute.clio.transfer.model.ClioIndex
-import org.broadinstitute.clio.transfer.model.{GvcfIndex, WgsCramIndex, WgsUbamIndex}
+import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
@@ -108,6 +107,12 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   implicit val WgsCram: ElasticsearchIndex[WgsCramIndex.type] =
     new ElasticsearchIndex(
       WgsCramIndex,
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+    )
+
+  implicit val Arrays: ElasticsearchIndex[ArraysIndex.type] =
+    new ElasticsearchIndex(
+      ArraysIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 }
