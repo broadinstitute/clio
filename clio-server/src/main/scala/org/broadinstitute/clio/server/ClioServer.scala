@@ -64,36 +64,26 @@ object ClioServer extends StrictLogging {
   val statusWebService =
     new StatusWebService(statusService)
 
-  val wgsUbamWebService =
+  val apiWebServices = Seq(
     new WgsUbamWebService(
       new WgsUbamService(persistenceService, searchService)
-    )
-
-  val gvcfWebService =
+    ),
     new GvcfWebService(
       new GvcfService(persistenceService, searchService)
-    )
-
-  val wgsCramWebService =
+    ),
     new WgsCramWebService(
       new WgsCramService(persistenceService, searchService)
-    )
-
-  val arraysWebService =
+    ),
     new ArraysWebService(
       new ArraysService(persistenceService, searchService)
     )
+  )
 
   private val infoRoutes: Route =
     concat(swaggerDirectives.swaggerRoutes, statusWebService.statusRoutes)
 
   private val apiRoutes: Route =
-    concat(
-      wgsUbamWebService.routes,
-      gvcfWebService.routes,
-      wgsCramWebService.routes,
-      arraysWebService.routes
-    )
+    concat(apiWebServices.map(_.routes): _*)
 
   private val httpServerDAO = AkkaHttpServerDAO(wrapperDirectives, infoRoutes, apiRoutes)
 

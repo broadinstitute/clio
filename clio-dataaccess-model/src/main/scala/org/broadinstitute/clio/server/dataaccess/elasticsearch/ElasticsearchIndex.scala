@@ -92,25 +92,25 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   lazy val dateTimeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
-  implicit val WgsUbam: ElasticsearchIndex[WgsUbamIndex.type] =
+  val WgsUbam: ElasticsearchIndex[WgsUbamIndex.type] =
     new ElasticsearchIndex(
       WgsUbamIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
-  implicit val Gvcf: ElasticsearchIndex[GvcfIndex.type] =
+  val Gvcf: ElasticsearchIndex[GvcfIndex.type] =
     new ElasticsearchIndex(
       GvcfIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
-  implicit val WgsCram: ElasticsearchIndex[WgsCramIndex.type] =
+  val WgsCram: ElasticsearchIndex[WgsCramIndex.type] =
     new ElasticsearchIndex(
       WgsCramIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
-  implicit val Arrays: ElasticsearchIndex[ArraysIndex.type] =
+  val Arrays: ElasticsearchIndex[ArraysIndex.type] =
     new ElasticsearchIndex(
       ArraysIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
