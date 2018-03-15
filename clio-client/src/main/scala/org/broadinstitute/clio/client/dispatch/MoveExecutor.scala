@@ -6,7 +6,7 @@ import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.MoveCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
@@ -15,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 // Constructor arguments are private by default and we want to be able to pass aspects of moveCommand into protected methods.
-class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[TI])
+class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])
     extends Executor[Option[UpsertId]] {
 
   import moveCommand.index.implicits._
@@ -64,7 +64,7 @@ class MoveExecutor[TI <: TransferIndex](protected val moveCommand: MoveCommand[T
   }
 
   /**
-    * Given one of our `TransferMetadata` classes, extract out all fields that
+    * Given one of our `Metadata` classes, extract out all fields that
     * store path-related information into a map from 'fieldName' -> 'path'.
     *
     * Used to build a generic before-and-after move comparison to determine

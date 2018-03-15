@@ -18,7 +18,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
       dispatcher.dispatch(
         AddWgsUbam(
           metadataLocation = badMetadataFileLocation,
-          key = testTransferV1Key
+          key = testWgsUbamKey
         ),
       )
     }
@@ -29,7 +29,7 @@ class AddWgsUbamSpec extends BaseClientSpec {
       dispatcher.dispatch(
         AddWgsUbam(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
-          key = testTransferV1Key
+          key = testWgsUbamKey
         )
       )
     }

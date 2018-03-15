@@ -6,20 +6,20 @@ import java.time.OffsetDateTime
 import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.webclient.CredentialsGenerator
-import org.broadinstitute.clio.transfer.model.arrays.TransferArraysV1Key
+import org.broadinstitute.clio.transfer.model.arrays.ArraysKey
 import org.broadinstitute.clio.transfer.model.gvcf.{
   GvcfExtensions,
-  TransferGvcfV1Key,
-  TransferGvcfV1QueryInput
+  GvcfKey,
+  GvcfQueryInput
 }
 import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1QueryInput,
+  UbamKey,
+  UbamQueryInput,
   UbamExtensions
 }
 import org.broadinstitute.clio.transfer.model.wgscram.{
-  TransferWgsCramV1Key,
-  TransferWgsCramV1QueryInput,
+  WgsCramKey,
+  WgsCramQueryInput,
   WgsCramExtensions
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
@@ -141,21 +141,21 @@ trait TestData {
   val testWgsMetricsCloudSourcePath: URI =
     URI.create("gs://testProject/testSample/cramPath1.wgs_metrics")
 
-  val testTransferV1Key = TransferUbamV1Key(
+  val testWgsUbamKey = UbamKey(
     flowcellBarcode = testFlowcell,
     lane = testLane,
     libraryName = testLibName,
     location = Location.namesToValuesMap(testLocation)
   )
 
-  val testGvcfTransferV1Key = TransferGvcfV1Key(
+  val testGvcfKey = GvcfKey(
     location = Location.namesToValuesMap(testLocation),
     project = testProject,
     sampleAlias = testSampleAlias,
     version = testVersion
   )
 
-  val testCramTransferV1Key = TransferWgsCramV1Key(
+  val testCramKey = WgsCramKey(
     location = Location.namesToValuesMap(testLocation),
     project = testProject,
     sampleAlias = testSampleAlias,
@@ -163,63 +163,63 @@ trait TestData {
   )
 
   val goodQueryCommand = QueryWgsUbam(
-    queryInput = TransferUbamV1QueryInput()
+    queryInput = UbamQueryInput()
   )
 
   val goodAddCommand =
-    AddWgsUbam(metadataLocation = metadataFileLocation, key = testTransferV1Key)
+    AddWgsUbam(metadataLocation = metadataFileLocation, key = testWgsUbamKey)
 
   val goodMoveCommand = MoveWgsUbam(
-    key = testTransferV1Key,
+    key = testWgsUbamKey,
     destination = testCloudDestinationDirectoryPath
   )
 
   val goodDeleteCommand =
-    DeleteWgsUbam(key = testTransferV1Key, note = "Good delete for test")
+    DeleteWgsUbam(key = testWgsUbamKey, note = "Good delete for test")
 
-  val testTransferGvcfV1Key = TransferGvcfV1Key(
+  val testGvcfKey2 = GvcfKey(
     location = Location.GCP,
     project = "project",
     sampleAlias = "sampleAlias",
     version = 17
   )
 
-  val goodGvcfQueryCommand = QueryGvcf(queryInput = TransferGvcfV1QueryInput())
+  val goodGvcfQueryCommand = QueryGvcf(queryInput = GvcfQueryInput())
 
   val goodGvcfAddCommand = AddGvcf(
     metadataLocation = gvcfMetadataFileLocation,
-    key = testGvcfTransferV1Key
+    key = testGvcfKey
   )
 
   val goodGvcfMoveCommand = MoveGvcf(
-    key = testGvcfTransferV1Key,
+    key = testGvcfKey,
     destination = testCloudDestinationDirectoryPath
   )
 
   val goodGvcfDeleteCommand =
-    DeleteGvcf(key = testTransferGvcfV1Key, note = "Good delete for gvcf test")
+    DeleteGvcf(key = testGvcfKey2, note = "Good delete for gvcf test")
 
   val goodCramQueryCommand = QueryWgsCram(
-    queryInput = TransferWgsCramV1QueryInput()
+    queryInput = WgsCramQueryInput()
   )
 
   val goodCramAddCommand = AddWgsCram(
-    key = testCramTransferV1Key,
+    key = testCramKey,
     metadataLocation = cramMetadataFileLocation
   )
 
   val goodCramMoveCommand = MoveWgsCram(
-    key = testCramTransferV1Key,
+    key = testCramKey,
     destination = testCloudDestinationDirectoryPath
   )
 
   val goodCramDeleteCommand =
-    DeleteWgsCram(key = testCramTransferV1Key, note = "Good delete for test")
+    DeleteWgsCram(key = testCramKey, note = "Good delete for test")
 
   val testChipwellBarcode = 'chipwellBarcode
   val testAnalysisVersionNumber = 23
 
-  val testArraysTransferV1Key = TransferArraysV1Key(
+  val testArraysKey = ArraysKey(
     location = Location.OnPrem,
     chipwellBarcode = testChipwellBarcode,
     analysisVersionNumber = testAnalysisVersionNumber,
@@ -238,16 +238,16 @@ trait TestData {
 
   val goodArraysAddCommand = AddArrays(
     metadataLocation = arraysMetadataFileLocation,
-    key = testArraysTransferV1Key
+    key = testArraysKey
   )
 
   val goodArraysMoveCommand = MoveArrays(
-    key = testArraysTransferV1Key,
+    key = testArraysKey,
     destination = testCloudDestinationDirectoryPath
   )
 
   val goodArraysDeleteCommand =
-    DeleteArrays(key = testArraysTransferV1Key, note = "Good delete for test")
+    DeleteArrays(key = testArraysKey, note = "Good delete for test")
 
   val testServerPort: Int = 8080
   val testMaxQueued: Int = 4

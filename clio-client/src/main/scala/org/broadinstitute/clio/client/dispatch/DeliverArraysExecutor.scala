@@ -2,10 +2,10 @@ package org.broadinstitute.clio.client.dispatch
 
 import org.broadinstitute.clio.client.commands.DeliverArrays
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.transfer.model.TransferMetadata
+import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.transfer.model.arrays.{
   ArraysExtensions,
-  TransferArraysV1Metadata
+  ArraysMetadata
 }
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,11 +22,11 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)
     extends DeliverExecutor(deliverCommand) {
 
   override def customMetadataOperations(
-    metadata: TransferArraysV1Metadata,
+    metadata: ArraysMetadata,
     ioUtil: IoUtil
   )(
     implicit ec: ExecutionContext
-  ): Future[TransferArraysV1Metadata] = {
+  ): Future[ArraysMetadata] = {
     metadata.grnIdat match {
       case Some(path) => ioUtil.copyGoogleObject(path, deliverCommand.destination)
       case None =>
@@ -42,12 +42,12 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)
         )
     }
 
-    val movedGrnIdat = TransferMetadata.findNewPathForMove(
+    val movedGrnIdat = Metadata.findNewPathForMove(
       metadata.grnIdat.get,
       deliverCommand.destination,
       ArraysExtensions.IdatExtension
     )
-    val movedRedIdat = TransferMetadata.findNewPathForMove(
+    val movedRedIdat = Metadata.findNewPathForMove(
       metadata.redIdat.get,
       deliverCommand.destination,
       ArraysExtensions.IdatExtension

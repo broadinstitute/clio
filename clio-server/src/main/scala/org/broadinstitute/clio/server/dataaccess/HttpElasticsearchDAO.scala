@@ -51,9 +51,9 @@ class HttpElasticsearchDAO private[dataaccess] (
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = bulkUpdate(documents.map(updatePartialDocument(index, _)))
 
-  override def queryMetadata[D <: ClioDocument](queryDefinition: QueryDefinition)(
-    implicit index: ElasticsearchIndex[D]
-  ): Source[D, NotUsed] = {
+  override def queryMetadata(queryDefinition: QueryDefinition)(
+    implicit index: ElasticsearchIndex[_]
+  ): Source[Json, NotUsed] = {
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
       .size(HttpElasticsearchDAO.DocumentScrollSize)
@@ -63,7 +63,7 @@ class HttpElasticsearchDAO private[dataaccess] (
     val responsePublisher = httpClient.publisher(searchDefinition)
     Source
       .fromPublisher(responsePublisher)
-      .map(_.to[Json].as[D](index.decoder).fold(throw _, identity))
+      .map(_.to[Json])
   }
 
   override def getMostRecentDocument(
@@ -71,7 +71,7 @@ class HttpElasticsearchDAO private[dataaccess] (
   ): Future[Option[Json]] = {
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .size(1)
-      .sortByFieldDesc(ClioDocument.UpsertIdElasticSearchName)
+      .sortByFieldDesc(ElasticsearchIndex.UpsertIdElasticsearchName)
     httpClient
       .executeAndUnpack(searchDefinition)
       .map(_.to[Json].headOption)
@@ -155,7 +155,7 @@ class HttpElasticsearchDAO private[dataaccess] (
     document: Json
   ): BulkCompatibleDefinition = {
     val id = document.hcursor
-      .get[String](ClioDocument.EntityIdElasticSearchName)
+      .get[String](ElasticsearchIndex.EntityIdElasticsearchName)
       .fold(throw _, identity)
 
     update(id)

@@ -176,17 +176,17 @@ class ClioWebClient(
       .flatMap(unmarshal[Json])
   }
 
-  def getSchema(transferIndex: TransferIndex): Future[Json] = {
+  def getSchema(clioIndex: ClioIndex): Future[Json] = {
     dispatchRequest(
-      HttpRequest(uri = s"/api/v1/${transferIndex.urlSegment}/schema")
+      HttpRequest(uri = s"/api/v1/${clioIndex.urlSegment}/schema")
     ).flatMap(unmarshal[Json])
   }
 
-  def upsert[TI <: TransferIndex](transferIndex: TI)(
-    key: transferIndex.KeyType,
-    metadata: transferIndex.type#MetadataType
+  def upsert[CI <: ClioIndex](clioIndex: CI)(
+    key: clioIndex.KeyType,
+    metadata: clioIndex.type#MetadataType
   ): Future[UpsertId] = {
-    import transferIndex.implicits._
+    import clioIndex.implicits._
 
     val entity = HttpEntity(
       ContentTypes.`application/json`,
@@ -198,7 +198,7 @@ class ClioWebClient(
      * in the fields of the key.
      */
     val encodedPath = key.getUrlSegments.foldLeft(
-      Uri.Path(s"/api/v1/${transferIndex.urlSegment}/metadata")
+      Uri.Path(s"/api/v1/${clioIndex.urlSegment}/metadata")
     )(_ / _)
 
     dispatchRequest(
@@ -210,11 +210,11 @@ class ClioWebClient(
     ).flatMap(unmarshal[UpsertId])
   }
 
-  def query[TI <: TransferIndex](transferIndex: TI)(
-    input: transferIndex.QueryInputType,
+  def query[CI <: ClioIndex](clioIndex: CI)(
+    input: clioIndex.QueryInputType,
     includeDeleted: Boolean
   ): Future[Json] = {
-    import transferIndex.implicits._
+    import clioIndex.implicits._
 
     val queryPath = if (includeDeleted) "queryall" else "query"
 
@@ -224,43 +224,43 @@ class ClioWebClient(
     )
     dispatchRequest(
       HttpRequest(
-        uri = s"/api/v1/${transferIndex.urlSegment}/$queryPath",
+        uri = s"/api/v1/${clioIndex.urlSegment}/$queryPath",
         method = HttpMethods.POST,
         entity = entity
       )
     ).flatMap(unmarshal[Json])
   }
 
-  def getMetadataForKey[TI <: TransferIndex](transferIndex: TI)(
-    input: transferIndex.KeyType
-  ): Future[Option[transferIndex.type#MetadataType]] = {
-    import transferIndex.implicits._
+  def getMetadataForKey[CI <: ClioIndex](clioIndex: CI)(
+    input: clioIndex.KeyType
+  ): Future[Option[clioIndex.type#MetadataType]] = {
+    import clioIndex.implicits._
 
-    val keyFields = new CaseClassMapper[transferIndex.KeyType].names
+    val keyFields = new CaseClassMapper[clioIndex.KeyType].names
 
     val keyToQueryMapper = CaseClassTypeConverter[
-      transferIndex.KeyType,
-      transferIndex.QueryInputType
+      clioIndex.KeyType,
+      clioIndex.QueryInputType
     ](_.mapValues(Option.apply[Any]))
 
     val outputToMetadataMapper =
       CaseClassTypeConverter[
-        transferIndex.QueryOutputType,
-        transferIndex.MetadataType
+        clioIndex.QueryOutputType,
+        clioIndex.MetadataType
       ](_ -- keyFields)
 
-    query(transferIndex)(keyToQueryMapper.convert(input), includeDeleted = false)
+    query(clioIndex)(keyToQueryMapper.convert(input), includeDeleted = false)
       .map(_.as[Seq[Json]].fold(throw _, identity).toList)
       .map {
         case Nil => None
         case js :: Nil => {
-          val output = js.as[transferIndex.QueryOutputType].fold(throw _, identity)
+          val output = js.as[clioIndex.QueryOutputType].fold(throw _, identity)
           Some(outputToMetadataMapper.convert(output))
         }
         case many => {
           val prettyKey = ClassUtil.formatFields(input)
           throw new IllegalStateException(
-            s"""Got > 1 ${transferIndex.name}s from Clio for $prettyKey:
+            s"""Got > 1 ${clioIndex.name}s from Clio for $prettyKey:
                |${many.asJson.pretty(Printer.spaces2)}""".stripMargin
           )
         }

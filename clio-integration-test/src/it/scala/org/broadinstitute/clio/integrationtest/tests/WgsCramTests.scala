@@ -3,33 +3,33 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 
 import com.sksamuel.elastic4s.IndexAndType
+import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentWgsCram,
   ElasticsearchIndex,
   ElasticsearchUtil
 }
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram._
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
   Location,
   RegulatoryDesignation,
   UpsertId
 }
-
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
 
 /** Tests of Clio's wgs-cram functionality. */
-trait WgsCramTests { self: BaseIntegrationSpec =>
+trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
 
   def runUpsertCram(
-    key: TransferWgsCramV1Key,
-    metadata: TransferWgsCramV1Metadata,
-    force: Boolean = true
+                     key: WgsCramKey,
+                     metadata: WgsCramMetadata,
+                     force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
@@ -54,7 +54,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
-    val expected = ElasticsearchIndex[DocumentWgsCram]
+    val expected = ElasticsearchIndex.WgsCram
     val getRequest = getMapping(IndexAndType(expected.indexName, expected.indexType))
 
     elasticsearchClient.executeAndUnpack(getRequest).map {
@@ -78,7 +78,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     * @see http://www.scalatest.org/user_guide/sharing_tests
     */
   def testCramLocation(location: Location): Unit = {
-    val expected = TransferWgsCramV1QueryOutput(
+    val expected = WgsCramQueryOutput(
       location = location,
       project = "test project",
       sampleAlias = s"someAlias $randomId",
@@ -93,19 +93,19 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
      * have triggered yet.
      */
     lazy val responseFuture = runUpsertCram(
-      TransferWgsCramV1Key(
+      WgsCramKey(
         location,
         expected.project,
         expected.sampleAlias,
         expected.version
       ),
-      TransferWgsCramV1Metadata(cramPath = expected.cramPath)
+      WgsCramMetadata(cramPath = expected.cramPath)
     )
 
     it should s"handle upserts and queries for wgs-cram location $location" in {
       for {
         returnedUpsertId <- responseFuture
-        outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+        outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
           ClioCommand.queryWgsCramName,
           "--sample-alias",
           expected.sampleAlias
@@ -113,18 +113,28 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       } yield {
         outputs should be(Seq(expected))
 
-        val storedDocument = getJsonFrom[DocumentWgsCram](returnedUpsertId)
-        storedDocument.location should be(expected.location)
-        storedDocument.project should be(expected.project)
-        storedDocument.sampleAlias should be(expected.sampleAlias)
-        storedDocument.version should be(expected.version)
-        storedDocument.cramPath should be(expected.cramPath)
+        val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.WgsCram)
+        ElasticsearchIndex.getByName[Location](storedDocument, "location") should be(
+          expected.location
+        )
+        ElasticsearchIndex.getByName[String](storedDocument, "project") should be(
+          expected.project
+        )
+        ElasticsearchIndex.getByName[String](storedDocument, "sample_alias") should be(
+          expected.sampleAlias
+        )
+        ElasticsearchIndex.getByName[Int](storedDocument, "version") should be(
+          expected.version
+        )
+        ElasticsearchIndex.getByName[URI](storedDocument, "cram_path") should be(
+          expected.cramPath.get
+        )
       }
     }
   }
 
   it should "assign different upsertIds to different wgs-cram upserts" in {
-    val upsertKey = TransferWgsCramV1Key(
+    val upsertKey = WgsCramKey(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
@@ -134,7 +144,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertCram(
         upsertKey,
-        TransferWgsCramV1Metadata(
+        WgsCramMetadata(
           cramPath = Some(
             URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}")
           )
@@ -142,7 +152,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       )
       upsertId2 <- runUpsertCram(
         upsertKey,
-        TransferWgsCramV1Metadata(
+        WgsCramMetadata(
           cramPath = Some(
             URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}")
           )
@@ -151,31 +161,42 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
-      storedDocument1.cramPath should be(
-        Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
+      ElasticsearchIndex.getByName[URI](storedDocument1, "cram_path") should be(
+        URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}")
       )
 
-      val storedDocument2 = getJsonFrom[DocumentWgsCram](upsertId2)
-      storedDocument2.cramPath should be(
-        Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsCram)
+      ElasticsearchIndex.getByName[URI](storedDocument2, "cram_path") should be(
+        URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}")
       )
 
-      storedDocument1.copy(
-        upsertId = upsertId2,
-        cramPath = Some(URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}"))
-      ) should be(storedDocument2)
+      storedDocument1
+        .deepMerge(
+          Map(
+            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
+          ).asJson
+        )
+        .deepMerge(
+          Map(
+            "cram_path" -> Some(
+              URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}")
+            )
+          ).asJson
+        )
+        .asObject
+        .get should be(storedDocument2.asObject.get)
     }
   }
 
   it should "assign different upsertIds to equal wgs-cram upserts" in {
-    val upsertKey = TransferWgsCramV1Key(
+    val upsertKey = WgsCramKey(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
       version = 1
     )
-    val upsertData = TransferWgsCramV1Metadata(
+    val upsertData = WgsCramMetadata(
       cramPath = Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
     )
 
@@ -185,9 +206,16 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
-      val storedDocument2 = getJsonFrom[DocumentWgsCram](upsertId2)
-      storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsCram)
+      storedDocument1
+        .deepMerge(
+          Map(
+            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
+          ).asJson
+        )
+        .asObject
+        .get should be(storedDocument2.asObject.get)
     }
   }
 
@@ -203,8 +231,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       samples.zip(1 to 3).map {
         case (sample, version) =>
-          val key = TransferWgsCramV1Key(location, project, sample, version)
-          val data = TransferWgsCramV1Metadata(
+          val key = WgsCramKey(location, project, sample, version)
+          val data = WgsCramMetadata(
             cramPath = Some(
               URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
             ),
@@ -216,12 +244,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      projectResults <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+      projectResults <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
         ClioCommand.queryWgsCramName,
         "--project",
         project
       )
-      sampleResults <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+      sampleResults <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
         ClioCommand.queryWgsCramName,
         "--sample-alias",
         samples.head
@@ -249,8 +277,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       samples.zip(1 to 3).map {
         case (sample, version) =>
-          val key = TransferWgsCramV1Key(location, project, sample, version)
-          val data = TransferWgsCramV1Metadata(
+          val key = WgsCramKey(location, project, sample, version)
+          val data = WgsCramMetadata(
             cramPath = Some(
               URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
             ),
@@ -262,12 +290,12 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      prefixResults <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+      prefixResults <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
         ClioCommand.queryWgsCramName,
         "--sample-alias",
         prefix
       )
-      suffixResults <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+      suffixResults <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
         ClioCommand.queryWgsCramName,
         "--sample-alias",
         suffix
@@ -280,9 +308,9 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
   it should "handle updates to wgs-cram metadata" in {
     val project = s"testProject$randomId"
-    val key = TransferWgsCramV1Key(Location.GCP, project, s"testSample$randomId", 1)
+    val key = WgsCramKey(Location.GCP, project, s"testSample$randomId", 1)
     val cramPath = URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
-    val metadata = TransferWgsCramV1Metadata(
+    val metadata = WgsCramMetadata(
       cramPath = Some(cramPath),
       cramSize = Some(1000L),
       notes = Some("Breaking news")
@@ -290,7 +318,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+        results <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
           ClioCommand.queryWgsCramName,
           "--project",
           project
@@ -301,7 +329,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       }
     }
 
-    val upsertData = TransferWgsCramV1Metadata(
+    val upsertData = WgsCramMetadata(
       cramSize = metadata.cramSize,
       cramPath = metadata.cramPath
     )
@@ -336,13 +364,13 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val sampleAlias = "sample688." + randomId
 
     val keysWithMetadata = (1 to 3).map { version =>
-      val upsertKey = TransferWgsCramV1Key(
+      val upsertKey = WgsCramKey(
         location = Location.GCP,
         project = project,
         sampleAlias = sampleAlias,
         version = version
       )
-      val upsertMetadata = TransferWgsCramV1Metadata(
+      val upsertMetadata = WgsCramMetadata(
         cramPath = Some(URI.create(s"gs://cram/$sampleAlias.$version"))
       )
       (upsertKey, upsertMetadata)
@@ -357,7 +385,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        results <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+        results <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
           ClioCommand.queryWgsCramName,
           "--project",
           project,
@@ -384,7 +412,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       )
       _ <- checkQuery(expectedLength = 2)
 
-      results <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+      results <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
         ClioCommand.queryWgsCramName,
         "--project",
         project,
@@ -398,7 +426,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         result.project should be(project)
         result.sampleAlias should be(sampleAlias)
 
-        val resultKey = TransferWgsCramV1Key(
+        val resultKey = WgsCramKey(
           location = result.location,
           project = result.project,
           sampleAlias = result.sampleAlias,
@@ -450,8 +478,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val alignmentMetricsDestination = rootDestination / alignmentMetricsName
     val fingerprintMetricsDestination = rootDestination / fingerprintMetricsName
 
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferWgsCramV1Metadata(
+    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
       alignmentSummaryMetricsPath = Some(alignmentMetricsSource.uri),
@@ -558,13 +586,13 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
   }
 
   it should "not move wgs-crams with no registered files" in {
-    val key = TransferWgsCramV1Key(
+    val key = WgsCramKey(
       Location.GCP,
       s"project$randomId",
       s"sample$randomId",
       1
     )
-    runUpsertCram(key, TransferWgsCramV1Metadata()).flatMap { _ =>
+    runUpsertCram(key, WgsCramMetadata()).flatMap { _ =>
       recoverToExceptionIf[Exception] {
         runClient(
           ClioCommand.moveWgsCramName,
@@ -609,8 +637,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val metrics1Path = storageDir / s"$randomId.metrics"
     val metrics2Path = storageDir / s"$randomId.metrics"
 
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferWgsCramV1Metadata(
+    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val metadata = WgsCramMetadata(
       cramPath = Some(cramPath.uri),
       craiPath = Some(craiPath.uri),
       alignmentSummaryMetricsPath = Some(metrics1Path.uri),
@@ -648,7 +676,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           if (force) "--force" else ""
         ).filter(_.nonEmpty): _*
       )
-      outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
         ClioCommand.queryWgsCramName,
         "--location",
         Location.GCP.entryName,
@@ -756,8 +784,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiDestination = rootDestination / s"$prefix$craiName"
     val md5Destination = rootDestination / s"$prefix$md5Name"
 
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferWgsCramV1Metadata(
+    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents))
@@ -787,7 +815,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--new-basename",
         newBasename
       )
-      outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
         ClioCommand.queryWgsCramName,
         "--workspace-name",
         workspaceName
@@ -808,7 +836,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
       outputs should be {
         Seq(
-          TransferWgsCramV1QueryOutput(
+          WgsCramQueryOutput(
             location = Location.GCP,
             project = project,
             sampleAlias = sample,
@@ -855,8 +883,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val md5Destination = rootSource / md5Name
 
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferWgsCramV1Metadata(
+    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents))
@@ -884,7 +912,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--workspace-path",
         rootSource.uri.toString
       )
-      outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
         ClioCommand.queryWgsCramName,
         "--workspace-name",
         workspaceName
@@ -903,7 +931,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
       outputs should be {
         Seq(
-          TransferWgsCramV1QueryOutput(
+          WgsCramQueryOutput(
             location = Location.GCP,
             project = project,
             sampleAlias = sample,
@@ -940,8 +968,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val cramSource = rootSource / cramName
     val craiSource = rootSource / craiName
 
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferWgsCramV1Metadata(
+    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents)),
@@ -950,7 +978,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+        results <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
           ClioCommand.queryWgsCramName,
           "--project",
           project
@@ -995,8 +1023,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiDestination = rootDestination / craiName
     val md5Destination = rootDestination / md5Name
 
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferWgsCramV1Metadata(
+    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents)),
@@ -1025,7 +1053,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--workspace-path",
         rootDestination.uri.toString
       )
-      outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
         ClioCommand.queryWgsCramName,
         "--workspace-name",
         workspaceName
@@ -1046,7 +1074,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
       outputs should be {
         Seq(
-          TransferWgsCramV1QueryOutput(
+          WgsCramQueryOutput(
             location = Location.GCP,
             project = project,
             sampleAlias = sample,
@@ -1091,8 +1119,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val rootDestination = rootSource.parent / s"moved/$randomId/"
 
-    val key = TransferWgsCramV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferWgsCramV1Metadata(
+    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents))
@@ -1124,7 +1152,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       }
     }.flatMap { _ =>
       for {
-        outputs <- runClientGetJsonAs[Seq[TransferWgsCramV1QueryOutput]](
+        outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
           ClioCommand.queryWgsCramName,
           "--workspace-name",
           workspaceName
@@ -1137,7 +1165,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
   }
 
   it should "upsert a new cram if force is false" in {
-    val upsertKey = TransferWgsCramV1Key(
+    val upsertKey = WgsCramKey(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
@@ -1146,17 +1174,19 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertCram(
         upsertKey,
-        TransferWgsCramV1Metadata(notes = Some("I'm a note")),
+        WgsCramMetadata(notes = Some("I'm a note")),
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
-      storedDocument1.notes should be(Some("I'm a note"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
+      ElasticsearchIndex.getByName[String](storedDocument1, "notes") should be(
+        "I'm a note"
+      )
     }
   }
 
   it should "allow an upsert that modifies values not already set or are unchanged if force is false" in {
-    val upsertKey = TransferWgsCramV1Key(
+    val upsertKey = WgsCramKey(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
@@ -1165,24 +1195,26 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertCram(
         upsertKey,
-        TransferWgsCramV1Metadata(notes = Some("I'm a note")),
+        WgsCramMetadata(notes = Some("I'm a note")),
         force = false
       )
       upsertId2 <- runUpsertCram(
         upsertKey,
-        TransferWgsCramV1Metadata(notes = Some("I'm a note"), cramSize = Some(12345)),
+        WgsCramMetadata(notes = Some("I'm a note"), cramSize = Some(12345)),
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
-      val storedDocument2 = getJsonFrom[DocumentWgsCram](upsertId2)
-      storedDocument1.notes should be(Some("I'm a note"))
-      storedDocument2.cramSize should be(Some(12345))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsCram)
+      ElasticsearchIndex.getByName[String](storedDocument1, "notes") should be(
+        "I'm a note"
+      )
+      ElasticsearchIndex.getByName[Int](storedDocument2, "cram_size") should be(12345)
     }
   }
 
   it should "not allow an upsert that modifies values already set if force is false" in {
-    val upsertKey = TransferWgsCramV1Key(
+    val upsertKey = WgsCramKey(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
@@ -1191,21 +1223,23 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertCram(
         upsertKey,
-        TransferWgsCramV1Metadata(notes = Some("I'm a note")),
+        WgsCramMetadata(notes = Some("I'm a note")),
         force = false
       )
       _ <- recoverToSucceededIf[Exception] {
         runUpsertCram(
           upsertKey,
-          TransferWgsCramV1Metadata(
+          WgsCramMetadata(
             notes = Some("I'm a different note")
           ),
           force = false
         )
       }
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentWgsCram](upsertId1)
-      storedDocument1.notes should be(Some("I'm a note"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
+      ElasticsearchIndex.getByName[String](storedDocument1, "notes") should be(
+        "I'm a note"
+      )
     }
   }
 }

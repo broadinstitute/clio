@@ -5,10 +5,7 @@ import java.net.URI
 import better.files.File
 import org.broadinstitute.clio.client.commands.DeliverWgsCram
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  TransferWgsCramV1Metadata,
-  WgsCramExtensions
-}
+import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramMetadata, WgsCramExtensions}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -24,11 +21,11 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
     extends DeliverExecutor(deliverCommand) {
 
   override def customMetadataOperations(
-    metadata: TransferWgsCramV1Metadata,
+    metadata: WgsCramMetadata,
     ioUtil: IoUtil
   )(
     implicit ec: ExecutionContext
-  ): Future[TransferWgsCramV1Metadata] = Future {
+  ): Future[WgsCramMetadata] = Future {
     (metadata.cramMd5, metadata.cramPath) match {
       case (Some(cramMd5), Some(cramPath)) => {
         /*

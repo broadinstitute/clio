@@ -15,6 +15,13 @@ final class UpsertId private (val id: String) extends Ordered[UpsertId] {
   }
   override def hashCode(): Int = id.hashCode
   override def toString: String = id
+
+  /**
+    * The filename used for persisting a document's upsert data.
+    *
+    * @return the filename where the upsert with the given ID's data is stored
+    */
+  def persistenceFilename: String = s"$id.json"
 }
 
 /**

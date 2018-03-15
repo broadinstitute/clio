@@ -1,5 +1,5 @@
 package org.broadinstitute.clio.transfer.model
 
-trait DeliverableIndex extends TransferIndex {
+trait DeliverableIndex extends ClioIndex {
   type MetadataType <: DeliverableMetadata[MetadataType]
 }

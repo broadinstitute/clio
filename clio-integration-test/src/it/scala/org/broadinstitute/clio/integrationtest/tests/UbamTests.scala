@@ -3,20 +3,20 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
+import io.circe.syntax._
 import com.sksamuel.elastic4s.IndexAndType
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentWgsUbam,
   ElasticsearchIndex,
   ElasticsearchUtil
 }
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1Metadata,
-  TransferUbamV1QueryOutput,
+  UbamKey,
+  UbamMetadata,
+  UbamQueryOutput,
   UbamExtensions
 }
 import org.broadinstitute.clio.util.model._
@@ -28,10 +28,10 @@ import scala.concurrent.Future
 trait UbamTests { self: BaseIntegrationSpec =>
 
   def runUpsertUbam(
-    key: TransferUbamV1Key,
-    metadata: TransferUbamV1Metadata,
-    sequencingType: SequencingType,
-    force: Boolean = true
+                     key: UbamKey,
+                     metadata: UbamMetadata,
+                     sequencingType: SequencingType,
+                     force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     val command = sequencingType match {
@@ -67,7 +67,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       .map(statusCodeShouldBe(StatusCodes.NotFound))
   }
 
-  val stubKey = TransferUbamV1Key(
+  val stubKey = UbamKey(
     Location.GCP,
     "fake_barcode",
     2,
@@ -76,7 +76,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   it should "throw a FailedResponse 404 when running add command for hybsel ubams" in {
     val tmpMetadata =
-      writeLocalTmpJson(TransferUbamV1Metadata(project = Some("fake_project")))
+      writeLocalTmpJson(UbamMetadata(project = Some("fake_project")))
 
     val addResponseFuture = runClient(
       ClioCommand.addHybselUbamName,
@@ -149,7 +149,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
-    val expected = ElasticsearchIndex[DocumentWgsUbam]
+    val expected = ElasticsearchIndex.WgsUbam
     val getRequest = getMapping(IndexAndType(expected.indexName, expected.indexType))
 
     elasticsearchClient.executeAndUnpack(getRequest).map {
@@ -173,7 +173,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     * @see http://www.scalatest.org/user_guide/sharing_tests
     */
   def testWgsUbamLocation(location: Location): Unit = {
-    val expected = TransferUbamV1QueryOutput(
+    val expected = UbamQueryOutput(
       flowcellBarcode = "barcode2",
       lane = 2,
       libraryName = s"library $randomId",
@@ -188,20 +188,20 @@ trait UbamTests { self: BaseIntegrationSpec =>
      * have triggered yet.
      */
     lazy val responseFuture = runUpsertUbam(
-      TransferUbamV1Key(
+      UbamKey(
         expected.location,
         expected.flowcellBarcode,
         expected.lane,
         expected.libraryName
       ),
-      TransferUbamV1Metadata(project = expected.project),
+      UbamMetadata(project = expected.project),
       SequencingType.WholeGenome
     )
 
     it should s"handle upserts and queries for wgs-ubam location $location" in {
       for {
         returnedUpsertId <- responseFuture
-        queryResponse <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+        queryResponse <- runClientGetJsonAs[Seq[UbamQueryOutput]](
           ClioCommand.queryWgsUbamName,
           "--library-name",
           expected.libraryName
@@ -209,18 +209,27 @@ trait UbamTests { self: BaseIntegrationSpec =>
       } yield {
         queryResponse should be(Seq(expected))
 
-        val storedDocument = getJsonFrom[DocumentWgsUbam](returnedUpsertId)
-        storedDocument.flowcellBarcode should be(expected.flowcellBarcode)
-        storedDocument.lane should be(expected.lane)
-        storedDocument.libraryName should be(expected.libraryName)
-        storedDocument.location should be(expected.location)
-        storedDocument.project should be(expected.project)
+        val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.WgsUbam)
+        ElasticsearchIndex
+          .getByName[String](storedDocument, "flowcell_barcode") should be(
+          expected.flowcellBarcode
+        )
+        ElasticsearchIndex.getByName[Int](storedDocument, "lane") should be(expected.lane)
+        ElasticsearchIndex.getByName[String](storedDocument, "library_name") should be(
+          expected.libraryName
+        )
+        ElasticsearchIndex.getByName[Location](storedDocument, "location") should be(
+          expected.location
+        )
+        ElasticsearchIndex.getByName[String](storedDocument, "project") should be(
+          expected.project.get
+        )
       }
     }
   }
 
   it should "assign different upsertIds to different wgs-ubam upserts" in {
-    val upsertKey = TransferUbamV1Key(
+    val upsertKey = UbamKey(
       Location.GCP,
       "testupsertIdBarcode",
       2,
@@ -230,37 +239,47 @@ trait UbamTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertUbam(
         upsertKey,
-        TransferUbamV1Metadata(project = Some("testProject1")),
+        UbamMetadata(project = Some("testProject1")),
         SequencingType.WholeGenome
       )
       upsertId2 <- runUpsertUbam(
         upsertKey,
-        TransferUbamV1Metadata(project = Some("testProject2")),
+        UbamMetadata(project = Some("testProject2")),
         SequencingType.WholeGenome
       )
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
-      storedDocument1.project should be(Some("testProject1"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
+        "testProject1"
+      )
 
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](upsertId2)
-      storedDocument2.project should be(Some("testProject2"))
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
+      ElasticsearchIndex.getByName[String](storedDocument2, "project") should be(
+        "testProject2"
+      )
 
-      storedDocument1.copy(upsertId = upsertId2, project = Some("testProject2")) should be(
+      storedDocument1
+        .deepMerge(
+          Map(
+            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
+          ).asJson
+        )
+        .deepMerge(Map("project" -> Some("testProject2")).asJson) should be(
         storedDocument2
       )
     }
   }
 
   it should "assign different upsertIds to equal wgs-ubam upserts" in {
-    val upsertKey = TransferUbamV1Key(
+    val upsertKey = UbamKey(
       Location.GCP,
       "testupsertIdBarcode",
       2,
       s"library$randomId"
     )
-    val metadata = TransferUbamV1Metadata(project = Some("testProject1"))
+    val metadata = UbamMetadata(project = Some("testProject1"))
     val ubamType = SequencingType.WholeGenome
 
     for {
@@ -269,9 +288,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](upsertId2)
-      storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
+      storedDocument1.deepMerge(
+        Map(
+          ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
+        ).asJson
+      ) should be(storedDocument2)
     }
   }
 
@@ -291,8 +314,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       Seq(libraries, samples, researchProjectIds).transpose.map {
         case Seq(library, sample, researchProjectId) =>
-          val key = TransferUbamV1Key(location, flowcellBarcode, lane, library)
-          val metadata = TransferUbamV1Metadata(
+          val key = UbamKey(location, flowcellBarcode, lane, library)
+          val metadata = UbamMetadata(
             project = Some(project),
             sampleAlias = Some(sample),
             researchProjectId = Some(researchProjectId)
@@ -303,17 +326,17 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      projectResults <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+      projectResults <- runClientGetJsonAs[Seq[UbamQueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--project",
         project
       )
-      sampleResults <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+      sampleResults <- runClientGetJsonAs[Seq[UbamQueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--sample-alias",
         samples.head
       )
-      rpIdResults <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+      rpIdResults <- runClientGetJsonAs[Seq[UbamQueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--research-project-id",
         researchProjectIds.last
@@ -335,9 +358,9 @@ trait UbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "handle updates to wgs-ubam metadata" in {
-    val key = TransferUbamV1Key(Location.GCP, "barcode2", 2, s"library$randomId")
+    val key = UbamKey(Location.GCP, "barcode2", 2, s"library$randomId")
     val project = s"testProject$randomId"
-    val metadata = TransferUbamV1Metadata(
+    val metadata = UbamMetadata(
       project = Some(project),
       sampleAlias = Some("sampleAlias1"),
       notes = Some("Breaking news")
@@ -345,7 +368,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+        results <- runClientGetJsonAs[Seq[UbamQueryOutput]](
           ClioCommand.queryWgsUbamName,
           "--project",
           project
@@ -356,7 +379,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       }
     }
 
-    val upsertData = TransferUbamV1Metadata(
+    val upsertData = UbamMetadata(
       project = metadata.project,
       sampleAlias = metadata.sampleAlias
     )
@@ -388,13 +411,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val project = "testProject" + randomId
     val sample = "sample688." + randomId
     val keysWithMetadata = (1 to 3).map { lane =>
-      val upsertKey = TransferUbamV1Key(
+      val upsertKey = UbamKey(
         flowcellBarcode = barcode,
         lane = lane,
         libraryName = "library" + randomId,
         location = Location.GCP
       )
-      val upsertMetadata = TransferUbamV1Metadata(
+      val upsertMetadata = UbamMetadata(
         project = Some(project),
         sampleAlias = Some(sample),
         ubamPath = Some(URI.create(s"gs://ubam/$sample.$lane"))
@@ -411,7 +434,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        results <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+        results <- runClientGetJsonAs[Seq[UbamQueryOutput]](
           ClioCommand.queryWgsUbamName,
           "--project",
           project,
@@ -439,7 +462,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
       _ <- checkQuery(expectedLength = 2)
 
-      results <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+      results <- runClientGetJsonAs[Seq[UbamQueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--project",
         project,
@@ -453,7 +476,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         result.project should be(Some(project))
         result.sampleAlias should be(Some(sample))
 
-        val resultKey = TransferUbamV1Key(
+        val resultKey = UbamKey(
           flowcellBarcode = result.flowcellBarcode,
           lane = result.lane,
           libraryName = result.libraryName,
@@ -485,8 +508,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val sourceUbam = sourceDir / ubamName
     val targetUbam = targetDir / ubamName
 
-    val key = TransferUbamV1Key(Location.GCP, barcode, lane, library)
-    val metadata = TransferUbamV1Metadata(ubamPath = Some(sourceUbam.uri))
+    val key = UbamKey(Location.GCP, barcode, lane, library)
+    val metadata = UbamMetadata(ubamPath = Some(sourceUbam.uri))
 
     // Clio needs the metadata to be added before it can be moved.
     val _ = sourceUbam.write(fileContents)
@@ -553,8 +576,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val cloudPath = rootTestStorageDir / s"wgs-ubam/$barcode/$lane/$library/$randomId${UbamExtensions.UbamExtension}"
     val cloudPath2 = cloudPath.parent / s"moved/$randomId${UbamExtensions.UbamExtension}"
 
-    val key = TransferUbamV1Key(Location.GCP, barcode, lane, library)
-    val metadata = TransferUbamV1Metadata(ubamPath = Some(cloudPath.uri))
+    val key = UbamKey(Location.GCP, barcode, lane, library)
+    val metadata = UbamMetadata(ubamPath = Some(cloudPath.uri))
 
     val result = for {
       _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
@@ -573,7 +596,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           cloudPath2.uri.toString
         )
       }
-      queryOutputs <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+      queryOutputs <- runClientGetJsonAs[Seq[UbamQueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--flowcell-barcode",
         barcode,
@@ -602,15 +625,15 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val library = s"library.$randomId"
     val lane = 1
     val regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
-    val upsertKey = TransferUbamV1Key(Location.GCP, flowcellBarcode, lane, library)
-    val metadata = TransferUbamV1Metadata(
+    val upsertKey = UbamKey(Location.GCP, flowcellBarcode, lane, library)
+    val metadata = UbamMetadata(
       project = Some("testProject1"),
       regulatoryDesignation = regulatoryDesignation
     )
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+        results <- runClientGetJsonAs[Seq[UbamQueryOutput]](
           ClioCommand.queryWgsUbamName,
           "--flowcell-barcode",
           flowcellBarcode
@@ -642,9 +665,9 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val fileContents = s"$randomId --- I am fated to die --- $randomId"
     val cloudPath = rootTestStorageDir / s"wgs-ubam/$barcode/$lane/$library/$randomId${UbamExtensions.UbamExtension}"
 
-    val key = TransferUbamV1Key(Location.GCP, barcode, lane, library)
+    val key = UbamKey(Location.GCP, barcode, lane, library)
     val metadata =
-      TransferUbamV1Metadata(notes = existingNote, ubamPath = Some(cloudPath.uri))
+      UbamMetadata(notes = existingNote, ubamPath = Some(cloudPath.uri))
 
     // Clio needs the metadata to be added before it can be deleted.
     val _ = if (!testNonExistingFile) {
@@ -670,7 +693,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         ).filter(_.nonEmpty): _*
       )
       _ = cloudPath shouldNot exist
-      outputs <- runClientGetJsonAs[Seq[TransferUbamV1QueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[UbamQueryOutput]](
         ClioCommand.queryWgsUbamName,
         "--flowcell-barcode",
         barcode,
@@ -737,7 +760,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "upsert a new ubam if force is false" in {
-    val upsertKey = TransferUbamV1Key(
+    val upsertKey = UbamKey(
       Location.GCP,
       "testupsertIdBarcode",
       2,
@@ -747,18 +770,20 @@ trait UbamTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertUbam(
         upsertKey,
-        TransferUbamV1Metadata(project = Some("testProject1")),
+        UbamMetadata(project = Some("testProject1")),
         SequencingType.WholeGenome,
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
-      storedDocument1.project should be(Some("testProject1"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
+        "testProject1"
+      )
     }
   }
 
   it should "allow an upsert that modifies values not already set or are unchanged if force is false" in {
-    val upsertKey = TransferUbamV1Key(
+    val upsertKey = UbamKey(
       Location.GCP,
       "testupsertIdBarcode",
       2,
@@ -768,13 +793,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertUbam(
         upsertKey,
-        TransferUbamV1Metadata(project = Some("testProject1")),
+        UbamMetadata(project = Some("testProject1")),
         SequencingType.WholeGenome,
         force = false
       )
       upsertId2 <- runUpsertUbam(
         upsertKey,
-        TransferUbamV1Metadata(
+        UbamMetadata(
           project = Some("testProject1"),
           sampleAlias = Some("sampleAlias1")
         ),
@@ -782,15 +807,19 @@ trait UbamTests { self: BaseIntegrationSpec =>
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
-      val storedDocument2 = getJsonFrom[DocumentWgsUbam](upsertId2)
-      storedDocument1.project should be(Some("testProject1"))
-      storedDocument2.sampleAlias should be(Some("sampleAlias1"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
+      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
+        "testProject1"
+      )
+      ElasticsearchIndex.getByName[String](storedDocument2, "sample_alias") should be(
+        "sampleAlias1"
+      )
     }
   }
 
   it should "not allow an upsert that modifies values already set if force is false" in {
-    val upsertKey = TransferUbamV1Key(
+    val upsertKey = UbamKey(
       Location.GCP,
       "testupsertIdBarcode",
       2,
@@ -799,21 +828,23 @@ trait UbamTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertUbam(
         upsertKey,
-        TransferUbamV1Metadata(project = Some("testProject1")),
+        UbamMetadata(project = Some("testProject1")),
         SequencingType.WholeGenome,
         force = false
       )
       _ <- recoverToSucceededIf[Exception] {
         runUpsertUbam(
           upsertKey,
-          TransferUbamV1Metadata(project = Some("testProject2")),
+          UbamMetadata(project = Some("testProject2")),
           SequencingType.WholeGenome,
           force = false
         )
       }
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentWgsUbam](upsertId1)
-      storedDocument1.project should be(Some("testProject1"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
+        "testProject1"
+      )
     }
   }
 }

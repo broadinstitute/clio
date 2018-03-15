@@ -3,19 +3,19 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 
 import com.sksamuel.elastic4s.IndexAndType
+import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  DocumentGvcf,
   ElasticsearchIndex,
   ElasticsearchUtil
 }
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
   GvcfExtensions,
-  TransferGvcfV1Key,
-  TransferGvcfV1Metadata,
-  TransferGvcfV1QueryOutput
+  GvcfKey,
+  GvcfMetadata,
+  GvcfQueryOutput
 }
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
@@ -32,9 +32,9 @@ trait GvcfTests {
   self: BaseIntegrationSpec =>
 
   def runUpsertGvcf(
-    key: TransferGvcfV1Key,
-    metadata: TransferGvcfV1Metadata,
-    force: Boolean = true
+                     key: GvcfKey,
+                     metadata: GvcfMetadata,
+                     force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
@@ -59,7 +59,7 @@ trait GvcfTests {
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
-    val expected = ElasticsearchIndex[DocumentGvcf]
+    val expected = ElasticsearchIndex.Gvcf
     val getRequest = getMapping(IndexAndType(expected.indexName, expected.indexType))
 
     elasticsearchClient.executeAndUnpack(getRequest).map {
@@ -83,7 +83,7 @@ trait GvcfTests {
     * @see http://www.scalatest.org/user_guide/sharing_tests
     */
   def testGvcfLocation(location: Location): Unit = {
-    val expected = TransferGvcfV1QueryOutput(
+    val expected = GvcfQueryOutput(
       location = location,
       project = "test project",
       sampleAlias = s"someAlias $randomId",
@@ -98,18 +98,19 @@ trait GvcfTests {
      * have triggered yet.
      */
     lazy val responseFuture = runUpsertGvcf(
-      TransferGvcfV1Key(
+      GvcfKey(
         location,
         expected.project,
         expected.sampleAlias,
         expected.version
       ),
-      TransferGvcfV1Metadata(gvcfPath = expected.gvcfPath)
+      GvcfMetadata(gvcfPath = expected.gvcfPath)
     )
+
     it should s"handle upserts and queries for gvcf location $location" in {
       for {
         returnedUpsertId <- responseFuture
-        outputs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+        outputs <- runClientGetJsonAs[Seq[GvcfQueryOutput]](
           ClioCommand.queryGvcfName,
           "--sample-alias",
           expected.sampleAlias
@@ -117,18 +118,28 @@ trait GvcfTests {
       } yield {
         outputs should be(Seq(expected))
 
-        val storedDocument = getJsonFrom[DocumentGvcf](returnedUpsertId)
-        storedDocument.location should be(expected.location)
-        storedDocument.project should be(expected.project)
-        storedDocument.sampleAlias should be(expected.sampleAlias)
-        storedDocument.version should be(expected.version)
-        storedDocument.gvcfPath should be(expected.gvcfPath)
+        val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.Gvcf)
+        ElasticsearchIndex.getByName[Location](storedDocument, "location") should be(
+          expected.location
+        )
+        ElasticsearchIndex.getByName[String](storedDocument, "project") should be(
+          expected.project
+        )
+        ElasticsearchIndex.getByName[String](storedDocument, "sample_alias") should be(
+          expected.sampleAlias
+        )
+        ElasticsearchIndex.getByName[Int](storedDocument, "version") should be(
+          expected.version
+        )
+        ElasticsearchIndex.getByName[URI](storedDocument, "gvcf_path") should be(
+          expected.gvcfPath.get
+        )
       }
     }
   }
 
   it should "assign different upsertIds to different gvcf upserts" in {
-    val upsertKey = TransferGvcfV1Key(
+    val upsertKey = GvcfKey(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
@@ -141,35 +152,47 @@ trait GvcfTests {
     for {
       upsertId1 <- runUpsertGvcf(
         upsertKey,
-        TransferGvcfV1Metadata(gvcfPath = gvcfUri1)
+        GvcfMetadata(gvcfPath = gvcfUri1)
       )
       upsertId2 <- runUpsertGvcf(
         upsertKey,
-        TransferGvcfV1Metadata(gvcfPath = gvcfUri2)
+        GvcfMetadata(gvcfPath = gvcfUri2)
       )
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
-      storedDocument1.gvcfPath should be(gvcfUri1)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
+      ElasticsearchIndex.getByName[URI](storedDocument1, "gvcf_path") should be(
+        gvcfUri1.get
+      )
 
-      val storedDocument2 = getJsonFrom[DocumentGvcf](upsertId2)
-      storedDocument2.gvcfPath should be(gvcfUri2)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)
+      ElasticsearchIndex.getByName[URI](storedDocument2, "gvcf_path") should be(
+        gvcfUri2.get
+      )
 
-      storedDocument1.copy(upsertId = upsertId2, gvcfPath = gvcfUri2) should be(
+      storedDocument1
+        .deepMerge(
+          Map(
+            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
+          ).asJson
+        )
+        .deepMerge(
+          Map(ElasticsearchUtil.toElasticsearchName("gvcfPath") -> gvcfUri2).asJson
+        ) should be(
         storedDocument2
       )
     }
   }
 
   it should "assign different upsertIds to equal gvcf upserts" in {
-    val upsertKey = TransferGvcfV1Key(
+    val upsertKey = GvcfKey(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
       version = 1
     )
-    val upsertData = TransferGvcfV1Metadata(
+    val upsertData = GvcfMetadata(
       gvcfPath = Some(URI.create(s"gs://path/gvcf1${GvcfExtensions.GvcfExtension}"))
     )
 
@@ -179,9 +202,15 @@ trait GvcfTests {
     } yield {
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
-      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
-      val storedDocument2 = getJsonFrom[DocumentGvcf](upsertId2)
-      storedDocument1.copy(upsertId = upsertId2) should be(storedDocument2)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)
+      storedDocument1.deepMerge(
+        Map(
+          ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
+        ).asJson
+      ) should be(
+        storedDocument2
+      )
     }
   }
 
@@ -197,8 +226,8 @@ trait GvcfTests {
     val upserts = Future.sequence {
       samples.zip(1 to 3).map {
         case (sample, version) =>
-          val key = TransferGvcfV1Key(location, project, sample, version)
-          val data = TransferGvcfV1Metadata(
+          val key = GvcfKey(location, project, sample, version)
+          val data = GvcfMetadata(
             gvcfPath = Some(
               URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}")
             ),
@@ -210,12 +239,12 @@ trait GvcfTests {
 
     for {
       _ <- upserts
-      projectResults <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+      projectResults <- runClientGetJsonAs[Seq[GvcfQueryOutput]](
         ClioCommand.queryGvcfName,
         "--project",
         project
       )
-      sampleResults <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+      sampleResults <- runClientGetJsonAs[Seq[GvcfQueryOutput]](
         ClioCommand.queryGvcfName,
         "--sample-alias",
         samples.head
@@ -234,9 +263,9 @@ trait GvcfTests {
 
   it should "handle updates to gvcf metadata" in {
     val project = s"testProject$randomId"
-    val key = TransferGvcfV1Key(Location.GCP, project, s"testSample$randomId", 1)
+    val key = GvcfKey(Location.GCP, project, s"testSample$randomId", 1)
     val gvcfPath = URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}")
-    val metadata = TransferGvcfV1Metadata(
+    val metadata = GvcfMetadata(
       gvcfPath = Some(gvcfPath),
       contamination = Some(.75f),
       notes = Some("Breaking news")
@@ -244,7 +273,7 @@ trait GvcfTests {
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+        results <- runClientGetJsonAs[Seq[GvcfQueryOutput]](
           ClioCommand.queryGvcfName,
           "--project",
           project
@@ -255,7 +284,7 @@ trait GvcfTests {
       }
     }
 
-    val upsertData = TransferGvcfV1Metadata(
+    val upsertData = GvcfMetadata(
       contamination = metadata.contamination,
       gvcfPath = metadata.gvcfPath
     )
@@ -290,13 +319,13 @@ trait GvcfTests {
     val sampleAlias = "sample688." + randomId
 
     val keysWithMetadata = (1 to 3).map { version =>
-      val upsertKey = TransferGvcfV1Key(
+      val upsertKey = GvcfKey(
         location = Location.GCP,
         project = project,
         sampleAlias = sampleAlias,
         version = version
       )
-      val upsertMetadata = TransferGvcfV1Metadata(
+      val upsertMetadata = GvcfMetadata(
         gvcfPath = Some(
           URI.create(
             s"gs://gvcf/$sampleAlias.$version.${GvcfExtensions.GvcfExtension}"
@@ -315,7 +344,7 @@ trait GvcfTests {
 
     def checkQuery(expectedLength: Int) = {
       for {
-        results <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+        results <- runClientGetJsonAs[Seq[GvcfQueryOutput]](
           ClioCommand.queryGvcfName,
           "--project",
           project,
@@ -342,7 +371,7 @@ trait GvcfTests {
       )
       _ <- checkQuery(expectedLength = 2)
 
-      results <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+      results <- runClientGetJsonAs[Seq[GvcfQueryOutput]](
         ClioCommand.queryGvcfName,
         "--project",
         project,
@@ -356,7 +385,7 @@ trait GvcfTests {
         result.project should be(project)
         result.sampleAlias should be(sampleAlias)
 
-        val resultKey = TransferGvcfV1Key(
+        val resultKey = GvcfKey(
           location = result.location,
           project = result.project,
           sampleAlias = result.sampleAlias,
@@ -379,15 +408,15 @@ trait GvcfTests {
 
     val cloudPath = rootTestStorageDir / s"gvcf/$project/$sample/v$version/$randomId${GvcfExtensions.GvcfExtension}"
 
-    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferGvcfV1Metadata(
+    val key = GvcfKey(Location.GCP, project, sample, version)
+    val metadata = GvcfMetadata(
       gvcfPath = Some(cloudPath.uri),
       regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
     )
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+        results <- runClientGetJsonAs[Seq[GvcfQueryOutput]](
           ClioCommand.queryGvcfName,
           "--project",
           project
@@ -409,7 +438,7 @@ trait GvcfTests {
   }
 
   it should "preserve any existing regulatory designation for gvcfs" in {
-    val expectedOutput = TransferGvcfV1QueryOutput(
+    val expectedOutput = GvcfQueryOutput(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
@@ -419,21 +448,21 @@ trait GvcfTests {
       documentStatus = Some(DocumentStatus.Normal)
     )
 
-    val key = TransferGvcfV1Key(
+    val key = GvcfKey(
       expectedOutput.location,
       expectedOutput.project,
       expectedOutput.sampleAlias,
       expectedOutput.version
     )
-    val firstMetadata = TransferGvcfV1Metadata(
+    val firstMetadata = GvcfMetadata(
       regulatoryDesignation = expectedOutput.regulatoryDesignation
     )
-    val secondMetadata = TransferGvcfV1Metadata(gvcfPath = expectedOutput.gvcfPath)
+    val secondMetadata = GvcfMetadata(gvcfPath = expectedOutput.gvcfPath)
 
     for {
       _ <- runUpsertGvcf(key, firstMetadata)
       _ <- runUpsertGvcf(key, secondMetadata)
-      queryOutput <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+      queryOutput <- runClientGetJsonAs[Seq[GvcfQueryOutput]](
         ClioCommand.queryGvcfName,
         "--project",
         key.project,
@@ -487,8 +516,8 @@ trait GvcfTests {
     val summaryMetricsDestination = rootDestination / summaryMetricsName
     val detailMetricsDestination = rootDestination / detailMetricsName
 
-    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferGvcfV1Metadata(
+    val key = GvcfKey(Location.GCP, project, sample, version)
+    val metadata = GvcfMetadata(
       gvcfPath = Some(gvcfSource.uri),
       gvcfIndexPath = Some(indexSource.uri),
       gvcfSummaryMetricsPath = Some(summaryMetricsSource.uri),
@@ -612,8 +641,8 @@ trait GvcfTests {
     val summaryMetricsPath = storageDir / s"$randomId${GvcfExtensions.SummaryMetricsExtension}"
     val detailMetricsPath = storageDir / s"$randomId${GvcfExtensions.DetailMetricsExtension}"
 
-    val key = TransferGvcfV1Key(Location.GCP, project, sample, version)
-    val metadata = TransferGvcfV1Metadata(
+    val key = GvcfKey(Location.GCP, project, sample, version)
+    val metadata = GvcfMetadata(
       gvcfPath = Some(gvcfPath.uri),
       gvcfIndexPath = Some(indexPath.uri),
       gvcfSummaryMetricsPath = Some(summaryMetricsPath.uri),
@@ -650,7 +679,7 @@ trait GvcfTests {
           if (force) "--force" else ""
         ).filter(_.nonEmpty): _*
       )
-      outputs <- runClientGetJsonAs[Seq[TransferGvcfV1QueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[GvcfQueryOutput]](
         ClioCommand.queryGvcfName,
         "--location",
         Location.GCP.entryName,
@@ -726,7 +755,7 @@ trait GvcfTests {
   }
 
   it should "upsert a new gvcf if force is false" in {
-    val upsertKey = TransferGvcfV1Key(
+    val upsertKey = GvcfKey(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
@@ -735,17 +764,19 @@ trait GvcfTests {
     for {
       upsertId1 <- runUpsertGvcf(
         upsertKey,
-        TransferGvcfV1Metadata(notes = Some("I'm a note")),
+        GvcfMetadata(notes = Some("I'm a note")),
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
-      storedDocument1.notes should be(Some("I'm a note"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
+      ElasticsearchIndex.getByName[String](storedDocument1, "notes") should be(
+        "I'm a note"
+      )
     }
   }
 
   it should "allow an upsert that modifies values not already set or are unchanged if force is false" in {
-    val upsertKey = TransferGvcfV1Key(
+    val upsertKey = GvcfKey(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
@@ -754,24 +785,26 @@ trait GvcfTests {
     for {
       upsertId1 <- runUpsertGvcf(
         upsertKey,
-        TransferGvcfV1Metadata(notes = Some("I'm a note")),
+        GvcfMetadata(notes = Some("I'm a note")),
         force = false
       )
       upsertId2 <- runUpsertGvcf(
         upsertKey,
-        TransferGvcfV1Metadata(notes = Some("I'm a note"), gvcfSize = Some(12345)),
+        GvcfMetadata(notes = Some("I'm a note"), gvcfSize = Some(12345)),
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
-      val storedDocument2 = getJsonFrom[DocumentGvcf](upsertId2)
-      storedDocument1.notes should be(Some("I'm a note"))
-      storedDocument2.gvcfSize should be(Some(12345))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)
+      ElasticsearchIndex.getByName[String](storedDocument1, "notes") should be(
+        "I'm a note"
+      )
+      ElasticsearchIndex.getByName[Int](storedDocument2, "gvcf_size") should be(12345)
     }
   }
 
   it should "not allow an upsert that modifies values already set if force is false" in {
-    val upsertKey = TransferGvcfV1Key(
+    val upsertKey = GvcfKey(
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
@@ -780,19 +813,21 @@ trait GvcfTests {
     for {
       upsertId1 <- runUpsertGvcf(
         upsertKey,
-        TransferGvcfV1Metadata(notes = Some("I'm a note")),
+        GvcfMetadata(notes = Some("I'm a note")),
         force = false
       )
       _ <- recoverToSucceededIf[Exception] {
         runUpsertGvcf(
           upsertKey,
-          TransferGvcfV1Metadata(notes = Some("I'm a different note")),
+          GvcfMetadata(notes = Some("I'm a different note")),
           force = false
         )
       }
     } yield {
-      val storedDocument1 = getJsonFrom[DocumentGvcf](upsertId1)
-      storedDocument1.notes should be(Some("I'm a note"))
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
+      ElasticsearchIndex.getByName[String](storedDocument1, "notes") should be(
+        "I'm a note"
+      )
     }
   }
 }

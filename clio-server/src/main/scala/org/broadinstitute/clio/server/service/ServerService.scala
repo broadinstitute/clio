@@ -3,8 +3,6 @@ package org.broadinstitute.clio.server.service
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Json
-import org.broadinstitute.clio.server.{ClioApp, ClioServerConfig}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.dataaccess.{
   HttpServerDAO,
@@ -14,16 +12,15 @@ import org.broadinstitute.clio.server.dataaccess.{
 }
 import org.broadinstitute.clio.status.model.ClioStatus
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
-class ServerService private (
+class ServerService private[server] (
   serverStatusDAO: ServerStatusDAO,
-  httpServerDAO: HttpServerDAO,
   persistenceDAO: PersistenceDAO,
   searchDAO: SearchDAO,
+  httpServerDAO: HttpServerDAO,
   version: String
 )(implicit executionContext: ExecutionContext, mat: Materializer)
     extends ModelAutoDerivation
@@ -57,27 +54,31 @@ class ServerService private (
   ): Future[Unit] = {
     val name = index.indexName
 
-    searchDAO.getMostRecentDocument.flatMap { mostRecent =>
+    searchDAO.getMostRecentDocument(index).flatMap { mostRecent =>
       val msg = s"Recovering all upserts from index $name"
-      val latestUpsert = mostRecent.map(getUpsertId)
+      val latestUpsert = mostRecent.map(ElasticsearchIndex.getUpsertId)
 
       logger.info(latestUpsert.fold(msg)(id => s"$msg since ${id.id}"))
 
       persistenceDAO
         .getAllSince(latestUpsert)
-        .batch(ServerService.RecoveryMaxBulkSize, json => Map(getEntityId(json) -> json)) {
-          (idMap, json) =>
-            val id = getEntityId(json)
-            val newJson = idMap.get(id) match {
-              case Some(oldJson) => {
-                logger.debug(
-                  s"Merging upserts ${getUpsertId(oldJson)} and ${getUpsertId(json)} for id $id"
-                )
-                oldJson.deepMerge(json)
-              }
-              case None => json
+        .batch(
+          ServerService.RecoveryMaxBulkSize,
+          json => Map(ElasticsearchIndex.getEntityId(json) -> json)
+        ) { (idMap, json) =>
+          val id = ElasticsearchIndex.getEntityId(json)
+          val newJson = idMap.get(id) match {
+            case Some(oldJson) => {
+              val oldId = ElasticsearchIndex.getUpsertId(oldJson)
+              val newId = ElasticsearchIndex.getUpsertId(json)
+              logger.debug(
+                s"Merging upserts $oldId and $newId for id $id"
+              )
+              oldJson.deepMerge(json)
             }
-            idMap.updated(id, newJson)
+            case None => json
+          }
+          idMap.updated(id, newJson)
         }
         .runWith(Sink.foldAsync(()) { (_, jsonMap) =>
           val jsons = jsonMap.valuesIterator.toVector
@@ -88,16 +89,6 @@ class ServerService private (
         .map(_ => logger.info(s"Done recovering upserts for index $name"))
     }
   }
-
-  private def getEntityId(json: Json): String =
-    json.hcursor
-      .get[String](ClioDocument.EntityIdElasticSearchName)
-      .fold(throw _, identity)
-
-  private def getUpsertId(json: Json): UpsertId =
-    json.hcursor
-      .get[UpsertId](ClioDocument.UpsertIdElasticSearchName)
-      .fold(throw _, identity)
 
   /**
     * Block until shutdown, within some finite limit.
@@ -124,9 +115,9 @@ class ServerService private (
   private[service] def startup(): Future[Unit] = {
 
     val indexes = immutable.Seq(
-      ElasticsearchIndex[DocumentWgsUbam],
-      ElasticsearchIndex[DocumentGvcf],
-      ElasticsearchIndex[DocumentWgsCram]
+      ElasticsearchIndex.WgsUbam,
+      ElasticsearchIndex.Gvcf,
+      ElasticsearchIndex.WgsCram,
     )
 
     for {
@@ -161,16 +152,4 @@ object ServerService {
     * to Elasticsearch during document recovery.
     */
   val RecoveryMaxBulkSize: Long = 1000L
-
-  def apply(
-    app: ClioApp
-  )(implicit executionContext: ExecutionContext, mat: Materializer): ServerService = {
-    new ServerService(
-      app.serverStatusDAO,
-      app.httpServerDAO,
-      app.persistenceDAO,
-      app.searchDAO,
-      ClioServerConfig.Version.value
-    )
-  }
 }
