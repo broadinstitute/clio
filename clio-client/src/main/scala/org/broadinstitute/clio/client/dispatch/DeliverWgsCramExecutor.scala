@@ -18,7 +18,7 @@ import scala.concurrent.{ExecutionContext, Future}
   *   2. Records the workspace name in the metadata for the delivered cram
   */
 class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
-    extends DeliverExecutor(deliverCommand) {
+    extends MoveExecutor(deliverCommand) {
 
   override def customMetadataOperations(
     metadata: WgsCramMetadata,

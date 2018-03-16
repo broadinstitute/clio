@@ -16,7 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
   *   2. Records the workspace name in the metadata for the delivered arrays
   */
 class DeliverArraysExecutor(deliverCommand: DeliverArrays)
-    extends DeliverExecutor(deliverCommand) {
+    extends MoveExecutor(deliverCommand) {
 
   override def customMetadataOperations(
     metadata: ArraysMetadata,
