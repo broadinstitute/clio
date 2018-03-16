@@ -55,7 +55,7 @@ sealed abstract class DeliverCommand[+CI <: ClioIndex](override val index: CI)
   def key: index.KeyType
   def workspaceName: String
   def workspacePath: URI
-  def destination: URI = workspacePath
+  final def destination: URI = workspacePath
   def newBasename: Option[String]
 }
 

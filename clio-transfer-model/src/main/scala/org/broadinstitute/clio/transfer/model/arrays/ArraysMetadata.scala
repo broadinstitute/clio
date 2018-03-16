@@ -78,8 +78,8 @@ case class ArraysMetadata(
   zcallPed: Option[URI] = None,
   zcallThresholdsPath: Option[URI] = None,
   zcallVersion: Option[Symbol] = None
-
-) extends Metadata[ArraysMetadata] with DeliverableMetadata[ArraysMetadata] {
+) extends Metadata[ArraysMetadata]
+    with DeliverableMetadata[ArraysMetadata] {
 
   /**
     * FIXME: Deletes everything now, but Gvcf and WgsCram do not
@@ -170,13 +170,6 @@ case class ArraysMetadata(
   override def withWorkspaceName(name: String): ArraysMetadata = {
     this.copy(
       workspaceName = Some(name)
-    )
-  }
-
-  def withMovedIdats(grnIdatPath: URI, redIdatPath: URI): ArraysMetadata = {
-    this.copy(
-      grnIdat = Some(grnIdatPath),
-      redIdat = Some(redIdatPath)
     )
   }
 

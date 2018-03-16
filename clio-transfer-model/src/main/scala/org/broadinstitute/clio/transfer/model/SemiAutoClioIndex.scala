@@ -98,7 +98,8 @@ case object WgsCramIndex
       WgsCramMetadata,
       WgsCramQueryInput,
       WgsCramQueryOutput
-    ] with DeliverableIndex {
+    ]
+    with DeliverableIndex {
   override val urlSegment: String = "wgscram"
   override val name: String = "WgsCram"
   override val commandName: String = "wgs-cram"
@@ -126,7 +127,8 @@ case object ArraysIndex
       ArraysMetadata,
       ArraysQueryInput,
       ArraysQueryOutput
-    ] with DeliverableIndex {
+    ]
+    with DeliverableIndex {
   override val urlSegment: String = "arrays"
   override val name: String = "Arrays"
   override val commandName: String = "arrays"

@@ -3,10 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import org.broadinstitute.clio.client.commands.DeliverArrays
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.transfer.model.Metadata
-import org.broadinstitute.clio.transfer.model.arrays.{
-  ArraysExtensions,
-  ArraysMetadata
-}
+import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysMetadata}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -26,37 +23,42 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)
     ioUtil: IoUtil
   )(
     implicit ec: ExecutionContext
-  ): Future[ArraysMetadata] = {
-    metadata.grnIdat match {
-      case Some(path) => ioUtil.copyGoogleObject(path, deliverCommand.destination)
-      case None =>
-        throw new IllegalStateException(
-          s"Arrays record with key ${deliverCommand.key} is missing its grnIdatPath"
+  ): Future[ArraysMetadata] = Future {
+    (metadata.grnIdat, metadata.redIdat) match {
+      case (Some(grn), Some(red)) => {
+        ioUtil.copyGoogleObject(grn, deliverCommand.destination)
+        ioUtil.copyGoogleObject(red, deliverCommand.destination)
+
+        val movedGrnIdat = Metadata.findNewPathForMove(
+          metadata.grnIdat.get,
+          deliverCommand.destination,
+          ArraysExtensions.IdatExtension
         )
-    }
-    metadata.redIdat match {
-      case Some(path) => ioUtil.copyGoogleObject(path, deliverCommand.destination)
-      case None =>
+        val movedRedIdat = Metadata.findNewPathForMove(
+          metadata.redIdat.get,
+          deliverCommand.destination,
+          ArraysExtensions.IdatExtension
+        )
+
+        metadata
+          .withWorkspaceName(deliverCommand.workspaceName)
+          .copy(
+            grnIdat = Some(movedGrnIdat),
+            redIdat = Some(movedRedIdat)
+          )
+      }
+      case (Some(_), None) =>
         throw new IllegalStateException(
           s"Arrays record with key ${deliverCommand.key} is missing its redIdatPath"
         )
-    }
-
-    val movedGrnIdat = Metadata.findNewPathForMove(
-      metadata.grnIdat.get,
-      deliverCommand.destination,
-      ArraysExtensions.IdatExtension
-    )
-    val movedRedIdat = Metadata.findNewPathForMove(
-      metadata.redIdat.get,
-      deliverCommand.destination,
-      ArraysExtensions.IdatExtension
-    )
-
-    Future {
-      metadata
-        .withWorkspaceName(deliverCommand.workspaceName)
-        .withMovedIdats(movedGrnIdat, movedRedIdat)
+      case (None, Some(_)) =>
+        throw new IllegalStateException(
+          s"Arrays record with key ${deliverCommand.key} is missing its grnIdatPath"
+        )
+      case _ =>
+        throw new IllegalStateException(
+          s"Arrays record with key ${deliverCommand.key} is missing both its redIdatPath and its grnIdatPath"
+        )
     }
   }
 }

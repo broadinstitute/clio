@@ -25,9 +25,9 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])
   private val destination: URI = moveCommand.destination
   private val upsertExceptionText: String =
     s"""An error occurred while updating the $name record in Clio. All files associated with
-                                               |$prettyKey exist at both the old and new locations, but Clio only knows about the old
-                                               |location. Try removing the file(s) at $destination and re-running this command.
-                                               |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
+    |$prettyKey exist at both the old and new locations, but Clio only knows about the old
+    |location. Try removing the file(s) at $destination and re-running this command.
+    |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext

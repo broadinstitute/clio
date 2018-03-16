@@ -184,7 +184,7 @@ class ClioWebClient(
 
   def upsert[CI <: ClioIndex](clioIndex: CI)(
     key: clioIndex.KeyType,
-    metadata: clioIndex.type#MetadataType
+    metadata: clioIndex.MetadataType
   ): Future[UpsertId] = {
     import clioIndex.implicits._
 
@@ -233,7 +233,7 @@ class ClioWebClient(
 
   def getMetadataForKey[CI <: ClioIndex](clioIndex: CI)(
     input: clioIndex.KeyType
-  ): Future[Option[clioIndex.type#MetadataType]] = {
+  ): Future[Option[clioIndex.MetadataType]] = {
     import clioIndex.implicits._
 
     val keyFields = new CaseClassMapper[clioIndex.KeyType].names
