@@ -12,8 +12,8 @@ import scala.concurrent.{ExecutionContext, Future}
   *
   * Wraps the move CLP with extra IO / upsert logic:
   *
-  *   1. Writes the arrays md5 value to file at the target path
-  *   2. Records the workspace name in the metadata for the delivered arrays
+  *   1. Copies the idat files to the target path
+  *   2. Records the updated locations of the idat files in the metadata
   */
 class DeliverArraysExecutor(deliverCommand: DeliverArrays)
     extends MoveExecutor(deliverCommand) {
