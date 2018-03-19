@@ -131,7 +131,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         GvcfMetadata(gvcfPath = Some(gvcfUri2))
       )
     } yield {
-      upsertId2.compareTo(upsertId1) > 0 should be(true)
+      upsertId2 should be > upsertId1
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
       storedDocument1.unsafeGet[URI]("gvcf_path") should be(gvcfUri1)
@@ -163,7 +163,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertGvcf(upsertKey, upsertData)
       upsertId2 <- runUpsertGvcf(upsertKey, upsertData)
     } yield {
-      upsertId2.compareTo(upsertId1) > 0 should be(true)
+      upsertId2 should be > upsertId1
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)

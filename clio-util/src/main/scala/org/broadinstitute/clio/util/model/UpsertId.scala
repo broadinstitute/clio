@@ -5,16 +5,7 @@ import scala.util.Random
 /**
   * A unique identifier for each operation that modifies the database.
   */
-final class UpsertId private (val id: String) extends Ordered[UpsertId] {
-  override def compare(that: UpsertId): Int = id.compareTo(that.id)
-  override def equals(obj: scala.Any): Boolean = {
-    obj match {
-      case that: UpsertId => id.equals(that.id)
-      case _              => false
-    }
-  }
-  override def hashCode(): Int = id.hashCode
-  override def toString: String = id
+final class UpsertId private (val id: String) extends AnyVal {
 
   /**
     * The filename used for persisting a document's upsert data.
@@ -35,6 +26,8 @@ final class UpsertId private (val id: String) extends Ordered[UpsertId] {
   * @see [[https://firebase.googleblog.com/2015/02/the-2120-ways-to-ensure-unique_68.html]]
   */
 object UpsertId {
+
+  implicit val upsertIdOrdering: Ordering[UpsertId] = Ordering.by(_.id)
 
   private val source = new Random()
 

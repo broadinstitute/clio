@@ -136,7 +136,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         )
       )
     } yield {
-      upsertId2.compareTo(upsertId1) > 0 should be(true)
+      upsertId2 should be > upsertId1
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
       storedDocument1.unsafeGet[URI]("cram_path") should be(
@@ -172,7 +172,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertCram(upsertKey, upsertData)
       upsertId2 <- runUpsertCram(upsertKey, upsertData)
     } yield {
-      upsertId2.compareTo(upsertId1) > 0 should be(true)
+      upsertId2 should be > upsertId1
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsCram)

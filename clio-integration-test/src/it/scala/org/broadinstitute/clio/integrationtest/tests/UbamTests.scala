@@ -225,7 +225,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         SequencingType.WholeGenome
       )
     } yield {
-      upsertId2.compareTo(upsertId1) > 0 should be(true)
+      upsertId2 should be > upsertId1
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
       storedDocument1.unsafeGet[String]("project") should be("testProject1")
@@ -256,7 +256,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertUbam(upsertKey, metadata, ubamType)
       upsertId2 <- runUpsertUbam(upsertKey, metadata, ubamType)
     } yield {
-      upsertId2.compareTo(upsertId1) > 0 should be(true)
+      upsertId2 should be > upsertId1
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
