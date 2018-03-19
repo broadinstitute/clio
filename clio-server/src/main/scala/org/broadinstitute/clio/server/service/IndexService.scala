@@ -5,6 +5,7 @@ import akka.stream.scaladsl.Source
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.transfer.model.ClioIndex
+import org.broadinstitute.clio.util.json.JsonSchema
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -68,5 +69,5 @@ abstract class IndexService[CI <: ClioIndex](
     )
   }
 
-  def querySchema(): Future[Json] = Future(clioIndex.jsonSchema)
+  def querySchema(): Future[Json] = Future(new JsonSchema(clioIndex).toJson)
 }

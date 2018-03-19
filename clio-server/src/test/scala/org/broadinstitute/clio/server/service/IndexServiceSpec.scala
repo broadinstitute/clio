@@ -97,12 +97,7 @@ abstract class IndexServiceSpec[
             dummyKey,
             metadata.withDocumentStatus(expectedDocumentStatus)
           )
-          .deepMerge(
-            Map(
-              ElasticsearchUtil
-                .toElasticsearchName(ElasticsearchIndex.UpsertIdElasticsearchName) -> returnedUpsertId
-            ).asJson
-          )
+          .mapObject(_.add(ElasticsearchIndex.UpsertIdElasticsearchName, returnedUpsertId.asJson))
 
       memoryPersistenceDAO.writeCalls should be(
         Seq((expectedDocument, elasticsearchIndex))

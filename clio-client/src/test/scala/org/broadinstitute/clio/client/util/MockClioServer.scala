@@ -11,8 +11,8 @@ import akka.pattern.after
 import akka.stream.ActorMaterializer
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import org.broadinstitute.clio.status.model.{StatusInfo, VersionInfo}
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.transfer.model.ModelMockIndex
+import org.broadinstitute.clio.util.json.{JsonSchema, ModelAutoDerivation}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -20,7 +20,7 @@ import scala.concurrent.duration._
 /**
   * Bare-bones server to simulate parts of the clio-server needed for testing the webclient.
   */
-class MockClioServer(implicit system: ActorSystem)
+class MockClioServer(index: ModelMockIndex)(implicit system: ActorSystem)
     extends TestData
     with ModelAutoDerivation
     with FailFastCirceSupport {
@@ -59,7 +59,7 @@ class MockClioServer(implicit system: ActorSystem)
       } ~
       pathPrefix("api") {
         pathPrefix("v1") {
-          pathPrefix(WgsUbamIndex.urlSegment) {
+          pathPrefix(index.urlSegment) {
             path("schema") {
               /*
                * (As far as I can find) akka-http doesn't expose an API for prematurely
@@ -67,7 +67,7 @@ class MockClioServer(implicit system: ActorSystem)
                * a proxy for transient network problems.
                */
               val requestCount = schemaRequests.incrementAndGet()
-              val schema = Future.successful(WgsUbamIndex.jsonSchema)
+              val schema = Future.successful(new JsonSchema(index).toJson)
               val response =
                 if (requestCount <= TestData.testMaxRetries) {
                   after(testRequestTimeout + 1.second, system.scheduler)(schema)

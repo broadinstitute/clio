@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.GetSchemaGvcf
 import org.broadinstitute.clio.transfer.model.GvcfIndex
+import org.broadinstitute.clio.util.json.JsonSchema
 
 class GetSchemaGvcfSpec extends BaseClientSpec {
   behavior of "GetSchemaGvcf"
@@ -19,6 +20,6 @@ class GetSchemaGvcfSpec extends BaseClientSpec {
   it should "return the gvcf schema as JSON" in {
     succeedingDispatcher()
       .dispatch(GetSchemaGvcf)
-      .map(_ should be(GvcfIndex.jsonSchema))
+      .map(_ should be(new JsonSchema(GvcfIndex).toJson))
   }
 }

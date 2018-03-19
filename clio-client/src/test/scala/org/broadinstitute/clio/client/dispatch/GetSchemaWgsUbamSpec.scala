@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.GetSchemaWgsUbam
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
+import org.broadinstitute.clio.util.json.JsonSchema
 
 class GetSchemaWgsUbamSpec extends BaseClientSpec {
   behavior of "GetSchemaWgsUbam"
@@ -19,6 +20,6 @@ class GetSchemaWgsUbamSpec extends BaseClientSpec {
   it should "return the ubam schema as JSON" in {
     succeedingDispatcher()
       .dispatch(GetSchemaWgsUbam)
-      .map(_ should be(WgsUbamIndex.jsonSchema))
+      .map(_ should be(new JsonSchema(WgsUbamIndex).toJson))
   }
 }

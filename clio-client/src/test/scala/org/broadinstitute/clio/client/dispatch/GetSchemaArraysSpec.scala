@@ -4,6 +4,7 @@ import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.GetSchemaArrays
 import org.broadinstitute.clio.transfer.model.ArraysIndex
+import org.broadinstitute.clio.util.json.JsonSchema
 
 class GetSchemaArraysSpec extends BaseClientSpec {
   behavior of "GetSchemaArrays"
@@ -22,6 +23,6 @@ class GetSchemaArraysSpec extends BaseClientSpec {
   it should "return the Arrays schema as JSON" in {
     succeedingDispatcher()
       .dispatch(GetSchemaArrays)
-      .map(_ should be(ArraysIndex.jsonSchema))
+      .map(_ should be(new JsonSchema(ArraysIndex).toJson))
   }
 }

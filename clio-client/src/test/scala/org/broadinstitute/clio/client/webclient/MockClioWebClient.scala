@@ -10,7 +10,7 @@ import io.circe.Json
 import org.broadinstitute.clio.client.util.{IoUtil, TestData}
 import org.broadinstitute.clio.status.model.{StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.json.{JsonSchema, ModelAutoDerivation}
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.Future
@@ -60,7 +60,7 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
 
   override def getSchema(clioIndex: ClioIndex): Future[Json] = {
     if (status.isSuccess()) {
-      Future.successful(clioIndex.jsonSchema)
+      Future.successful(new JsonSchema(clioIndex).toJson)
     } else {
       Future.failed(new RuntimeException("Failed to get schema"))
     }
@@ -77,12 +77,11 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     }
   }
 
-  override def query[CI <: ClioIndex](clioIndex: CI)(
-    input: clioIndex.QueryInputType,
-    includeDeleted: Boolean
-  ): Future[Json] = {
+  override def rawQuery(
+    clioIndex: ClioIndex
+  )(input: Json, includeDeleted: Boolean): Future[Json] = {
     if (status.isSuccess()) {
-      Future.successful(json.getOrElse(Json.fromValues(Seq.empty)))
+      Future.successful(json.getOrElse(Json.arr()))
     } else {
       Future.failed(new RuntimeException("Failed to query"))
     }

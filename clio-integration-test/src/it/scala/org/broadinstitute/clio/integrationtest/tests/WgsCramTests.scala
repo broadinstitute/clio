@@ -3,6 +3,7 @@ package org.broadinstitute.clio.integrationtest.tests
 import java.net.URI
 
 import com.sksamuel.elastic4s.IndexAndType
+import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
@@ -12,7 +13,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram._
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.json.{JsonSchema, ModelAutoDerivation}
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
   Location,
@@ -64,7 +65,7 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
 
   it should "report the expected JSON schema for wgs-cram" in {
     runClient(ClioCommand.getWgsCramSchemaName)
-      .map(_ should be(WgsCramIndex.jsonSchema))
+      .map(_ should be(new JsonSchema(WgsCramIndex).toJson))
   }
 
   // Generate a test for every possible Location value.
@@ -78,57 +79,32 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
     * @see http://www.scalatest.org/user_guide/sharing_tests
     */
   def testCramLocation(location: Location): Unit = {
-    val expected = WgsCramQueryOutput(
-      location = location,
-      project = "test project",
-      sampleAlias = s"someAlias $randomId",
-      version = 2,
-      documentStatus = Some(DocumentStatus.Normal),
-      cramPath = Some(URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}"))
-    )
-
-    /*
-     * NOTE: This is lazy on purpose. If it executes outside of the actual `it` block,
-     * it'll result in an `UninitializedFieldError` because the spec `beforeAll` won't
-     * have triggered yet.
-     */
-    lazy val responseFuture = runUpsertCram(
-      WgsCramKey(
-        location,
-        expected.project,
-        expected.sampleAlias,
-        expected.version
-      ),
-      WgsCramMetadata(cramPath = expected.cramPath)
-    )
-
     it should s"handle upserts and queries for wgs-cram location $location" in {
+      val key = WgsCramKey(
+        location = location,
+        project = "test project",
+        sampleAlias = s"someAlias $randomId",
+        version = 2
+      )
+      val metadata = WgsCramMetadata(
+        documentStatus = Some(DocumentStatus.Normal),
+        cramPath = Some(URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}"))
+      )
+      val expected = expectedMerge(key, metadata)
+
       for {
-        returnedUpsertId <- responseFuture
-        outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+        returnedUpsertId <- runUpsertCram(key, metadata.copy(documentStatus = None))
+        outputs <- runClientGetJsonAs[Seq[Json]](
           ClioCommand.queryWgsCramName,
           "--sample-alias",
-          expected.sampleAlias
+          key.sampleAlias
         )
       } yield {
-        outputs should be(Seq(expected))
-
+        outputs should contain only expected
         val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.WgsCram)
-        ElasticsearchIndex.getByName[Location](storedDocument, "location") should be(
-          expected.location
-        )
-        ElasticsearchIndex.getByName[String](storedDocument, "project") should be(
-          expected.project
-        )
-        ElasticsearchIndex.getByName[String](storedDocument, "sample_alias") should be(
-          expected.sampleAlias
-        )
-        ElasticsearchIndex.getByName[Int](storedDocument, "version") should be(
-          expected.version
-        )
-        ElasticsearchIndex.getByName[URI](storedDocument, "cram_path") should be(
-          expected.cramPath.get
-        )
+        storedDocument.mapObject(
+          _.filterKeys(!ElasticsearchIndex.BookkeepingNames.contains(_))
+        ) should be(expected)
       }
     }
   }
@@ -171,21 +147,12 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
         URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}")
       )
 
-      storedDocument1
-        .deepMerge(
-          Map(
-            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
-          ).asJson
+      storedDocument1.deepMerge {
+        Json.obj(
+          ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2.asJson,
+          "cram_path" -> s"gs://path/cram2${WgsCramExtensions.CramExtension}".asJson
         )
-        .deepMerge(
-          Map(
-            "cram_path" -> Some(
-              URI.create(s"gs://path/cram2${WgsCramExtensions.CramExtension}")
-            )
-          ).asJson
-        )
-        .asObject
-        .get should be(storedDocument2.asObject.get)
+      } should be(storedDocument2)
     }
   }
 
@@ -208,14 +175,9 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsCram)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsCram)
-      storedDocument1
-        .deepMerge(
-          Map(
-            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
-          ).asJson
-        )
-        .asObject
-        .get should be(storedDocument2.asObject.get)
+      storedDocument1.mapObject(
+        _.add(ElasticsearchIndex.UpsertIdElasticsearchName, upsertId2.asJson)
+      ) should be(storedDocument2)
     }
   }
 
@@ -244,12 +206,12 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      projectResults <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+      projectResults <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsCramName,
         "--project",
         project
       )
-      sampleResults <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+      sampleResults <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsCramName,
         "--sample-alias",
         samples.head
@@ -257,11 +219,13 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
-        result.project should be(project)
+        ElasticsearchIndex.getByName[String](result, "project") should be(project)
       }
       sampleResults should have length 2
       sampleResults.foldLeft(succeed) { (_, result) =>
-        result.sampleAlias should be(samples.head)
+        ElasticsearchIndex.getByName[String](result, "sample_alias") should be(
+          samples.head
+        )
       }
     }
   }
@@ -290,12 +254,12 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      prefixResults <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+      prefixResults <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsCramName,
         "--sample-alias",
         prefix
       )
-      suffixResults <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+      suffixResults <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsCramName,
         "--sample-alias",
         suffix
@@ -310,15 +274,17 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
     val project = s"testProject$randomId"
     val key = WgsCramKey(Location.GCP, project, s"testSample$randomId", 1)
     val cramPath = URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
+    val cramSize = 1000L
+    val initialNotes = "Breaking news"
     val metadata = WgsCramMetadata(
       cramPath = Some(cramPath),
-      cramSize = Some(1000L),
-      notes = Some("Breaking news")
+      cramSize = Some(cramSize),
+      notes = Some(initialNotes)
     )
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+        results <- runClientGetJsonAs[Seq[Json]](
           ClioCommand.queryWgsCramName,
           "--project",
           project
@@ -337,25 +303,26 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
     for {
       _ <- runUpsertCram(key, upsertData)
       original <- query
-      _ = original.cramPath should be(metadata.cramPath)
-      _ = original.cramSize should be(metadata.cramSize)
-      _ = original.notes should be(None)
+      _ = ElasticsearchIndex.getByName[URI](original, "cram_path") should be(cramPath)
+      _ = ElasticsearchIndex.getByName[Long](original, "cram_size") should be(cramSize)
+      _ = ElasticsearchIndex.getByName[Option[String]](original, "notes") should be(None)
+
       upsertData2 = upsertData.copy(notes = metadata.notes)
       _ <- runUpsertCram(key, upsertData2)
       withNotes <- query
-      _ = original.cramPath should be(metadata.cramPath)
-      _ = withNotes.cramSize should be(metadata.cramSize)
-      _ = withNotes.notes should be(metadata.notes)
+      _ = ElasticsearchIndex.getByName[URI](withNotes, "cram_path") should be(cramPath)
+      _ = ElasticsearchIndex.getByName[Long](withNotes, "cram_size") should be(cramSize)
+      _ = ElasticsearchIndex.getByName[String](withNotes, "notes") should be(initialNotes)
+
       _ <- runUpsertCram(
         key,
-        upsertData2
-          .copy(cramSize = Some(2000L), notes = Some(""))
+        upsertData2.copy(cramSize = Some(2000L), notes = Some(""))
       )
       emptyNotes <- query
     } yield {
-      emptyNotes.cramPath should be(metadata.cramPath)
-      emptyNotes.cramSize should be(Some(2000L))
-      emptyNotes.notes should be(Some(""))
+      ElasticsearchIndex.getByName[URI](emptyNotes, "cram_path") should be(cramPath)
+      ElasticsearchIndex.getByName[Long](emptyNotes, "cram_size") should be(2000L)
+      ElasticsearchIndex.getByName[String](emptyNotes, "notes") should be("")
     }
   }
 
@@ -385,7 +352,7 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        results <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+        results <- runClientGetJsonAs[Seq[Json]](
           ClioCommand.queryWgsCramName,
           "--project",
           project,
@@ -395,9 +362,14 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
       } yield {
         results.length should be(expectedLength)
         results.foreach { result =>
-          result.project should be(project)
-          result.sampleAlias should be(sampleAlias)
-          result.documentStatus should be(Some(DocumentStatus.Normal))
+          ElasticsearchIndex.getByName[String](result, "project") should be(project)
+          ElasticsearchIndex.getByName[String](result, "sample_alias") should be(
+            sampleAlias
+          )
+          ElasticsearchIndex
+            .getByName[DocumentStatus](result, "document_status") should be(
+            DocumentStatus.Normal
+          )
         }
         results
       }
@@ -412,7 +384,7 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
       )
       _ <- checkQuery(expectedLength = 2)
 
-      results <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+      results <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsCramName,
         "--project",
         project,
@@ -423,20 +395,21 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
     } yield {
       results.length should be(keysWithMetadata.length)
       results.foldLeft(succeed) { (_, result) =>
-        result.project should be(project)
-        result.sampleAlias should be(sampleAlias)
-
-        val resultKey = WgsCramKey(
-          location = result.location,
-          project = result.project,
-          sampleAlias = result.sampleAlias,
-          version = result.version
+        ElasticsearchIndex.getByName[String](result, "project") should be(project)
+        ElasticsearchIndex.getByName[String](result, "sample_alias") should be(
+          sampleAlias
         )
 
-        if (resultKey == deleteKey) {
-          result.documentStatus should be(Some(DocumentStatus.Deleted))
-        } else {
-          result.documentStatus should be(Some(DocumentStatus.Normal))
+        val resultKey = WgsCramKey(
+          location = ElasticsearchIndex.getByName[Location](result, "location"),
+          project = ElasticsearchIndex.getByName[String](result, "project"),
+          sampleAlias = ElasticsearchIndex.getByName[String](result, "sample_alias"),
+          version = ElasticsearchIndex.getByName[Int](result, "version")
+        )
+
+        ElasticsearchIndex
+          .getByName[DocumentStatus](result, "document_status") should be {
+          if (resultKey == deleteKey) DocumentStatus.Deleted else DocumentStatus.Normal
         }
       }
     }
@@ -676,7 +649,7 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
           if (force) "--force" else ""
         ).filter(_.nonEmpty): _*
       )
-      outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsCramName,
         "--location",
         Location.GCP.entryName,
@@ -701,12 +674,12 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
 
       outputs should have length 1
       val output = outputs.head
-      output.notes should be(
-        existingNote
-          .map(existing => s"$existing\n$deleteNote")
-          .orElse(Some(deleteNote))
+      ElasticsearchIndex.getByName[String](output, "notes") should be(
+        existingNote.fold(deleteNote)(existing => s"$existing\n$deleteNote")
       )
-      output.documentStatus should be(Some(DocumentStatus.Deleted))
+      ElasticsearchIndex.getByName[DocumentStatus](output, "document_status") should be(
+        DocumentStatus.Deleted
+      )
     }
 
     result.andThen[Unit] {
@@ -788,7 +761,8 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
     val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
-      cramMd5 = Some(Symbol(md5Contents))
+      cramMd5 = Some(Symbol(md5Contents)),
+      documentStatus = Some(DocumentStatus.Normal)
     )
 
     val workspaceName = s"$id-TestWorkspace-$id"
@@ -815,7 +789,7 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
         "--new-basename",
         newBasename
       )
-      outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsCramName,
         "--workspace-name",
         workspaceName
@@ -834,21 +808,14 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
           destination.contentAsString should be(contents)
       }
 
-      outputs should be {
-        Seq(
-          WgsCramQueryOutput(
-            location = Location.GCP,
-            project = project,
-            sampleAlias = sample,
-            version = version,
-            workspaceName = Some(workspaceName),
-            cramPath = Some(cramDestination.uri),
-            craiPath = Some(craiDestination.uri),
-            cramMd5 = Some(Symbol(md5Contents)),
-            documentStatus = Some(DocumentStatus.Normal)
-          )
+      outputs should contain only expectedMerge(
+        key,
+        metadata.copy(
+          workspaceName = Some(workspaceName),
+          cramPath = Some(cramDestination.uri),
+          craiPath = Some(craiDestination.uri)
         )
-      }
+      )
     }
 
     result.andThen {
@@ -887,7 +854,8 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
     val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
-      cramMd5 = Some(Symbol(md5Contents))
+      cramMd5 = Some(Symbol(md5Contents)),
+      documentStatus = Some(DocumentStatus.Normal)
     )
 
     val workspaceName = s"$randomId-TestWorkspace-$randomId"
@@ -912,7 +880,7 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
         "--workspace-path",
         rootSource.uri.toString
       )
-      outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsCramName,
         "--workspace-name",
         workspaceName
@@ -929,21 +897,10 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
           destination.contentAsString should be(contents)
       }
 
-      outputs should be {
-        Seq(
-          WgsCramQueryOutput(
-            location = Location.GCP,
-            project = project,
-            sampleAlias = sample,
-            version = version,
-            workspaceName = Some(workspaceName),
-            cramPath = Some(cramSource.uri),
-            craiPath = Some(craiSource.uri),
-            cramMd5 = Some(Symbol(md5Contents)),
-            documentStatus = Some(DocumentStatus.Normal)
-          )
-        )
-      }
+      outputs should contain only expectedMerge(
+        key,
+        metadata.copy(workspaceName = Some(workspaceName))
+      )
     }
 
     result.andThen {
@@ -978,7 +935,7 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+        results <- runClientGetJsonAs[Seq[Json]](
           ClioCommand.queryWgsCramName,
           "--project",
           project
@@ -993,8 +950,9 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
       _ <- runUpsertCram(key, metadata)
       result <- query
     } yield {
-      result.regulatoryDesignation should be(
-        Some(RegulatoryDesignation.ClinicalDiagnostics)
+      ElasticsearchIndex
+        .getByName[RegulatoryDesignation](result, "regulatory_designation") should be(
+        RegulatoryDesignation.ClinicalDiagnostics
       )
     }
   }
@@ -1028,7 +986,8 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents)),
-      regulatoryDesignation = cramRegulatoryDesignation
+      regulatoryDesignation = cramRegulatoryDesignation,
+      documentStatus = Some(DocumentStatus.Normal)
     )
 
     val workspaceName = s"$randomId-TestWorkspace-$randomId"
@@ -1053,7 +1012,7 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
         "--workspace-path",
         rootDestination.uri.toString
       )
-      outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsCramName,
         "--workspace-name",
         workspaceName
@@ -1072,22 +1031,14 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
           destination.contentAsString should be(contents)
       }
 
-      outputs should be {
-        Seq(
-          WgsCramQueryOutput(
-            location = Location.GCP,
-            project = project,
-            sampleAlias = sample,
-            version = version,
-            workspaceName = Some(workspaceName),
-            cramPath = Some(cramDestination.uri),
-            craiPath = Some(craiDestination.uri),
-            cramMd5 = Some(Symbol(md5Contents)),
-            documentStatus = Some(DocumentStatus.Normal),
-            regulatoryDesignation = cramRegulatoryDesignation
-          )
+      outputs should contain only expectedMerge(
+        key,
+        metadata.copy(
+          workspaceName = Some(workspaceName),
+          cramPath = Some(cramDestination.uri),
+          craiPath = Some(craiDestination.uri)
         )
-      }
+      )
     }
 
     result.andThen {
@@ -1152,7 +1103,7 @@ trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
       }
     }.flatMap { _ =>
       for {
-        outputs <- runClientGetJsonAs[Seq[WgsCramQueryOutput]](
+        outputs <- runClientGetJsonAs[Seq[Json]](
           ClioCommand.queryWgsCramName,
           "--workspace-name",
           workspaceName
