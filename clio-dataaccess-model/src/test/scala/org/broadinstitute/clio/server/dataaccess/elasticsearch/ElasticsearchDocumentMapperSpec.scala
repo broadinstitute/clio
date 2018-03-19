@@ -39,7 +39,7 @@ class ElasticsearchDocumentMapperSpec
     ElasticsearchIndex.getEntityId(document) should be(s"$keyLong.$keyString")
     document.unsafeGet[Double]("mock_field_double") should be(mockFieldDouble)
     document.unsafeGet[Int]("mock_field_int") should be(mockFieldInt)
-    document.unsafeGet[Long]("mock_field_long") should be(keyLong)
+    document.unsafeGet[Long]("mock_key_long") should be(keyLong)
     document.unsafeGet[String]("mock_key_string") should be(keyString)
   }
 }

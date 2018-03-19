@@ -412,7 +412,13 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       gvcfPath = Some(URI.create(s"gs://gvcf/$randomId${GvcfExtensions.GvcfExtension}"))
     )
     val expectedOutput =
-      expectedMerge(key, firstMetadata.copy(gvcfPath = secondMetadata.gvcfPath))
+      expectedMerge(
+        key,
+        firstMetadata.copy(
+          gvcfPath = secondMetadata.gvcfPath,
+          documentStatus = Some(DocumentStatus.Normal)
+        )
+      )
 
     for {
       _ <- runUpsertGvcf(key, firstMetadata)
