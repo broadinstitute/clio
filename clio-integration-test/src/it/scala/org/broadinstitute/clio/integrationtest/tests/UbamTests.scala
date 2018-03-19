@@ -23,6 +23,7 @@ import scala.concurrent.Future
 
 /** Tests of Clio's ubam functionality. */
 trait UbamTests { self: BaseIntegrationSpec =>
+  import ElasticsearchUtil.JsonOps
 
   def runUpsertUbam(
     key: UbamKey,
@@ -227,14 +228,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
-        "testProject1"
-      )
+      storedDocument1.unsafeGet[String]("project") should be("testProject1")
 
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
-      ElasticsearchIndex.getByName[String](storedDocument2, "project") should be(
-        "testProject2"
-      )
+      storedDocument2.unsafeGet[String]("project") should be("testProject2")
 
       storedDocument1.deepMerge {
         Json.obj(
@@ -316,17 +313,14 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
-        ElasticsearchIndex.getByName[String](result, "project") should be(project)
+        result.unsafeGet[String]("project") should be(project)
       }
       sampleResults should have length 2
       sampleResults.foldLeft(succeed) { (_, result) =>
-        ElasticsearchIndex.getByName[String](result, "sample_alias") should be(
-          samples.head
-        )
+        result.unsafeGet[String]("sample_alias") should be(samples.head)
       }
       rpIdResults should have length 1
-      ElasticsearchIndex
-        .getByName[String](rpIdResults.head, "research_project_id") should be(
+      rpIdResults.head.unsafeGet[String]("research_project_id") should be(
         researchProjectIds.last
       )
     }
@@ -362,20 +356,14 @@ trait UbamTests { self: BaseIntegrationSpec =>
     for {
       _ <- runUpsertUbam(key, upsertData, SequencingType.WholeGenome)
       original <- query
-      _ = ElasticsearchIndex.getByName[String](original, "sample_alias") should be(
-        "sampleAlias1"
-      )
-      _ = ElasticsearchIndex.getByName[Option[String]](original, "notes") should be(None)
+      _ = original.unsafeGet[String]("sample_alias") should be("sampleAlias1")
+      _ = original.unsafeGet[Option[String]]("notes") should be(None)
 
       upsertData2 = upsertData.copy(notes = metadata.notes)
       _ <- runUpsertUbam(key, upsertData2, SequencingType.WholeGenome)
       withNotes <- query
-      _ = ElasticsearchIndex.getByName[String](withNotes, "sample_alias") should be(
-        "sampleAlias1"
-      )
-      _ = ElasticsearchIndex.getByName[String](withNotes, "notes") should be(
-        "Breaking news"
-      )
+      _ = withNotes.unsafeGet[String]("sample_alias") should be("sampleAlias1")
+      _ = withNotes.unsafeGet[String]("notes") should be("Breaking news")
 
       _ <- runUpsertUbam(
         key,
@@ -384,10 +372,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
       emptyNotes <- query
     } yield {
-      ElasticsearchIndex.getByName[String](emptyNotes, "sample_alias") should be(
-        "sampleAlias2"
-      )
-      ElasticsearchIndex.getByName[String](emptyNotes, "notes") should be("")
+      emptyNotes.unsafeGet[String]("sample_alias") should be("sampleAlias2")
+      emptyNotes.unsafeGet[String]("notes") should be("")
     }
   }
 
@@ -429,10 +415,9 @@ trait UbamTests { self: BaseIntegrationSpec =>
       } yield {
         results.length should be(expectedLength)
         results.foreach { result =>
-          ElasticsearchIndex.getByName[String](result, "project") should be(project)
-          ElasticsearchIndex.getByName[String](result, "sample_alias") should be(sample)
-          ElasticsearchIndex
-            .getByName[DocumentStatus](result, "document_status") should be(
+          result.unsafeGet[String]("project") should be(project)
+          result.unsafeGet[String]("sample_alias") should be(sample)
+          result.unsafeGet[DocumentStatus]("document_status") should be(
             DocumentStatus.Normal
           )
         }
@@ -461,19 +446,17 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       results.length should be(keysWithMetadata.length)
       results.foldLeft(succeed) { (_, result) =>
-        ElasticsearchIndex.getByName[String](result, "project") should be(project)
-        ElasticsearchIndex.getByName[String](result, "sample_alias") should be(sample)
+        result.unsafeGet[String]("project") should be(project)
+        result.unsafeGet[String]("sample_alias") should be(sample)
 
         val resultKey = UbamKey(
-          flowcellBarcode =
-            ElasticsearchIndex.getByName[String](result, "flowcell_barcode"),
-          lane = ElasticsearchIndex.getByName[Int](result, "lane"),
-          libraryName = ElasticsearchIndex.getByName[String](result, "library_name"),
-          location = ElasticsearchIndex.getByName[Location](result, "location")
+          flowcellBarcode = result.unsafeGet[String]("flowcell_barcode"),
+          lane = result.unsafeGet[Int]("lane"),
+          libraryName = result.unsafeGet[String]("library_name"),
+          location = result.unsafeGet[Location]("location")
         )
 
-        ElasticsearchIndex
-          .getByName[DocumentStatus](result, "document_status") should be {
+        result.unsafeGet[DocumentStatus]("document_status") should be {
           if (resultKey == deleteKey) DocumentStatus.Deleted else DocumentStatus.Normal
         }
       }
@@ -598,9 +581,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       cloudPath2 shouldNot exist
       queryOutputs should have length 1
-      ElasticsearchIndex.getByName[URI](queryOutputs.head, "ubam_path") should be(
-        cloudPath.uri
-      )
+      queryOutputs.head.unsafeGet[URI]("ubam_path") should be(cloudPath.uri)
     }
 
     result.andThen[Unit] {
@@ -637,8 +618,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsert <- runUpsertUbam(upsertKey, metadata, SequencingType.WholeGenome)
       queried <- query
     } yield {
-      ElasticsearchIndex
-        .getByName[RegulatoryDesignation](queried, "regulatory_designation") should be(
+      queried.unsafeGet[RegulatoryDesignation]("regulatory_designation") should be(
         regulatoryDesignation
       )
     }
@@ -701,10 +681,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       outputs should have length 1
       val output = outputs.head
-      ElasticsearchIndex.getByName[String](output, "notes") should be {
+      output.unsafeGet[String]("notes") should be {
         existingNote.fold(deleteNote)(existing => s"$existing\n$deleteNote")
       }
-      ElasticsearchIndex.getByName[DocumentStatus](output, "document_status") should be(
+      output.unsafeGet[DocumentStatus]("document_status") should be(
         DocumentStatus.Deleted
       )
     }
@@ -769,9 +749,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
-        "testProject1"
-      )
+      storedDocument1.unsafeGet[String]("project") should be("testProject1")
     }
   }
 
@@ -802,12 +780,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
-      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
-        "testProject1"
-      )
-      ElasticsearchIndex.getByName[String](storedDocument2, "sample_alias") should be(
-        "sampleAlias1"
-      )
+      storedDocument1.unsafeGet[String]("project") should be("testProject1")
+      storedDocument2.unsafeGet[String]("sample_alias") should be("sampleAlias1")
     }
   }
 
@@ -835,9 +809,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       }
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
-        "testProject1"
-      )
+      storedDocument1.unsafeGet[String]("project") should be("testProject1")
     }
   }
 }

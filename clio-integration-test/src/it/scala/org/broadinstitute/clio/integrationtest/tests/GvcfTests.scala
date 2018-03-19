@@ -26,6 +26,7 @@ import scala.concurrent.Future
 
 /** Tests of Clio's gvcf functionality. */
 trait GvcfTests { self: BaseIntegrationSpec =>
+  import ElasticsearchUtil.JsonOps
 
   def runUpsertGvcf(
     key: GvcfKey,
@@ -133,10 +134,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       upsertId2.compareTo(upsertId1) > 0 should be(true)
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
-      ElasticsearchIndex.getByName[URI](storedDocument1, "gvcf_path") should be(gvcfUri1)
+      storedDocument1.unsafeGet[URI]("gvcf_path") should be(gvcfUri1)
 
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)
-      ElasticsearchIndex.getByName[URI](storedDocument2, "gvcf_path") should be(gvcfUri2)
+      storedDocument2.unsafeGet[URI]("gvcf_path") should be(gvcfUri2)
 
       storedDocument1.deepMerge {
         Json.obj(
@@ -210,13 +211,11 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
-        ElasticsearchIndex.getByName[String](result, "project") should be(project)
+        result.unsafeGet[String]("project") should be(project)
       }
       sampleResults should have length 2
       sampleResults.foldLeft(succeed) { (_, result) =>
-        ElasticsearchIndex.getByName[String](result, "sample_alias") should be(
-          samples.head
-        )
+        result.unsafeGet[String]("sample_alias") should be(samples.head)
       }
     }
   }
@@ -252,18 +251,17 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     for {
       _ <- runUpsertGvcf(key, upsertData)
       original <- query
-      _ = ElasticsearchIndex.getByName[URI](original, "gvcf_path") should be(gvcfPath)
-      _ = ElasticsearchIndex.getByName[Float](original, "contamination") should be(.75f)
-      _ = ElasticsearchIndex.getByName[Option[String]](original, "notes") should be(None)
+      _ = original.unsafeGet[URI]("gvcf_path") should be(gvcfPath)
+      _ = original.unsafeGet[Float]("contamination") should be(.75f)
+      _ = original.unsafeGet[Option[String]]("notes") should be(None)
 
       upsertData2 = upsertData.copy(notes = metadata.notes)
       _ <- runUpsertGvcf(key, upsertData2)
       withNotes <- query
-      _ = ElasticsearchIndex.getByName[URI](withNotes, "gvcf_path") should be(gvcfPath)
-      _ = ElasticsearchIndex.getByName[Float](withNotes, "contamination") should be(.75f)
-      _ = ElasticsearchIndex.getByName[String](withNotes, "notes") should be(
-        "Breaking news"
-      )
+      _ = withNotes.unsafeGet[URI]("gvcf_path") should be(gvcfPath)
+      _ = withNotes.unsafeGet[Float]("contamination") should be(.75f)
+      _ = withNotes.unsafeGet[String]("notes") should be("Breaking news")
+
       _ <- runUpsertGvcf(
         key,
         upsertData2
@@ -271,9 +269,9 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       )
       emptyNotes <- query
     } yield {
-      ElasticsearchIndex.getByName[URI](emptyNotes, "gvcf_path") should be(gvcfPath)
-      ElasticsearchIndex.getByName[Float](emptyNotes, "contamination") should be(.123f)
-      ElasticsearchIndex.getByName[String](emptyNotes, "notes") should be("")
+      emptyNotes.unsafeGet[URI]("gvcf_path") should be(gvcfPath)
+      emptyNotes.unsafeGet[Float]("contamination") should be(.123f)
+      emptyNotes.unsafeGet[String]("notes") should be("")
     }
   }
 
@@ -317,12 +315,9 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       } yield {
         results.length should be(expectedLength)
         results.foreach { result =>
-          ElasticsearchIndex.getByName[String](result, "project") should be(project)
-          ElasticsearchIndex.getByName[String](result, "sample_alias") should be(
-            sampleAlias
-          )
-          ElasticsearchIndex
-            .getByName[DocumentStatus](result, "document_status") should be(
+          result.unsafeGet[String]("project") should be(project)
+          result.unsafeGet[String]("sample_alias") should be(sampleAlias)
+          result.unsafeGet[DocumentStatus]("document_status") should be(
             DocumentStatus.Normal
           )
         }
@@ -350,20 +345,17 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     } yield {
       results.length should be(keysWithMetadata.length)
       results.foldLeft(succeed) { (_, result) =>
-        ElasticsearchIndex.getByName[String](result, "project") should be(project)
-        ElasticsearchIndex.getByName[String](result, "sample_alias") should be(
-          sampleAlias
-        )
+        result.unsafeGet[String]("project") should be(project)
+        result.unsafeGet[String]("sample_alias") should be(sampleAlias)
 
         val resultKey = GvcfKey(
-          location = ElasticsearchIndex.getByName[Location](result, "location"),
-          project = ElasticsearchIndex.getByName[String](result, "project"),
-          sampleAlias = ElasticsearchIndex.getByName[String](result, "sample_alias"),
-          version = ElasticsearchIndex.getByName[Int](result, "version")
+          location = result.unsafeGet[Location]("location"),
+          project = result.unsafeGet[String]("project"),
+          sampleAlias = result.unsafeGet[String]("sample_alias"),
+          version = result.unsafeGet[Int]("version")
         )
 
-        ElasticsearchIndex
-          .getByName[DocumentStatus](result, "document_status") should be {
+        result.unsafeGet[DocumentStatus]("document_status") should be {
           if (resultKey == deleteKey) DocumentStatus.Deleted else DocumentStatus.Normal
         }
       }
@@ -400,8 +392,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       _ <- runUpsertGvcf(key, metadata)
       result <- query
     } yield {
-      ElasticsearchIndex
-        .getByName[RegulatoryDesignation](result, "regulatory_designation") should be(
+      result.unsafeGet[RegulatoryDesignation]("regulatory_designation") should be(
         RegulatoryDesignation.ClinicalDiagnostics
       )
     }
@@ -667,10 +658,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
       outputs should have length 1
       val output = outputs.head
-      ElasticsearchIndex.getByName[String](output, "notes") should be {
+      output.unsafeGet[String]("notes") should be {
         existingNote.fold(deleteNote)(existing => s"$existing\n$deleteNote")
       }
-      ElasticsearchIndex.getByName[DocumentStatus](output, "document_status") should be(
+      output.unsafeGet[DocumentStatus]("document_status") should be(
         DocumentStatus.Deleted
       )
     }
@@ -733,9 +724,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       )
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
-      ElasticsearchIndex.getByName[String](storedDocument1, "notes") should be(
-        "I'm a note"
-      )
+      storedDocument1.unsafeGet[String]("notes") should be("I'm a note")
     }
   }
 
@@ -760,10 +749,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Gvcf)
-      ElasticsearchIndex.getByName[String](storedDocument1, "notes") should be(
-        "I'm a note"
-      )
-      ElasticsearchIndex.getByName[Int](storedDocument2, "gvcf_size") should be(12345)
+      storedDocument1.unsafeGet[String]("notes") should be("I'm a note")
+      storedDocument2.unsafeGet[Int]("gvcf_size") should be(12345)
     }
   }
 
@@ -789,9 +776,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       }
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Gvcf)
-      ElasticsearchIndex.getByName[String](storedDocument1, "notes") should be(
-        "I'm a note"
-      )
+      storedDocument1.unsafeGet[String]("notes") should be("I'm a note")
     }
   }
 }

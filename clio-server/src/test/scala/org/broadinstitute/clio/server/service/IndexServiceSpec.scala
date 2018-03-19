@@ -1,10 +1,7 @@
 package org.broadinstitute.clio.server.service
 
 import akka.stream.scaladsl.Sink
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchIndex,
-  ElasticsearchUtil
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.transfer.model.ClioIndex
@@ -72,9 +69,7 @@ abstract class IndexServiceSpec[
         Seq(
           indexService.queryConverter.buildQuery(
             dummyInput.withDocumentStatus(Option(DocumentStatus.Normal))
-          )(
-            elasticsearchIndex
-          )
+          )(elasticsearchIndex)
         )
       )
     }
@@ -97,7 +92,9 @@ abstract class IndexServiceSpec[
             dummyKey,
             metadata.withDocumentStatus(expectedDocumentStatus)
           )
-          .mapObject(_.add(ElasticsearchIndex.UpsertIdElasticsearchName, returnedUpsertId.asJson))
+          .mapObject(
+            _.add(ElasticsearchIndex.UpsertIdElasticsearchName, returnedUpsertId.asJson)
+          )
 
       memoryPersistenceDAO.writeCalls should be(
         Seq((expectedDocument, elasticsearchIndex))
