@@ -32,9 +32,9 @@ trait GvcfTests {
   self: BaseIntegrationSpec =>
 
   def runUpsertGvcf(
-                     key: GvcfKey,
-                     metadata: GvcfMetadata,
-                     force: Boolean = true
+    key: GvcfKey,
+    metadata: GvcfMetadata,
+    force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
