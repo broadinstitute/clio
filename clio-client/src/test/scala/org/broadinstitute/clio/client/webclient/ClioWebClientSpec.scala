@@ -9,8 +9,8 @@ import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.util.MockClioServer
 import org.broadinstitute.clio.status.model.VersionInfo
-import org.broadinstitute.clio.transfer.model.ModelMockIndex
-import org.broadinstitute.clio.util.json.{JsonSchema, ModelAutoDerivation}
+import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockQueryInput}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
 
@@ -92,6 +92,6 @@ class ClioWebClientSpec
   }
 
   it should "retry requests that fail with connection errors" in {
-    client.getSchema(index).map(_ should be(new JsonSchema(index).toJson))
+    client.query(index)(ModelMockQueryInput(), includeDeleted = false).map(_ => succeed)
   }
 }

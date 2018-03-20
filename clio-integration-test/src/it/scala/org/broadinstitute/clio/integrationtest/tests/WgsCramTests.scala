@@ -11,9 +11,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
   ElasticsearchUtil
 }
-import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram._
-import org.broadinstitute.clio.util.json.JsonSchema
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
   Location,
@@ -62,11 +60,6 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     elasticsearchClient.executeAndUnpack(getRequest).map {
       _ should be(Seq(indexToMapping(expected)))
     }
-  }
-
-  it should "report the expected JSON schema for wgs-cram" in {
-    runClient(ClioCommand.getWgsCramSchemaName)
-      .map(_ should be(new JsonSchema(WgsCramIndex).toJson))
   }
 
   // Generate a test for every possible Location value.

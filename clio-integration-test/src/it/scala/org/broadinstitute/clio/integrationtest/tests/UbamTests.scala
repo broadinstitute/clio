@@ -13,9 +13,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
   ElasticsearchUtil
 }
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamExtensions, UbamKey, UbamMetadata}
-import org.broadinstitute.clio.util.json.JsonSchema
 import org.broadinstitute.clio.util.model._
 import org.scalatest.Assertion
 
@@ -57,12 +55,6 @@ trait UbamTests { self: BaseIntegrationSpec =>
   def statusCodeShouldBe(expectedStatusCode: StatusCode): FailedResponse => Assertion = {
     e: FailedResponse =>
       e.statusCode should be(expectedStatusCode)
-  }
-
-  it should "throw a FailedResponse 404 when running get schema command for hybsel ubams" in {
-    val getSchemaResponseFuture = runClient(ClioCommand.getHybselUbamSchemaName)
-    recoverToExceptionIf[FailedResponse](getSchemaResponseFuture)
-      .map(statusCodeShouldBe(StatusCodes.NotFound))
   }
 
   val stubKey = UbamKey(
@@ -153,11 +145,6 @@ trait UbamTests { self: BaseIntegrationSpec =>
     elasticsearchClient.executeAndUnpack(getRequest).map {
       _ should be(Seq(indexToMapping(expected)))
     }
-  }
-
-  it should "report the expected JSON schema for wgs-ubams" in {
-    runClient(ClioCommand.getWgsUbamSchemaName)
-      .map(_ should be(new JsonSchema(WgsUbamIndex).toJson))
   }
 
   // Generate a test for every possible Location value.

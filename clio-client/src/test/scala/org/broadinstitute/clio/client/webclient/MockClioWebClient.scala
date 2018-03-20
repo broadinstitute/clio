@@ -10,7 +10,7 @@ import io.circe.Json
 import org.broadinstitute.clio.client.util.{IoUtil, TestData}
 import org.broadinstitute.clio.status.model.{StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.json.{JsonSchema, ModelAutoDerivation}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.Future
@@ -55,14 +55,6 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
       Future.successful(version.asJson)
     } else {
       Future.failed(new RuntimeException("Failed to get server version"))
-    }
-  }
-
-  override def getSchema(clioIndex: ClioIndex): Future[Json] = {
-    if (status.isSuccess()) {
-      Future.successful(new JsonSchema(clioIndex).toJson)
-    } else {
-      Future.failed(new RuntimeException("Failed to get schema"))
     }
   }
 

@@ -18,8 +18,6 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand) extends Executo
     val responseFut = command match {
       case GetServerHealth  => webClient.getClioServerHealth
       case GetServerVersion => webClient.getClioServerVersion
-      case getSchema: GetSchemaCommand[_] =>
-        webClient.getSchema(getSchema.index)
       case query: QueryCommand[_] => {
         webClient.query(query.index)(query.queryInput, query.includeDeleted)
       }

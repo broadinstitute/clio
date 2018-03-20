@@ -175,12 +175,6 @@ class ClioWebClient(
       .flatMap(unmarshal[Json])
   }
 
-  def getSchema(clioIndex: ClioIndex): Future[Json] = {
-    dispatchRequest(
-      HttpRequest(uri = s"/api/v1/${clioIndex.urlSegment}/schema")
-    ).flatMap(unmarshal[Json])
-  }
-
   def upsert[CI <: ClioIndex](clioIndex: CI)(
     key: clioIndex.KeyType,
     metadata: clioIndex.MetadataType

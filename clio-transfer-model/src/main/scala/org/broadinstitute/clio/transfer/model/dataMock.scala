@@ -68,12 +68,12 @@ case class ModelMockMetadata(
 }
 
 case class ModelMockQueryInput(
-  mockFieldDouble: Option[Double],
-  mockFieldDateEnd: Option[OffsetDateTime],
-  mockFieldDateStart: Option[OffsetDateTime],
-  mockFieldInt: Option[Int],
-  mockKeyLong: Option[Long],
-  mockKeyString: Option[String],
+  mockFieldDouble: Option[Double] = None,
+  mockFieldDateEnd: Option[OffsetDateTime] = None,
+  mockFieldDateStart: Option[OffsetDateTime] = None,
+  mockFieldInt: Option[Int] = None,
+  mockKeyLong: Option[Long] = None,
+  mockKeyString: Option[String] = None,
   documentStatus: Option[DocumentStatus] = None
 ) extends QueryInput[ModelMockQueryInput] {
 

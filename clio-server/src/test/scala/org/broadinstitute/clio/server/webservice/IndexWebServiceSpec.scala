@@ -2,11 +2,9 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
-import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.service.MockIndexService
 import org.broadinstitute.clio.transfer.model.ClioIndex
-import org.broadinstitute.clio.util.json.JsonSchema
 import org.broadinstitute.clio.util.model.UpsertId
 
 abstract class IndexWebServiceSpec[
@@ -113,12 +111,6 @@ abstract class IndexWebServiceSpec[
       }
     }
     mockService.queryCalls should have length 0
-  }
-
-  it should "return a JSON schema" in {
-    Get("/schema") ~> webService.getSchema ~> check {
-      responseAs[Json] should be(new JsonSchema(mockService.clioIndex).toJson)
-    }
   }
 
   def metadataRouteFromKey(key: webService.indexService.clioIndex.KeyType): String = {

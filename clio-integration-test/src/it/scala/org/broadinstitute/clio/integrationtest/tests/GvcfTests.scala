@@ -11,9 +11,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
   ElasticsearchUtil
 }
-import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfExtensions, GvcfKey, GvcfMetadata}
-import org.broadinstitute.clio.util.json.JsonSchema
 import org.broadinstitute.clio.util.model.{
   DocumentStatus,
   Location,
@@ -62,11 +60,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     elasticsearchClient.executeAndUnpack(getRequest).map {
       _ should be(Seq(indexToMapping(expected)))
     }
-  }
-
-  it should "report the expected JSON schema for gvcf" in {
-    runClient(ClioCommand.getGvcfSchemaName)
-      .map(_ should be(new JsonSchema(GvcfIndex).toJson))
   }
 
   // Generate a test for every possible Location value.
