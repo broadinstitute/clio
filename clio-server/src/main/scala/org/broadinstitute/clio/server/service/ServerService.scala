@@ -118,6 +118,7 @@ class ServerService private[server] (
       ElasticsearchIndex.WgsUbam,
       ElasticsearchIndex.Gvcf,
       ElasticsearchIndex.WgsCram,
+      ElasticsearchIndex.Arrays
     )
 
     for {
