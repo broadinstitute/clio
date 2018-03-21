@@ -3,7 +3,6 @@ package org.broadinstitute.clio.server.service
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import io.circe.Json
-import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.{
   MockPersistenceDAO,
   MockSearchDAO,
@@ -37,9 +36,7 @@ abstract class MockIndexService[
   val queryAllCalls = ArrayBuffer.empty[clioIndex.QueryInputType]
   val upsertCalls = ArrayBuffer.empty[(clioIndex.KeyType, clioIndex.MetadataType)]
 
-  import clioIndex.implicits._
-
-  def emptyOutput: clioIndex.QueryOutputType
+  def emptyOutput: Json
 
   override def upsertMetadata(
     key: clioIndex.KeyType,
@@ -53,14 +50,14 @@ abstract class MockIndexService[
     input: clioIndex.QueryInputType
   ): Source[Json, NotUsed] = {
     queryCalls += input
-    Source.single(emptyOutput.asJson)
+    Source.single(emptyOutput)
   }
 
   override def queryAllMetadata(
     input: clioIndex.QueryInputType
   ): Source[Json, NotUsed] = {
     queryAllCalls += input
-    Source.single(emptyOutput.asJson)
+    Source.single(emptyOutput)
   }
 
 }

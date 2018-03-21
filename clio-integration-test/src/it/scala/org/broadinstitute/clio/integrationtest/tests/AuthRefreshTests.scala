@@ -7,7 +7,6 @@ import akka.stream.scaladsl.Source
 import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.EnvIntegrationSpec
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 
 import scala.concurrent.duration._
 import scala.util.Success
@@ -34,8 +33,9 @@ trait AuthRefreshTests { self: EnvIntegrationSpec =>
       .tick(Duration.Zero, tickInterval, ())
       .take(numTicks)
       .runFoldAsync(succeed) { (_, _) =>
-        runClientGetJsonAs[Json](ClioCommand.getWgsUbamSchemaName)
-          .map(_ should be(WgsUbamIndex.jsonSchema))
+        runClientGetJsonAs[Json](ClioCommand.queryWgsUbamName)
+        // Don't care about result, just want to be sure auth doesn't expire.
+          .map(_ => succeed)
           .andThen {
             case Success(_) => logger.info(s"Sleeping $tickInterval...")
           }

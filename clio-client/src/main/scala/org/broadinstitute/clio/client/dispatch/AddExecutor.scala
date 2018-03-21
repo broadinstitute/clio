@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.client.dispatch
 
 import io.circe.parser.parse
-import org.broadinstitute.clio.client.commands.{AddCommand, ClioCommand}
+import org.broadinstitute.clio.client.commands.AddCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.ClioIndex
@@ -26,7 +26,6 @@ class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI])
   ): Future[UpsertId] = {
 
     val location = addCommand.metadataLocation
-    val commandName = addCommand.index.commandName
 
     val parsedOrError = parse(IoUtil.readMetadata(location)).left.map { err =>
       new IllegalArgumentException(
@@ -38,12 +37,9 @@ class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI])
     val decodedOrError = parsedOrError
       .flatMap(_.as[addCommand.index.MetadataType])
       .left
-      .map { err =>
-        new IllegalArgumentException(
-          s"Invalid metadata given at $location. Run the '${ClioCommand.getSchemaPrefix}$commandName' command to see the valid JSON for ${name}s.",
-          err
-        )
-      }
+      .map(
+        err => new IllegalArgumentException(s"Invalid metadata given at $location.", err)
+      )
 
     decodedOrError.fold(
       Future.failed, { decoded =>

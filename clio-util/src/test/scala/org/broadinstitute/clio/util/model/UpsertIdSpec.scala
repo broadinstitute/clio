@@ -34,8 +34,6 @@ class UpsertIdSpec extends FlatSpec with Matchers {
 
   it should "generate IDs in ascending order" in {
     val fids = generateIds()
-    fids.map { ids =>
-      ids.sortWith(_.compareTo(_) < 0) should be(ids)
-    }
+    fids.map(ids => ids.sorted should be(ids))
   }
 }
