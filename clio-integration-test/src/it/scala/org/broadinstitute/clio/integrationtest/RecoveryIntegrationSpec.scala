@@ -12,16 +12,16 @@ import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model.gvcf.{
-  TransferGvcfV1Key,
-  TransferGvcfV1Metadata
+  GvcfKey,
+  GvcfMetadata
 }
 import org.broadinstitute.clio.transfer.model.ubam.{
-  TransferUbamV1Key,
-  TransferUbamV1Metadata
+  UbamKey,
+  UbamMetadata
 }
 import org.broadinstitute.clio.transfer.model.wgscram.{
-  TransferWgsCramV1Key,
-  TransferWgsCramV1Metadata
+  WgsCramKey,
+  WgsCramMetadata
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import org.scalatest.OptionValues
@@ -46,17 +46,17 @@ class RecoveryIntegrationSpec
   }
 
   private val ubamMapper =
-    ElasticsearchDocumentMapper[TransferUbamV1Key, TransferUbamV1Metadata]
+    ElasticsearchDocumentMapper[UbamKey, UbamMetadata]
   private val initUbams = Seq.tabulate(documentCount) { i =>
     val flowcellBarcode = s"flowcell$randomId"
     val libraryName = s"library$randomId"
-    val key = TransferUbamV1Key(
+    val key = UbamKey(
       flowcellBarcode = flowcellBarcode,
       lane = i,
       libraryName = libraryName,
       location = location
     )
-    val metadata = TransferUbamV1Metadata(
+    val metadata = UbamMetadata(
       ubamPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     )
@@ -66,17 +66,17 @@ class RecoveryIntegrationSpec
   private val updatedUbams = initUbams.map(updateDoc(_, "ubam_path"))
 
   private val gvcfMapper =
-    ElasticsearchDocumentMapper[TransferGvcfV1Key, TransferGvcfV1Metadata]
+    ElasticsearchDocumentMapper[GvcfKey, GvcfMetadata]
   private val initGvcfs = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
-    val key = TransferGvcfV1Key(
+    val key = GvcfKey(
       location = location,
       project = project,
       sampleAlias = sampleAlias,
       version = i
     )
-    val metadata = TransferGvcfV1Metadata(
+    val metadata = GvcfMetadata(
       gvcfPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     )
@@ -86,17 +86,17 @@ class RecoveryIntegrationSpec
   private val updatedGvcfs = initGvcfs.map(updateDoc(_, "gvcf_path"))
 
   private val cramMapper =
-    ElasticsearchDocumentMapper[TransferWgsCramV1Key, TransferWgsCramV1Metadata]
+    ElasticsearchDocumentMapper[WgsCramKey, WgsCramMetadata]
   private val initCrams = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
-    val key = TransferWgsCramV1Key(
+    val key = WgsCramKey(
       location = location,
       project = project,
       sampleAlias = sampleAlias,
       version = i
     )
-    val metadata = TransferWgsCramV1Metadata(
+    val metadata = WgsCramMetadata(
       cramPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     )
@@ -134,7 +134,7 @@ class RecoveryIntegrationSpec
   }
 
   it should "reject upserts before recovery is complete" in {
-    val tmpMetadata = writeLocalTmpJson(TransferUbamV1Metadata())
+    val tmpMetadata = writeLocalTmpJson(UbamMetadata())
     recoverToExceptionIf[FailedResponse] {
       runClient(
         ClioCommand.addWgsUbamName,

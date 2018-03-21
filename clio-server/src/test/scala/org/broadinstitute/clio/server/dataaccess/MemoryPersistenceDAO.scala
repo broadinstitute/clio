@@ -7,14 +7,14 @@ import better.files.File
 import com.google.common.jimfs.{Configuration, Jimfs}
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.transfer.model.ClioIndex
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 
 class MemoryPersistenceDAO extends PersistenceDAO {
 
-  val writeCalls: mutable.ArrayBuffer[(Json, ElasticsearchIndex[TransferIndex])] =
+  val writeCalls: mutable.ArrayBuffer[(Json, ElasticsearchIndex[ClioIndex])] =
     mutable.ArrayBuffer.empty
 
   private val memFS: FileSystem =
@@ -28,7 +28,7 @@ class MemoryPersistenceDAO extends PersistenceDAO {
   )(
     implicit ec: ExecutionContext
   ): Future[Unit] = {
-    writeCalls += ((document, index.asInstanceOf[ElasticsearchIndex[TransferIndex]]))
+    writeCalls += ((document, index.asInstanceOf[ElasticsearchIndex[ClioIndex]]))
     super.writeUpdate(document, index)
   }
 }

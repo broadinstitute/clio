@@ -4,17 +4,10 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.util.model.{
-  DocumentStatus,
-  Location,
-  RegulatoryDesignation
-}
+import org.broadinstitute.clio.transfer.model.Metadata
+import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
-case class TransferWgsCramV1QueryOutput(
-  location: Location,
-  project: String,
-  sampleAlias: String,
-  version: Int,
+case class WgsCramMetadata(
   documentStatus: Option[DocumentStatus] = None,
   pipelineVersion: Option[Symbol] = None,
   workflowStartDate: Option[OffsetDateTime] = None,
@@ -33,6 +26,7 @@ case class TransferWgsCramV1QueryOutput(
   workspaceName: Option[String] = None,
   notes: Option[String] = None,
   analysisFilesTxtPath: Option[URI] = None,
+  /* These fields were originally meant to be part of the cram metrics index. */
   preAdapterSummaryMetricsPath: Option[URI] = None,
   preAdapterDetailMetricsPath: Option[URI] = None,
   alignmentSummaryMetricsPath: Option[URI] = None,
@@ -62,5 +56,49 @@ case class TransferWgsCramV1QueryOutput(
   baitBiasDetailMetricsPath: Option[URI] = None,
   wgsMetricsPath: Option[URI] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
+  // TODO: Move these to top-level named fields in the wgs-ubam index?
   readgroupLevelMetricsFiles: Option[List[URI]] = None
-)
+) extends Metadata[WgsCramMetadata] {
+
+  override def pathsToDelete: Seq[URI] =
+    Seq.concat(
+      cramPath,
+      craiPath,
+      // Delete the cramPath.md5 file only if a workspaceName is defined otherwise there will be no md5
+      // (foo.cram.md5 where foo.cram is cramPath)
+      workspaceName.flatMap(
+        _ =>
+          cramPath.map { cp =>
+            URI.create(s"$cp${WgsCramExtensions.Md5ExtensionAddition}")
+        }
+      )
+    )
+
+  // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
+  override def mapMove(
+    pathMapper: (Option[URI], String) => Option[URI]
+  ): WgsCramMetadata = {
+    val movedCram = pathMapper(cramPath, WgsCramExtensions.CramExtension)
+    this.copy(
+      cramPath = movedCram,
+      // DSDEGP-1715: We've settled on '.cram.crai' as the extension and
+      // want to fixup files with just '.crai' when possible.
+      craiPath = movedCram.map(
+        cramUri => URI.create(s"$cramUri${WgsCramExtensions.CraiExtensionAddition}")
+      )
+    )
+  }
+
+  override def markDeleted(deletionNote: String): WgsCramMetadata =
+    this.copy(
+      documentStatus = Some(DocumentStatus.Deleted),
+      notes = appendNote(deletionNote)
+    )
+
+  override def withDocumentStatus(
+    documentStatus: Option[DocumentStatus]
+  ): WgsCramMetadata =
+    this.copy(
+      documentStatus = documentStatus
+    )
+}

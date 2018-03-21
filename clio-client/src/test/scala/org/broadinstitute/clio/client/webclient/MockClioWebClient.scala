@@ -58,17 +58,17 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     }
   }
 
-  override def getSchema(transferIndex: TransferIndex): Future[Json] = {
+  override def getSchema(clioIndex: ClioIndex): Future[Json] = {
     if (status.isSuccess()) {
-      Future.successful(transferIndex.jsonSchema)
+      Future.successful(clioIndex.jsonSchema)
     } else {
       Future.failed(new RuntimeException("Failed to get schema"))
     }
   }
 
-  override def upsert[TI <: TransferIndex](transferIndex: TI)(
-    key: transferIndex.KeyType,
-    metadata: transferIndex.MetadataType
+  override def upsert[CI <: ClioIndex](clioIndex: CI)(
+    key: clioIndex.KeyType,
+    metadata: clioIndex.MetadataType
   ): Future[UpsertId] = {
     if (status.isSuccess()) {
       Future.successful(UpsertId.nextId())
@@ -77,8 +77,8 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     }
   }
 
-  override def query[TI <: TransferIndex](transferIndex: TI)(
-    input: transferIndex.QueryInputType,
+  override def query[CI <: ClioIndex](clioIndex: CI)(
+    input: clioIndex.QueryInputType,
     includeDeleted: Boolean
   ): Future[Json] = {
     if (status.isSuccess()) {
@@ -93,9 +93,9 @@ object MockClioWebClient {
 
   def failingToUpsert(implicit system: ActorSystem): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, None) {
-      override def upsert[TI <: TransferIndex](transferIndex: TI)(
-        key: transferIndex.KeyType,
-        metadata: transferIndex.MetadataType
+      override def upsert[CI <: ClioIndex](clioIndex: CI)(
+        key: clioIndex.KeyType,
+        metadata: clioIndex.MetadataType
       ): Future[UpsertId] = {
         Future.failed(new RuntimeException("Failed to upsert"))
       }

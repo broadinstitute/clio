@@ -16,7 +16,7 @@ case class ModelMockIndex(
   commandName: String = "mock",
   urlSegment: String = "mock",
   jsonSchema: Json = Json.Null,
-) extends TransferIndex
+) extends ClioIndex
     with ModelAutoDerivation {
 
   override type KeyType = ModelMockKey
@@ -35,14 +35,20 @@ case class ModelMockIndex(
   override val metadataEncoder: Encoder[MetadataType] = implicitly[Encoder[MetadataType]]
   override val queryInputEncoder: Encoder[QueryInputType] =
     implicitly[Encoder[QueryInputType]]
+  override val queryInputDecoder: Decoder[ModelMockQueryInput] =
+    implicitly[Decoder[QueryInputType]]
+  override val queryOutputEncoder: Encoder[ModelMockQueryOutput] =
+    implicitly[Encoder[QueryOutputType]]
   override val queryOutputDecoder: Decoder[QueryOutputType] =
     implicitly[Decoder[QueryOutputType]]
   override val keyMapper: FieldMapper[KeyType] = implicitly[FieldMapper[KeyType]]
   override val metadataMapper: FieldMapper[MetadataType] =
     implicitly[FieldMapper[MetadataType]]
+  override val queryInputMapper: FieldMapper[ModelMockQueryInput] =
+    implicitly[FieldMapper[QueryInputType]]
 }
 
-case class ModelMockKey(mockKeyLong: Long, mockKeyString: String) extends TransferKey {
+case class ModelMockKey(mockKeyLong: Long, mockKeyString: String) extends IndexKey {
   override val location = Location.OnPrem
   override def getUrlSegments = Seq.empty[String]
 }
@@ -57,7 +63,7 @@ case class ModelMockMetadata(
   mockFileMd5: Option[Symbol] = None,
   mockFilePath: Option[URI] = None,
   mockFileSize: Option[Long] = None,
-) extends TransferMetadata[ModelMockMetadata] {
+) extends Metadata[ModelMockMetadata] {
   override val documentStatus: Option[DocumentStatus] = mockDocumentStatus
   override val notes: Option[String] = None
   override def pathsToDelete: Seq[URI] = Seq.empty[URI]
@@ -65,6 +71,8 @@ case class ModelMockMetadata(
   override protected def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
   ): ModelMockMetadata = this
+
+  def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockMetadata = this
 }
 
 case class ModelMockQueryInput(
@@ -73,8 +81,13 @@ case class ModelMockQueryInput(
   mockFieldDateStart: Option[OffsetDateTime],
   mockFieldInt: Option[Int],
   mockKeyLong: Option[Long],
-  mockKeyString: Option[String]
-)
+  mockKeyString: Option[String],
+  documentStatus: Option[DocumentStatus] = None
+) extends QueryInput[ModelMockQueryInput] {
+
+  def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockQueryInput =
+    this
+}
 
 case class ModelMockQueryOutput(
   mockKeyLong: Long,

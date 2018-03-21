@@ -1,12 +1,11 @@
 package org.broadinstitute.clio.server.service
 
-import org.broadinstitute.clio.server.ClioApp
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchDocumentMapper,
   ElasticsearchIndex
 }
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
-import org.broadinstitute.clio.transfer.model.{TransferKey, TransferMetadata}
+import org.broadinstitute.clio.transfer.model.{IndexKey, Metadata}
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -18,24 +17,27 @@ import scala.concurrent.{ExecutionContext, Future}
   * Updates are written to storage to serve as the system of record for Clio,
   * allowing for update playback during disaster recovery.
   */
-class PersistenceService private (persistenceDAO: PersistenceDAO, searchDAO: SearchDAO) {
+class PersistenceService private[server] (
+  persistenceDAO: PersistenceDAO,
+  searchDAO: SearchDAO
+) {
 
   /**
     * Update-or-insert (upsert) metadata for a given key.
     *
-    * @param transferKey      The DTO for the key
-    * @param transferMetadata The DTO for the metadata.
-    * @tparam Key      The type of the TransferKey DTO.
-    * @tparam Metadata The type of the TransferMetadata DTO.
+    * @param key      The DTO for the key
+    * @param metadata The DTO for the metadata.
+    * @tparam Key      The type of the IndexKey DTO.
+    * @tparam M The type of the Metadata DTO.
     * @return the ID for this upsert
     */
-  def upsertMetadata[Key <: TransferKey, Metadata <: TransferMetadata[Metadata]](
-    transferKey: Key,
-    transferMetadata: Metadata,
-    documentMapper: ElasticsearchDocumentMapper[Key, Metadata],
+  def upsertMetadata[Key <: IndexKey, M <: Metadata[M]](
+    key: Key,
+    metadata: M,
+    documentMapper: ElasticsearchDocumentMapper[Key, M],
     index: ElasticsearchIndex[_]
   )(implicit ec: ExecutionContext): Future[UpsertId] = {
-    val document = documentMapper.document(transferKey, transferMetadata)
+    val document = documentMapper.document(key, metadata)
 
     for {
       _ <- persistenceDAO.writeUpdate(document, index)
@@ -43,12 +45,5 @@ class PersistenceService private (persistenceDAO: PersistenceDAO, searchDAO: Sea
     } yield {
       ElasticsearchIndex.getUpsertId(document)
     }
-  }
-}
-
-object PersistenceService {
-
-  def apply(app: ClioApp): PersistenceService = {
-    new PersistenceService(app.persistenceDAO, app.searchDAO)
   }
 }

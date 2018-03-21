@@ -3,13 +3,13 @@ package org.broadinstitute.clio.transfer.model.arrays
 import java.net.URI
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.transfer.model.TransferMetadata
+import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.util.model.DocumentStatus
 
 /* Declare Metadata fields in lexicographic order.  Metadata is the
  * set difference of the QueryOutput and Key fields.
  */
-case class TransferArraysV1Metadata(
+case class ArraysMetadata(
   chipType: Option[String] = None,
   clusterPath: Option[URI] = None,
   documentStatus: Option[DocumentStatus] = None,
@@ -38,7 +38,7 @@ case class TransferArraysV1Metadata(
   workflowStartDate: Option[OffsetDateTime] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
   workspaceName: Option[String] = None
-) extends TransferMetadata[TransferArraysV1Metadata] {
+) extends Metadata[ArraysMetadata] {
 
   /**
     * @return paths to delete
@@ -61,15 +61,22 @@ case class TransferArraysV1Metadata(
     */
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
-  ): TransferArraysV1Metadata = this.copy(
+  ): ArraysMetadata = this.copy(
     gtcPath = pathMapper(gtcPath, ""),
     vcfPath = pathMapper(vcfPath, ArraysExtensions.VcfGzExtension),
     vcfIndexPath = pathMapper(vcfIndexPath, ArraysExtensions.VcfGzTbiExtension)
   )
 
-  override def markDeleted(deletionNote: String): TransferArraysV1Metadata =
+  override def markDeleted(deletionNote: String): ArraysMetadata =
     this.copy(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
+    )
+
+  override def withDocumentStatus(
+    documentStatus: Option[DocumentStatus]
+  ): ArraysMetadata =
+    this.copy(
+      documentStatus = documentStatus
     )
 }

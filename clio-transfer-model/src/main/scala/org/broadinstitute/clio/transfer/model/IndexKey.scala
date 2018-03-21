@@ -5,7 +5,7 @@ import org.broadinstitute.clio.util.model.Location
 /**
   * This models the key for an index. A key is the unique identifier for a document.
   */
-trait TransferKey extends Product {
+trait IndexKey extends Product {
 
   /**
     * All indices distinguish on-prem files from cloud files.

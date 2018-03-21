@@ -5,11 +5,9 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
 import org.broadinstitute.clio.server.service.StatusService
 
-trait StatusWebService { self: JsonWebService =>
+class StatusWebService(statusService: StatusService) extends JsonWebService {
   lazy val statusRoutes: Route =
     concat(versionRoute, healthRoute, slashRedirectRoute)
-
-  def statusService: StatusService
 
   private[webservice] val versionRoute =
     path("version") {

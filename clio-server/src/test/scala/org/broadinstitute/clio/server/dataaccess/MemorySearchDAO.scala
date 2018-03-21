@@ -5,14 +5,14 @@ import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.TransferIndex
+import org.broadinstitute.clio.transfer.model.ClioIndex
 
 import scala.collection.mutable
 import scala.concurrent.Future
 
 class MemorySearchDAO extends MockSearchDAO {
 
-  val updateCalls: mutable.ArrayBuffer[(Seq[Json], ElasticsearchIndex[TransferIndex])] =
+  val updateCalls: mutable.ArrayBuffer[(Seq[Json], ElasticsearchIndex[ClioIndex])] =
     mutable.ArrayBuffer.empty
 
   val queryCalls: mutable.ArrayBuffer[QueryDefinition] =
@@ -21,7 +21,7 @@ class MemorySearchDAO extends MockSearchDAO {
   override def updateMetadata(documents: Json*)(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = {
-    updateCalls += ((documents, index.asInstanceOf[ElasticsearchIndex[TransferIndex]]))
+    updateCalls += ((documents, index.asInstanceOf[ElasticsearchIndex[ClioIndex]]))
     super.updateMetadata(documents: _*)
   }
 

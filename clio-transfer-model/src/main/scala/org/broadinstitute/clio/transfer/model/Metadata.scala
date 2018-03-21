@@ -8,7 +8,7 @@ import org.broadinstitute.clio.util.model.DocumentStatus
 /**
   * Common information for metadata in all clio indexes.
   */
-trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
+trait Metadata[M <: Metadata[M]] { self: M =>
 
   /**
     * Status of the document represented by this metadata,
@@ -52,6 +52,11 @@ trait TransferMetadata[M <: TransferMetadata[M]] { self: M =>
     * with the given notes appended.
     */
   def markDeleted(deletionNote: String): M
+
+  /**
+    * Return a copy of this object with given document status.
+    */
+  def withDocumentStatus(documentStatus: Option[DocumentStatus]): M
 
   /**
     * Return a copy of this with files transformed by applying `pathMapper`.

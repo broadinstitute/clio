@@ -15,7 +15,7 @@ class MoveArraysSpec extends BaseClientSpec {
     recoverToSucceededIf[RuntimeException] {
       val command =
         MoveArrays(
-          key = testArraysTransferV1Key,
+          key = testArraysKey,
           destination = testArraysCloudSourcePath
         )
       succeedingDispatcher().dispatch(command)
@@ -40,7 +40,7 @@ class MoveArraysSpec extends BaseClientSpec {
   it should "throw an exception if given non-GCP arrays metadata" in {
     recoverToSucceededIf[UnsupportedOperationException] {
       val command = MoveArrays(
-        key = testArraysTransferV1Key,
+        key = testArraysKey,
         destination = testCloudDestinationDirectoryPath
       )
       succeedingDispatcher().dispatch(command)

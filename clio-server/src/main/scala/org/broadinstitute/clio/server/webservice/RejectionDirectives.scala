@@ -13,13 +13,7 @@ import org.broadinstitute.clio.server.model.{
 }
 
 /** Rejection translation into json. */
-trait RejectionDirectives { self: JsonWebService =>
-
-  def serverStartTime: OffsetDateTime
-
-  lazy val mapRejectionsToJson: Directive0 = {
-    handleRejections(mapRejectionsToJsonHandler)
-  }
+class RejectionDirectives(serverStartTime: OffsetDateTime) extends JsonWebService {
 
   private val mapRejectionsToJsonHandler: RejectionHandler = {
     RejectionHandler
@@ -50,5 +44,9 @@ trait RejectionDirectives { self: JsonWebService =>
         case httpResponse =>
           httpResponse // pass through all other types of responses
       }
+  }
+
+  val mapRejectionsToJson: Directive0 = {
+    handleRejections(mapRejectionsToJsonHandler)
   }
 }

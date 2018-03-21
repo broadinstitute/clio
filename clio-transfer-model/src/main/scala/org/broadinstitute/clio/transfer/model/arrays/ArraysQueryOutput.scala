@@ -8,7 +8,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 /* Union of fields in Key and Metadata
  */
-case class TransferArraysV1QueryOutput(
+case class ArraysQueryOutput(
   /*
    * Key fields in getUrlSegments() order
    */

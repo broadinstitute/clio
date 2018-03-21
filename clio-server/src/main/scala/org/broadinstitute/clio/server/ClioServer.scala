@@ -18,19 +18,7 @@ import org.broadinstitute.clio.server.webservice._
 
 import scala.concurrent.ExecutionContext
 
-object ClioServer
-    extends JsonWebService
-    with StatusWebService
-    with WgsUbamWebService
-    with GvcfWebService
-    with WgsCramWebService
-    with AuditDirectives
-    with ExceptionDirectives
-    with RejectionDirectives
-    with SwaggerDirectives
-    with StrictLogging {
-
-  override val serverStartTime: OffsetDateTime = OffsetDateTime.now()
+object ClioServer extends StrictLogging {
 
   private implicit val system: ActorSystem = ActorSystem("clio")
 
@@ -48,42 +36,64 @@ object ClioServer
     actorMaterializerSettings
   )
 
-  private val wrapperDirectives: Directive0 = {
-    auditRequest & auditResult & completeWithInternalErrorJson & auditException & mapRejectionsToJson
-  }
-  private val infoRoutes: Route = concat(swaggerRoutes, statusRoutes)
-  private val apiRoutes: Route = concat(wgsUbamRoutes, gvcfRoutes, wgsCramRoutes)
-
   private val serverStatusDAO = CachedServerStatusDAO()
   private val auditDAO = LoggingAuditDAO()
-  private val httpServerDAO = AkkaHttpServerDAO(wrapperDirectives, infoRoutes, apiRoutes)
   private val searchDAO = HttpElasticsearchDAO()
   private val persistenceDAO = PersistenceDAO(
     ClioServerConfig.Persistence.config,
     ClioServerConfig.Persistence.recoveryParallelism
   )
 
-  private val app =
-    new ClioApp(
-      serverStatusDAO,
-      auditDAO,
-      httpServerDAO,
-      persistenceDAO,
-      searchDAO
+  private val persistenceService = new PersistenceService(persistenceDAO, searchDAO)
+  private val searchService = new SearchService(searchDAO)
+  private val statusService = new StatusService(serverStatusDAO, searchDAO)
+
+  private val exceptionDirectives = new ExceptionDirectives
+  private val swaggerDirectives = new SwaggerDirectives
+  private val rejectionDirectives = new RejectionDirectives(OffsetDateTime.now())
+  private val auditDirectives = new AuditDirectives(AuditService(auditDAO))
+
+  private val wrapperDirectives: Directive0 = {
+    auditDirectives.auditRequest &
+      auditDirectives.auditResult &
+      exceptionDirectives.completeWithInternalErrorJson &
+      auditDirectives.auditException &
+      rejectionDirectives.mapRejectionsToJson
+  }
+
+  val statusWebService =
+    new StatusWebService(statusService)
+
+  val wgsUbamWebService =
+    new WgsUbamWebService(
+      new WgsUbamService(persistenceService, searchService)
     )
 
-  private val serverService = ServerService(app)
-  private val persistenceService = PersistenceService(app)
-  private val searchService = SearchService(app)
-  override val auditService = AuditService(app)
-  override val statusService = StatusService(app)
+  val gvcfWebService =
+    new GvcfWebService(
+      new GvcfService(persistenceService, searchService)
+    )
 
-  override val wgsUbamService =
-    new WgsUbamService(persistenceService, searchService)
-  override val gvcfService =
-    new GvcfService(persistenceService, searchService)
-  override val wgsCramService =
-    new WgsCramService(persistenceService, searchService)
+  val wgsCramWebService =
+    new WgsCramWebService(
+      new WgsCramService(persistenceService, searchService)
+    )
+
+  private val infoRoutes: Route =
+    concat(swaggerDirectives.swaggerRoutes, statusWebService.statusRoutes)
+
+  private val apiRoutes: Route =
+    concat(wgsUbamWebService.routes, gvcfWebService.routes, wgsCramWebService.routes)
+
+  private val httpServerDAO = AkkaHttpServerDAO(wrapperDirectives, infoRoutes, apiRoutes)
+
+  private val serverService = new ServerService(
+    serverStatusDAO,
+    persistenceDAO,
+    searchDAO,
+    httpServerDAO,
+    ClioServerConfig.Version.value
+  )
 
   def beginStartup(): Unit = serverService.beginStartup()
 

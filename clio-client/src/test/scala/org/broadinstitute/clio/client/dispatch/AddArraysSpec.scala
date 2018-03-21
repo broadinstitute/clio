@@ -16,7 +16,7 @@ class AddArraysSpec extends BaseClientSpec {
       dispatcher.dispatch(
         AddArrays(
           metadataLocation = badMetadataFileLocation,
-          key = testArraysTransferV1Key
+          key = testArraysKey
         )
       )
     }
@@ -27,7 +27,7 @@ class AddArraysSpec extends BaseClientSpec {
       dispatcher.dispatch(
         AddArrays(
           metadataLocation = metadataPlusExtraFieldsFileLocation,
-          key = testArraysTransferV1Key
+          key = testArraysKey
         )
       )
     }
