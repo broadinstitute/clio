@@ -1,8 +1,10 @@
 package org.broadinstitute.clio.server.service
 
+import io.circe.Json
+import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.ubam.UbamQueryOutput
+import org.broadinstitute.clio.transfer.model.ubam.UbamKey
 import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.ExecutionContext
@@ -13,12 +15,12 @@ class MockWgsUbamService()(implicit executionContext: ExecutionContext)
       clioIndex = WgsUbamIndex
     ) {
 
-  def emptyOutput: UbamQueryOutput = {
-    UbamQueryOutput(
+  val emptyOutput: Json = {
+    UbamKey(
+      Location.GCP,
       "barcode",
       1,
-      "library",
-      Location.GCP
-    )
+      "library"
+    ).asJson(WgsUbamIndex.keyEncoder)
   }
 }

@@ -304,6 +304,13 @@ abstract class BaseIntegrationSpec(clioDescription: String)
       .write(obj.asJson.pretty(implicitly[Printer]))
   }
 
+  /**
+    * Produce the expected value of merging the given key & metadata in Clio,
+    * stripping out null values to mimic the behavior of the default printer.
+    */
+  def expectedMerge[K: Encoder, M: Encoder](key: K, metadata: M): Json =
+    key.asJson.deepMerge(metadata.asJson.mapObject(_.filter(!_._2.isNull)))
+
   /** Shut down the actor system at the end of the suite. */
   override protected def afterAll(): Unit = {
     shutdown()

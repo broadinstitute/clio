@@ -4,15 +4,11 @@ import java.net.URI
 
 import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
+import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.ubam.{
-  UbamKey,
-  UbamMetadata,
-  UbamQueryOutput,
-  UbamExtensions
-}
+import org.broadinstitute.clio.transfer.model.ubam.{UbamExtensions, UbamKey, UbamMetadata}
 import org.broadinstitute.clio.util.model.Location
 
 import scala.collection.immutable
@@ -83,7 +79,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
       .runWith(Sink.ignore)
 
     val queries = immutable.Seq.fill(maxConcurrentRequests) { () =>
-      runClientGetJsonAs[Seq[UbamQueryOutput]](
+      runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsUbamName,
         "--location",
         location.entryName

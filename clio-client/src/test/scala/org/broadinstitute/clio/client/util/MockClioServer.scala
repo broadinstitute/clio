@@ -10,8 +10,9 @@ import akka.http.scaladsl.server.Route
 import akka.pattern.after
 import akka.stream.ActorMaterializer
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import io.circe.Json
 import org.broadinstitute.clio.status.model.{StatusInfo, VersionInfo}
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
+import org.broadinstitute.clio.transfer.model.ModelMockIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
@@ -20,14 +21,14 @@ import scala.concurrent.duration._
 /**
   * Bare-bones server to simulate parts of the clio-server needed for testing the webclient.
   */
-class MockClioServer(implicit system: ActorSystem)
+class MockClioServer(index: ModelMockIndex)(implicit system: ActorSystem)
     extends TestData
     with ModelAutoDerivation
     with FailFastCirceSupport {
   implicit val mat: ActorMaterializer = ActorMaterializer()
   import system.dispatcher
 
-  val schemaRequests = new AtomicInteger(0)
+  val queryRequests = new AtomicInteger(0)
 
   /** Subset of routes exposed by the clio-server, added to as needed for testing. */
   val route: Route =
@@ -59,22 +60,25 @@ class MockClioServer(implicit system: ActorSystem)
       } ~
       pathPrefix("api") {
         pathPrefix("v1") {
-          pathPrefix(WgsUbamIndex.urlSegment) {
-            path("schema") {
-              /*
-               * (As far as I can find) akka-http doesn't expose an API for prematurely
-               * severing a connection on the server-side, so we use request timeouts as
-               * a proxy for transient network problems.
-               */
-              val requestCount = schemaRequests.incrementAndGet()
-              val schema = Future.successful(WgsUbamIndex.jsonSchema)
-              val response =
-                if (requestCount <= TestData.testMaxRetries) {
-                  after(testRequestTimeout + 1.second, system.scheduler)(schema)
-                } else {
-                  schema
-                }
-              complete(response)
+          pathPrefix(index.urlSegment) {
+            path("query") {
+              entity(as[Json]) { _ =>
+                /*
+                 * (As far as I can find) akka-http doesn't expose an API for prematurely
+                 * severing a connection on the server-side, so we use request timeouts as
+                 * a proxy for transient network problems.
+                 */
+                val requestCount = queryRequests.incrementAndGet()
+                val results = Future.successful(Json.arr())
+                val response =
+                  if (requestCount <= TestData.testMaxRetries) {
+                    after(testRequestTimeout + 1.second, system.scheduler)(results)
+                  } else {
+                    results
+                  }
+                complete(response)
+              }
+
             }
           }
         }
