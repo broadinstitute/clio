@@ -30,12 +30,12 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)
         ioUtil.copyGoogleObject(red, deliverCommand.destination)
 
         val movedGrnIdat = Metadata.findNewPathForMove(
-          metadata.grnIdat.get,
+          grn,
           deliverCommand.destination,
           ArraysExtensions.IdatExtension
         )
         val movedRedIdat = Metadata.findNewPathForMove(
-          metadata.redIdat.get,
+          red,
           deliverCommand.destination,
           ArraysExtensions.IdatExtension
         )

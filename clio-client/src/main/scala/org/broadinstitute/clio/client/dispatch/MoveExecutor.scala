@@ -239,6 +239,6 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])
     // ioUtil is used to create new files in subclass implementations, but not in the default case.
     // Unless it is touched by default, Scala will helpfully throw compile errors to point this out to us.
     val _ = ioUtil
-    Future { metadata }
+    Future.successful(metadata)
   }
 }
