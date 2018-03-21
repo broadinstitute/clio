@@ -5,7 +5,8 @@ import java.time.format.DateTimeFormatter
 
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
-import io.circe.{Decoder, Json}
+import io.circe.Json
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
@@ -68,6 +69,8 @@ class ElasticsearchIndex[CI <: ClioIndex](
 }
 
 object ElasticsearchIndex extends ModelAutoDerivation {
+  import ElasticsearchUtil.JsonOps
+
   val EntityIdElasticsearchName = "entity_id"
 
   val UpsertIdElasticsearchName = "upsert_id"
@@ -78,15 +81,10 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   )
 
   def getEntityId(json: Json): String =
-    getByName[String](json, EntityIdElasticsearchName)
+    json.unsafeGet[String](EntityIdElasticsearchName)
 
-  def getUpsertId(json: Json): UpsertId = {
-    getByName[UpsertId](json, UpsertIdElasticsearchName)
-  }
-
-  def getByName[A: Decoder](json: Json, name: String): A = {
-    json.hcursor.get[A](name).fold(throw _, identity)
-  }
+  def getUpsertId(json: Json): UpsertId =
+    json.unsafeGet[UpsertId](UpsertIdElasticsearchName)
 
   /** Format the directory path for the indexed meta-data files. */
   lazy val dateTimeFormatter: DateTimeFormatter =

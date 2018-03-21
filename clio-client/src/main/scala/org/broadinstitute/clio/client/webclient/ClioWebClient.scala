@@ -175,12 +175,6 @@ class ClioWebClient(
       .flatMap(unmarshal[Json])
   }
 
-  def getSchema(clioIndex: ClioIndex): Future[Json] = {
-    dispatchRequest(
-      HttpRequest(uri = s"/api/v1/${clioIndex.urlSegment}/schema")
-    ).flatMap(unmarshal[Json])
-  }
-
   def upsert[CI <: ClioIndex](clioIndex: CI)(
     key: clioIndex.KeyType,
     metadata: clioIndex.MetadataType
@@ -214,12 +208,55 @@ class ClioWebClient(
     includeDeleted: Boolean
   ): Future[Json] = {
     import clioIndex.implicits._
+    rawQuery(clioIndex)(input.asJson, includeDeleted)
+  }
 
+  def getMetadataForKey[CI <: ClioIndex](clioIndex: CI)(
+    input: clioIndex.KeyType
+  ): Future[Option[clioIndex.type#MetadataType]] = {
+    import clioIndex.implicits._
+    import s_mach.string._
+
+    val keyJson = input.asJson
+    val keyFields = FieldMapper[clioIndex.KeyType].fields.keySet
+      .map(_.toSnakeCase(CirceEquivalentCamelCaseLexer))
+
+    rawQuery(clioIndex)(keyJson, includeDeleted = false).map { out =>
+      val metadata = for {
+        jsons <- out.as[Seq[Json]]
+        json <- jsons match {
+          case Nil => Right(None)
+          case js :: Nil =>
+            js.mapObject(_.filterKeys(!keyFields.contains(_)))
+              .as[clioIndex.MetadataType]
+              .map(Some(_))
+          case many =>
+            Left(
+              new IllegalStateException(
+                s"""Got > 1 ${clioIndex.name}s from Clio for key:
+                   |${keyJson.pretty(Printer.spaces2)}
+                   |Results:
+                   |${many.asJson.pretty(Printer.spaces2)}""".stripMargin
+              )
+            )
+        }
+      } yield {
+        json
+      }
+
+      metadata.fold(throw _, identity)
+    }
+  }
+
+  private[webclient] def rawQuery(clioIndex: ClioIndex)(
+    input: Json,
+    includeDeleted: Boolean
+  ): Future[Json] = {
     val queryPath = if (includeDeleted) "queryall" else "query"
 
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      input.asJson.pretty(implicitly[Printer])
+      input.pretty(implicitly[Printer])
     )
     dispatchRequest(
       HttpRequest(

@@ -15,16 +15,22 @@ class CaseClassMapperSpec extends FlatSpec with Matchers {
   it should "get field values" in {
     val mapper = new CaseClassMapper[TestClass]
 
-    val instance = TestClass(None, 0)
+    val instance = TestClass(Some("abc"), 0)
     mapper.vals(instance) should contain theSameElementsAs Map(
-      "fieldA" -> None,
+      "fieldA" -> Some("abc"),
       "fieldB" -> 0
     )
   }
 
   it should "create a new instance" in {
     val mapper = new CaseClassMapper[TestClass]
-    val vals = Map("fieldA" -> None, "fieldB" -> 0)
+    val vals = Map("fieldA" -> Some("abc"), "fieldB" -> 0)
+    mapper.newInstance(vals) should be(TestClass(Some("abc"), 0))
+  }
+
+  it should "default to None for missing Options" in {
+    val mapper = new CaseClassMapper[TestClass]
+    val vals = Map("fieldB" -> 0)
     mapper.newInstance(vals) should be(TestClass(None, 0))
   }
 
