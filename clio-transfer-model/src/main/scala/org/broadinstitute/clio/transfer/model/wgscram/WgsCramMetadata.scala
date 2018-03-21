@@ -4,7 +4,7 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.transfer.model.Metadata
+import org.broadinstitute.clio.transfer.model.{DeliverableMetadata, Metadata}
 import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
 case class WgsCramMetadata(
@@ -58,7 +58,8 @@ case class WgsCramMetadata(
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   // TODO: Move these to top-level named fields in the wgs-ubam index?
   readgroupLevelMetricsFiles: Option[List[URI]] = None
-) extends Metadata[WgsCramMetadata] {
+) extends Metadata[WgsCramMetadata]
+    with DeliverableMetadata[WgsCramMetadata] {
 
   override def pathsToDelete: Seq[URI] =
     Seq.concat(
@@ -94,6 +95,12 @@ case class WgsCramMetadata(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
     )
+
+  override def withWorkspaceName(name: String): WgsCramMetadata = {
+    this.copy(
+      workspaceName = Some(name)
+    )
+  }
 
   override def withDocumentStatus(
     documentStatus: Option[DocumentStatus]

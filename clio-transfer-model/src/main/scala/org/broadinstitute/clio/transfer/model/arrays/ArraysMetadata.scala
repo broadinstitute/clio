@@ -4,7 +4,7 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.transfer.model.Metadata
+import org.broadinstitute.clio.transfer.model.{DeliverableMetadata, Metadata}
 import org.broadinstitute.clio.util.model.DocumentStatus
 
 /* Declare Metadata fields in lexicographic order.  Metadata is the
@@ -78,7 +78,8 @@ case class ArraysMetadata(
   zcallPed: Option[URI] = None,
   zcallThresholdsPath: Option[URI] = None,
   zcallVersion: Option[Symbol] = None
-) extends Metadata[ArraysMetadata] {
+) extends Metadata[ArraysMetadata]
+    with DeliverableMetadata[ArraysMetadata] {
 
   /**
     * FIXME: Deletes everything now, but Gvcf and WgsCram do not
@@ -165,6 +166,12 @@ case class ArraysMetadata(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
     )
+
+  override def withWorkspaceName(name: String): ArraysMetadata = {
+    this.copy(
+      workspaceName = Some(name)
+    )
+  }
 
   override def withDocumentStatus(
     documentStatus: Option[DocumentStatus]

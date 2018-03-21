@@ -12,11 +12,11 @@ class CommandDispatch(webClient: ClioWebClient, ioUtil: IoUtil) {
     command: ClioCommand
   )(implicit ec: ExecutionContext): Future[_] = {
     (command match {
+      case deliverCommand: DeliverWgsCram  => new DeliverWgsCramExecutor(deliverCommand)
+      case deliverCommand: DeliverArrays   => new DeliverArraysExecutor(deliverCommand)
       case addCommand: AddCommand[_]       => new AddExecutor(addCommand)
       case moveCommand: MoveCommand[_]     => new MoveExecutor(moveCommand)
       case deleteCommand: DeleteCommand[_] => new DeleteExecutor(deleteCommand)
-      case deliverCommand: DeliverWgsCram =>
-        new DeliverWgsCramExecutor(deliverCommand)
       case retrieveAndPrint: RetrieveAndPrintCommand =>
         new RetrieveAndPrintExecutor(retrieveAndPrint)
     }).execute(webClient, ioUtil)

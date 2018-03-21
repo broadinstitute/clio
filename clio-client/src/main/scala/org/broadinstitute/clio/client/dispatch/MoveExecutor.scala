@@ -14,7 +14,8 @@ import org.broadinstitute.clio.util.model.{Location, UpsertId}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-class MoveExecutor[CI <: ClioIndex](moveCommand: MoveCommand[CI])
+// Constructor arguments are private by default and we want to be able to pass aspects of moveCommand into protected methods.
+class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])
     extends Executor[Option[UpsertId]] {
 
   import moveCommand.index.implicits._
@@ -22,6 +23,11 @@ class MoveExecutor[CI <: ClioIndex](moveCommand: MoveCommand[CI])
   private[dispatch] val name: String = moveCommand.index.name
   private[dispatch] val prettyKey = ClassUtil.formatFields(moveCommand.key)
   private val destination: URI = moveCommand.destination
+  private val upsertExceptionText: String =
+    s"""An error occurred while updating the $name record in Clio. All files associated with
+    |$prettyKey exist at both the old and new locations, but Clio only knows about the old
+    |location. Try removing the file(s) at $destination and re-running this command.
+    |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin
 
   override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
     implicit ec: ExecutionContext
@@ -97,11 +103,10 @@ class MoveExecutor[CI <: ClioIndex](moveCommand: MoveCommand[CI])
     ioUtil: IoUtil,
     existingMetadata: moveCommand.index.MetadataType
   )(implicit ec: ExecutionContext): Future[Option[UpsertId]] = {
-
-    val newMetadata =
+    val movedMetadata =
       existingMetadata.moveInto(destination, moveCommand.newBasename)
     val preMovePaths = extractPaths(existingMetadata)
-    val postMovePaths = extractPaths(newMetadata)
+    val postMovePaths = extractPaths(movedMetadata)
 
     val movesToPerform = preMovePaths.flatMap {
       case (fieldName, path) => {
@@ -124,7 +129,14 @@ class MoveExecutor[CI <: ClioIndex](moveCommand: MoveCommand[CI])
       )
     } else if (movesToPerform.isEmpty) {
       logger.info(s"Nothing to move; all files already exist at $destination")
-      Future.successful(None)
+
+      // Although we don't need to actually perform the move, we may need to perform custom delivery or other steps.
+      for {
+        mungedMetadata <- customMetadataOperations(movedMetadata, ioUtil)
+        upsertResponse <- upsertWithException(client, mungedMetadata, upsertExceptionText)
+      } yield {
+        Some(upsertResponse)
+      }
     } else {
       val oldPaths = movesToPerform.keys
       val pathCheck = Future {
@@ -169,18 +181,8 @@ class MoveExecutor[CI <: ClioIndex](moveCommand: MoveCommand[CI])
                 ex
               )
           }
-        upsertResponse <- client
-          .upsert(moveCommand.index)(moveCommand.key, newMetadata)
-          .recover {
-            case ex =>
-              throw new RuntimeException(
-                s"""An error occurred while updating the $name record in Clio. All files associated with
-                   |$prettyKey exist at both the old and new locations, but Clio only knows about the old
-                   |location. Try removing the file(s) at $destination and re-running this command.
-                   |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin,
-                ex
-              )
-          }
+        mungedMetadata <- customMetadataOperations(movedMetadata, ioUtil)
+        upsertResponse <- upsertWithException(client, mungedMetadata, upsertExceptionText)
         _ <- Future
           .sequence(googleDeletes)
           .map((moves: Iterable[Either[URI, Unit]]) => {
@@ -216,5 +218,27 @@ class MoveExecutor[CI <: ClioIndex](moveCommand: MoveCommand[CI])
     if (ioUtil.deleteGoogleObject(path) != 0) {
       throw new RuntimeException(s"Deleting file in the cloud failed for path '$path'")
     }
+  }
+
+  private def upsertWithException(
+    client: ClioWebClient,
+    metadata: moveCommand.index.MetadataType,
+    exceptionText: String
+  )(implicit ec: ExecutionContext): Future[UpsertId] = {
+    client
+      .upsert(moveCommand.index)(moveCommand.key, metadata)
+      .recover({ case ex => throw new RuntimeException(exceptionText, ex) })
+  }
+
+  protected def customMetadataOperations(
+    metadata: moveCommand.index.MetadataType,
+    ioUtil: IoUtil
+  )(
+    implicit ec: ExecutionContext
+  ): Future[moveCommand.index.MetadataType] = {
+    // ioUtil and ec are used to create new files in subclass implementations, but not in the default case.
+    // Unless it is touched by default, Scala will helpfully throw compile errors to point this out to us.
+    val _ = (ioUtil, ec)
+    Future.successful(metadata)
   }
 }
