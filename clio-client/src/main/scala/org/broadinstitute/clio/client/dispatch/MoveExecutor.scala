@@ -236,9 +236,9 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])
   )(
     implicit ec: ExecutionContext
   ): Future[moveCommand.index.MetadataType] = {
-    // ioUtil is used to create new files in subclass implementations, but not in the default case.
+    // ioUtil and ec are used to create new files in subclass implementations, but not in the default case.
     // Unless it is touched by default, Scala will helpfully throw compile errors to point this out to us.
-    val _ = ioUtil
+    val _ = (ioUtil, ec)
     Future.successful(metadata)
   }
 }

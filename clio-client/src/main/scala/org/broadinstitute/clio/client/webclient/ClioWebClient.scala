@@ -12,8 +12,7 @@ import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.{Json, Printer}
 import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.ClassUtil
-import org.broadinstitute.clio.util.generic.{CaseClassMapper, CaseClassTypeConverter}
+import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 
@@ -235,36 +234,56 @@ class ClioWebClient(
     input: clioIndex.KeyType
   ): Future[Option[clioIndex.MetadataType]] = {
     import clioIndex.implicits._
+    import s_mach.string._
 
-    val keyFields = new CaseClassMapper[clioIndex.KeyType].names
+    val keyJson = input.asJson
+    val keyFields = FieldMapper[clioIndex.KeyType].fields.keySet
+      .map(_.toSnakeCase(CirceEquivalentCamelCaseLexer))
 
-    val keyToQueryMapper = CaseClassTypeConverter[
-      clioIndex.KeyType,
-      clioIndex.QueryInputType
-    ](_.mapValues(Option.apply[Any]))
-
-    val outputToMetadataMapper =
-      CaseClassTypeConverter[
-        clioIndex.QueryOutputType,
-        clioIndex.MetadataType
-      ](_ -- keyFields)
-
-    query(clioIndex)(keyToQueryMapper.convert(input), includeDeleted = false)
-      .map(_.as[Seq[Json]].fold(throw _, identity).toList)
-      .map {
-        case Nil => None
-        case js :: Nil => {
-          val output = js.as[clioIndex.QueryOutputType].fold(throw _, identity)
-          Some(outputToMetadataMapper.convert(output))
+    rawQuery(clioIndex)(keyJson, includeDeleted = false).map { out =>
+      val metadata = for {
+        jsons <- out.as[Seq[Json]]
+        json <- jsons match {
+          case Nil => Right(None)
+          case js :: Nil =>
+            js.mapObject(_.filterKeys(!keyFields.contains(_)))
+              .as[clioIndex.MetadataType]
+              .map(Some(_))
+          case many =>
+            Left(
+              new IllegalStateException(
+                s"""Got > 1 ${clioIndex.name}s from Clio for key:
+                   |${keyJson.pretty(Printer.spaces2)}
+                   |Results:
+                   |${many.asJson.pretty(Printer.spaces2)}""".stripMargin
+              )
+            )
         }
-        case many => {
-          val prettyKey = ClassUtil.formatFields(input)
-          throw new IllegalStateException(
-            s"""Got > 1 ${clioIndex.name}s from Clio for $prettyKey:
-               |${many.asJson.pretty(Printer.spaces2)}""".stripMargin
-          )
-        }
+      } yield {
+        json
       }
+
+      metadata.fold(throw _, identity)
+    }
+  }
+
+  private[webclient] def rawQuery(clioIndex: ClioIndex)(
+    input: Json,
+    includeDeleted: Boolean
+  ): Future[Json] = {
+    val queryPath = if (includeDeleted) "queryall" else "query"
+
+    val entity = HttpEntity(
+      ContentTypes.`application/json`,
+      input.pretty(implicitly[Printer])
+    )
+    dispatchRequest(
+      HttpRequest(
+        uri = s"/api/v1/${clioIndex.urlSegment}/$queryPath",
+        method = HttpMethods.POST,
+        entity = entity
+      )
+    ).flatMap(unmarshal[Json])
   }
 
   private def unmarshal[A: FromEntityUnmarshaller: TypeTag](
