@@ -222,7 +222,6 @@ trait TestData {
   val testArraysKey = ArraysKey(
     location = Location.OnPrem,
     chipwellBarcode = testChipwellBarcode,
-    analysisVersionNumber = testAnalysisVersionNumber,
     version = testVersion
   )
 
