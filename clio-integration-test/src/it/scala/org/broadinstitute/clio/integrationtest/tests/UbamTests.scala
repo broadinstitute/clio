@@ -28,10 +28,10 @@ import scala.concurrent.Future
 trait UbamTests { self: BaseIntegrationSpec =>
 
   def runUpsertUbam(
-                     key: UbamKey,
-                     metadata: UbamMetadata,
-                     sequencingType: SequencingType,
-                     force: Boolean = true
+    key: UbamKey,
+    metadata: UbamMetadata,
+    sequencingType: SequencingType,
+    force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     val command = sequencingType match {

@@ -12,10 +12,10 @@ case class ArraysQueryOutput(
   /*
    * Key fields in getUrlSegments() order
    */
-  location: Option[Location] = None,
-  chipwellBarcode: Option[Symbol] = None,
-  analysisVersionNumber: Option[Int] = None,
-  version: Option[Int] = None,
+  location: Location,
+  chipwellBarcode: Symbol,
+  analysisVersionNumber: Int,
+  version: Int,
   /*
    * rest of QueryInput fields in declaration order
    */

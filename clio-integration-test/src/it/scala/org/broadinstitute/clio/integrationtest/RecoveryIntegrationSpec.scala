@@ -11,18 +11,9 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo}
-import org.broadinstitute.clio.transfer.model.gvcf.{
-  GvcfKey,
-  GvcfMetadata
-}
-import org.broadinstitute.clio.transfer.model.ubam.{
-  UbamKey,
-  UbamMetadata
-}
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  WgsCramKey,
-  WgsCramMetadata
-}
+import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata}
+import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
+import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramMetadata}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import org.scalatest.OptionValues
 

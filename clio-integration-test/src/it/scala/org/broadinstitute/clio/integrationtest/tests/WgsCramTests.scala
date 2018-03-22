@@ -27,9 +27,9 @@ import scala.concurrent.Future
 trait WgsCramTests extends ModelAutoDerivation { self: BaseIntegrationSpec =>
 
   def runUpsertCram(
-                     key: WgsCramKey,
-                     metadata: WgsCramMetadata,
-                     force: Boolean = true
+    key: WgsCramKey,
+    metadata: WgsCramMetadata,
+    force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     runClient(
