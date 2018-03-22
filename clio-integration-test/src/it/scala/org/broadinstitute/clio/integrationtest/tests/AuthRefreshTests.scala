@@ -33,7 +33,11 @@ trait AuthRefreshTests { self: EnvIntegrationSpec =>
       .tick(Duration.Zero, tickInterval, ())
       .take(numTicks)
       .runFoldAsync(succeed) { (_, _) =>
-        runClientGetJsonAs[Json](ClioCommand.queryWgsUbamName)
+        runClientGetJsonAs[Json](
+          ClioCommand.queryWgsUbamName,
+          "--project",
+          "a non-existent project"
+        )
         // Don't care about result, just want to be sure auth doesn't expire.
           .map(_ => succeed)
           .andThen {
