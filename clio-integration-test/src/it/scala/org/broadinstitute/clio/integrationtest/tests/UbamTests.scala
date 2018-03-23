@@ -5,6 +5,7 @@ import java.net.URI
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import io.circe.syntax._
 import com.sksamuel.elastic4s.IndexAndType
+import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
@@ -12,13 +13,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
   ElasticsearchUtil
 }
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
-import org.broadinstitute.clio.transfer.model.ubam.{
-  UbamKey,
-  UbamMetadata,
-  UbamQueryOutput,
-  UbamExtensions
-}
+import org.broadinstitute.clio.transfer.model.ubam.{UbamExtensions, UbamKey, UbamMetadata}
 import org.broadinstitute.clio.util.model._
 import org.scalatest.Assertion
 
@@ -26,6 +21,7 @@ import scala.concurrent.Future
 
 /** Tests of Clio's ubam functionality. */
 trait UbamTests { self: BaseIntegrationSpec =>
+  import ElasticsearchUtil.JsonOps
 
   def runUpsertUbam(
     key: UbamKey,
@@ -59,12 +55,6 @@ trait UbamTests { self: BaseIntegrationSpec =>
   def statusCodeShouldBe(expectedStatusCode: StatusCode): FailedResponse => Assertion = {
     e: FailedResponse =>
       e.statusCode should be(expectedStatusCode)
-  }
-
-  it should "throw a FailedResponse 404 when running get schema command for hybsel ubams" in {
-    val getSchemaResponseFuture = runClient(ClioCommand.getHybselUbamSchemaName)
-    recoverToExceptionIf[FailedResponse](getSchemaResponseFuture)
-      .map(statusCodeShouldBe(StatusCodes.NotFound))
   }
 
   val stubKey = UbamKey(
@@ -157,11 +147,6 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "report the expected JSON schema for wgs-ubams" in {
-    runClient(ClioCommand.getWgsUbamSchemaName)
-      .map(_ should be(WgsUbamIndex.jsonSchema))
-  }
-
   // Generate a test for every possible Location value.
   Location.values.foreach {
     it should behave like testWgsUbamLocation(_)
@@ -173,57 +158,36 @@ trait UbamTests { self: BaseIntegrationSpec =>
     * @see http://www.scalatest.org/user_guide/sharing_tests
     */
   def testWgsUbamLocation(location: Location): Unit = {
-    val expected = UbamQueryOutput(
-      flowcellBarcode = "barcode2",
-      lane = 2,
-      libraryName = s"library $randomId",
-      location = location,
-      project = Some("test project"),
-      documentStatus = Some(DocumentStatus.Normal)
-    )
-
-    /*
-     * NOTE: This is lazy on purpose. If it executes outside of the actual `it` block,
-     * it'll result in an `UninitializedFieldError` because the spec `beforeAll` won't
-     * have triggered yet.
-     */
-    lazy val responseFuture = runUpsertUbam(
-      UbamKey(
-        expected.location,
-        expected.flowcellBarcode,
-        expected.lane,
-        expected.libraryName
-      ),
-      UbamMetadata(project = expected.project),
-      SequencingType.WholeGenome
-    )
-
     it should s"handle upserts and queries for wgs-ubam location $location" in {
+      val key = UbamKey(
+        location = location,
+        flowcellBarcode = "barcode2",
+        lane = 2,
+        libraryName = s"library $randomId"
+      )
+      val metadata = UbamMetadata(
+        documentStatus = Some(DocumentStatus.Normal),
+        project = Some("test project")
+      )
+      val expected = expectedMerge(key, metadata)
+
       for {
-        returnedUpsertId <- responseFuture
-        queryResponse <- runClientGetJsonAs[Seq[UbamQueryOutput]](
+        returnedUpsertId <- runUpsertUbam(
+          key,
+          metadata.copy(documentStatus = None),
+          SequencingType.WholeGenome
+        )
+        queryResponse <- runClientGetJsonAs[Seq[Json]](
           ClioCommand.queryWgsUbamName,
           "--library-name",
-          expected.libraryName
+          key.libraryName
         )
       } yield {
-        queryResponse should be(Seq(expected))
-
+        queryResponse should contain only expected
         val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.WgsUbam)
-        ElasticsearchIndex
-          .getByName[String](storedDocument, "flowcell_barcode") should be(
-          expected.flowcellBarcode
-        )
-        ElasticsearchIndex.getByName[Int](storedDocument, "lane") should be(expected.lane)
-        ElasticsearchIndex.getByName[String](storedDocument, "library_name") should be(
-          expected.libraryName
-        )
-        ElasticsearchIndex.getByName[Location](storedDocument, "location") should be(
-          expected.location
-        )
-        ElasticsearchIndex.getByName[String](storedDocument, "project") should be(
-          expected.project.get
-        )
+        storedDocument.mapObject(
+          _.filterKeys(!ElasticsearchIndex.BookkeepingNames.contains(_))
+        ) should be(expected)
       }
     }
   }
@@ -248,27 +212,20 @@ trait UbamTests { self: BaseIntegrationSpec =>
         SequencingType.WholeGenome
       )
     } yield {
-      upsertId2.compareTo(upsertId1) > 0 should be(true)
+      upsertId2 should be > upsertId1
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
-        "testProject1"
-      )
+      storedDocument1.unsafeGet[String]("project") should be("testProject1")
 
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
-      ElasticsearchIndex.getByName[String](storedDocument2, "project") should be(
-        "testProject2"
-      )
+      storedDocument2.unsafeGet[String]("project") should be("testProject2")
 
-      storedDocument1
-        .deepMerge(
-          Map(
-            ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
-          ).asJson
+      storedDocument1.deepMerge {
+        Json.obj(
+          ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2.asJson,
+          "project" -> "testProject2".asJson
         )
-        .deepMerge(Map("project" -> Some("testProject2")).asJson) should be(
-        storedDocument2
-      )
+      } should be(storedDocument2)
     }
   }
 
@@ -286,14 +243,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertUbam(upsertKey, metadata, ubamType)
       upsertId2 <- runUpsertUbam(upsertKey, metadata, ubamType)
     } yield {
-      upsertId2.compareTo(upsertId1) > 0 should be(true)
+      upsertId2 should be > upsertId1
 
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
-      storedDocument1.deepMerge(
-        Map(
-          ElasticsearchIndex.UpsertIdElasticsearchName -> upsertId2
-        ).asJson
+
+      storedDocument1.mapObject(
+        _.add(ElasticsearchIndex.UpsertIdElasticsearchName, upsertId2.asJson)
       ) should be(storedDocument2)
     }
   }
@@ -326,17 +282,17 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      projectResults <- runClientGetJsonAs[Seq[UbamQueryOutput]](
+      projectResults <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsUbamName,
         "--project",
         project
       )
-      sampleResults <- runClientGetJsonAs[Seq[UbamQueryOutput]](
+      sampleResults <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsUbamName,
         "--sample-alias",
         samples.head
       )
-      rpIdResults <- runClientGetJsonAs[Seq[UbamQueryOutput]](
+      rpIdResults <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsUbamName,
         "--research-project-id",
         researchProjectIds.last
@@ -344,15 +300,15 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       projectResults should have length 3
       projectResults.foldLeft(succeed) { (_, result) =>
-        result.project should be(Some(project))
+        result.unsafeGet[String]("project") should be(project)
       }
       sampleResults should have length 2
       sampleResults.foldLeft(succeed) { (_, result) =>
-        result.sampleAlias should be(Some(samples.head))
+        result.unsafeGet[String]("sample_alias") should be(samples.head)
       }
       rpIdResults should have length 1
-      rpIdResults.headOption.flatMap(_.researchProjectId) should be(
-        researchProjectIds.lastOption
+      rpIdResults.head.unsafeGet[String]("research_project_id") should be(
+        researchProjectIds.last
       )
     }
   }
@@ -368,7 +324,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[UbamQueryOutput]](
+        results <- runClientGetJsonAs[Seq[Json]](
           ClioCommand.queryWgsUbamName,
           "--project",
           project
@@ -387,13 +343,15 @@ trait UbamTests { self: BaseIntegrationSpec =>
     for {
       _ <- runUpsertUbam(key, upsertData, SequencingType.WholeGenome)
       original <- query
-      _ = original.sampleAlias should be(metadata.sampleAlias)
-      _ = original.notes should be(None)
+      _ = original.unsafeGet[String]("sample_alias") should be("sampleAlias1")
+      _ = original.unsafeGet[Option[String]]("notes") should be(None)
+
       upsertData2 = upsertData.copy(notes = metadata.notes)
       _ <- runUpsertUbam(key, upsertData2, SequencingType.WholeGenome)
       withNotes <- query
-      _ = withNotes.sampleAlias should be(metadata.sampleAlias)
-      _ = withNotes.notes should be(metadata.notes)
+      _ = withNotes.unsafeGet[String]("sample_alias") should be("sampleAlias1")
+      _ = withNotes.unsafeGet[String]("notes") should be("Breaking news")
+
       _ <- runUpsertUbam(
         key,
         upsertData2.copy(sampleAlias = Some("sampleAlias2"), notes = Some("")),
@@ -401,8 +359,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
       emptyNotes <- query
     } yield {
-      emptyNotes.sampleAlias should be(Some("sampleAlias2"))
-      emptyNotes.notes should be(Some(""))
+      emptyNotes.unsafeGet[String]("sample_alias") should be("sampleAlias2")
+      emptyNotes.unsafeGet[String]("notes") should be("")
     }
   }
 
@@ -434,7 +392,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        results <- runClientGetJsonAs[Seq[UbamQueryOutput]](
+        results <- runClientGetJsonAs[Seq[Json]](
           ClioCommand.queryWgsUbamName,
           "--project",
           project,
@@ -444,9 +402,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
       } yield {
         results.length should be(expectedLength)
         results.foreach { result =>
-          result.project should be(Some(project))
-          result.sampleAlias should be(Some(sample))
-          result.documentStatus should be(Some(DocumentStatus.Normal))
+          result.unsafeGet[String]("project") should be(project)
+          result.unsafeGet[String]("sample_alias") should be(sample)
+          result.unsafeGet[DocumentStatus]("document_status") should be(
+            DocumentStatus.Normal
+          )
         }
         results
       }
@@ -462,7 +422,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
       _ <- checkQuery(expectedLength = 2)
 
-      results <- runClientGetJsonAs[Seq[UbamQueryOutput]](
+      results <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsUbamName,
         "--project",
         project,
@@ -473,20 +433,18 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       results.length should be(keysWithMetadata.length)
       results.foldLeft(succeed) { (_, result) =>
-        result.project should be(Some(project))
-        result.sampleAlias should be(Some(sample))
+        result.unsafeGet[String]("project") should be(project)
+        result.unsafeGet[String]("sample_alias") should be(sample)
 
         val resultKey = UbamKey(
-          flowcellBarcode = result.flowcellBarcode,
-          lane = result.lane,
-          libraryName = result.libraryName,
-          location = result.location
+          flowcellBarcode = result.unsafeGet[String]("flowcell_barcode"),
+          lane = result.unsafeGet[Int]("lane"),
+          libraryName = result.unsafeGet[String]("library_name"),
+          location = result.unsafeGet[Location]("location")
         )
 
-        if (resultKey == deleteKey) {
-          result.documentStatus should be(Some(DocumentStatus.Deleted))
-        } else {
-          result.documentStatus should be(Some(DocumentStatus.Normal))
+        result.unsafeGet[DocumentStatus]("document_status") should be {
+          if (resultKey == deleteKey) DocumentStatus.Deleted else DocumentStatus.Normal
         }
       }
     }
@@ -596,7 +554,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           cloudPath2.uri.toString
         )
       }
-      queryOutputs <- runClientGetJsonAs[Seq[UbamQueryOutput]](
+      queryOutputs <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsUbamName,
         "--flowcell-barcode",
         barcode,
@@ -610,7 +568,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       cloudPath2 shouldNot exist
       queryOutputs should have length 1
-      queryOutputs.head.ubamPath should be(Some(cloudPath.uri))
+      queryOutputs.head.unsafeGet[URI]("ubam_path") should be(cloudPath.uri)
     }
 
     result.andThen[Unit] {
@@ -624,16 +582,16 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val flowcellBarcode = s"testRegulatoryDesignation.$randomId"
     val library = s"library.$randomId"
     val lane = 1
-    val regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
+    val regulatoryDesignation = RegulatoryDesignation.ClinicalDiagnostics
     val upsertKey = UbamKey(Location.GCP, flowcellBarcode, lane, library)
     val metadata = UbamMetadata(
       project = Some("testProject1"),
-      regulatoryDesignation = regulatoryDesignation
+      regulatoryDesignation = Some(regulatoryDesignation)
     )
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[UbamQueryOutput]](
+        results <- runClientGetJsonAs[Seq[Json]](
           ClioCommand.queryWgsUbamName,
           "--flowcell-barcode",
           flowcellBarcode
@@ -647,7 +605,9 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsert <- runUpsertUbam(upsertKey, metadata, SequencingType.WholeGenome)
       queried <- query
     } yield {
-      queried.regulatoryDesignation should be(regulatoryDesignation)
+      queried.unsafeGet[RegulatoryDesignation]("regulatory_designation") should be(
+        regulatoryDesignation
+      )
     }
   }
 
@@ -693,7 +653,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         ).filter(_.nonEmpty): _*
       )
       _ = cloudPath shouldNot exist
-      outputs <- runClientGetJsonAs[Seq[UbamQueryOutput]](
+      outputs <- runClientGetJsonAs[Seq[Json]](
         ClioCommand.queryWgsUbamName,
         "--flowcell-barcode",
         barcode,
@@ -708,12 +668,12 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       outputs should have length 1
       val output = outputs.head
-      output.notes should be(
-        existingNote
-          .map(existing => s"$existing\n$deleteNote")
-          .orElse(Some(deleteNote))
+      output.unsafeGet[String]("notes") should be {
+        existingNote.fold(deleteNote)(existing => s"$existing\n$deleteNote")
+      }
+      output.unsafeGet[DocumentStatus]("document_status") should be(
+        DocumentStatus.Deleted
       )
-      output.documentStatus should be(Some(DocumentStatus.Deleted))
     }
 
     result.andThen[Unit] {
@@ -776,9 +736,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
-        "testProject1"
-      )
+      storedDocument1.unsafeGet[String]("project") should be("testProject1")
     }
   }
 
@@ -809,12 +767,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
       val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
-      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
-        "testProject1"
-      )
-      ElasticsearchIndex.getByName[String](storedDocument2, "sample_alias") should be(
-        "sampleAlias1"
-      )
+      storedDocument1.unsafeGet[String]("project") should be("testProject1")
+      storedDocument2.unsafeGet[String]("sample_alias") should be("sampleAlias1")
     }
   }
 
@@ -842,9 +796,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       }
     } yield {
       val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      ElasticsearchIndex.getByName[String](storedDocument1, "project") should be(
-        "testProject1"
-      )
+      storedDocument1.unsafeGet[String]("project") should be("testProject1")
     }
   }
 }

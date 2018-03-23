@@ -9,7 +9,7 @@ import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.util.MockClioServer
 import org.broadinstitute.clio.status.model.VersionInfo
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
+import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockQueryInput}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 import scala.concurrent.Future
@@ -20,7 +20,8 @@ class ClioWebClientSpec
     with ErrorAccumulatingCirceSupport {
   behavior of "ClioWebClient"
 
-  val mockServer = new MockClioServer()
+  val index = ModelMockIndex()
+  val mockServer = new MockClioServer(index)
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -91,6 +92,7 @@ class ClioWebClientSpec
   }
 
   it should "retry requests that fail with connection errors" in {
-    client.getSchema(WgsUbamIndex).map(_ should be(WgsUbamIndex.jsonSchema))
+    // The mock clio-server is set up to timeout on requests to this route (maxRetries-1) times.
+    client.query(index)(ModelMockQueryInput(), includeDeleted = false).map(_ => succeed)
   }
 }

@@ -1,8 +1,10 @@
 package org.broadinstitute.clio.server.service
 
+import io.circe.Json
+import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.GvcfIndex
-import org.broadinstitute.clio.transfer.model.gvcf.GvcfQueryOutput
+import org.broadinstitute.clio.transfer.model.gvcf.GvcfKey
 import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.ExecutionContext
@@ -13,12 +15,11 @@ class MockGvcfService()(implicit executionContext: ExecutionContext)
       clioIndex = GvcfIndex
     ) {
 
-  def emptyOutput: GvcfQueryOutput = {
-    GvcfQueryOutput(
+  val emptyOutput: Json =
+    GvcfKey(
       Location.GCP,
       "project",
       "sample",
       1
-    )
-  }
+    ).asJson(GvcfIndex.keyEncoder)
 }

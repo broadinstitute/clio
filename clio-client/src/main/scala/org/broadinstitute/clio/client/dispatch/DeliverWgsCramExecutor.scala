@@ -3,12 +3,9 @@ package org.broadinstitute.clio.client.dispatch
 import java.net.URI
 
 import better.files.File
-import org.broadinstitute.clio.client.commands.{DeliverWgsCram, MoveWgsCram}
+import org.broadinstitute.clio.client.commands.DeliverWgsCram
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramMetadata, WgsCramExtensions}
-import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -20,35 +17,15 @@ import scala.concurrent.{ExecutionContext, Future}
   *   1. Writes the cram md5 value to file at the target path
   *   2. Records the workspace name in the metadata for the delivered cram
   */
-class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor[UpsertId] {
+class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
+    extends MoveExecutor(deliverCommand) {
 
-  override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
+  override def customMetadataOperations(
+    metadata: WgsCramMetadata,
+    ioUtil: IoUtil
+  )(
     implicit ec: ExecutionContext
-  ): Future[UpsertId] = {
-
-    val moveCommand = MoveWgsCram(
-      deliverCommand.key,
-      deliverCommand.workspacePath,
-      deliverCommand.newBasename
-    )
-
-    val moveExecutor = new MoveExecutor(moveCommand)
-
-    for {
-      _ <- moveExecutor.execute(webClient, ioUtil)
-      // Metadata must exist at this point because it's required by the move executor.
-      Some(cramData) <- webClient.getMetadataForKey(WgsCramIndex)(deliverCommand.key)
-      _ <- writeCramMd5(cramData, ioUtil)
-      updated = cramData.copy(workspaceName = Some(deliverCommand.workspaceName))
-      upsertId <- webClient.upsert(WgsCramIndex)(deliverCommand.key, updated)
-    } yield {
-      upsertId
-    }
-  }
-
-  private def writeCramMd5(metadata: WgsCramMetadata, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext
-  ): Future[Unit] = Future {
+  ): Future[WgsCramMetadata] = Future {
     (metadata.cramMd5, metadata.cramPath) match {
       case (Some(cramMd5), Some(cramPath)) => {
         /*
@@ -79,5 +56,6 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram) extends Executor[Up
         )
       }
     }
+    metadata.withWorkspaceName(deliverCommand.workspaceName)
   }
 }

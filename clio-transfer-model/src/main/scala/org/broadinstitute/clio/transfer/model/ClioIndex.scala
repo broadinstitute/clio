@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.transfer.model
 
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder}
 import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.ClassTag
@@ -17,8 +17,6 @@ trait ClioIndex {
     */
   val urlSegment: String
 
-  val jsonSchema: Json
-
   val name: String
 
   val commandName: String
@@ -31,15 +29,11 @@ trait ClioIndex {
 
   type QueryInputType <: QueryInput[QueryInputType]
 
-  type QueryOutputType
-
   val keyTag: ClassTag[KeyType]
 
   val metadataTag: ClassTag[MetadataType]
 
   val queryInputTag: ClassTag[QueryInputType]
-
-  val queryOutputTag: ClassTag[QueryOutputType]
 
   val keyEncoder: Encoder[KeyType]
 
@@ -50,10 +44,6 @@ trait ClioIndex {
   val queryInputEncoder: Encoder[QueryInputType]
 
   val queryInputDecoder: Decoder[QueryInputType]
-
-  val queryOutputEncoder: Encoder[QueryOutputType]
-
-  val queryOutputDecoder: Decoder[QueryOutputType]
 
   val keyMapper: FieldMapper[KeyType]
 
@@ -73,14 +63,11 @@ trait ClioIndex {
     implicit val kt: ClassTag[KeyType] = keyTag
     implicit val mt: ClassTag[MetadataType] = metadataTag
     implicit val qit: ClassTag[QueryInputType] = queryInputTag
-    implicit val qot: ClassTag[QueryOutputType] = queryOutputTag
     implicit val ke: Encoder[KeyType] = keyEncoder
     implicit val md: Decoder[MetadataType] = metadataDecoder
     implicit val me: Encoder[MetadataType] = metadataEncoder
     implicit val qie: Encoder[QueryInputType] = queryInputEncoder
     implicit val qid: Decoder[QueryInputType] = queryInputDecoder
-    implicit val qoe: Encoder[QueryOutputType] = queryOutputEncoder
-    implicit val qod: Decoder[QueryOutputType] = queryOutputDecoder
     implicit val qim: FieldMapper[QueryInputType] = queryInputMapper
     implicit val km: FieldMapper[KeyType] = keyMapper
     implicit val mm: FieldMapper[MetadataType] = metadataMapper

@@ -67,6 +67,4 @@ abstract class IndexService[CI <: ClioIndex](
       elasticsearchIndex
     )
   }
-
-  def querySchema(): Future[Json] = Future(clioIndex.jsonSchema)
 }

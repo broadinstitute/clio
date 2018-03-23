@@ -58,14 +58,6 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     }
   }
 
-  override def getSchema(clioIndex: ClioIndex): Future[Json] = {
-    if (status.isSuccess()) {
-      Future.successful(clioIndex.jsonSchema)
-    } else {
-      Future.failed(new RuntimeException("Failed to get schema"))
-    }
-  }
-
   override def upsert[CI <: ClioIndex](clioIndex: CI)(
     key: clioIndex.KeyType,
     metadata: clioIndex.MetadataType
@@ -77,12 +69,11 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     }
   }
 
-  override def query[CI <: ClioIndex](clioIndex: CI)(
-    input: clioIndex.QueryInputType,
-    includeDeleted: Boolean
-  ): Future[Json] = {
+  override def rawQuery(
+    clioIndex: ClioIndex
+  )(input: Json, includeDeleted: Boolean): Future[Json] = {
     if (status.isSuccess()) {
-      Future.successful(json.getOrElse(Json.fromValues(Seq.empty)))
+      Future.successful(json.getOrElse(Json.arr()))
     } else {
       Future.failed(new RuntimeException("Failed to query"))
     }

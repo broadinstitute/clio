@@ -3,7 +3,7 @@ package org.broadinstitute.clio.transfer.model.arrays
 import java.net.URI
 import java.time.OffsetDateTime
 
-import org.broadinstitute.clio.transfer.model.Metadata
+import org.broadinstitute.clio.transfer.model.{DeliverableMetadata, Metadata}
 import org.broadinstitute.clio.util.model.DocumentStatus
 
 /* Declare Metadata fields in lexicographic order.  Metadata is the
@@ -38,7 +38,8 @@ case class ArraysMetadata(
   workflowStartDate: Option[OffsetDateTime] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
   workspaceName: Option[String] = None
-) extends Metadata[ArraysMetadata] {
+) extends Metadata[ArraysMetadata]
+    with DeliverableMetadata[ArraysMetadata] {
 
   /**
     * @return paths to delete
@@ -72,6 +73,12 @@ case class ArraysMetadata(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
     )
+
+  override def withWorkspaceName(name: String): ArraysMetadata = {
+    this.copy(
+      workspaceName = Some(name)
+    )
+  }
 
   override def withDocumentStatus(
     documentStatus: Option[DocumentStatus]

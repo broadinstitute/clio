@@ -1,32 +1,19 @@
 package org.broadinstitute.clio.transfer.model
 
-import io.circe.{Decoder, Encoder, Json}
+import io.circe.{Decoder, Encoder}
 import org.broadinstitute.clio.transfer.model.arrays.{
   ArraysKey,
   ArraysMetadata,
-  ArraysQueryInput,
-  ArraysQueryOutput
+  ArraysQueryInput
 }
-import org.broadinstitute.clio.transfer.model.gvcf.{
-  GvcfKey,
-  GvcfMetadata,
-  GvcfQueryInput,
-  GvcfQueryOutput
-}
+import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata, GvcfQueryInput}
 import org.broadinstitute.clio.transfer.model.wgscram.{
   WgsCramKey,
   WgsCramMetadata,
-  WgsCramQueryInput,
-  WgsCramQueryOutput
+  WgsCramQueryInput
 }
-import org.broadinstitute.clio.transfer.model.ubam.{
-  UbamKey,
-  UbamMetadata,
-  UbamQueryInput,
-  UbamQueryOutput
-}
+import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata, UbamQueryInput}
 import org.broadinstitute.clio.util.generic.FieldMapper
-import org.broadinstitute.clio.util.json.JsonSchema
 import org.broadinstitute.clio.util.json.ModelAutoDerivation._
 
 import scala.reflect.ClassTag
@@ -35,22 +22,20 @@ import scala.reflect.ClassTag
   * Convenience class for building [[ClioIndex]] instances
   * by summoning most required fields from implicit scope.
   */
-sealed abstract class SemiAutoClioIndex[KT <: IndexKey, MT <: Metadata[MT], QI <: QueryInput[
-  QI
-], QO](
+sealed abstract class SemiAutoClioIndex[
+  KT <: IndexKey,
+  MT <: Metadata[MT],
+  QI <: QueryInput[QI]
+](
   implicit
-  schema: JsonSchema[QO],
   override val keyTag: ClassTag[KT],
   override val metadataTag: ClassTag[MT],
   override val queryInputTag: ClassTag[QI],
-  override val queryOutputTag: ClassTag[QO],
   override val keyEncoder: Encoder[KT],
   override val metadataDecoder: Decoder[MT],
   override val metadataEncoder: Encoder[MT],
   override val queryInputEncoder: Encoder[QI],
   override val queryInputDecoder: Decoder[QI],
-  override val queryOutputEncoder: Encoder[QO],
-  override val queryOutputDecoder: Decoder[QO],
   override val keyMapper: FieldMapper[KT],
   override val metadataMapper: FieldMapper[MT],
   override val queryInputMapper: FieldMapper[QI]
@@ -59,17 +44,13 @@ sealed abstract class SemiAutoClioIndex[KT <: IndexKey, MT <: Metadata[MT], QI <
   override type KeyType = KT
   override type MetadataType = MT
   override type QueryInputType = QI
-  override type QueryOutputType = QO
-
-  override val jsonSchema: Json = schema.toJson
 }
 
 case object GvcfIndex
     extends SemiAutoClioIndex[
       GvcfKey,
       GvcfMetadata,
-      GvcfQueryInput,
-      GvcfQueryOutput
+      GvcfQueryInput
     ] {
   override val urlSegment: String = "gvcf"
   override val name: String = "Gvcf"
@@ -83,8 +64,7 @@ case object WgsUbamIndex
     extends SemiAutoClioIndex[
       UbamKey,
       UbamMetadata,
-      UbamQueryInput,
-      UbamQueryOutput
+      UbamQueryInput
     ] {
   override val urlSegment: String = "wgsubam"
   override val name: String = "WgsUbam"
@@ -96,9 +76,9 @@ case object WgsCramIndex
     extends SemiAutoClioIndex[
       WgsCramKey,
       WgsCramMetadata,
-      WgsCramQueryInput,
-      WgsCramQueryOutput
-    ] {
+      WgsCramQueryInput
+    ]
+    with DeliverableIndex {
   override val urlSegment: String = "wgscram"
   override val name: String = "WgsCram"
   override val commandName: String = "wgs-cram"
@@ -111,8 +91,7 @@ case object HybselUbamIndex
     extends SemiAutoClioIndex[
       UbamKey,
       UbamMetadata,
-      UbamQueryInput,
-      UbamQueryOutput
+      UbamQueryInput
     ] {
   override val urlSegment: String = "hybselubam"
   override val name: String = "HybselUbam"
@@ -124,9 +103,9 @@ case object ArraysIndex
     extends SemiAutoClioIndex[
       ArraysKey,
       ArraysMetadata,
-      ArraysQueryInput,
-      ArraysQueryOutput
-    ] {
+      ArraysQueryInput
+    ]
+    with DeliverableIndex {
   override val urlSegment: String = "arrays"
   override val name: String = "Arrays"
   override val commandName: String = "arrays"

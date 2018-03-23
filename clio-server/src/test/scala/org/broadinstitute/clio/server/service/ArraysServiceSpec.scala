@@ -14,7 +14,7 @@ class ArraysServiceSpec extends IndexServiceSpec[ArraysIndex.type]("ArraysServic
   val elasticsearchIndex: ElasticsearchIndex[ArraysIndex.type] =
     ElasticsearchIndex.Arrays
 
-  val dummyKey = ArraysKey(Location.GCP, Symbol("chipwell_barcode"), 1, 1)
+  val dummyKey = ArraysKey(Location.GCP, Symbol("chipwell_barcode"), 1)
 
   val dummyInput = ArraysQueryInput(project = Option("testProject"))
 

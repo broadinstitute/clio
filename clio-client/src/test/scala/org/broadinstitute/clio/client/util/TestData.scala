@@ -217,7 +217,6 @@ trait TestData {
     DeleteWgsCram(key = testCramKey, note = "Good delete for test")
 
   val testChipwellBarcode = 'chipwellBarcode
-  val testAnalysisVersionNumber = 23
 
   val testArraysKey = ArraysKey(
     location = Location.OnPrem,
