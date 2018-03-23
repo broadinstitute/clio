@@ -14,7 +14,6 @@ case class ArraysQueryInput(
    */
   location: Option[Location] = None,
   chipwellBarcode: Option[Symbol] = None,
-  analysisVersionNumber: Option[Int] = None,
   version: Option[Int] = None,
   /*
    * Rest of QueryInput fields in lexicographic order

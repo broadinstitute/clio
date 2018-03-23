@@ -24,7 +24,7 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)
   )(
     implicit ec: ExecutionContext
   ): Future[ArraysMetadata] = Future {
-    (metadata.grnIdat, metadata.redIdat) match {
+    (metadata.grnIdatPath, metadata.redIdatPath) match {
       case (Some(grn), Some(red)) => {
         ioUtil.copyGoogleObject(grn, deliverCommand.destination)
         ioUtil.copyGoogleObject(red, deliverCommand.destination)
@@ -43,8 +43,8 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)
         metadata
           .withWorkspaceName(deliverCommand.workspaceName)
           .copy(
-            grnIdat = Some(movedGrnIdat),
-            redIdat = Some(movedRedIdat)
+            grnIdatPath = Some(movedGrnIdat),
+            redIdatPath = Some(movedRedIdat)
           )
       }
       case (Some(_), None) =>

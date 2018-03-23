@@ -13,7 +13,6 @@ class ArraysWebServiceSpec extends IndexWebServiceSpec[ArraysIndex.type] {
   val onPremKey = ArraysKey(
     Location.OnPrem,
     Symbol("chipwell_barcode"),
-    1,
     1
   )
 
