@@ -247,7 +247,7 @@ trait TestData {
   val goodArraysDeleteCommand =
     DeleteArrays(key = testArraysKey, note = "Good delete for test")
 
-  val testServerPort: Int = 8080
+  val testServerPort: Int = 8086
   val testMaxQueued: Int = 4
   val testMaxConcurrent: Int = 1
   val testRequestTimeout: FiniteDuration = 3.seconds
