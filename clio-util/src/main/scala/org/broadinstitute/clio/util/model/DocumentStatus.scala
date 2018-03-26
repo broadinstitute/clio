@@ -10,4 +10,5 @@ object DocumentStatus extends Enum[DocumentStatus] {
 
   case object Normal extends DocumentStatus
   case object Deleted extends DocumentStatus
+  case object Invalid extends DocumentStatus
 }
