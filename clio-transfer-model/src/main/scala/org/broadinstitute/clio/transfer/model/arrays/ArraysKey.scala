@@ -9,7 +9,6 @@ case class ArraysKey(
    */
   location: Location,
   chipwellBarcode: Symbol,
-  analysisVersionNumber: Int,
   version: Int
 ) extends IndexKey {
 
@@ -17,7 +16,6 @@ case class ArraysKey(
     Seq(
       location.entryName,
       chipwellBarcode.toString,
-      analysisVersionNumber.toString,
       version.toString
     )
 }

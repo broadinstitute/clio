@@ -14,13 +14,11 @@ class ArraysWebService(arraysService: IndexService[ArraysIndex.type])
     for {
       location <- pathPrefix(Location.namesToValuesMap)
       chipwellBarcode <- pathPrefix(Segment)
-      analysisVersionNumber <- pathPrefix(IntNumber)
       version <- pathPrefix(IntNumber)
     } yield
       ArraysKey(
         location,
         Symbol(chipwellBarcode),
-        analysisVersionNumber,
         version
       )
   }
