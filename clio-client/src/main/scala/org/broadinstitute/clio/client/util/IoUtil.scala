@@ -1,14 +1,9 @@
 package org.broadinstitute.clio.client.util
 
-import java.math.BigInteger
 import java.net.URI
-import java.util.Base64
 
 import better.files.File
-import com.google.cloud.storage.{Blob, BlobId, StorageOptions}
-
-import scala.sys.process.{Process, ProcessBuilder}
-import scala.util.control.Exception
+import com.google.cloud.storage.{BlobId, StorageOptions}
 
 /**
   * Clio-client component handling all file IO operations.
