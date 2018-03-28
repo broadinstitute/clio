@@ -1,9 +1,10 @@
 package org.broadinstitute.clio.integrationtest.tests
 
-import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
 import akka.stream.scaladsl.Source
+import com.google.auth.oauth2.TimeChangingChangeListener
 import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.EnvIntegrationSpec
@@ -16,14 +17,24 @@ trait AuthRefreshTests { self: EnvIntegrationSpec =>
   behavior of "Clio Client"
 
   it should "refresh the auth token after it expires" in {
+
+    googleCredential.addChangeListener(
+      new TimeChangingChangeListener(
+        // set time back 59 minutes so we can get a token that expires in one minute
+        ZonedDateTime.now(ZoneOffset.UTC).minusMinutes(59).toInstant.toEpochMilli
+      )
+    )
+    // First refresh triggers the change listener to change the clock
+    googleCredential.refresh()
+    // Second refresh gets a token using the new clock
     googleCredential.refresh()
 
     val expirationInstant =
       googleCredential.getAccessToken.getExpirationTime.toInstant
     val tokenTtl = ChronoUnit.SECONDS.between(Instant.now(), expirationInstant)
 
-    // Query the schema endpoint every 3 seconds until the auth token expires, then once more.
-    val tickInterval = 3.seconds
+    // Query the schema endpoint every 15 seconds until the auth token expires, then once more.
+    val tickInterval = 15.seconds
     val numTicks = (tokenTtl / tickInterval.toSeconds) + 1
 
     logger.info(
