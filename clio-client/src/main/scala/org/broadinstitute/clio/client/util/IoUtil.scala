@@ -5,8 +5,10 @@ import java.net.URI
 import java.util.Base64
 
 import better.files.File
+import com.google.cloud.storage.{Blob, BlobId, StorageOptions}
 
 import scala.sys.process.{Process, ProcessBuilder}
+import scala.util.control.Exception
 
 /**
   * Clio-client component handling all file IO operations.
@@ -62,54 +64,12 @@ trait IoUtil {
     gsUtil.exists(path.toString) == 0
   }
 
-  def getMd5HashOfGoogleObject(path: URI): Option[Symbol] = {
-    /*
-     * Files uploaded through parallel composite uploads won't have an md5 hash.
-     * See https://cloud.google.com/storage/docs/gsutil/commands/cp#parallel-composite-uploads
-     */
-    val rawHash = gsUtil.hash(path.toString)
-    md5HexPattern.findFirstMatchIn(rawHash).map(m => Symbol(m.group(1)))
-  }
-
   def getSizeOfGoogleObject(path: URI): Long = {
-    gsUtil
-      .du(path.toString)
-      .head
-      .split("\\s+")
-      .head
-      .toLong
-  }
-
-  def listGoogleObjects(path: URI): Seq[String] = {
-    gsUtil.ls(path.toString)
-  }
-
-  /**
-    * Check if a path points to an object in GCS.
-    *
-    * If so, return the object's size and md5 hash (if present).
-    */
-  def getGoogleObjectInfo(path: URI): (Long, Option[Symbol]) = {
-    val rawStat = gsUtil.stat(path.toString)
-    val objectSize = sizePattern
-      .findFirstMatchIn(rawStat)
-      .fold(
-        throw new IllegalStateException(s"No size reported for google object at $path")
-      )(_.group(1))
-    val base64Hash = md5Base64Pattern.findFirstMatchIn(rawStat).map(_.group(1))
-    val decoded = base64Hash.map(Base64.getDecoder.decode(_))
-    val encoded = decoded.map(bytes => f"${new BigInteger(1, bytes)}%x")
-
-    (objectSize.toLong, encoded.map(Symbol.apply))
+    gsUtil.du(path.toString)
   }
 }
 
 object IoUtil extends IoUtil {
-
-  private val sizePattern = "Content-Length:\\s+([0-9]+)".r
-  private val md5Base64Pattern = "Hash \\(md5\\):\\s+(.+)".r
-  private val md5HexPattern = "Hash \\(md5\\):\\s+([0-9a-f]+)".r
-
   val GoogleCloudStorageScheme = "gs"
 
   override val gsUtil: GsUtil = new GsUtil
@@ -124,55 +84,47 @@ object IoUtil extends IoUtil {
     */
   class GsUtil {
 
-    def ls(path: String): Seq[String] = {
-      runGsUtilAndGetStdout(Seq("ls", path)).split("\n")
+    private val storage = StorageOptions.getDefaultInstance.getService
+
+    private def toBlobId(path: String) = {
+      val noprefix = path.substring("gs://".length)
+      val firstSlash = noprefix.indexOf("/")
+      BlobId.of(noprefix.substring(0, firstSlash), noprefix.substring(firstSlash + 1))
     }
 
-    def du(path: String): Seq[String] = {
-      runGsUtilAndGetStdout(Seq("du", path)).split("\n")
+    private def getBlob(path: String) = {
+      storage.get(toBlobId(path))
+    }
+
+    def du(path: String): Long = {
+      getBlob(path).getSize
     }
 
     def cp(from: String, to: String): Int = {
-      runGsUtilAndGetExitCode(Seq("cp", from, to))
+      getBlob(from).copyTo(toBlobId(to)).getResult
+      1
     }
 
     def mv(from: String, to: String): Int = {
-      runGsUtilAndGetExitCode(Seq("mv", from, to))
+      cp(from, to)
+      rm(from)
     }
 
     def rm(path: String): Int = {
-      runGsUtilAndGetExitCode(Seq("rm", "-a", path))
+      getBlob(path).delete()
+      1
     }
 
     def cat(objectLocation: String): String = {
-      runGsUtilAndGetStdout(Seq("cat", objectLocation))
+      new String(getBlob(objectLocation).getContent())
     }
 
     def exists(path: String): Int = {
-      runGsUtilAndGetExitCode(Seq("-q", "stat", path))
+      if (getBlob(path).exists()) 1 else 0
     }
 
     def hash(path: String): String = {
-      runGsUtilAndGetStdout(Seq("hash", "-m", "-h", path))
-    }
-
-    def stat(path: String): String = {
-      runGsUtilAndGetStdout(Seq("stat", path))
-    }
-
-    private val runGsUtilAndGetStdout = runGsUtil(_.!!)(_)
-
-    private val runGsUtilAndGetExitCode = runGsUtil(_.!)(_)
-
-    private def runGsUtil[Out](
-      runner: ProcessBuilder => Out
-    )(gsUtilArgs: Seq[String]): Out = {
-      File
-        .temporaryDirectory("gsutil-state")
-        .map { tmp =>
-          runner(Process(Seq("gsutil", "-o", s"GSUtil:state_dir=$tmp") ++ gsUtilArgs))
-        }
-        .get()
+      getBlob(path).getMd5
     }
   }
 }
