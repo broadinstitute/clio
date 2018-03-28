@@ -155,3 +155,5 @@ lazy val `clio-integration-test` = project
   .disablePlugins(AssemblyPlugin)
   .settings(commonSettings)
   .settings(libraryDependencies ++= Dependencies.IntegrationTestDependencies)
+
+libraryDependencies += "com.google.cloud" % "google-cloud-storage" % "1.14.0"
