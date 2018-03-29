@@ -100,6 +100,10 @@ class CoreDockerUbamSpec extends DockerIntegrationSpec("Clio in Docker") with Ub
 class CoreDockerCramSpec extends DockerIntegrationSpec("Clio in Docker") with WgsCramTests
 class CoreDockerGvcfSpec extends DockerIntegrationSpec("Clio in Docker") with GvcfTests
 
+class CoreDockerArraysSpec
+    extends DockerIntegrationSpec("Clio in Docker")
+    with ArraysTests
+
 /** Load tests. Should only be run against Docker. */
 class LoadIntegrationSpec extends DockerIntegrationSpec("Clio under load") with LoadTests
 
