@@ -365,6 +365,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val vcfContents = s"$id --- I am a dummy vcf --- $id"
     val vcfIndexContents = s"$id --- I am a dummy vcfIndex --- $id"
+    val gtcContents = s"$id --- I am a dummy gtc --- $id"
     val fingerprintingDetailMetricsContents =
       s"$id --- I am dummy fingerprintingDetail metrics --- $id"
     val fingerprintingSummaryMetricsContents =
@@ -373,12 +374,14 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val vcfName = s"$barcode${ArraysExtensions.VcfGzExtension}"
     val vcfIndexName =
       s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
+    val gtcName = s"gtc-$id"
     val fingerprintingDetailMetricsName = s"detail-$id.metrics"
     val fingerprintingSummaryMetricsName = s"summary-$id.metrics"
 
     val rootSource = rootTestStorageDir / s"arrays/$barcode/v$version/"
     val vcfSource = rootSource / vcfName
     val vcfIndexSource = rootSource / vcfIndexName
+    val gtcSource = rootSource / gtcName
     val fingerprintingDetailMetricsSource = rootSource / fingerprintingDetailMetricsName
     val fingerprintingSummaryMetricsSource = rootSource / fingerprintingSummaryMetricsName
 
@@ -386,7 +389,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val rootDestination = rootSource.parent / s"moved/$id/"
     val vcfDestination = rootDestination / s"$endBasename${ArraysExtensions.VcfGzExtension}"
-    val craiDestination = rootDestination / s"$endBasename${ArraysExtensions.VcfGzTbiExtension}"
+    val vcfIndexDestination = rootDestination / s"$endBasename${ArraysExtensions.VcfGzTbiExtension}"
+    val gtcDestination = rootDestination / gtcName
     val alignmentMetricsDestination = rootDestination / fingerprintingDetailMetricsName
     val fingerprintMetricsDestination = rootDestination / fingerprintingSummaryMetricsName
 
@@ -394,6 +398,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val metadata = ArraysMetadata(
       vcfPath = Some(vcfSource.uri),
       vcfIndexPath = Some(vcfIndexSource.uri),
+      gtcPath = Some(gtcSource.uri),
       fingerprintingDetailMetricsPath = Some(fingerprintingDetailMetricsSource.uri),
       fingerprintingSummaryMetricsPath = Some(fingerprintingSummaryMetricsSource.uri)
     )
@@ -401,6 +406,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val _ = Seq(
       (vcfSource, vcfContents),
       (vcfIndexSource, vcfIndexContents),
+      (gtcSource, gtcContents),
       (fingerprintingDetailMetricsSource, fingerprintingDetailMetricsContents),
       (fingerprintingSummaryMetricsSource, fingerprintingSummaryMetricsContents)
     ).map {
@@ -429,19 +435,24 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       _ <- runUpsertArrays(key, metadata)
       _ <- runClient(ClioCommand.moveArraysName, args: _*)
     } yield {
-      Seq(alignmentMetricsDestination, vcfSource, vcfIndexSource)
+      Seq(alignmentMetricsDestination, vcfSource, vcfIndexSource, gtcSource)
         .foreach(_ shouldNot exist)
 
-      Seq(fingerprintingDetailMetricsSource, vcfDestination, craiDestination)
-        .foreach(_ should exist)
+      Seq(
+        fingerprintingDetailMetricsSource,
+        vcfDestination,
+        vcfIndexDestination,
+        gtcDestination
+      ).foreach(_ should exist)
 
-      // We don't deliver fingerprinting metrics for now because they're based on unpublished research.
+      // We don't deliver fingerprinting metrics.
       fingerprintingSummaryMetricsSource should exist
       fingerprintMetricsDestination shouldNot exist
 
       Seq(
         (vcfDestination, vcfContents),
-        (craiDestination, vcfIndexContents),
+        (vcfIndexDestination, vcfIndexContents),
+        (gtcDestination, gtcContents),
         (fingerprintingDetailMetricsSource, fingerprintingDetailMetricsContents),
         (fingerprintingSummaryMetricsSource, fingerprintingSummaryMetricsContents)
       ).foreach {
@@ -457,7 +468,9 @@ trait ArraysTests { self: BaseIntegrationSpec =>
           vcfSource,
           vcfDestination,
           vcfIndexSource,
-          craiDestination,
+          vcfIndexDestination,
+          gtcSource,
+          gtcDestination,
           fingerprintingDetailMetricsSource,
           alignmentMetricsDestination,
           fingerprintingSummaryMetricsSource,
@@ -527,13 +540,17 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val vcfContents = s"$id --- I am a vcf fated to die --- $id"
     val vcfIndexContents = s"$id --- I am an index fated to die --- $id"
+    val gtcContents = s"$id --- I am an gtc fated to die --- $id"
+    val paramsContents = s"$id --- I am an params fated to die --- $id"
     val metrics1Contents = s"$id --- I am an immortal metrics file --- $id"
     val metrics2Contents =
       s"$id --- I am a second immortal metrics file --- $id"
 
     val storageDir = rootTestStorageDir / s"arrays/$barcode/v$version/"
-    val vcfPath = storageDir / s"$randomId${ArraysExtensions.VcfGzExtension}"
-    val vcfIndexPath = storageDir / s"$randomId${ArraysExtensions.VcfGzTbiExtension}"
+    val vcfPath = storageDir / s"$id${ArraysExtensions.VcfGzExtension}"
+    val vcfIndexPath = storageDir / s"$id${ArraysExtensions.VcfGzTbiExtension}"
+    val gtcPath = storageDir / s"gtc-$id"
+    val paramsPath = storageDir / s"params-$id${ArraysExtensions.TxtExtension}"
     val metrics1Path = storageDir / s"detail-$id.metrics"
     val metrics2Path = storageDir / s"summary-$id.metrics"
 
@@ -541,6 +558,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val metadata = ArraysMetadata(
       vcfPath = Some(vcfPath.uri),
       vcfIndexPath = Some(vcfIndexPath.uri),
+      gtcPath = Some(gtcPath.uri),
+      paramsPath = Some(paramsPath.uri),
       fingerprintingDetailMetricsPath = Some(metrics1Path.uri),
       fingerprintingSummaryMetricsPath = Some(metrics2Path.uri),
       notes = existingNote,
@@ -551,6 +570,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       Seq(
         (vcfPath, vcfContents),
         (vcfIndexPath, vcfIndexContents),
+        (gtcPath, gtcContents),
+        (paramsPath, paramsContents),
         (metrics1Path, metrics1Contents),
         (metrics2Path, metrics2Contents)
       ).map {
@@ -585,7 +606,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         "--include-deleted"
       )
     } yield {
-      Seq(vcfPath, vcfIndexPath).foreach(_ shouldNot exist)
+      Seq(vcfPath, vcfIndexPath, gtcPath, paramsPath).foreach(_ shouldNot exist)
       if (!testNonExistingFile) {
         Seq((metrics1Path, metrics1Contents), (metrics2Path, metrics2Contents)).foreach {
           case (path, contents) =>
@@ -652,17 +673,20 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val vcfContents = s"$id --- I am a dummy vcf --- $id"
     val vcfIndexContents = s"$id --- I am a dummy vcfIndex --- $id"
+    val gtcContents = s"$id --- I am a dummy gtc --- $id"
     val grnIdatContents = s"$id --- I am a dummy grn idat --- $id"
     val redIdatContents = s"$id --- I am a dummy red idat --- $id"
 
     val vcfName = s"$barcode${ArraysExtensions.VcfGzExtension}"
     val vcfIndexName = s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
+    val gtcName = s"gtc-$id"
     val grnIdatName = s"grn-$barcode${ArraysExtensions.IdatExtension}"
     val redIdatName = s"red-$barcode${ArraysExtensions.IdatExtension}"
 
     val rootSource = rootTestStorageDir / s"arrays/$barcode/v$version/"
     val vcfSource = rootSource / vcfName
     val vcfIndexSource = rootSource / vcfIndexName
+    val gtcSource = rootSource / gtcName
     val grnIdatSource = rootSource / grnIdatName
     val redIdatSource = rootSource / redIdatName
 
@@ -671,6 +695,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val rootDestination = rootSource.parent / s"moved/$id/"
     val vcfDestination = rootDestination / s"$prefix$vcfName"
     val vcfIndexDestination = rootDestination / s"$prefix$vcfIndexName"
+    val gtcDestination = rootDestination / gtcName
     val grnIdatDestination = rootDestination / grnIdatName
     val redIdatDestination = rootDestination / redIdatName
 
@@ -678,6 +703,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val metadata = ArraysMetadata(
       vcfPath = Some(vcfSource.uri),
       vcfIndexPath = Some(vcfIndexSource.uri),
+      gtcPath = Some(gtcSource.uri),
       grnIdatPath = Some(grnIdatSource.uri),
       redIdatPath = Some(redIdatSource.uri),
       documentStatus = Some(DocumentStatus.Normal)
@@ -688,6 +714,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val _ = Seq(
       (vcfSource, vcfContents),
       (vcfIndexSource, vcfIndexContents),
+      (gtcSource, gtcContents),
       (grnIdatSource, grnIdatContents),
       (redIdatSource, redIdatContents)
     ).map {
@@ -716,11 +743,12 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         workspaceName
       )
     } yield {
-      Seq(vcfSource, vcfIndexSource).foreach(_ shouldNot exist)
+      Seq(vcfSource, vcfIndexSource, gtcSource).foreach(_ shouldNot exist)
 
       Seq(
         vcfDestination,
         vcfIndexDestination,
+        gtcDestination,
         grnIdatSource,
         redIdatSource,
         grnIdatDestination,
@@ -730,6 +758,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       Seq(
         (vcfDestination, vcfContents),
         (vcfIndexDestination, vcfIndexContents),
+        (gtcDestination, gtcContents),
         (grnIdatDestination, grnIdatContents),
         (redIdatDestination, redIdatContents)
       ).foreach {
@@ -743,6 +772,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
           workspaceName = Some(workspaceName),
           vcfPath = Some(vcfDestination.uri),
           vcfIndexPath = Some(vcfIndexDestination.uri),
+          gtcPath = Some(gtcDestination.uri),
           grnIdatPath = Some(grnIdatDestination.uri),
           redIdatPath = Some(redIdatDestination.uri)
         )
@@ -756,6 +786,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
           vcfDestination,
           vcfIndexSource,
           vcfIndexDestination,
+          gtcSource,
+          gtcDestination,
           grnIdatSource,
           grnIdatDestination,
           redIdatSource,
