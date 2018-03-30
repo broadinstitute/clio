@@ -28,7 +28,10 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])
     } else {
       for {
         existingMetadata <- webClient
-          .getMetadataForKey(deleteCommand.index)(deleteCommand.key)
+          .getMetadataForKey(deleteCommand.index)(
+            deleteCommand.key,
+            includeDeleted = false
+          )
           .map {
             _.getOrElse(
               throw new IllegalStateException(

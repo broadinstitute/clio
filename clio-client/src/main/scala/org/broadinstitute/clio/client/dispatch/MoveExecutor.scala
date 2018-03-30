@@ -35,7 +35,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])
     for {
       _ <- Future(verifyCloudPaths(ioUtil))
       existingMetadata <- webClient
-        .getMetadataForKey(moveCommand.index)(moveCommand.key)
+        .getMetadataForKey(moveCommand.index)(moveCommand.key, includeDeleted = false)
         .map {
           _.getOrElse(
             throw new IllegalStateException(

@@ -48,7 +48,8 @@ class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI])
             // Don't bother querying if we're going to force-overwrite anyways.
             Future.successful(None)
           } else {
-            webClient.getMetadataForKey(addCommand.index)(addCommand.key)
+            webClient
+              .getMetadataForKey(addCommand.index)(addCommand.key, includeDeleted = false)
           }
 
         for {

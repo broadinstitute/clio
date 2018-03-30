@@ -212,8 +212,9 @@ class ClioWebClient(
   }
 
   def getMetadataForKey[CI <: ClioIndex](clioIndex: CI)(
-    input: clioIndex.KeyType
-  ): Future[Option[clioIndex.type#MetadataType]] = {
+    input: clioIndex.KeyType,
+    includeDeleted: Boolean
+  ): Future[Option[clioIndex.MetadataType]] = {
     import clioIndex.implicits._
     import s_mach.string._
 
@@ -221,7 +222,7 @@ class ClioWebClient(
     val keyFields = FieldMapper[clioIndex.KeyType].fields.keySet
       .map(_.toSnakeCase(CirceEquivalentCamelCaseLexer))
 
-    rawQuery(clioIndex)(keyJson, includeDeleted = false).map { out =>
+    rawQuery(clioIndex)(keyJson, includeDeleted).map { out =>
       val metadata = for {
         jsons <- out.as[Seq[Json]]
         json <- jsons match {
