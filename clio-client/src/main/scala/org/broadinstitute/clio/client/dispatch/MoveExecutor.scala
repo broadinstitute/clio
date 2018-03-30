@@ -151,14 +151,14 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])
 
       lazy val googleCopies = movesToPerform.map {
         case (oldPath, newPath) =>
-          Future(copyGoogleObject(oldPath, newPath, ioUtil))
+          Future(ioUtil.copyGoogleObject(oldPath, newPath))
       }
 
       // VERY IMPORTANT that this is lazy; we cannot delete anything
       // until Clio has been updated successfully.
       lazy val googleDeletes: Iterable[Future[Either[URI, Unit]]] = oldPaths.map {
         oldPath =>
-          Future(deleteGoogleObject(oldPath, ioUtil)).transformWith {
+          Future(ioUtil.deleteGoogleObject(oldPath)).transformWith {
             case Success(_) =>
               Future.successful(Right(()))
             case Failure(ex) =>
@@ -203,20 +203,6 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])
         logger.info(s"Successfully moved $sourcesAsString to '$destination'")
         Some(upsertResponse)
       }
-    }
-  }
-
-  private def copyGoogleObject(source: URI, destination: URI, ioUtil: IoUtil): Unit = {
-    if (ioUtil.copyGoogleObject(source, destination) != 0) {
-      throw new RuntimeException(
-        s"Copy files in the cloud failed from '$source' to '$destination'"
-      )
-    }
-  }
-
-  private def deleteGoogleObject(path: URI, ioUtil: IoUtil): Unit = {
-    if (ioUtil.deleteGoogleObject(path) != 0) {
-      throw new RuntimeException(s"Deleting file in the cloud failed for path '$path'")
     }
   }
 

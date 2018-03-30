@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.client.dispatch
 
+import com.google.cloud.storage.StorageException
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.DeleteCommand
 import org.broadinstitute.clio.client.util.IoUtil
@@ -79,13 +80,16 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])
     val googleDeletes = pathsToDelete.map { path =>
       Future {
         logger.info(s"Deleting '$path' in the cloud.")
-        if (ioUtil.deleteGoogleObject(path) != 0) {
-          // We log immediately here because we Future.sequence these together later,
-          // and that operation short-circuits and returns the first error it hits, but
-          // we want messages for all failed deletes to appear in the logs.
-          val err = s"Could not delete '$path' in the cloud."
-          logger.error(err)
-          throw new Exception(err)
+        try {
+          ioUtil.deleteGoogleObject(path)
+        } catch {
+          case e: StorageException =>
+            // We log immediately here because we Future.sequence these together later,
+            // and that operation short-circuits and returns the first error it hits, but
+            // we want messages for all failed deletes to appear in the logs.
+            val err = s"Could not delete '$path' in the cloud."
+            logger.error(err, e)
+            throw new Exception(err, e)
         }
       }
     }

@@ -47,25 +47,23 @@ trait IoUtil {
     gsUtil.cat(location.toString)
   }
 
-  def copyGoogleObject(from: URI, to: URI): Int = {
+  def copyGoogleObject(from: URI, to: URI): Unit = {
     gsUtil.cp(from.toString, to.toString)
   }
 
-  def deleteGoogleObject(path: URI): Int = {
+  def deleteGoogleObject(path: URI): Unit = {
     gsUtil.rm(path.toString)
   }
 
   def googleObjectExists(path: URI): Boolean = {
-    gsUtil.exists(path.toString) == 0
-  }
-
-  def getSizeOfGoogleObject(path: URI): Long = {
-    gsUtil.du(path.toString)
+    gsUtil.exists(path.toString)
   }
 }
 
 object IoUtil extends IoUtil {
-  val GoogleCloudStorageScheme = "gs"
+  private val GoogleCloudStorageScheme = "gs"
+  private val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "//"
+  private val GoogleCloudPathSeparator = "/"
 
   override val gsUtil: GsUtil = new GsUtil
 
@@ -82,44 +80,30 @@ object IoUtil extends IoUtil {
     private val storage = StorageOptions.getDefaultInstance.getService
 
     private def toBlobId(path: String) = {
-      val noprefix = path.substring("gs://".length)
-      val firstSlash = noprefix.indexOf("/")
-      BlobId.of(noprefix.substring(0, firstSlash), noprefix.substring(firstSlash + 1))
+      val noPrefix = path.substring(GoogleCloudPathPrefix.length)
+      val firstSeparator = noPrefix.indexOf(GoogleCloudPathSeparator)
+      // Get the bucket and the object name (aka path) from the gcs path.
+      BlobId.of(noPrefix.substring(0, firstSeparator), noPrefix.substring(firstSeparator + 1))
     }
 
     private def getBlob(path: String) = {
       storage.get(toBlobId(path))
     }
 
-    def du(path: String): Long = {
-      getBlob(path).getSize
-    }
-
-    def cp(from: String, to: String): Int = {
+    def cp(from: String, to: String): Unit = {
       getBlob(from).copyTo(toBlobId(to)).getResult
-      1
     }
 
-    def mv(from: String, to: String): Int = {
-      cp(from, to)
-      rm(from)
-    }
-
-    def rm(path: String): Int = {
+    def rm(path: String): Unit = {
       getBlob(path).delete()
-      1
     }
 
     def cat(objectLocation: String): String = {
       new String(getBlob(objectLocation).getContent())
     }
 
-    def exists(path: String): Int = {
-      if (getBlob(path).exists()) 1 else 0
-    }
-
-    def hash(path: String): String = {
-      getBlob(path).getMd5
+    def exists(path: String): Boolean = {
+      getBlob(path).exists()
     }
   }
 }
