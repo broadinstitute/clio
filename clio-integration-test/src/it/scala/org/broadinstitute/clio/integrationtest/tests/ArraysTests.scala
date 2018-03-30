@@ -374,7 +374,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val vcfName = s"$barcode${ArraysExtensions.VcfGzExtension}"
     val vcfIndexName =
       s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
-    val gtcName = s"gtc-$id"
+    val gtcName = s"$barcode${ArraysExtensions.GtcExtension}"
     val fingerprintingDetailMetricsName = s"detail-$id.metrics"
     val fingerprintingSummaryMetricsName = s"summary-$id.metrics"
 
@@ -390,7 +390,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val rootDestination = rootSource.parent / s"moved/$id/"
     val vcfDestination = rootDestination / s"$endBasename${ArraysExtensions.VcfGzExtension}"
     val vcfIndexDestination = rootDestination / s"$endBasename${ArraysExtensions.VcfGzTbiExtension}"
-    val gtcDestination = rootDestination / gtcName
+    val gtcDestination = rootDestination / s"$endBasename${ArraysExtensions.GtcExtension}"
     val alignmentMetricsDestination = rootDestination / fingerprintingDetailMetricsName
     val fingerprintMetricsDestination = rootDestination / fingerprintingSummaryMetricsName
 
@@ -679,7 +679,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val vcfName = s"$barcode${ArraysExtensions.VcfGzExtension}"
     val vcfIndexName = s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
-    val gtcName = s"gtc-$id"
+    val gtcName = s"$barcode${ArraysExtensions.GtcExtension}"
     val grnIdatName = s"grn-$barcode${ArraysExtensions.IdatExtension}"
     val redIdatName = s"red-$barcode${ArraysExtensions.IdatExtension}"
 
@@ -695,7 +695,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val rootDestination = rootSource.parent / s"moved/$id/"
     val vcfDestination = rootDestination / s"$prefix$vcfName"
     val vcfIndexDestination = rootDestination / s"$prefix$vcfIndexName"
-    val gtcDestination = rootDestination / gtcName
+    val gtcDestination = rootDestination / s"$prefix$gtcName"
     val grnIdatDestination = rootDestination / grnIdatName
     val redIdatDestination = rootDestination / redIdatName
 
