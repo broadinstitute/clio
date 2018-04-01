@@ -115,19 +115,19 @@ class RecoveryIntegrationSpec
     .runWith(Sink.ignore)
 
   it should "accept health checks before recovery is complete" in {
-    runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName)
+    runDecode[StatusInfo](ClioCommand.getServerHealthName)
       .map(_.clio should be(ClioStatus.Recovering))
   }
 
   it should "accept version checks before recovery is complete" in {
-    runClientGetJsonAs[VersionInfo](ClioCommand.getServerVersionName)
+    runDecode[VersionInfo](ClioCommand.getServerVersionName)
       .map(_.version should be(ClioBuildInfo.version))
   }
 
   it should "reject upserts before recovery is complete" in {
     val tmpMetadata = writeLocalTmpJson(UbamMetadata())
     recoverToSucceededIf[RuntimeException] {
-      runClient(
+      runIgnore(
         ClioCommand.addWgsUbamName,
         "--flowcell-barcode",
         "some-barcode",
@@ -145,7 +145,7 @@ class RecoveryIntegrationSpec
 
   it should "reject queries before recovery is complete" in {
     recoverToExceptionIf[FailedResponse] {
-      runClient(ClioCommand.queryWgsCramName)
+      runCollectJson(ClioCommand.queryWgsCramName)
     }.map { err =>
       err.statusCode should be(StatusCodes.ServiceUnavailable)
     }
@@ -154,7 +154,7 @@ class RecoveryIntegrationSpec
   it should "signal via status update when recovery is complete" in {
     for {
       _ <- recoveryDoneFuture
-      status <- runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName)
+      status <- runDecode[StatusInfo](ClioCommand.getServerHealthName)
     } yield {
       status.clio should be(ClioStatus.Started)
     }
@@ -196,8 +196,9 @@ class RecoveryIntegrationSpec
     it should s"recover $indexName metdata on startup" in {
       for {
         _ <- recoveryDoneFuture
-        docs <- runClient(queryCommand, "--location", location.entryName).mapTo[Json]
+        docs <- runCollectJson(queryCommand, "--location", location.entryName)
       } yield {
+
         // Helper function for filtering out values we don't care about matching.
         def mapper(json: Json): Json = {
           json.mapObject(_.filter({
@@ -207,7 +208,7 @@ class RecoveryIntegrationSpec
 
         // Sort before comparing so we can do a pairwise comparison, which saves a ton of time.
         // Remove null and internal values before comparing.
-        val sortedActual = docs.asArray.value.map(mapper).sorted
+        val sortedActual = docs.map(mapper).sorted
 
         // Already sorted by construction. Remove null and internal values here too.
         val sortedExpected = expected.map(mapper)

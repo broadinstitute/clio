@@ -2,12 +2,14 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import better.files.File
 import org.broadinstitute.clio.client.commands.DeliverWgsCram
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramMetadata, WgsCramExtensions}
+import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramExtensions, WgsCramMetadata}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 /**
   * Special-purpose CLP for delivering crams to FireCloud workspaces.
@@ -17,15 +19,14 @@ import scala.concurrent.{ExecutionContext, Future}
   *   1. Writes the cram md5 value to file at the target path
   *   2. Records the workspace name in the metadata for the delivered cram
   */
-class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
-    extends MoveExecutor(deliverCommand) {
+class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)(
+  implicit ec: ExecutionContext
+) extends MoveExecutor(deliverCommand) {
 
   override def customMetadataOperations(
     metadata: WgsCramMetadata,
     ioUtil: IoUtil
-  )(
-    implicit ec: ExecutionContext
-  ): Future[WgsCramMetadata] = Future {
+  ): Source[WgsCramMetadata, NotUsed] = {
     (metadata.cramMd5, metadata.cramPath) match {
       case (Some(cramMd5), Some(cramPath)) => {
         /*
@@ -33,29 +34,26 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
          * we can write directly to the source location instead of writing
          * to temp and then copying.
          */
-        File.usingTemporaryFile("clio-cram-deliver", WgsCramExtensions.Md5Extension) {
-          md5Tmp =>
-            val cloudMd5Path =
-              s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}"
+        Source.single {
+          File.usingTemporaryFile("clio-cram-deliver", WgsCramExtensions.Md5Extension) {
+            md5Tmp =>
+              val cloudMd5Path =
+                s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}"
 
-            md5Tmp.write(cramMd5.name)
-            val copyRc = ioUtil.copyGoogleObject(
-              URI.create(md5Tmp.toString),
-              URI.create(cloudMd5Path)
-            )
-            if (copyRc != 0) {
-              throw new RuntimeException(
-                s"Failed to copy local cram md5 file to path $cloudMd5Path"
+              md5Tmp.write(cramMd5.name)
+              ioUtil.copyGoogleObject(
+                URI.create(md5Tmp.toString),
+                URI.create(cloudMd5Path)
               )
-            }
-        }
+          }
+        }.map(_ => metadata.withWorkspaceName(deliverCommand.workspaceName))
       }
-      case _ => {
-        throw new IllegalStateException(
-          s"Cram record with key ${deliverCommand.key} is missing either its cram path or cram md5"
+      case _ =>
+        Source.failed(
+          new IllegalStateException(
+            s"Cram record with key ${deliverCommand.key} is missing either its cram path or cram md5"
+          )
         )
-      }
     }
-    metadata.withWorkspaceName(deliverCommand.workspaceName)
   }
 }

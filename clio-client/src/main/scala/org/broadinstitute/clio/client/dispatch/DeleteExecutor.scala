@@ -1,136 +1,156 @@
 package org.broadinstitute.clio.client.dispatch
 
-import org.broadinstitute.clio.client.ClioClientConfig
+import java.net.URI
+
+import akka.{Done, NotUsed}
+import akka.stream.scaladsl.Source
+import cats.syntax.either._
+import io.circe.Json
 import org.broadinstitute.clio.client.commands.DeleteCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.ClassUtil
-import org.broadinstitute.clio.util.model.{Location, UpsertId}
+import org.broadinstitute.clio.util.model.Location
 
+import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
-class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])
-    extends Executor[UpsertId] {
+class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
+  implicit ec: ExecutionContext
+) extends Executor {
 
   private val prettyKey = ClassUtil.formatFields(deleteCommand.key)
   val name: String = deleteCommand.index.name
 
-  override def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext
-  ): Future[UpsertId] = {
+  override def execute(
+    webClient: ClioWebClient,
+    ioUtil: IoUtil
+  ): Source[Json, NotUsed] = {
     if (!deleteCommand.key.location.equals(Location.GCP)) {
-      Future.failed(
+      Source.failed(
         new UnsupportedOperationException(
           s"Only cloud ${name}s are supported at this time."
         )
       )
     } else {
-      for {
-        existingMetadata <- webClient
-          .getMetadataForKey(deleteCommand.index)(
-            deleteCommand.key,
-            includeDeleted = false
-          )
-          .map {
-            _.getOrElse(
-              throw new IllegalStateException(
+      webClient
+        .getMetadataForKey(deleteCommand.index)(deleteCommand.key, includeDeleted = false)
+        .orElse {
+          // Has to be lazy because `orElse` eagerly fails as soon as either branch fails.
+          Source.lazily { () =>
+            Source.failed(
+              new IllegalStateException(
                 s"No $name found in Clio for $prettyKey, nothing to delete."
               )
             )
           }
-        _ <- Future(checkPathConsistency(ioUtil, existingMetadata))
-        upsertResponse <- deleteFiles(webClient, ioUtil, existingMetadata)
-      } yield {
-        upsertResponse
-      }
+        }
+        .flatMapConcat { metadata =>
+          val pathsToDelete = metadata.pathsToDelete.to[immutable.Iterable]
+          checkPaths(pathsToDelete, ioUtil)
+            .flatMapConcat(deletePaths(_, ioUtil))
+            .flatMapConcat { _ =>
+              webClient
+                .upsert(deleteCommand.index)(
+                  deleteCommand.key,
+                  metadata.markDeleted(deleteCommand.note),
+                  // Always force because we're purposefully overwriting document status.
+                  force = true
+                )
+                .mapError {
+                  case ex =>
+                    new RuntimeException(
+                      s"""Failed to delete the $name record for $prettyKey in Clio.
+                       |The associated files have been deleted in the cloud, but Clio doesn't know.
+                       |Try re-running this command with '--force'.""".stripMargin,
+                      ex
+                    )
+                }
+            }
+        }
     }
   }
 
-  private def checkPathConsistency(
-    ioUtil: IoUtil,
-    metadata: deleteCommand.index.MetadataType
-  ): Unit = {
-    metadata.pathsToDelete.foreach { path =>
-      if (!ioUtil.isGoogleObject(path)) {
-        throw new IllegalStateException(
-          s"Inconsistent state detected: non-cloud path '$path' is registered to the cloud $name for $prettyKey"
-        )
-      }
-    }
-  }
-
-  private def deleteFiles(
-    client: ClioWebClient,
-    ioUtil: IoUtil,
-    existingMetadata: deleteCommand.index.MetadataType
-  )(implicit ec: ExecutionContext): Future[UpsertId] = {
-    val pathsToDelete = existingMetadata.pathsToDelete.filter { path =>
-      val pathExists = ioUtil.googleObjectExists(path)
-      val err = s"'$path' associated with $prettyKey does not exist in the cloud."
-      if (!pathExists) {
-        if (!deleteCommand.force) {
-          throw new IllegalStateException(
-            err + " Use --force to mark the record as deleted in Clio"
+  private def checkPaths(
+    paths: immutable.Iterable[URI],
+    ioUtil: IoUtil
+  ): Source[immutable.Iterable[URI], NotUsed] = {
+    Source[URI](paths)
+      .mapAsync(paths.size) { path =>
+        if (!ioUtil.isGoogleObject(path)) {
+          Future.successful(
+            Left(
+              new IllegalStateException(
+                s"Inconsistent state detected, non-cloud path '$path' registered to $prettyKey"
+              )
+            )
           )
+        } else {
+          Future(Either.catchNonFatal(ioUtil.googleObjectExists(path))).map { attempt =>
+            attempt.flatMap { doesExist =>
+              if (doesExist) {
+                Right(Some(path))
+              } else {
+                val msg =
+                  s"'$path' associated with $prettyKey does not exist in the cloud."
+                if (deleteCommand.force) {
+                  logger.warn(msg)
+                  Right(None)
+                } else {
+                  Left(new IllegalStateException(msg))
+                }
+              }
+            }
+          }
         }
-        logger.warn(err)
       }
-      pathExists
-    }
-
-    val googleDeletes = pathsToDelete.map { path =>
-      Future {
-        logger.info(s"Deleting '$path' in the cloud.")
-        if (ioUtil.deleteGoogleObject(path) != 0) {
-          // We log immediately here because we Future.sequence these together later,
-          // and that operation short-circuits and returns the first error it hits, but
-          // we want messages for all failed deletes to appear in the logs.
-          val err = s"Could not delete '$path' in the cloud."
-          logger.error(err)
-          throw new Exception(err)
+      .fold(Right(Seq.empty[URI]): Either[Seq[Throwable], Seq[URI]]) { (acc, attempt) =>
+        (acc, attempt) match {
+          case (Right(ps), Right(maybePath)) => Right(ps ++ maybePath.toIterable)
+          case (Right(_), Left(err))         => Left(Seq(err))
+          case (Left(errs), Right(_))        => Left(errs)
+          case (Left(errs), Left(err))       => Left(errs :+ err)
         }
       }
-    }
-
-    val markedAsDeleted = existingMetadata.markDeleted(deleteCommand.note)
-
-    for {
-      _ <- Future
-        .sequence(googleDeletes)
-        .recover {
-          case ex =>
-            throw new RuntimeException(
-              s"""Failed to delete at least one file associated with $prettyKey on the cloud.
-                 |The record for $prettyKey still exists in Clio. Check the logs to see which
-                 |delete commands failed, and why, then try re-running this command. If this
-                 |can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin,
-              ex
-            )
-        }
-      upsertResponse <- client
-        .upsert(deleteCommand.index)(
-          deleteCommand.key,
-          markedAsDeleted,
-          force = true
-        )
-        .recover {
-          case ex =>
-            throw new RuntimeException(
-              s"""Failed to delete the $name record for $prettyKey in Clio.
-                 |The associated files have been deleted in the cloud, but Clio doesn't know.
-                 |Check the logs to see what error occurred, and try re-running this command.
-                 |If this can't be done, please contact the Green Team at ${ClioClientConfig.greenTeamEmail}""".stripMargin,
-              ex
-            )
-        }
-    } yield {
-      if (pathsToDelete.nonEmpty) {
-        logger.info(
-          s"Successfully deleted ${pathsToDelete.mkString("'", "', '", "'")}"
+      .flatMapConcat {
+        _.fold(
+          errs => Source.failed(new IllegalStateException(errs.mkString(", "))),
+          paths => Source.single(paths.to[immutable.Iterable])
         )
       }
-      upsertResponse
+  }
+
+  private def deletePaths(
+    oldPaths: immutable.Iterable[URI],
+    ioUtil: IoUtil
+  ): Source[Done, NotUsed] = {
+    val done = Source.single(Done)
+
+    // `mapAsync` fails at runtime if constructed with parallelism of 0.
+    if (oldPaths.isEmpty) {
+      done
+    } else {
+      Source(oldPaths)
+        .mapAsync(oldPaths.size) { path =>
+          Future(Either.catchNonFatal(ioUtil.deleteGoogleObject(path)))
+        }
+        .fold(Seq.empty[Throwable]) { (acc, attempt) =>
+          attempt.fold(acc :+ _, _ => acc)
+        }
+        .flatMapConcat { errs =>
+          if (errs.isEmpty) {
+            done
+          } else {
+            Source.failed(
+              new RuntimeException(
+                s"""Errors encountered while deleting files for $prettyKey.
+                   |The record for $prettyKey still exists in Clio. Errors were:
+                   |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
+              )
+            )
+          }
+        }
     }
   }
 }

@@ -4,6 +4,7 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
+import akka.stream.Materializer
 import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.Json
@@ -16,7 +17,8 @@ import org.broadinstitute.clio.util.model.UpsertId
 import scala.concurrent.Future
 
 class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])(
-  implicit system: ActorSystem
+  implicit system: ActorSystem,
+  mat: Materializer
 ) extends ClioWebClient(
       "localhost",
       TestData.testServerPort,
@@ -83,7 +85,10 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
 
 object MockClioWebClient {
 
-  def failingToUpsert(implicit system: ActorSystem): MockClioWebClient = {
+  def failingToUpsert(
+    implicit system: ActorSystem,
+    mat: Materializer
+  ): MockClioWebClient = {
     new MockClioWebClient(status = StatusCodes.OK, None) {
       override def upsert[CI <: ClioIndex](clioIndex: CI)(
         key: clioIndex.KeyType,

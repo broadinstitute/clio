@@ -4,7 +4,6 @@ import java.net.URI
 
 import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
-import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
@@ -71,15 +70,17 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
 
   it should "not OOM on queries returning many results" in {
     val upserts = Source(ubams)
-      .mapAsync(maxQueuedRequests) {
-        case (key, metadata) => {
-          clioWebClient.upsert(WgsUbamIndex)(key, metadata)
+      .flatMapMerge(
+        50, {
+          case (key, metadata) => {
+            clioWebClient.upsert(WgsUbamIndex)(key, metadata)
+          }
         }
-      }
+      )
       .runWith(Sink.ignore)
 
-    val queries = immutable.Seq.fill(maxConcurrentRequests) { () =>
-      runClientGetJsonAs[Seq[Json]](
+    val queries = immutable.Seq.fill(10) { () =>
+      runCollectJson(
         ClioCommand.queryWgsUbamName,
         "--location",
         location.entryName

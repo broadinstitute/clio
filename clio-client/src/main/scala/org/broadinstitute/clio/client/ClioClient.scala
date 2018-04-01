@@ -1,11 +1,15 @@
 package org.broadinstitute.clio.client
 
+import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
 import caseapp.core.help.{Help, WithHelp}
 import caseapp.core.parser.Parser
 import caseapp.core.{Error, RemainingArgs}
 import cats.syntax.either._
 import com.typesafe.scalalogging.LazyLogging
+import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.dispatch.CommandDispatch
 import org.broadinstitute.clio.client.util.IoUtil
@@ -15,7 +19,7 @@ import org.broadinstitute.clio.client.webclient.{
 }
 import org.broadinstitute.clio.util.auth.AuthUtil
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
 /**
@@ -52,10 +56,12 @@ object ClioClient extends LazyLogging {
 
   def main(args: Array[String]): Unit = {
     implicit val system: ActorSystem = ActorSystem(progName)
+    implicit val mat: Materializer = ActorMaterializer()
+
     import system.dispatcher
     sys.addShutdownHook({ val _ = system.terminate() })
 
-    val dispatchFutureOrErr = for {
+    val resultStreamOrErr = for {
       credentials <- AuthUtil
         .getCredentials(
           ClioClientConfig.accessToken,
@@ -67,8 +73,6 @@ object ClioClient extends LazyLogging {
         ClioClientConfig.ClioServer.clioServerHostName,
         ClioClientConfig.ClioServer.clioServerPort,
         ClioClientConfig.ClioServer.clioServerUseHttps,
-        ClioClientConfig.maxQueuedRequests,
-        ClioClientConfig.maxConcurrentRequests,
         ClioClientConfig.responseTimeout,
         ClioClientConfig.maxRequestRetries,
         new GoogleCredentialsGenerator(credentials)
@@ -76,12 +80,12 @@ object ClioClient extends LazyLogging {
 
       client = new ClioClient(webClient, IoUtil)
 
-      dispatchFuture <- client.instanceMain(args)
+      resultStream <- client.instanceMain(args)
     } yield {
-      dispatchFuture
+      resultStream
     }
 
-    dispatchFutureOrErr.fold(
+    resultStreamOrErr.fold(
       {
         case UsageOrHelpAsked(message) => {
           println(message)
@@ -96,12 +100,11 @@ object ClioClient extends LazyLogging {
           sys.exit(1)
         }
       },
-      _.onComplete {
+      _.runWith(Sink.ignore).onComplete {
         case Success(_) => sys.exit(0)
-        case Failure(ex) => {
+        case Failure(ex) =>
           logger.error("Failed to execute command", ex)
           sys.exit(1)
-        }
       }
     )
   }
@@ -126,12 +129,9 @@ object ClioClient extends LazyLogging {
   *                  the clio-server
   * @param ioUtil    utility handling all file operations,
   *                  both local and in cloud storage
-  * @param ec        the execution context to use when scheduling
-  *                  asynchronous events
   */
-class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
-  implicit ec: ExecutionContext
-) extends LazyLogging {
+class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(implicit ec: ExecutionContext)
+    extends LazyLogging {
   import ClioClient.{EarlyReturn, ParsingError, UsageOrHelpAsked}
 
   /**
@@ -199,7 +199,9 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     * (allowing this class to serve as a top-level entry-point), conflicting
     * with the main method already present in the companion object.
     */
-  def instanceMain(args: Array[String]): Either[EarlyReturn, Future[_]] = {
+  def instanceMain(
+    args: Array[String]
+  ): Either[EarlyReturn, Source[Json, NotUsed]] = {
     val maybeParse =
       ClioCommand.parser.withHelp
         .detailedParse(args)(Parser[None.type].withHelp)
@@ -262,7 +264,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     */
   private def commandMain(
     commandParseWithArgs: (String, WithHelp[ClioCommand], RemainingArgs)
-  ): Either[EarlyReturn, Future[_]] = {
+  ): Either[EarlyReturn, Source[Json, NotUsed]] = {
     val (commandName, commandParse, args) = commandParseWithArgs
 
     for {

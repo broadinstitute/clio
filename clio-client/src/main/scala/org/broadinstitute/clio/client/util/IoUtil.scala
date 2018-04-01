@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.client.util
 
+import java.io.IOException
 import java.math.BigInteger
 import java.net.URI
 import java.util.Base64
@@ -50,12 +51,16 @@ trait IoUtil {
     gsUtil.cat(location.toString)
   }
 
-  def copyGoogleObject(from: URI, to: URI): Int = {
-    gsUtil.cp(from.toString, to.toString)
+  def copyGoogleObject(from: URI, to: URI): Unit = {
+    if (gsUtil.cp(from.toString, to.toString) != 0) {
+      throw new IOException(s"Failed to copy $from to $to in the cloud.")
+    }
   }
 
-  def deleteGoogleObject(path: URI): Int = {
-    gsUtil.rm(path.toString)
+  def deleteGoogleObject(path: URI): Unit = {
+    if (gsUtil.rm(path.toString) != 0) {
+      throw new IOException(s"Failed to delete $path in the cloud.")
+    }
   }
 
   def googleObjectExists(path: URI): Boolean = {

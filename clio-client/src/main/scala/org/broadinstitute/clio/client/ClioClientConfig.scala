@@ -19,19 +19,11 @@ object ClioClientConfig extends ConfigReaders {
 
   private val clientConfig = config.as[Config]("client")
 
-  val maxQueuedRequests: Int =
-    clientConfig.as[Int]("max-queued-requests")
-
-  val maxConcurrentRequests: Int =
-    clientConfig.as[Int]("max-concurrent-requests")
-
   val responseTimeout: FiniteDuration =
     clientConfig.as[FiniteDuration]("response-timeout")
 
   val maxRequestRetries: Int =
     clientConfig.as[Int]("max-request-retries")
-
-  val greenTeamEmail: String = clientConfig.as[String]("greenteam.email")
 
   val serviceAccountJson: Option[File] =
     clientConfig.getAs[File]("service-account-json")

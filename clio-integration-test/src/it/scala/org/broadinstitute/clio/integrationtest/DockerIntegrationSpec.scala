@@ -52,8 +52,6 @@ abstract class DockerIntegrationSpec(
       container.getServiceHost(clioFullName),
       container.getServicePort(clioFullName),
       useHttps = false,
-      maxQueuedRequests,
-      maxConcurrentRequests,
       clientTimeout,
       maxRequestRetries,
       () => OAuth2BearerToken("fake-token")

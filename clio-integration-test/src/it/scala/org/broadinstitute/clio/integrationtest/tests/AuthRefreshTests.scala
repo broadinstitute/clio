@@ -5,7 +5,6 @@ import java.time.{Instant, ZoneOffset, ZonedDateTime}
 
 import akka.stream.scaladsl.Source
 import com.google.auth.oauth2.TimeChangingChangeListener
-import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.EnvIntegrationSpec
 
@@ -44,7 +43,7 @@ trait AuthRefreshTests { self: EnvIntegrationSpec =>
       .tick(Duration.Zero, tickInterval, ())
       .take(numTicks)
       .runFoldAsync(succeed) { (_, _) =>
-        runClientGetJsonAs[Json](
+        runCollectJson(
           ClioCommand.queryWgsUbamName,
           "--project",
           "a non-existent project"

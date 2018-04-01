@@ -35,8 +35,6 @@ abstract class EnvIntegrationSpec(env: String)
     s"clio.gotc-$env.broadinstitute.org",
     443,
     useHttps = true,
-    maxQueuedRequests,
-    maxConcurrentRequests,
     clientTimeout,
     maxRequestRetries,
     new GoogleCredentialsGenerator(googleCredential)

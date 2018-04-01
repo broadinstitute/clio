@@ -32,7 +32,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
-    runClient(
+    runDecode[UpsertId](
       ClioCommand.addGvcfName,
       Seq(
         "--location",
@@ -47,7 +47,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
         tmpMetadata.toString,
         if (force) "--force" else ""
       ).filter(_.nonEmpty): _*
-    ).mapTo[UpsertId]
+    )
   }
 
   it should "create the expected gvcf mapping in elasticsearch" in {
@@ -88,7 +88,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
       for {
         returnedUpsertId <- runUpsertGvcf(key, metadata.copy(documentStatus = None))
-        outputs <- runClientGetJsonAs[Seq[Json]](
+        outputs <- runCollectJson(
           ClioCommand.queryGvcfName,
           "--sample-alias",
           key.sampleAlias
@@ -191,12 +191,12 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      projectResults <- runClientGetJsonAs[Seq[Json]](
+      projectResults <- runCollectJson(
         ClioCommand.queryGvcfName,
         "--project",
         project
       )
-      sampleResults <- runClientGetJsonAs[Seq[Json]](
+      sampleResults <- runCollectJson(
         ClioCommand.queryGvcfName,
         "--sample-alias",
         samples.head
@@ -225,7 +225,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[Json]](
+        results <- runCollectJson(
           ClioCommand.queryGvcfName,
           "--project",
           project
@@ -298,7 +298,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        results <- runClientGetJsonAs[Seq[Json]](
+        results <- runCollectJson(
           ClioCommand.queryGvcfName,
           "--project",
           project,
@@ -327,7 +327,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       )
       _ <- checkQuery(expectedLength = 2)
 
-      results <- runClientGetJsonAs[Seq[Json]](
+      results <- runCollectJson(
         ClioCommand.queryGvcfName,
         "--project",
         project,
@@ -370,7 +370,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[Json]](
+        results <- runCollectJson(
           ClioCommand.queryGvcfName,
           "--project",
           project
@@ -416,7 +416,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     for {
       _ <- runUpsertGvcf(key, firstMetadata)
       _ <- runUpsertGvcf(key, secondMetadata)
-      queryOutput <- runClientGetJsonAs[Seq[Json]](
+      queryOutput <- runCollectJson(
         ClioCommand.queryGvcfName,
         "--project",
         key.project,
@@ -488,7 +488,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
     val result = for {
       _ <- runUpsertGvcf(key, metadata)
-      _ <- runClient(
+      _ <- runIgnore(
         ClioCommand.moveGvcfName,
         "--location",
         Location.GCP.entryName,
@@ -555,7 +555,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
   it should "not move gvcfs without a destination" in {
     recoverToExceptionIf[Exception] {
-      runClient(
+      runDecode[UpsertId](
         ClioCommand.moveGvcfName,
         "--location",
         Location.GCP.entryName,
@@ -617,7 +617,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val result = for {
       _ <- runUpsertGvcf(key, metadata)
-      _ <- runClient(
+      _ <- runIgnore(
         ClioCommand.deleteGvcfName,
         Seq(
           "--location",
@@ -633,7 +633,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
           if (force) "--force" else ""
         ).filter(_.nonEmpty): _*
       )
-      outputs <- runClientGetJsonAs[Seq[Json]](
+      outputs <- runCollectJson(
         ClioCommand.queryGvcfName,
         "--location",
         Location.GCP.entryName,
@@ -692,7 +692,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
   it should "not delete gvcfs without a note" in {
     recoverToExceptionIf[Exception] {
-      runClient(
+      runDecode[UpsertId](
         ClioCommand.deleteGvcfName,
         "--location",
         Location.GCP.entryName,

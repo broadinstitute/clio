@@ -4,6 +4,7 @@ import java.net.URI
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model.StatusCodes
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import org.broadinstitute.clio.client.dispatch.CommandDispatch
 import org.broadinstitute.clio.client.util.{IoUtil, MockIoUtil, TestData}
@@ -18,6 +19,8 @@ abstract class BaseClientSpec
     with TestData
     with Matchers
     with ModelAutoDerivation {
+
+  implicit val mat: Materializer = ActorMaterializer()
 
   def succeedingDispatcher(
     ioUtil: IoUtil = new MockIoUtil,

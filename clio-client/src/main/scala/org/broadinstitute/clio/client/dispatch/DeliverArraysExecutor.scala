@@ -1,11 +1,13 @@
 package org.broadinstitute.clio.client.dispatch
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import org.broadinstitute.clio.client.commands.DeliverArrays
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysMetadata}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 /**
   * Special-purpose CLP for delivering arrays to FireCloud workspaces.
@@ -15,20 +17,15 @@ import scala.concurrent.{ExecutionContext, Future}
   *   1. Copies the idat files to the target path
   *   2. Records the updated locations of the idat files in the metadata
   */
-class DeliverArraysExecutor(deliverCommand: DeliverArrays)
+class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: ExecutionContext)
     extends MoveExecutor(deliverCommand) {
 
   override def customMetadataOperations(
     metadata: ArraysMetadata,
     ioUtil: IoUtil
-  )(
-    implicit ec: ExecutionContext
-  ): Future[ArraysMetadata] = Future {
+  ): Source[ArraysMetadata, NotUsed] = {
     (metadata.grnIdatPath, metadata.redIdatPath) match {
       case (Some(grn), Some(red)) => {
-        ioUtil.copyGoogleObject(grn, deliverCommand.destination)
-        ioUtil.copyGoogleObject(red, deliverCommand.destination)
-
         val movedGrnIdat = Metadata.findNewPathForMove(
           grn,
           deliverCommand.destination,
@@ -39,25 +36,34 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)
           deliverCommand.destination,
           ArraysExtensions.IdatExtension
         )
+        val movesToPerform = Map(grn -> movedGrnIdat, red -> movedRedIdat)
 
-        metadata
-          .withWorkspaceName(deliverCommand.workspaceName)
-          .copy(
-            grnIdatPath = Some(movedGrnIdat),
-            redIdatPath = Some(movedRedIdat)
-          )
+        copyPaths(movesToPerform, ioUtil).map { _ =>
+          metadata
+            .withWorkspaceName(deliverCommand.workspaceName)
+            .copy(
+              grnIdatPath = Some(movedGrnIdat),
+              redIdatPath = Some(movedRedIdat)
+            )
+        }
       }
       case (Some(_), None) =>
-        throw new IllegalStateException(
-          s"Arrays record with key ${deliverCommand.key} is missing its redIdatPath"
+        Source.failed(
+          new IllegalStateException(
+            s"Arrays record with key ${deliverCommand.key} is missing its redIdatPath"
+          )
         )
       case (None, Some(_)) =>
-        throw new IllegalStateException(
-          s"Arrays record with key ${deliverCommand.key} is missing its grnIdatPath"
+        Source.failed(
+          new IllegalStateException(
+            s"Arrays record with key ${deliverCommand.key} is missing its grnIdatPath"
+          )
         )
       case _ =>
-        throw new IllegalStateException(
-          s"Arrays record with key ${deliverCommand.key} is missing both its redIdatPath and its grnIdatPath"
+        Source.failed(
+          new IllegalStateException(
+            s"Arrays record with key ${deliverCommand.key} is missing both its redIdatPath and its grnIdatPath"
+          )
         )
     }
   }

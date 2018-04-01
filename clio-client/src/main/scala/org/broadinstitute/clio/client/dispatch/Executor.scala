@@ -1,19 +1,14 @@
 package org.broadinstitute.clio.client.dispatch
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import com.typesafe.scalalogging.LazyLogging
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import io.circe.Json
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
-import scala.concurrent.{ExecutionContext, Future}
+trait Executor extends LazyLogging with ModelAutoDerivation {
 
-trait Executor[Out]
-    extends LazyLogging
-    with FailFastCirceSupport
-    with ModelAutoDerivation {
-
-  def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext
-  ): Future[Out]
+  def execute(webClient: ClioWebClient, ioUtil: IoUtil): Source[Json, NotUsed]
 }
