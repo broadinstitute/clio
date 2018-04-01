@@ -6,7 +6,7 @@ services:
     environment:
       cluster.name: docker-cluster
       bootstrap.memory_lock: 'true'
-      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      ES_JAVA_OPTS: -Xms512m -Xmx512m -Duser.timezone=${TZ}
       xpack.security.enabled: 'false'
       path.logs: /usr/share/elasticsearch/logs
     volumes:

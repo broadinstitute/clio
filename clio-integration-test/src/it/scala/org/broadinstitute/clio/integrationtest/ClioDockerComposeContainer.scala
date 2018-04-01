@@ -2,6 +2,7 @@ package org.broadinstitute.clio.integrationtest
 
 import java.nio.file.StandardOpenOption
 import java.time.OffsetDateTime
+import java.util.TimeZone
 
 import akka.http.scaladsl.model.Uri
 import better.files.File
@@ -67,7 +68,8 @@ class ClioDockerComposeContainer(
       ClioDockerComposeContainer.configDirVariable -> ClioBuildInfo.confDir,
       ClioDockerComposeContainer.logDirVariable -> ClioBuildInfo.logDir,
       ClioDockerComposeContainer.clioLogFileVariable -> ClioDockerComposeContainer.clioLog.toString,
-      ClioDockerComposeContainer.persistenceDirVariable -> ClioBuildInfo.persistenceDir
+      ClioDockerComposeContainer.persistenceDirVariable -> ClioBuildInfo.persistenceDir,
+      ClioDockerComposeContainer.timezoneVariable -> TimeZone.getDefault.getID
     ).asJava
   )
 
@@ -226,6 +228,12 @@ object ClioDockerComposeContainer {
     * for use as a "source of truth" when persisting metadata updates.
     */
   val persistenceDirVariable = "LOCAL_PERSISTENCE_DIR"
+
+  /**
+    * Variable used to pass the host's default timezone ID into the containerized
+    * java processes, to prevent spurious failures from timezone mismatches.
+    */
+  val timezoneVariable = "TZ"
 
   /** Log file to mount into the Clio container. */
   val clioLog: File = File(ClioBuildInfo.logDir, "clio-server", "clio-server.log")
