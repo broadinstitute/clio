@@ -35,8 +35,7 @@ val commonSettings: Seq[Setting[_]] = Seq(
 val commonDockerSettings: Seq[Setting[_]] = Seq(
   assemblyJarName in assembly := Versioning.assemblyName.value,
   test in assembly := {},
-  imageNames in docker := Docker.imageNames.value,
-  buildOptions in docker := Docker.buildOptions.value
+  imageNames in docker := Docker.imageNames.value
 )
 
 val commonTestDockerSettings: Seq[Setting[_]] = Seq(

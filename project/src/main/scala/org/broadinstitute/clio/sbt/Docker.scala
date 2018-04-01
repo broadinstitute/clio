@@ -36,7 +36,8 @@ object Docker {
 
     new Dockerfile {
       from("openjdk:8")
-      label("CLIO_VERSION", version.value)
+
+      // Run this first so it's more likely to cache, since we won't be changing the version that often.
       runRaw(
         s"wget -q https://download-keycdn.ej-technologies.com/jprofiler/$JProfilerVersion.tar.gz -P /tmp/ && " +
           s"tar -xzf /tmp/$JProfilerVersion.tar.gz -C /usr/local &&" +
@@ -47,8 +48,9 @@ object Docker {
         "-agentpath:/usr/local/jprofiler9/bin/linux-x64/libjprofilerti.so=nowait"
       )
 
-      expose(8080, 31757)
+      label("CLIO_VERSION", version.value)
       add(artifact, artifactTargetPath)
+      expose(8080, 31757)
       /*
        * We need to use `entryPointShell` here to allow the environment variable to be substituted.
        * By default, using the shell form of ENTRYPOINT prevents signals from reaching the docker container.
@@ -67,14 +69,6 @@ object Docker {
       label("CLIO_CLIENT_VERSION", version.value)
       add(artifact, artifactTargetPath)
     }
-  }
-
-  /** Other customizations for sbt-docker. */
-  lazy val buildOptions: Initialize[BuildOptions] = Def.setting {
-    BuildOptions(
-      cache = false,
-      removeIntermediateContainers = BuildOptions.Remove.Always
-    )
   }
 
   /** The name of the test images. */
