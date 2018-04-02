@@ -5,7 +5,13 @@ services:
   clio-server:
     image: broadinstitute/clio-server:${CLIO_DOCKER_TAG}
     environment:
-      JAVA_OPTS: -Xmx128m -Xms128m -Dclio.server.persistence.recovery-parallelism=4 -Dclio.server.elasticsearch.http-hosts.0.hostname=${ELASTICSEARCH_HOST} -Dlogback.configurationFile=/app/clio-logback.xml -Dclio.server.persistence.root-dir=/persistence
+      JAVA_OPTS: >
+        -Xmx128m -Xms128m
+        -Duser.timezone=${TZ}
+        -Dclio.server.persistence.recovery-parallelism=4
+        -Dclio.server.elasticsearch.http-hosts.0.hostname=${ELASTICSEARCH_HOST}
+        -Dlogback.configurationFile=/app/clio-logback.xml
+        -Dclio.server.persistence.root-dir=/persistence
     volumes:
       - ${CONF_DIR}/clio-logback.xml:/app/clio-logback.xml
       - ${CLIO_LOG_FILE}:/logs/clio.log
