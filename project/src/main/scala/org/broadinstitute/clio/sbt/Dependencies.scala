@@ -7,31 +7,32 @@ import sbt._
   */
 object Dependencies {
   // The version numbers of each main and test dependency.
-  private val AkkaHttpCirceVersion = "1.19.0"
-  private val AkkaHttpVersion = "10.0.11"
-  private val AlpakkaVersion = "0.17"
+  private val AkkaVersion = "2.5.11"
+  private val AkkaHttpVersion = "10.1.0"
+  private val AkkaHttpCirceVersion = "1.20.0"
+  private val AlpakkaVersion = "0.18"
   private val ApacheHttpClientVersion = "4.5.5"
   private val BetterFilesVersion = "3.4.0"
   private val CaseAppVersion = "2.0.0-M3"
-  private val CirceVersion = "0.9.1"
-  private val Elastic4sVersion = "6.1.4"
-  private val EnumeratumVersion = "1.5.12"
-  private val EnumeratumCirceVersion = "1.5.15"
+  private val CirceVersion = "0.9.3"
+  private val Elastic4sVersion = "6.2.3"
+  private val EnumeratumVersion = "1.5.13"
+  private val EnumeratumCirceVersion = "1.5.17"
   private val FicusVersion = "1.4.3"
   private val GoogleAuthHttpVersion = "0.9.0"
-  private val GoogleCloudNioVersion = "0.34.0-alpha"
-  private val JacksonVersion = "2.9.4"
+  private val GoogleCloudNioVersion = "0.42.0-alpha"
+  private val JacksonVersion = "2.9.5"
   private val JimfsVersion = "1.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
-  private val ScalaLoggingVersion = "3.7.2"
+  private val ScalaLoggingVersion = "3.8.0"
   private val ScalaTestVersion = "3.0.5"
   private val ShapelessVersion = "2.3.3"
   private val Slf4jVersion = "1.7.25"
   private val SwaggerUi = "3.1.5"
-  private val TestContainersScalaVersion = "0.14.0"
-  private val TypesafeConfigVersion = "1.3.2"
-  private val VaultJavaDriverVersion = "3.0.0"
+  private val TestContainersScalaVersion = "0.15.0"
+  private val TypesafeConfigVersion = "1.3.3"
+  private val VaultJavaDriverVersion = "3.1.0"
 
   /** Version of Scala to build Clio with. */
   val ScalaVersion = "2.12.4"
@@ -54,6 +55,7 @@ object Dependencies {
     "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-http-streams" % Elastic4sVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+    "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
     "io.circe" %% "circe-core" % CirceVersion,
@@ -88,6 +90,7 @@ object Dependencies {
     "com.github.alexarchambault" %% "case-app" % CaseAppVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
+    "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
     "io.circe" %% "circe-core" % CirceVersion,
