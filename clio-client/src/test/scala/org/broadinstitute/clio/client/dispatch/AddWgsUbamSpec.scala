@@ -48,14 +48,6 @@ class AddWgsUbamSpec extends BaseClientSpec {
       .map(_ shouldBe an[UpsertId])
   }
 
-  it should "fail to add a ubam that would overwrite an existing document" in {
-    recoverToSucceededIf[IllegalArgumentException] {
-      val mockIoUtil = new MockIoUtil
-      succeedingDispatcher(mockIoUtil, testWgsUbamLocation)
-        .dispatch(goodAddCommand)
-    }
-  }
-
   it should "succeed in overwriting an existing document if a force flag is set" in {
     val mockIoUtil = new MockIoUtil
     succeedingDispatcher(mockIoUtil, testWgsChangedUbamLocation)

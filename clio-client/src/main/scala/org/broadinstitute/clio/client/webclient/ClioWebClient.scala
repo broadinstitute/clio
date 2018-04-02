@@ -177,7 +177,8 @@ class ClioWebClient(
 
   def upsert[CI <: ClioIndex](clioIndex: CI)(
     key: clioIndex.KeyType,
-    metadata: clioIndex.MetadataType
+    metadata: clioIndex.MetadataType,
+    force: Boolean = false
   ): Future[UpsertId] = {
     import clioIndex.implicits._
 
@@ -194,9 +195,13 @@ class ClioWebClient(
       Uri.Path(s"/api/v1/${clioIndex.urlSegment}/metadata")
     )(_ / _)
 
+    val uri =
+      if (force) Uri(path = encodedPath).withQuery(Uri.Query("force" -> "true"))
+      else Uri(path = encodedPath)
+
     dispatchRequest(
       HttpRequest(
-        uri = Uri(path = encodedPath),
+        uri = uri,
         method = HttpMethods.POST,
         entity = entity
       )
@@ -215,6 +220,7 @@ class ClioWebClient(
     input: clioIndex.KeyType,
     includeDeleted: Boolean
   ): Future[Option[clioIndex.MetadataType]] = {
+
     import clioIndex.implicits._
     import s_mach.string._
 

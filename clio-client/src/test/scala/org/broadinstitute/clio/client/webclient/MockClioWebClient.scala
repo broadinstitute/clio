@@ -60,7 +60,8 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
 
   override def upsert[CI <: ClioIndex](clioIndex: CI)(
     key: clioIndex.KeyType,
-    metadata: clioIndex.MetadataType
+    metadata: clioIndex.MetadataType,
+    force: Boolean
   ): Future[UpsertId] = {
     if (status.isSuccess()) {
       Future.successful(UpsertId.nextId())
@@ -86,7 +87,8 @@ object MockClioWebClient {
     new MockClioWebClient(status = StatusCodes.OK, None) {
       override def upsert[CI <: ClioIndex](clioIndex: CI)(
         key: clioIndex.KeyType,
-        metadata: clioIndex.MetadataType
+        metadata: clioIndex.MetadataType,
+        force: Boolean
       ): Future[UpsertId] = {
         Future.failed(new RuntimeException("Failed to upsert"))
       }

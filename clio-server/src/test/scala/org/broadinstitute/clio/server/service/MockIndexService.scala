@@ -1,6 +1,7 @@
 package org.broadinstitute.clio.server.service
 
 import akka.NotUsed
+import akka.stream.Materializer
 import akka.stream.scaladsl.Source
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.{
@@ -40,8 +41,9 @@ abstract class MockIndexService[
 
   override def upsertMetadata(
     key: clioIndex.KeyType,
-    metadata: clioIndex.MetadataType
-  ): Future[UpsertId] = {
+    metadata: clioIndex.MetadataType,
+    force: Boolean = false
+  )(implicit materializer: Materializer): Future[UpsertId] = {
     upsertCalls += ((key, metadata))
     Future.successful(UpsertId.nextId())
   }

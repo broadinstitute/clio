@@ -1,6 +1,8 @@
 package org.broadinstitute.clio.server.service
 
 import akka.stream.scaladsl.Sink
+import com.sksamuel.elastic4s.searches.queries.SimpleStringQueryDefinition
+import io.circe.Printer
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
@@ -24,6 +26,7 @@ abstract class IndexServiceSpec[
     val persistenceService = new PersistenceService(memoryPersistenceDAO, memorySearchDAO)
     getService(persistenceService, searchService)
   }
+  import indexService.clioIndex.implicits._
 
   def elasticsearchIndex: ElasticsearchIndex[CI]
   def dummyKey: indexService.clioIndex.KeyType
@@ -102,7 +105,9 @@ abstract class IndexServiceSpec[
       memorySearchDAO.updateCalls should be(
         Seq((Seq(expectedDocument), elasticsearchIndex))
       )
-      memorySearchDAO.queryCalls should be(empty)
+      memorySearchDAO.queryCalls should be(
+        Seq(SimpleStringQueryDefinition(dummyKey.asJson.pretty(Printer.noSpaces)))
+      )
     }
   }
 

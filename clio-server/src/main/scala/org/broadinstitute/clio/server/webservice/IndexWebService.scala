@@ -2,12 +2,14 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
+import akka.stream.Materializer
 import org.broadinstitute.clio.server.service.IndexService
 import org.broadinstitute.clio.transfer.model.ClioIndex
 
 abstract class IndexWebService[CI <: ClioIndex](
   val indexService: IndexService[CI]
-) extends JsonWebService {
+)(implicit materializer: Materializer)
+    extends JsonWebService {
 
   import indexService.clioIndex.implicits._
 
@@ -23,10 +25,13 @@ abstract class IndexWebService[CI <: ClioIndex](
 
   private[webservice] val postMetadata: Route = {
     pathPrefix("metadata") {
-      pathPrefixKey { key =>
-        post {
-          entity(as[indexService.clioIndex.MetadataType]) { metadata =>
-            complete(indexService.upsertMetadata(key, metadata))
+      parameter('force.as[Boolean] ? false) { force =>
+        pathPrefixKey { key =>
+          post {
+
+            entity(as[indexService.clioIndex.MetadataType]) { metadata =>
+              complete(indexService.upsertMetadata(key, metadata, force))
+            }
           }
         }
       }
