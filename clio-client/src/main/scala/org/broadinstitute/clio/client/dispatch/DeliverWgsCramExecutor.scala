@@ -39,15 +39,10 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)
               s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}"
 
             md5Tmp.write(cramMd5.name)
-            val copyRc = ioUtil.copyGoogleObject(
+            ioUtil.copyGoogleObject(
               URI.create(md5Tmp.toString),
               URI.create(cloudMd5Path)
             )
-            if (copyRc != 0) {
-              throw new RuntimeException(
-                s"Failed to copy local cram md5 file to path $cloudMd5Path"
-              )
-            }
         }
       }
       case _ => {

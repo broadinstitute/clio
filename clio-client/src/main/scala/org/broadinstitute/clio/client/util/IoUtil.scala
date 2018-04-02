@@ -1,12 +1,9 @@
 package org.broadinstitute.clio.client.util
 
-import java.math.BigInteger
 import java.net.URI
-import java.util.Base64
 
 import better.files.File
-
-import scala.sys.process.{Process, ProcessBuilder}
+import com.google.cloud.storage.{BlobId, StorageOptions}
 
 /**
   * Clio-client component handling all file IO operations.
@@ -50,129 +47,60 @@ trait IoUtil {
     gsUtil.cat(location.toString)
   }
 
-  def copyGoogleObject(from: URI, to: URI): Int = {
+  def copyGoogleObject(from: URI, to: URI): Unit = {
     gsUtil.cp(from.toString, to.toString)
   }
 
-  def deleteGoogleObject(path: URI): Int = {
+  def deleteGoogleObject(path: URI): Unit = {
     gsUtil.rm(path.toString)
   }
 
   def googleObjectExists(path: URI): Boolean = {
-    gsUtil.exists(path.toString) == 0
-  }
-
-  def getMd5HashOfGoogleObject(path: URI): Option[Symbol] = {
-    /*
-     * Files uploaded through parallel composite uploads won't have an md5 hash.
-     * See https://cloud.google.com/storage/docs/gsutil/commands/cp#parallel-composite-uploads
-     */
-    val rawHash = gsUtil.hash(path.toString)
-    md5HexPattern.findFirstMatchIn(rawHash).map(m => Symbol(m.group(1)))
-  }
-
-  def getSizeOfGoogleObject(path: URI): Long = {
-    gsUtil
-      .du(path.toString)
-      .head
-      .split("\\s+")
-      .head
-      .toLong
-  }
-
-  def listGoogleObjects(path: URI): Seq[String] = {
-    gsUtil.ls(path.toString)
-  }
-
-  /**
-    * Check if a path points to an object in GCS.
-    *
-    * If so, return the object's size and md5 hash (if present).
-    */
-  def getGoogleObjectInfo(path: URI): (Long, Option[Symbol]) = {
-    val rawStat = gsUtil.stat(path.toString)
-    val objectSize = sizePattern
-      .findFirstMatchIn(rawStat)
-      .fold(
-        throw new IllegalStateException(s"No size reported for google object at $path")
-      )(_.group(1))
-    val base64Hash = md5Base64Pattern.findFirstMatchIn(rawStat).map(_.group(1))
-    val decoded = base64Hash.map(Base64.getDecoder.decode(_))
-    val encoded = decoded.map(bytes => f"${new BigInteger(1, bytes)}%x")
-
-    (objectSize.toLong, encoded.map(Symbol.apply))
+    gsUtil.exists(path.toString)
   }
 }
 
 object IoUtil extends IoUtil {
-
-  private val sizePattern = "Content-Length:\\s+([0-9]+)".r
-  private val md5Base64Pattern = "Hash \\(md5\\):\\s+(.+)".r
-  private val md5HexPattern = "Hash \\(md5\\):\\s+([0-9a-f]+)".r
-
-  val GoogleCloudStorageScheme = "gs"
+  private val GoogleCloudStorageScheme = "gs"
+  private val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "//"
+  private val GoogleCloudPathSeparator = "/"
 
   override val gsUtil: GsUtil = new GsUtil
 
-  /**
-    * Wrapper around gsutil managing state directory creation
-    * and basic result parsing.
-    *
-    * TODO: We should consider moving this to google-cloud-java
-    * api usage instead of gsutil. We pay significant overhead
-    * on the startup time of every gsutil call.
-    */
   class GsUtil {
 
-    def ls(path: String): Seq[String] = {
-      runGsUtilAndGetStdout(Seq("ls", path)).split("\n")
+    private val storage = StorageOptions.getDefaultInstance.getService
+
+    private def toBlobId(path: String) = {
+      val noPrefix = path.substring(GoogleCloudPathPrefix.length)
+      val firstSeparator = noPrefix.indexOf(GoogleCloudPathSeparator)
+      // Get the bucket and the object name (aka path) from the gcs path.
+      BlobId.of(
+        noPrefix.substring(0, firstSeparator),
+        noPrefix.substring(firstSeparator + 1)
+      )
     }
 
-    def du(path: String): Seq[String] = {
-      runGsUtilAndGetStdout(Seq("du", path)).split("\n")
+    private def getBlob(path: String) = {
+      storage.get(toBlobId(path))
     }
 
-    def cp(from: String, to: String): Int = {
-      runGsUtilAndGetExitCode(Seq("cp", from, to))
+    def cp(from: String, to: String): Unit = {
+      getBlob(from).copyTo(toBlobId(to)).getResult.asInstanceOf[Unit]
     }
 
-    def mv(from: String, to: String): Int = {
-      runGsUtilAndGetExitCode(Seq("mv", from, to))
-    }
-
-    def rm(path: String): Int = {
-      runGsUtilAndGetExitCode(Seq("rm", "-a", path))
+    def rm(path: String): Unit = {
+      if (!getBlob(path).delete()) {
+        throw new RuntimeException(s"Cannot delete '$path' because it does not exist.")
+      }
     }
 
     def cat(objectLocation: String): String = {
-      runGsUtilAndGetStdout(Seq("cat", objectLocation))
+      new String(getBlob(objectLocation).getContent())
     }
 
-    def exists(path: String): Int = {
-      runGsUtilAndGetExitCode(Seq("-q", "stat", path))
-    }
-
-    def hash(path: String): String = {
-      runGsUtilAndGetStdout(Seq("hash", "-m", "-h", path))
-    }
-
-    def stat(path: String): String = {
-      runGsUtilAndGetStdout(Seq("stat", path))
-    }
-
-    private val runGsUtilAndGetStdout = runGsUtil(_.!!)(_)
-
-    private val runGsUtilAndGetExitCode = runGsUtil(_.!)(_)
-
-    private def runGsUtil[Out](
-      runner: ProcessBuilder => Out
-    )(gsUtilArgs: Seq[String]): Out = {
-      File
-        .temporaryDirectory("gsutil-state")
-        .map { tmp =>
-          runner(Process(Seq("gsutil", "-o", s"GSUtil:state_dir=$tmp") ++ gsUtilArgs))
-        }
-        .get()
+    def exists(path: String): Boolean = {
+      getBlob(path).exists()
     }
   }
 }
