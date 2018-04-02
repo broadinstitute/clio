@@ -8,7 +8,7 @@ import sbt._
 object Dependencies {
   // The version numbers of each main and test dependency.
   private val AkkaVersion = "2.5.11"
-  private val AkkaHttpVersion = "10.1.0"
+  private val AkkaHttpVersion = "10.1.1"
   private val AkkaHttpCirceVersion = "1.20.0"
   private val AlpakkaVersion = "0.18"
   private val ApacheHttpClientVersion = "4.5.5"
@@ -21,7 +21,7 @@ object Dependencies {
   private val EnumeratumCirceVersion = "1.5.17"
   private val FicusVersion = "1.4.3"
   private val GoogleAuthHttpVersion = "0.9.0"
-  private val GoogleCloudNioVersion = "0.42.0-alpha"
+  private val GoogleCloudNioVersion = "0.42.1-alpha"
   private val JacksonVersion = "2.9.5"
   private val JimfsVersion = "1.1"
   private val LogbackClassicVersion = "1.2.3"

@@ -36,7 +36,9 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
           deliverCommand.destination,
           ArraysExtensions.IdatExtension
         )
-        val movesToPerform = Map(grn -> movedGrnIdat, red -> movedRedIdat)
+        val movesToPerform = Map(grn -> movedGrnIdat, red -> movedRedIdat).filterNot {
+          case (old, moved) => moved == old
+        }
 
         copyPaths(movesToPerform, ioUtil).map { _ =>
           metadata
