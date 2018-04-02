@@ -67,14 +67,6 @@ object IoUtil extends IoUtil {
 
   override val gsUtil: GsUtil = new GsUtil
 
-  /**
-    * Wrapper around gsutil managing state directory creation
-    * and basic result parsing.
-    *
-    * TODO: We should consider moving this to google-cloud-java
-    * api usage instead of gsutil. We pay significant overhead
-    * on the startup time of every gsutil call.
-    */
   class GsUtil {
 
     private val storage = StorageOptions.getDefaultInstance.getService
@@ -83,7 +75,10 @@ object IoUtil extends IoUtil {
       val noPrefix = path.substring(GoogleCloudPathPrefix.length)
       val firstSeparator = noPrefix.indexOf(GoogleCloudPathSeparator)
       // Get the bucket and the object name (aka path) from the gcs path.
-      BlobId.of(noPrefix.substring(0, firstSeparator), noPrefix.substring(firstSeparator + 1))
+      BlobId.of(
+        noPrefix.substring(0, firstSeparator),
+        noPrefix.substring(firstSeparator + 1)
+      )
     }
 
     private def getBlob(path: String) = {
@@ -91,11 +86,13 @@ object IoUtil extends IoUtil {
     }
 
     def cp(from: String, to: String): Unit = {
-      getBlob(from).copyTo(toBlobId(to)).getResult
+      getBlob(from).copyTo(toBlobId(to)).getResult.asInstanceOf[Unit]
     }
 
     def rm(path: String): Unit = {
-      getBlob(path).delete()
+      if (!getBlob(path).delete()) {
+        throw new RuntimeException(s"Cannot delete '$path' because it does not exist.")
+      }
     }
 
     def cat(objectLocation: String): String = {
