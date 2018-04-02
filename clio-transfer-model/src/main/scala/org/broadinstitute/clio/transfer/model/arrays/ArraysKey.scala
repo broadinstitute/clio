@@ -15,7 +15,7 @@ case class ArraysKey(
   override def getUrlSegments: Seq[String] =
     Seq(
       location.entryName,
-      chipwellBarcode.toString,
+      chipwellBarcode.name,
       version.toString
     )
 }

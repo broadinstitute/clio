@@ -63,7 +63,7 @@ case class ArraysMetadata(
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
   ): ArraysMetadata = this.copy(
-    gtcPath = pathMapper(gtcPath, ""),
+    gtcPath = pathMapper(gtcPath, ArraysExtensions.GtcExtension),
     vcfPath = pathMapper(vcfPath, ArraysExtensions.VcfGzExtension),
     vcfIndexPath = pathMapper(vcfIndexPath, ArraysExtensions.VcfGzTbiExtension)
   )

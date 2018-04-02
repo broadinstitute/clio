@@ -29,6 +29,8 @@ object ArraysExtensions {
 
   val VcfExtension = ".vcf"
 
+  val GtcExtension = ".gtc"
+
   val VcfGzExtension = s"${VcfExtension}${GzExtension}"
 
   val VcfGzTbiExtension = s"${VcfGzExtension}${TbiExtension}"
