@@ -3,7 +3,7 @@ package org.broadinstitute.clio.transfer.model
 import java.net.URI
 import java.time.OffsetDateTime
 
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
@@ -27,6 +27,8 @@ case class ModelMockIndex(
   override val queryInputTag: ClassTag[QueryInputType] =
     implicitly[ClassTag[QueryInputType]]
   override val keyEncoder: Encoder[KeyType] = implicitly[Encoder[KeyType]]
+  override val objectKeyEncoder: ObjectEncoder[KeyType] =
+    implicitly[ObjectEncoder[KeyType]]
   override val metadataDecoder: Decoder[MetadataType] = implicitly[Decoder[MetadataType]]
   override val metadataEncoder: Encoder[MetadataType] = implicitly[Encoder[MetadataType]]
   override val queryInputEncoder: Encoder[QueryInputType] =

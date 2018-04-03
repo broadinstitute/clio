@@ -15,6 +15,7 @@ object Dependencies {
   private val BetterFilesVersion = "3.4.0"
   private val CaseAppVersion = "2.0.0-M3"
   private val CirceVersion = "0.9.3"
+  private val DiffsonVersion = "2.2.6"
   private val Elastic4sVersion = "6.2.3"
   private val EnumeratumVersion = "1.5.13"
   private val EnumeratumCirceVersion = "1.5.17"
@@ -62,6 +63,7 @@ object Dependencies {
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-generic-extras" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
+    "org.gnieh" %% "diffson-circe" % DiffsonVersion,
     "org.slf4j" % "slf4j-api" % Slf4jVersion,
     "org.webjars" % "swagger-ui" % SwaggerUi
   )

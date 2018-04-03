@@ -28,7 +28,6 @@ abstract class IndexWebService[CI <: ClioIndex](
       parameter('force.as[Boolean] ? false) { force =>
         pathPrefixKey { key =>
           post {
-
             entity(as[indexService.clioIndex.MetadataType]) { metadata =>
               complete(indexService.upsertMetadata(key, metadata, force))
             }

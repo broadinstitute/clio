@@ -195,13 +195,9 @@ class ClioWebClient(
       Uri.Path(s"/api/v1/${clioIndex.urlSegment}/metadata")
     )(_ / _)
 
-    val uri =
-      if (force) Uri(path = encodedPath).withQuery(Uri.Query("force" -> "true"))
-      else Uri(path = encodedPath)
-
     dispatchRequest(
       HttpRequest(
-        uri = uri,
+        uri = Uri(path = encodedPath).withQuery(Uri.Query("force" -> force.toString)),
         method = HttpMethods.POST,
         entity = entity
       )

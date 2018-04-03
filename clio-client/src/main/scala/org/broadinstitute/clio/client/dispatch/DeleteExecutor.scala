@@ -112,7 +112,7 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])
         .upsert(deleteCommand.index)(
           deleteCommand.key,
           markedAsDeleted,
-          deleteCommand.force
+          force = true
         )
         .recover {
           case ex =>

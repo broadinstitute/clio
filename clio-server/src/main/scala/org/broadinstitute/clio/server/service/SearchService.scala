@@ -22,10 +22,13 @@ class SearchService private[server] (searchDAO: SearchDAO) {
     * @tparam CI The type of the TransferKey to query.
     * @return The result of the query.
     */
-  def simpleStringQueryMetadata[CI <: ClioIndex](simpleString: String)(
-    implicit index: ElasticsearchIndex[CI]
+  def simpleStringQueryMetadata[Input, CI <: ClioIndex](simpleString: String)(
+    implicit index: ElasticsearchIndex[CI],
+    queryMapper: ElasticsearchQueryMapper[Input]
   ): Source[Json, NotUsed] = {
-    searchDAO.queryMetadata(SimpleStringQueryDefinition(simpleString))
+    searchDAO
+      .queryMetadata(SimpleStringQueryDefinition(simpleString))
+      .map(queryMapper.toQueryOutput)
   }
 
   /**

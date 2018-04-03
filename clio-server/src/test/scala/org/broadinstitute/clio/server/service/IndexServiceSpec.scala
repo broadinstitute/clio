@@ -2,14 +2,13 @@ package org.broadinstitute.clio.server.service
 
 import akka.stream.scaladsl.Sink
 import com.sksamuel.elastic4s.searches.queries.SimpleStringQueryDefinition
-import io.circe.Printer
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import io.circe.syntax._
 import org.broadinstitute.clio.server.TestKitSuite
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
 import org.broadinstitute.clio.transfer.model.ClioIndex
-import org.broadinstitute.clio.util.model.DocumentStatus
-import io.circe.syntax._
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.DocumentStatus
 
 abstract class IndexServiceSpec[
   CI <: ClioIndex
@@ -106,7 +105,7 @@ abstract class IndexServiceSpec[
         Seq((Seq(expectedDocument), elasticsearchIndex))
       )
       memorySearchDAO.queryCalls should be(
-        Seq(SimpleStringQueryDefinition(dummyKey.asJson.pretty(Printer.noSpaces)))
+        Seq(SimpleStringQueryDefinition(dummyKey.asJson.toString))
       )
     }
   }

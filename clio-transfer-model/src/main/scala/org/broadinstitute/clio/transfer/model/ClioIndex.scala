@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.transfer.model
 
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
 import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.ClassTag
@@ -37,6 +37,8 @@ trait ClioIndex {
 
   val keyEncoder: Encoder[KeyType]
 
+  val objectKeyEncoder: ObjectEncoder[KeyType]
+
   val metadataDecoder: Decoder[MetadataType]
 
   val metadataEncoder: Encoder[MetadataType]
@@ -64,6 +66,7 @@ trait ClioIndex {
     implicit val mt: ClassTag[MetadataType] = metadataTag
     implicit val qit: ClassTag[QueryInputType] = queryInputTag
     implicit val ke: Encoder[KeyType] = keyEncoder
+    implicit val oke: ObjectEncoder[KeyType] = objectKeyEncoder
     implicit val md: Decoder[MetadataType] = metadataDecoder
     implicit val me: Encoder[MetadataType] = metadataEncoder
     implicit val qie: Encoder[QueryInputType] = queryInputEncoder
