@@ -20,6 +20,6 @@ class MockArraysService()(implicit executionContext: ExecutionContext)
       Location.GCP,
       Symbol("chipwell_barcode"),
       1
-    ).asJson(ArraysIndex.objectKeyEncoder)
+    ).asJson(ArraysIndex.keyEncoder)
   }
 }

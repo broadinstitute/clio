@@ -21,5 +21,5 @@ class MockGvcfService()(implicit executionContext: ExecutionContext)
       "project",
       "sample",
       1
-    ).asJson(GvcfIndex.objectKeyEncoder)
+    ).asJson(GvcfIndex.keyEncoder)
 }

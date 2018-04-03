@@ -105,7 +105,7 @@ abstract class IndexServiceSpec[
         Seq((Seq(expectedDocument), elasticsearchIndex))
       )
       memorySearchDAO.queryCalls should be(
-        Seq(SimpleStringQueryDefinition(dummyKey.asJson.toString))
+        Seq(SimpleStringQueryDefinition(dummyKey.asJson.noSpaces))
       )
     }
   }

@@ -108,22 +108,21 @@ abstract class IndexService[CI <: ClioIndex](
         Move - effectively an Add and Remove. This will not overwrite.
         Copy - effectively an Add. This will not overwrite.
      */
-    val replaceOperations = differences.ops
-      .filter(
-        op => op.isInstanceOf[Replace] && op.asInstanceOf[Replace].value != Json.Null
-      )
+    val replaceOperations: Seq[Replace] = differences.ops.flatMap {
+      case replace: Replace => Some(replace).filter(_.value != Json.Null)
+      case _                => None
+    }
 
     if (replaceOperations.isEmpty) {
       Right(newMetadata)
     } else {
-      val diffs: String = replaceOperations.map { op =>
-        val replace = op.asInstanceOf[Replace]
-        s"Field: ${replace.path}, Old value: ${replace.old.getOrElse("")}, New value: ${replace.value}"
+      val diffs: String = replaceOperations.map { replaceOp =>
+        s"Field: ${replaceOp.path}, Old value: ${replaceOp.old.getOrElse("")}, New value: ${replaceOp.value}"
       }.mkString("\n")
       Left(
         UpsertValidationException(
           s"""Adding this document will overwrite the following existing metadata:
-             |$diffs. Use 'force=true' to overwrite the existing data.""".stripMargin
+             |$diffs. Use '$forceString=true' to overwrite the existing data.""".stripMargin
         )
       )
     }

@@ -31,7 +31,7 @@ sealed abstract class SemiAutoClioIndex[
   override val keyTag: ClassTag[KT],
   override val metadataTag: ClassTag[MT],
   override val queryInputTag: ClassTag[QI],
-  override val objectKeyEncoder: ObjectEncoder[KT],
+  override val keyEncoder: ObjectEncoder[KT],
   override val metadataDecoder: Decoder[MT],
   override val metadataEncoder: Encoder[MT],
   override val queryInputEncoder: Encoder[QI],

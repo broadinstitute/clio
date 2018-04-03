@@ -197,7 +197,7 @@ class ClioWebClient(
 
     dispatchRequest(
       HttpRequest(
-        uri = Uri(path = encodedPath).withQuery(Uri.Query("force" -> force.toString)),
+        uri = Uri(path = encodedPath).withQuery(Uri.Query(forceString -> force.toString)),
         method = HttpMethods.POST,
         entity = entity
       )

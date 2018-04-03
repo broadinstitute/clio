@@ -21,6 +21,6 @@ class MockWgsCramService()(implicit executionContext: ExecutionContext)
       "project",
       "sample",
       1
-    ).asJson(WgsCramIndex.objectKeyEncoder)
+    ).asJson(WgsCramIndex.keyEncoder)
   }
 }

@@ -4,7 +4,7 @@ import akka.http.scaladsl.server._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.Materializer
 import org.broadinstitute.clio.server.service.IndexService
-import org.broadinstitute.clio.transfer.model.ClioIndex
+import org.broadinstitute.clio.transfer.model._
 
 abstract class IndexWebService[CI <: ClioIndex](
   val indexService: IndexService[CI]
@@ -25,7 +25,7 @@ abstract class IndexWebService[CI <: ClioIndex](
 
   private[webservice] val postMetadata: Route = {
     pathPrefix("metadata") {
-      parameter('force.as[Boolean] ? false) { force =>
+      parameter(Symbol(forceString).as[Boolean] ? false) { force =>
         pathPrefixKey { key =>
           post {
             entity(as[indexService.clioIndex.MetadataType]) { metadata =>

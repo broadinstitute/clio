@@ -10,7 +10,6 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchQueryMapper
 }
 import org.broadinstitute.clio.transfer.model.ClioIndex
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 /**
   * Service responsible for running queries against a search DAO.
@@ -29,7 +28,7 @@ class SearchService private[server] (searchDAO: SearchDAO) {
   ): Source[Json, NotUsed] = {
     searchDAO
       .queryMetadata(
-        SimpleStringQueryDefinition(simpleJson.pretty(ModelAutoDerivation.defaultPrinter))
+        SimpleStringQueryDefinition(simpleJson.noSpaces)
       )
       .map(queryMapper.toQueryOutput)
   }
