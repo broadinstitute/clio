@@ -21,6 +21,6 @@ class MockWgsUbamService()(implicit executionContext: ExecutionContext)
       "barcode",
       1,
       "library"
-    ).asJson(WgsUbamIndex.keyEncoder)
+    ).asJson(WgsUbamIndex.objectKeyEncoder)
   }
 }
