@@ -26,7 +26,6 @@ case class ModelMockIndex(
   override val metadataTag: ClassTag[MetadataType] = implicitly[ClassTag[MetadataType]]
   override val queryInputTag: ClassTag[QueryInputType] =
     implicitly[ClassTag[QueryInputType]]
-  override val keyEncoder: Encoder[KeyType] = implicitly[Encoder[KeyType]]
   override val objectKeyEncoder: ObjectEncoder[KeyType] =
     implicitly[ObjectEncoder[KeyType]]
   override val metadataDecoder: Decoder[MetadataType] = implicitly[Decoder[MetadataType]]

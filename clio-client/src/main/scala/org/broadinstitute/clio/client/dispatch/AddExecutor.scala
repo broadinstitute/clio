@@ -38,10 +38,10 @@ class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI])
       )
 
     decodedOrError.fold(
-      Future.failed, { decoded =>
+      Future.failed, {
         addFiles(
           webClient,
-          decoded,
+          _,
           addCommand.force
         )
       }
