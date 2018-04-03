@@ -9,6 +9,7 @@ import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.exceptions.UpsertValidationException
 import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.ApiConstants._
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.DocumentStatus.Normal
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}

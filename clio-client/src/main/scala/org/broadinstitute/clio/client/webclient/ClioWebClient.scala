@@ -15,6 +15,7 @@ import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
+import org.broadinstitute.clio.util.ApiConstants._
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -192,7 +193,7 @@ class ClioWebClient(
      * in the fields of the key.
      */
     val encodedPath = key.getUrlSegments.foldLeft(
-      Uri.Path(s"/api/v1/${clioIndex.urlSegment}/metadata")
+      Uri.Path(s"/$apiString/v1/${clioIndex.urlSegment}/$metadataString")
     )(_ / _)
 
     dispatchRequest(
@@ -255,7 +256,7 @@ class ClioWebClient(
     input: Json,
     includeDeleted: Boolean
   ): Future[Json] = {
-    val queryPath = if (includeDeleted) "queryall" else "query"
+    val queryPath = if (includeDeleted) queryAllString else queryString
 
     val entity = HttpEntity(
       ContentTypes.`application/json`,
@@ -263,7 +264,7 @@ class ClioWebClient(
     )
     dispatchRequest(
       HttpRequest(
-        uri = s"/api/v1/${clioIndex.urlSegment}/$queryPath",
+        uri = s"/$apiString/v1/${clioIndex.urlSegment}/$queryPath",
         method = HttpMethods.POST,
         entity = entity
       )

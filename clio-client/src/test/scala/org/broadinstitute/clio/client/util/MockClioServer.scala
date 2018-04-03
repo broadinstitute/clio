@@ -14,6 +14,7 @@ import io.circe.Json
 import org.broadinstitute.clio.status.model.{StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model.ModelMockIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.ApiConstants._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -58,10 +59,10 @@ class MockClioServer(index: ModelMockIndex)(implicit system: ActorSystem)
           complete(slowResult)
         }
       } ~
-      pathPrefix("api") {
+      pathPrefix(apiString) {
         pathPrefix("v1") {
           pathPrefix(index.urlSegment) {
-            path("query") {
+            path(queryString) {
               entity(as[Json]) { _ =>
                 /*
                  * (As far as I can find) akka-http doesn't expose an API for prematurely

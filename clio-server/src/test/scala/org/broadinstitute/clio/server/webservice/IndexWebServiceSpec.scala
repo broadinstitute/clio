@@ -6,6 +6,7 @@ import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.service.MockIndexService
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.model.UpsertId
+import org.broadinstitute.clio.util.ApiConstants._
 
 abstract class IndexWebServiceSpec[
   CI <: ClioIndex
@@ -63,7 +64,7 @@ abstract class IndexWebServiceSpec[
 
   it should "successfully queryall with an empty request" in {
     mockService.queryAllCalls.clear()
-    Post("/queryall", Map.empty[String, String]) ~> webService.queryall ~> check {
+    Post(s"/$queryAllString", Map.empty[String, String]) ~> webService.queryall ~> check {
       status shouldEqual StatusCodes.OK
     }
     mockService.queryAllCalls should have length 1
@@ -71,7 +72,7 @@ abstract class IndexWebServiceSpec[
 
   it should "successfully queryall without an empty request" in {
     mockService.queryAllCalls.clear()
-    Post("/queryall", Map("project" -> "project")) ~> webService.queryall ~> check {
+    Post(s"/$queryAllString", Map("project" -> "project")) ~> webService.queryall ~> check {
       status shouldEqual StatusCodes.OK
     }
     mockService.queryAllCalls should have length 1
@@ -79,7 +80,7 @@ abstract class IndexWebServiceSpec[
 
   it should "reject queryall with incorrect datatypes in body" in {
     mockService.queryAllCalls.clear()
-    Post("/queryall", badQueryInputMap) ~> webService.queryall ~> check {
+    Post(s"/$queryAllString", badQueryInputMap) ~> webService.queryall ~> check {
       rejection should matchPattern {
         case MalformedRequestContentRejection(_, _) =>
       }
@@ -89,7 +90,7 @@ abstract class IndexWebServiceSpec[
 
   it should "successfully query with an empty request" in {
     mockService.queryCalls.clear()
-    Post("/query", Map.empty[String, String]) ~> webService.query ~> check {
+    Post(s"/$queryString", Map.empty[String, String]) ~> webService.query ~> check {
       status shouldEqual StatusCodes.OK
     }
     mockService.queryCalls should have length 1
@@ -97,7 +98,7 @@ abstract class IndexWebServiceSpec[
 
   it should "successfully query without an empty request" in {
     mockService.queryCalls.clear()
-    Post("/query", Map("project" -> "project")) ~> webService.query ~> check {
+    Post(s"/$queryString", Map("project" -> "project")) ~> webService.query ~> check {
       status shouldEqual StatusCodes.OK
     }
     mockService.queryCalls should have length 1
@@ -105,7 +106,7 @@ abstract class IndexWebServiceSpec[
 
   it should "reject query with incorrect datatypes in body" in {
     mockService.queryCalls.clear()
-    Post("/query", badQueryInputMap) ~> webService.query ~> check {
+    Post(s"/$queryString", badQueryInputMap) ~> webService.query ~> check {
       rejection should matchPattern {
         case MalformedRequestContentRejection(_, _) =>
       }
@@ -114,7 +115,7 @@ abstract class IndexWebServiceSpec[
   }
 
   def metadataRouteFromKey(key: webService.indexService.clioIndex.KeyType): String = {
-    (Seq("/metadata") ++ key.getUrlSegments).mkString("/")
+    (Seq(s"/$metadataString") ++ key.getUrlSegments).mkString("/")
   }
 
   def replaceLocationWithBogusInRoute(route: String): String = {

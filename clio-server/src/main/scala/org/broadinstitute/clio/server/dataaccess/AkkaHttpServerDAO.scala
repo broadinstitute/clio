@@ -9,6 +9,7 @@ import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.model.ApiNotReadyRejection
+import org.broadinstitute.clio.util.ApiConstants._
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -34,7 +35,7 @@ class AkkaHttpServerDAO private[dataaccess] (
 
   private var currentApiRoutes: Route = reject(ApiNotReadyRejection)
 
-  private def apiRoutes: Route = pathPrefix("api")(currentApiRoutes)
+  private def apiRoutes: Route = pathPrefix(apiString)(currentApiRoutes)
 
   override def startup(): Future[Unit] = {
     val bindingFuture = Http().bindAndHandle(

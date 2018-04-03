@@ -5,6 +5,7 @@ import akka.http.scaladsl.server.Directives._
 import akka.stream.Materializer
 import org.broadinstitute.clio.server.service.IndexService
 import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.ApiConstants._
 
 abstract class IndexWebService[CI <: ClioIndex](
   val indexService: IndexService[CI]
@@ -24,7 +25,7 @@ abstract class IndexWebService[CI <: ClioIndex](
   private[webservice] def pathPrefixKey: Directive1[indexService.clioIndex.KeyType]
 
   private[webservice] val postMetadata: Route = {
-    pathPrefix("metadata") {
+    pathPrefix(metadataString) {
       parameter(Symbol(forceString).as[Boolean] ? false) { force =>
         pathPrefixKey { key =>
           post {
@@ -38,7 +39,7 @@ abstract class IndexWebService[CI <: ClioIndex](
   }
 
   private[webservice] val query: Route = {
-    path("query") {
+    path(queryString) {
       post {
         entity(as[indexService.clioIndex.QueryInputType]) { input =>
           complete(indexService.queryMetadata(input))
@@ -48,7 +49,7 @@ abstract class IndexWebService[CI <: ClioIndex](
   }
 
   private[webservice] val queryall: Route = {
-    path("queryall") {
+    path(queryAllString) {
       post {
         entity(as[indexService.clioIndex.QueryInputType]) { input =>
           complete(indexService.queryAllMetadata(input))
