@@ -30,7 +30,6 @@ case class ArraysMetadata(
   redIdatPath: Option[URI] = None,
   researchProjectId: Option[String] = None,
   sampleAlias: Option[String] = None,
-  scannerName: Option[Symbol] = None,
   variantCallingDetailMetricsPath: Option[URI] = None,
   variantCallingSummaryMetricsPath: Option[URI] = None,
   vcfPath: Option[URI] = None,
