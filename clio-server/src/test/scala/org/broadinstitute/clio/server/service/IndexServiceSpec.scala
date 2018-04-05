@@ -1,15 +1,16 @@
 package org.broadinstitute.clio.server.service
 
 import akka.stream.scaladsl.Sink
+import akka.stream.testkit.scaladsl.TestSink
 import com.sksamuel.elastic4s.searches.queries.SimpleStringQueryDefinition
 import io.circe.syntax._
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
+import org.broadinstitute.clio.server.exceptions.UpsertValidationException
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.DocumentStatus
-
 abstract class IndexServiceSpec[
   CI <: ClioIndex
 ](specificService: String)
@@ -35,12 +36,97 @@ abstract class IndexServiceSpec[
     documentStatus: Option[DocumentStatus]
   ): indexService.clioIndex.MetadataType
 
+  def copyDummyMetadataChangeField(
+    metadata: indexService.clioIndex.MetadataType
+  ): indexService.clioIndex.MetadataType
+
   def getService(
     persistenceService: PersistenceService,
     searchService: SearchService
   ): IndexService[CI]
 
   behavior of specificService
+
+  it should "fail if the update would overwrite data" in {
+    recoverToSucceededIf[UpsertValidationException] {
+      clearMemory()
+      val metadata = getDummyMetadata(None)
+      for {
+        _ <- indexService
+          .upsertMetadata(
+            dummyKey,
+            metadata
+          )
+          .runWith(Sink.head)
+      } yield {
+        throw indexService
+          .upsertMetadata(dummyKey, copyDummyMetadataChangeField(metadata))
+          .runWith(TestSink.probe)
+          .expectSubscriptionAndError()
+      }
+    }
+  }
+
+  it should "succeed if the update would overwrite data and force is set to true" in {
+
+    clearMemory()
+    val metadata = getDummyMetadata(Option(DocumentStatus.Normal))
+    val newMetadata = copyDummyMetadataChangeField(metadata)
+
+    val expectedDocumentStatus = Option(DocumentStatus.Normal)
+    for {
+      upsertId <- indexService
+        .upsertMetadata(
+          dummyKey,
+          metadata
+        )
+        .runWith(Sink.head)
+      newUpsertId <- indexService
+        .upsertMetadata(dummyKey, newMetadata, force = true)
+        .runWith(Sink.head)
+    } yield {
+
+      val expectedDocument =
+        indexService.documentConverter
+          .document(
+            dummyKey,
+            metadata.withDocumentStatus(expectedDocumentStatus)
+          )
+          .mapObject(
+            _.add(ElasticsearchIndex.UpsertIdElasticsearchName, upsertId.asJson)
+          )
+
+      val expectedDocument2 =
+        indexService.documentConverter
+          .document(
+            dummyKey,
+            newMetadata.withDocumentStatus(expectedDocumentStatus)
+          )
+          .mapObject(
+            _.add(ElasticsearchIndex.UpsertIdElasticsearchName, newUpsertId.asJson)
+          )
+
+      memoryPersistenceDAO.writeCalls should be(
+        Seq(
+          (expectedDocument, elasticsearchIndex),
+          (expectedDocument2, elasticsearchIndex)
+        )
+      )
+      memorySearchDAO.updateCalls should be(
+        Seq(
+          (Seq(expectedDocument), elasticsearchIndex),
+          (Seq(expectedDocument2), elasticsearchIndex)
+        )
+      )
+      memorySearchDAO.queryCalls should be(
+        Seq(
+          SimpleStringQueryDefinition(dummyKey.asJson.noSpaces),
+          SimpleStringQueryDefinition(dummyKey.asJson.noSpaces)
+        )
+      )
+    }
+
+  }
 
   it should "upsertMetadata" in {
     clearMemory()

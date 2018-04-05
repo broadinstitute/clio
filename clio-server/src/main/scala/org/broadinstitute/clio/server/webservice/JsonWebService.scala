@@ -8,13 +8,12 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 object JsonWebService {
 
-  def singleElememtJsonStreamingSupport: JsonEntityStreamingSupport =
+  val singleElememtJsonStreamingSupport: JsonEntityStreamingSupport =
     EntityStreamingSupport
       .json()
       .withFramingRenderer(
         Flow[ByteString].intersperse(ByteString.empty, ByteString("\n"), ByteString.empty)
       )
-
 }
 
 /**

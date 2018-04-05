@@ -1,7 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import akka.stream.scaladsl.Sink
-import akka.stream.testkit.scaladsl.TestSink
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchDocumentMapper,
@@ -16,7 +14,7 @@ import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{Location, UpsertId}
+import org.broadinstitute.clio.util.model.Location
 
 class PersistenceServiceSpec
     extends TestKitSuite("PersistenceServiceSpec")
@@ -41,28 +39,27 @@ class PersistenceServiceSpec
     val searchDAO = new MemorySearchDAO()
     val persistenceService = new PersistenceService(persistenceDAO, searchDAO)
 
-    persistenceService
-      .upsertMetadata(
+    for {
+      uuid <- persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
         mockDocConverter,
         expectedIndex
       )
-      .runWith(Sink.head[UpsertId])
-      .map { uuid =>
-        val expectedDocument = mockDocConverter
-          .document(mockKey, mockMetadata)
-          .deepMerge(
-            Map(ElasticsearchIndex.UpsertIdElasticsearchName -> uuid).asJson
-          )
+    } yield {
+      val expectedDocument = mockDocConverter
+        .document(mockKey, mockMetadata)
+        .deepMerge(
+          Map(ElasticsearchIndex.UpsertIdElasticsearchName -> uuid).asJson
+        )
 
-        persistenceDAO.writeCalls should be(
-          Seq((expectedDocument, expectedIndex))
-        )
-        searchDAO.updateCalls.flatMap { case (jsons, index) => jsons.map(_ -> index) } should be(
-          Seq((expectedDocument, expectedIndex))
-        )
-      }
+      persistenceDAO.writeCalls should be(
+        Seq((expectedDocument, expectedIndex))
+      )
+      searchDAO.updateCalls.flatMap { case (jsons, index) => jsons.map(_ -> index) } should be(
+        Seq((expectedDocument, expectedIndex))
+      )
+    }
   }
 
   it should "not update search if writing to storage fails" in {
@@ -70,17 +67,15 @@ class PersistenceServiceSpec
     val searchDAO = new MemorySearchDAO()
     val persistenceService = new PersistenceService(persistenceDAO, searchDAO)
 
-    persistenceService
-      .upsertMetadata(
+    recoverToSucceededIf[Exception] {
+      persistenceService.upsertMetadata(
         mockKey,
         mockMetadata,
         mockDocConverter,
         expectedIndex
       )
-      .runWith(TestSink.probe[UpsertId])
-      .expectSubscriptionAndError()
-
-    searchDAO.updateCalls should be(empty)
-
+    }.map { _ =>
+      searchDAO.updateCalls should be(empty)
+    }
   }
 }

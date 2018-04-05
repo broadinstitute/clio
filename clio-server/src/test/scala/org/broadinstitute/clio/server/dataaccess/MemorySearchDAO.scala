@@ -2,7 +2,10 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
+import com.sksamuel.elastic4s.searches.queries.{
+  QueryDefinition,
+  SimpleStringQueryDefinition
+}
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.ClioIndex
@@ -30,7 +33,19 @@ class MemorySearchDAO extends MockSearchDAO {
     index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
     queryCalls += queryDefinition
-    super.queryMetadata(queryDefinition)
+    updateCalls
+      .flatMap(_._1)
+      .find(update => {
+        update.findAllByKey("entity_id").head.toString().split('.').forall { keySegment =>
+          queryDefinition
+            .asInstanceOf[SimpleStringQueryDefinition]
+            .query
+            .contains(keySegment)
+        }
+      })
+      .fold(
+        super.queryMetadata(queryDefinition)
+      )(Source.single)
   }
 
   override def getMostRecentDocument(

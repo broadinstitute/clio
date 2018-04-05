@@ -24,6 +24,10 @@ class WgsUbamServiceSpec extends IndexServiceSpec[WgsUbamIndex.type]("WgsUbamSer
     )
   }
 
+  def copyDummyMetadataChangeField(metadata: UbamMetadata): UbamMetadata = {
+    metadata.copy(project = Some(util.Random.nextString(10)))
+  }
+
   def getService(
     persistenceService: PersistenceService,
     searchService: SearchService

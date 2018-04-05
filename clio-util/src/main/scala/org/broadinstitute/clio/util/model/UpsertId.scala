@@ -1,7 +1,5 @@
 package org.broadinstitute.clio.util.model
 
-import io.circe.Json
-
 import scala.util.Random
 
 /**

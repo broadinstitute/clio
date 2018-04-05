@@ -62,11 +62,13 @@ abstract class IndexService[CI <: ClioIndex](
       }
       .flatMapConcat[UpsertId, NotUsed] {
         case Right(updatedMetadata) =>
-          persistenceService.upsertMetadata(
-            indexKey,
-            updatedMetadata,
-            documentConverter,
-            elasticsearchIndex
+          Source.fromFuture(
+            persistenceService.upsertMetadata(
+              indexKey,
+              updatedMetadata,
+              documentConverter,
+              elasticsearchIndex
+            )
           )
         case Left(rejection) => Source.failed(rejection)
       }
@@ -139,11 +141,10 @@ abstract class IndexService[CI <: ClioIndex](
           case None =>
             Right(Some(storedDocs.mapObject(_.filterKeys(!fieldsToDrop.contains(_)))))
           case Some(_) =>
+            val keyAsJson = indexKey.asJson.pretty(ModelAutoDerivation.defaultPrinter)
             Left(
               UpsertValidationException(
-                s"""Got > 1 ${clioIndex.name}s from Clio for key:
-                 |${indexKey.asJson
-                     .pretty(ModelAutoDerivation.defaultPrinter)}""".stripMargin
+                s"Got > 1 ${clioIndex.name}s from Clio for key:$keyAsJson"
               )
             )
         }

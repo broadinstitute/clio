@@ -1,7 +1,5 @@
 package org.broadinstitute.clio.server.service
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchDocumentMapper,
   ElasticsearchIndex
@@ -10,7 +8,7 @@ import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.transfer.model.{IndexKey, Metadata}
 import org.broadinstitute.clio.util.model.UpsertId
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * Service responsible for persisting metadata updates first by
@@ -38,14 +36,13 @@ class PersistenceService private[server] (
     metadata: M,
     documentMapper: ElasticsearchDocumentMapper[Key, M],
     index: ElasticsearchIndex[_]
-  )(implicit ec: ExecutionContext): Source[UpsertId, NotUsed] = {
+  )(implicit ec: ExecutionContext): Future[UpsertId] = {
     val document = documentMapper.document(key, metadata)
-
-    Source.fromFuture(for {
+    for {
       _ <- persistenceDAO.writeUpdate(document, index)
       _ <- searchDAO.updateMetadata(document)(index)
     } yield {
       ElasticsearchIndex.getUpsertId(document)
-    })
+    }
   }
 }
