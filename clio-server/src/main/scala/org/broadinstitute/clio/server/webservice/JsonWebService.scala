@@ -1,20 +1,8 @@
 package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.common.{EntityStreamingSupport, JsonEntityStreamingSupport}
-import akka.stream.scaladsl.Flow
-import akka.util.ByteString
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-
-object JsonWebService {
-
-  val singleElememtJsonStreamingSupport: JsonEntityStreamingSupport =
-    EntityStreamingSupport
-      .json()
-      .withFramingRenderer(
-        Flow[ByteString].intersperse(ByteString.empty, ByteString("\n"), ByteString.empty)
-      )
-}
 
 /**
   * Utility trait containing settings / implicits used by web-service

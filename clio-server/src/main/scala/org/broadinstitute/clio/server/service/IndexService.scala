@@ -37,6 +37,8 @@ abstract class IndexService[CI <: ClioIndex](
     ElasticsearchQueryMapper[
       clioIndex.QueryInputType
     ]
+  private[service] val keyQueryConverter =
+    ElasticsearchQueryMapper[clioIndex.KeyType]
 
   def upsertMetadata(
     indexKey: clioIndex.KeyType,
@@ -132,9 +134,8 @@ abstract class IndexService[CI <: ClioIndex](
     val fieldsToDrop = keyJson.keys.toSeq
 
     searchService
-      .simpleStringQueryMetadata(indexKey.asJson)(
-        elasticsearchIndex,
-        queryConverter
+      .queryMetadata(indexKey, keyQueryConverter)(
+        elasticsearchIndex
       )
       .fold[Either[Exception, Option[Json]]](Right(None)) { (acc, storedDocs) =>
         acc.flatMap {

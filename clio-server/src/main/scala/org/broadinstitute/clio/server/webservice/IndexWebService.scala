@@ -1,11 +1,12 @@
 package org.broadinstitute.clio.server.webservice
 
-import akka.http.scaladsl.common.JsonEntityStreamingSupport
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
+import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.server.service.IndexService
 import org.broadinstitute.clio.transfer.model.ApiConstants._
 import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.model.UpsertId
 
 abstract class IndexWebService[CI <: ClioIndex](
   val indexService: IndexService[CI]
@@ -24,17 +25,23 @@ abstract class IndexWebService[CI <: ClioIndex](
   private[webservice] def pathPrefixKey: Directive1[indexService.clioIndex.KeyType]
 
   private[webservice] val postMetadata: Route = {
-    implicit val jsonStreamingSupport: JsonEntityStreamingSupport =
-      JsonWebService.singleElememtJsonStreamingSupport
     pathPrefix(metadataString) {
       parameter(Symbol(forceString).as[Boolean] ? false) { force =>
         pathPrefixKey { key =>
           post {
             entity(as[indexService.clioIndex.MetadataType]) { metadata =>
-              complete(
-                indexService
-                  .upsertMetadata(key, metadata, force)
-              )
+              extractRequestContext { ctx =>
+                import ctx.materializer
+
+                complete {
+                  // Type inference failed for me just trying to return this,
+                  // but maybe we can massage it in a different way
+                  val fut = indexService
+                    .upsertMetadata(key, metadata, force)
+                    .runWith(Sink.head[UpsertId])
+                  fut
+                }
+              }
             }
           }
         }

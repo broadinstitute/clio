@@ -34,7 +34,7 @@ class LocalIntegrationSpec extends BaseIntegrationSpec(s"Clio local") {
     * be persisted.
     */
   override def rootPersistenceDir: File = {
-    File("/tmp/clio-persistence")
+    File(ClioBuildInfo.persistenceDir)
   }
 }
 
