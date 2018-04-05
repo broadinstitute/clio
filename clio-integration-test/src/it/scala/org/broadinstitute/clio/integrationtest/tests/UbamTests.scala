@@ -327,20 +327,22 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val researchProjectIds = Seq.fill(3)("rpId" + randomId)
 
     val aggregations = Seq(
-      AggregatedBy.Squid.entryName,
-      AggregatedBy.Squid.entryName,
-      AggregatedBy.RP.entryName
+      AggregatedBy.Squid,
+      AggregatedBy.Squid,
+      AggregatedBy.RP
     )
 
     val upserts = Future.sequence {
-      Seq(libraries, samples, researchProjectIds, aggregations).transpose.map {
-        case Seq(library, sample, researchProjectId, aggregation) =>
+      libraries zip samples zip researchProjectIds zip aggregations map {
+        case (((lib, samp), rpid), agg) => (lib, samp, rpid, agg)
+      } map {
+        case (library, sample, researchProjectId, aggregation) =>
           val key = UbamKey(location, flowcellBarcode, lane, library)
           val metadata = UbamMetadata(
             project = Some(project),
             sampleAlias = Some(sample),
             researchProjectId = Some(researchProjectId),
-            aggregatedBy = Some(AggregatedBy.withName(aggregation))
+            aggregatedBy = Some(aggregation)
           )
           runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       }
