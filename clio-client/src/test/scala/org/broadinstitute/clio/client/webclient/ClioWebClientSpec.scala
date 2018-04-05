@@ -93,6 +93,8 @@ class ClioWebClientSpec
 
   it should "retry requests that fail with connection errors" in {
     // The mock clio-server is set up to timeout on requests to this route (maxRetries-1) times.
-    client.query(index)(ModelMockQueryInput(), includeDeleted = false).map(_ => succeed)
+    client
+      .preformattedQuery(index)(ModelMockQueryInput(), includeDeleted = false)
+      .map(_ => succeed)
   }
 }

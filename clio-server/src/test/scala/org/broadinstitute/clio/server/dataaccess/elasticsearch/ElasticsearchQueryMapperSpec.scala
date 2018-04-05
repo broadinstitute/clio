@@ -4,6 +4,7 @@ import java.net.URI
 import java.time.OffsetDateTime
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.http.search.queries.compound.BoolQueryBuilderFn
 import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model.{
   ModelMockIndex,
@@ -20,32 +21,6 @@ class ElasticsearchQueryMapperSpec
     with Matchers
     with ModelAutoDerivation {
   behavior of "ElasticsearchQueryMapper"
-
-  it should "return isEmpty true for an empty input" in {
-    val mapper = ElasticsearchQueryMapper[ModelMockQueryInput]
-    val input = ModelMockQueryInput(
-      mockFieldDateEnd = None,
-      mockFieldDateStart = None,
-      mockFieldDouble = None,
-      mockFieldInt = None,
-      mockKeyLong = None,
-      mockKeyString = None
-    )
-    mapper.isEmpty(input) should be(true)
-  }
-
-  it should "return isEmpty false for a non-empty input" in {
-    val mapper = ElasticsearchQueryMapper[ModelMockQueryInput]
-    val input = ModelMockQueryInput(
-      mockFieldDateEnd = None,
-      mockFieldDateStart = None,
-      mockFieldDouble = None,
-      mockFieldInt = None,
-      mockKeyLong = None,
-      mockKeyString = Option("hello")
-    )
-    mapper.isEmpty(input) should be(false)
-  }
 
   it should "successfully buildQuery" in {
     val mapper = ElasticsearchQueryMapper[ModelMockQueryInput]
@@ -64,13 +39,15 @@ class ElasticsearchQueryMapperSpec
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
     mapper.buildQuery(input)(index) should be(
-      boolQuery must (
-        rangeQuery("mock_field_date").lte(endDate.toString),
-        rangeQuery("mock_field_date").gte(startDate.toString),
-        queryStringQuery(""""hello"""").defaultField(
-          s"mock_key_string.${ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords.TextExactMatchFieldName}"
+      BoolQueryBuilderFn(
+        boolQuery must (
+          rangeQuery("mock_field_date").lte(endDate.toString),
+          rangeQuery("mock_field_date").gte(startDate.toString),
+          queryStringQuery(""""hello"""").defaultField(
+            s"mock_key_string.${ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords.TextExactMatchFieldName}"
+          )
         )
-      )
+      ).string
     )
   }
 

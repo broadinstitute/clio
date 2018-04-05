@@ -2,7 +2,6 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
@@ -21,7 +20,7 @@ class FailingSearchDAO extends SearchDAO {
 
   override def close(): Future[Unit] = failure
 
-  override def rawQuery(query: Json)(
+  override def rawQuery(json: String)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = Source.failed(ex)
 

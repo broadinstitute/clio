@@ -69,9 +69,9 @@ class MockClioWebClient(status: StatusCode, metadataLocationOption: Option[URI])
     }
   }
 
-  override def rawQuery(
+  override def query(
     clioIndex: ClioIndex
-  )(input: Json, includeDeleted: Boolean): Future[Json] = {
+  )(input: Json, raw: Boolean): Future[Json] = {
     if (status.isSuccess()) {
       Future.successful(json.getOrElse(Json.arr()))
     } else {

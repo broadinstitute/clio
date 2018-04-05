@@ -14,7 +14,7 @@ abstract class IndexWebService[CI <: ClioIndex](
   lazy val routes: Route = {
     pathPrefix("v1") {
       pathPrefix(indexService.clioIndex.urlSegment) {
-        concat(postMetadata, query, queryraw)
+        concat(postMetadata, query, rawquery)
       }
     }
   }
@@ -43,15 +43,14 @@ abstract class IndexWebService[CI <: ClioIndex](
     }
   }
 
-  private[webservice] val queryraw: Route = {
-    path("queryraw") {
+  private[webservice] val rawquery: Route = {
+    path("rawquery") {
       post {
         entity(as[String]) { json =>
-          complete(indexService.queryRaw(json))
+          complete(indexService.rawQuery(json))
         }
       }
     }
   }
-
 
 }

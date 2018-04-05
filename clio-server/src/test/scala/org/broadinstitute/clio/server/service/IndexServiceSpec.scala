@@ -9,6 +9,8 @@ import org.broadinstitute.clio.util.model.DocumentStatus
 import io.circe.syntax._
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
+import scala.collection.mutable.ArrayBuffer
+
 abstract class IndexServiceSpec[
   CI <: ClioIndex
 ](specificService: String)
@@ -59,16 +61,16 @@ abstract class IndexServiceSpec[
     )
   }
 
-  it should "queryData" in {
+  it should "queryMetadata" in {
     clearMemory()
     for {
       _ <- indexService.queryMetadata(dummyInput).runWith(Sink.seq)
     } yield {
       memorySearchDAO.updateCalls should be(empty)
       memorySearchDAO.queryCalls should be(
-        Seq(
+        ArrayBuffer(
           indexService.queryConverter.buildQuery(
-            dummyInput.withDocumentStatus(Option(DocumentStatus.Normal))
+            dummyInput
           )(elasticsearchIndex)
         )
       )

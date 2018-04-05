@@ -18,9 +18,10 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand) extends Executo
     val responseFut = command match {
       case GetServerHealth  => webClient.getClioServerHealth
       case GetServerVersion => webClient.getClioServerVersion
-      case query: QueryCommand[_] => {
-        webClient.queryWithInputDTO(query.index)(query.queryInput, query.includeDeleted)
-      }
+      case query: RawQueryCommand[_] =>
+        webClient.jsonFileQuery(query.index)(query.queryInput)
+      case query: QueryCommand[_] =>
+        webClient.preformattedQuery(query.index)(query.queryInput, query.includeDeleted)
     }
 
     for {

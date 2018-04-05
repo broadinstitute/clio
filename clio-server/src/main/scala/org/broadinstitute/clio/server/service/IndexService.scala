@@ -32,12 +32,6 @@ abstract class IndexService[CI <: ClioIndex](
       clioIndex.QueryInputType
     ]
 
-  private val keysToDrop =
-    Set(
-      ElasticsearchIndex.UpsertIdElasticsearchName,
-      ElasticsearchIndex.EntityIdElasticsearchName
-    )
-
   def upsertMetadata(
     indexKey: clioIndex.KeyType,
     metadata: clioIndex.MetadataType
@@ -58,24 +52,12 @@ abstract class IndexService[CI <: ClioIndex](
   def queryMetadata(
     input: clioIndex.QueryInputType
   ): Source[Json, NotUsed] = {
-    queryRaw(queryConverter.buildQuery(input))
+    rawQuery(queryConverter.buildQuery(input)(elasticsearchIndex))
   }
 
-  def queryRaw(inputJson: String): Source[Json, NotUsed] = {
+  def rawQuery(inputJson: String): Source[Json, NotUsed] = {
     searchService
-      .rawQuery(inputJson)
-      .map(toQueryOutput)
-  }
-
-  /**
-    * Munges the query result document into the appropriate form for the query output.
-    *
-    * @param document A query result document.
-    * @return The query output.
-    */
-  def toQueryOutput(document: Json): Json = {
-    document.mapObject(_.filterKeys({ key =>
-      !keysToDrop.contains(key)
-    }))
+      .rawQuery(inputJson)(elasticsearchIndex)
+      .map(queryConverter.toQueryOutput)
   }
 }

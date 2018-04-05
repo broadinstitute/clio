@@ -2,7 +2,6 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.ClioIndex
@@ -15,7 +14,7 @@ class MemorySearchDAO extends MockSearchDAO {
   val updateCalls: mutable.ArrayBuffer[(Seq[Json], ElasticsearchIndex[ClioIndex])] =
     mutable.ArrayBuffer.empty
 
-  val queryCalls: mutable.ArrayBuffer[QueryDefinition] =
+  val queryCalls: mutable.ArrayBuffer[String] =
     mutable.ArrayBuffer.empty
 
   override def updateMetadata(documents: Json*)(
@@ -25,12 +24,12 @@ class MemorySearchDAO extends MockSearchDAO {
     super.updateMetadata(documents: _*)
   }
 
-  override def queryMetadata(queryDefinition: QueryDefinition)(
+  override def rawQuery(json: String)(
     implicit
     index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
-    queryCalls += queryDefinition
-    super.queryMetadata(queryDefinition)
+    queryCalls += json
+    super.rawQuery(json)
   }
 
   override def getMostRecentDocument(

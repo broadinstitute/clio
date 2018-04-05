@@ -2,11 +2,11 @@ package org.broadinstitute.clio.client.commands
 
 import java.net.URI
 
+import better.files.File
 import org.broadinstitute.clio.transfer.model._
 import caseapp.{CommandName, Recurse}
 import caseapp.core.help.CommandsHelp
 import caseapp.core.commandparser.CommandParser
-import io.circe.Json
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfQueryInput}
 import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramQueryInput}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
@@ -38,7 +38,7 @@ sealed abstract class QueryCommand[CI <: ClioIndex](val index: CI)
 
 sealed abstract class RawQueryCommand[CI <: ClioIndex](val index: CI)
     extends RetrieveAndPrintCommand {
-  def queryInput: Json
+  def queryInput: File
 }
 
 sealed abstract class MoveCommand[+CI <: ClioIndex](val index: CI) extends ClioCommand {
@@ -87,7 +87,7 @@ final case class QueryWgsUbam(
 
 @CommandName(ClioCommand.rawQueryWgsUbamName)
 final case class RawQueryWgsUbam(
-  queryInput: Json
+  queryInput: File
 ) extends RawQueryCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.moveWgsUbamName)
@@ -121,7 +121,7 @@ final case class QueryGvcf(
 
 @CommandName(ClioCommand.rawQueryGvcfName)
 final case class RawQueryGvcf(
-  queryInput: Json
+  queryInput: File
 ) extends RawQueryCommand(GvcfIndex)
 
 @CommandName(ClioCommand.moveGvcfName)
@@ -155,7 +155,7 @@ final case class QueryWgsCram(
 
 @CommandName(ClioCommand.rawQueryWgsCramName)
 final case class RawQueryWgsCram(
-  queryInput: Json
+  queryInput: File
 ) extends RawQueryCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.moveWgsCramName)
@@ -197,7 +197,7 @@ final case class QueryHybselUbam(
 
 @CommandName(ClioCommand.rawQueryHybselUbamName)
 final case class RawQueryHybselUbam(
-  queryInput: Json
+  queryInput: File
 ) extends RawQueryCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.moveHybselUbamName)
@@ -231,7 +231,7 @@ final case class QueryArrays(
 
 @CommandName(ClioCommand.rawQueryArraysName)
 final case class RawQueryArrays(
-  queryInput: Json
+  queryInput: File
 ) extends RawQueryCommand(ArraysIndex)
 
 @CommandName(ClioCommand.moveArraysName)

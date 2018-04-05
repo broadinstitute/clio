@@ -61,32 +61,6 @@ abstract class IndexWebServiceSpec[
     mockService.upsertCalls should have length 0
   }
 
-  it should "successfully queryall with an empty request" in {
-    mockService.queryAllCalls.clear()
-    Post("/queryall", Map.empty[String, String]) ~> webService.queryall ~> check {
-      status shouldEqual StatusCodes.OK
-    }
-    mockService.queryAllCalls should have length 1
-  }
-
-  it should "successfully queryall without an empty request" in {
-    mockService.queryAllCalls.clear()
-    Post("/queryall", Map("project" -> "project")) ~> webService.queryall ~> check {
-      status shouldEqual StatusCodes.OK
-    }
-    mockService.queryAllCalls should have length 1
-  }
-
-  it should "reject queryall with incorrect datatypes in body" in {
-    mockService.queryAllCalls.clear()
-    Post("/queryall", badQueryInputMap) ~> webService.queryall ~> check {
-      rejection should matchPattern {
-        case MalformedRequestContentRejection(_, _) =>
-      }
-    }
-    mockService.queryAllCalls should have length 0
-  }
-
   it should "successfully query with an empty request" in {
     mockService.queryCalls.clear()
     Post("/query", Map.empty[String, String]) ~> webService.query ~> check {
@@ -111,6 +85,14 @@ abstract class IndexWebServiceSpec[
       }
     }
     mockService.queryCalls should have length 0
+  }
+
+  it should "successfully submit an arbitrary json string as a raw query" in {
+    mockService.rawQueryCalls.clear()
+    Post("/rawquery", "{\"key\": \"this is json\"}") ~> webService.rawquery ~> check {
+      status shouldEqual StatusCodes.OK
+    }
+    mockService.rawQueryCalls should have length 1
   }
 
   def metadataRouteFromKey(key: webService.indexService.clioIndex.KeyType): String = {

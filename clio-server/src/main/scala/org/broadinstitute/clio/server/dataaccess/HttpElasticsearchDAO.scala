@@ -9,7 +9,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.cluster.ClusterHealthResponse
 import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
-import com.sksamuel.elastic4s.searches.queries.{QueryDefinition, RawQueryDefinition}
+import com.sksamuel.elastic4s.searches.queries.RawQueryDefinition
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Json

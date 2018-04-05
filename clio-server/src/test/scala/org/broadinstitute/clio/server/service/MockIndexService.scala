@@ -33,8 +33,8 @@ abstract class MockIndexService[
       clioIndex
     ) {
   val queryCalls = ArrayBuffer.empty[clioIndex.QueryInputType]
-  val queryAllCalls = ArrayBuffer.empty[clioIndex.QueryInputType]
   val upsertCalls = ArrayBuffer.empty[(clioIndex.KeyType, clioIndex.MetadataType)]
+  val rawQueryCalls = ArrayBuffer.empty[String]
 
   def emptyOutput: Json
 
@@ -53,11 +53,10 @@ abstract class MockIndexService[
     Source.single(emptyOutput)
   }
 
-  override def queryAllMetadata(
-    input: clioIndex.QueryInputType
+  override def rawQuery(
+    inputJson: String
   ): Source[Json, NotUsed] = {
-    queryAllCalls += input
+    rawQueryCalls += inputJson
     Source.single(emptyOutput)
   }
-
 }

@@ -7,6 +7,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
 import akka.stream._
 import akka.stream.scaladsl.{Keep, Sink, Source}
+import better.files.File
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
 import io.circe.{Json, Printer}
@@ -203,13 +204,27 @@ class ClioWebClient(
     ).flatMap(unmarshal[UpsertId])
   }
 
-  def queryWithInputDTO[CI <: ClioIndex](clioIndex: CI)(
+  def preformattedQuery[CI <: ClioIndex](clioIndex: CI)(
     input: clioIndex.QueryInputType,
     includeDeleted: Boolean
   ): Future[Json] = {
     import clioIndex.implicits._
-    if (includeDeleted) query(clioIndex)(input.asJson)
-    else query(clioIndex)(input.withDocumentStatus(Some(DocumentStatus.Normal)).asJson)
+    if (includeDeleted) {
+      query(clioIndex)(input.asJson)
+    } else {
+      query(clioIndex)(
+        jsonWithDocumentStatus(input.asJson)
+      )
+    }
+  }
+
+  def jsonFileQuery[CI <: ClioIndex](clioIndex: CI)(
+    input: File
+  ): Future[Json] = {
+    query(clioIndex)(
+      input.contentAsString.asJson,
+      raw = true
+    )
   }
 
   def getMetadataForKey[CI <: ClioIndex](clioIndex: CI)(
@@ -219,14 +234,11 @@ class ClioWebClient(
     import clioIndex.implicits._
     import s_mach.string._
 
-    val keyJson =
-      if (includeDeleted) {
-        input.asJson
-      } else {
-        input.asJson.mapObject(
-          obj => obj.add("document_status", (DocumentStatus.Normal:DocumentStatus).asJson)
-        )
-      }
+    val keyJson = if (includeDeleted) {
+      input.asJson
+    } else {
+      jsonWithDocumentStatus(input.asJson)
+    }
     val keyFields = FieldMapper[clioIndex.KeyType].fields.keySet
       .map(_.toSnakeCase(CirceEquivalentCamelCaseLexer))
 
@@ -258,12 +270,12 @@ class ClioWebClient(
   }
 
   private[webclient] def query(
-    clioIndex: ClioIndex,
-    raw: Boolean = false
+    clioIndex: ClioIndex
   )(
-    input: Json
+    input: Json,
+    raw: Boolean = false
   ): Future[Json] = {
-    val queryPath = if (raw) "queryraw" else "query"
+    val queryPath = if (raw) "rawquery" else "query"
     val entity = HttpEntity(
       ContentTypes.`application/json`,
       input.pretty(implicitly[Printer])
@@ -275,6 +287,18 @@ class ClioWebClient(
         entity = entity
       )
     ).flatMap(unmarshal[Json])
+  }
+
+  private def jsonWithDocumentStatus(input: Json): Json = {
+    // should we add check that input is Json? should be gauranteed where this is used,
+    // since json passed in should be derived from case class
+    input.mapObject(
+      obj =>
+        obj.add(
+          "document_status",
+          (DocumentStatus.Normal: DocumentStatus).asJson
+      )
+    )
   }
 
   private def unmarshal[A: FromEntityUnmarshaller: TypeTag](
