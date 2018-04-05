@@ -83,10 +83,12 @@ abstract class IndexServiceSpec[
     val metadata = getDummyMetadata(documentStatus)
     val expectedDocumentStatus = Option(documentStatus.getOrElse(DocumentStatus.Normal))
     for {
-      returnedUpsertId <- indexService.upsertMetadata(
-        dummyKey,
-        metadata
-      )
+      returnedUpsertId <- indexService
+        .upsertMetadata(
+          dummyKey,
+          metadata
+        )
+        .runWith(Sink.head)
     } yield {
       val expectedDocument =
         indexService.documentConverter

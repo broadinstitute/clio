@@ -5,16 +5,17 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.integrationtest.{BaseIntegrationSpec, ClioBuildInfo}
 import org.broadinstitute.clio.status.model.{StatusInfo, VersionInfo}
+import org.broadinstitute.clio.transfer.model.ApiConstants._
 
 /** Tests of Clio /health and /version endpoints, as well as rejection behaviors. */
 trait BasicTests { self: BaseIntegrationSpec =>
 
-  it should "report health information at /health" in {
+  it should s"report health information at /$healthString" in {
     runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName)
       .map(_ should be(StatusInfo.Running))
   }
 
-  it should "report the server version of this test at /version" in {
+  it should s"report the server version of this test at /$versionString" in {
     runClientGetJsonAs[VersionInfo](ClioCommand.getServerVersionName)
       .map(_ should be(VersionInfo(ClioBuildInfo.version)))
   }
@@ -34,7 +35,7 @@ trait BasicTests { self: BaseIntegrationSpec =>
     recoverToExceptionIf[ClioWebClient.FailedResponse] {
       clioWebClient
         .dispatchRequest(
-          HttpRequest(uri = "/health", method = HttpMethods.POST),
+          HttpRequest(uri = s"/$healthString", method = HttpMethods.POST),
           includeAuth = false
         )
     }.map {

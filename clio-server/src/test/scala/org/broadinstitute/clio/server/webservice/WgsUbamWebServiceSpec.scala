@@ -7,7 +7,7 @@ import org.broadinstitute.clio.transfer.model.ubam.UbamKey
 
 class WgsUbamWebServiceSpec extends IndexWebServiceSpec[WgsUbamIndex.type] {
 
-  def webServiceName = "GvcfWebService"
+  def webServiceName = "WgsUbamWebService"
   val mockService = new MockWgsUbamService()
   val webService = new WgsUbamWebService(mockService)
 

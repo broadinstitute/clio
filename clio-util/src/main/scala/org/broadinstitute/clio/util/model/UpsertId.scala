@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.util.model
 
+import io.circe.Json
+
 import scala.util.Random
 
 /**
@@ -125,6 +127,11 @@ object UpsertId {
     */
   def fromString(idText: String): Option[UpsertId] = {
     List(idText).filter(isValidId).map(new UpsertId(_)).headOption
+  }
+
+  def fromJson(idJson: Json): Option[UpsertId] = {
+    println(idJson.asArray.get.head)
+    None
   }
 
   /**

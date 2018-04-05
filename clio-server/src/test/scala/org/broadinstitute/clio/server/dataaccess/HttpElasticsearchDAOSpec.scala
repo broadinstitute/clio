@@ -14,7 +14,7 @@ import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.RequestException
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import org.broadinstitute.clio.transfer.model.ModelMockIndex
+import org.broadinstitute.clio.transfer.model.{HealthStatus, ModelMockIndex}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 import org.scalatest._
@@ -28,8 +28,8 @@ class HttpElasticsearchDAOSpec
     with EitherValues
     with ModelAutoDerivation
     with OptionValues {
-  import com.sksamuel.elastic4s.circe._
   import ElasticsearchUtil.HttpClientOps
+  import com.sksamuel.elastic4s.circe._
 
   behavior of "HttpElasticsearch"
 
@@ -222,7 +222,7 @@ class HttpElasticsearchDAOSpec
 
     for {
       health <- httpClient.executeAndUnpack(clusterHealthDefinition)
-      _ = health.status should be("green")
+      _ = HealthStatus.withNameInsensitive(health.status) should be(HealthStatus.Green)
       indexCreation <- httpClient.executeAndUnpack(indexCreationDefinition)
       _ = indexCreation.acknowledged should be(true)
       populate <- httpClient.executeAndUnpack(populateDefinition)

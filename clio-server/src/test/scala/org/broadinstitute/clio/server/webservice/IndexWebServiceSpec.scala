@@ -6,14 +6,13 @@ import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.service.MockIndexService
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.model.UpsertId
-import org.broadinstitute.clio.util.ApiConstants._
-
+import org.broadinstitute.clio.transfer.model.ApiConstants._
 abstract class IndexWebServiceSpec[
   CI <: ClioIndex
 ] extends BaseWebserviceSpec {
 
   val memorySearchDAO = new MemorySearchDAO()
-
+  val test = decodeUpsertId
   def webServiceName: String
   def mockService: MockIndexService[CI]
   val webService: IndexWebService[CI]
@@ -64,7 +63,7 @@ abstract class IndexWebServiceSpec[
 
   it should "successfully queryall with an empty request" in {
     mockService.queryAllCalls.clear()
-    Post(s"/$queryAllString", Map.empty[String, String]) ~> webService.queryall ~> check {
+    Post("/queryall", Map.empty[String, String]) ~> webService.queryall ~> check {
       status shouldEqual StatusCodes.OK
     }
     mockService.queryAllCalls should have length 1

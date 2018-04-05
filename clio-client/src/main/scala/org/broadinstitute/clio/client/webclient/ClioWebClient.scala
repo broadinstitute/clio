@@ -15,7 +15,7 @@ import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
-import org.broadinstitute.clio.util.ApiConstants._
+import ApiConstants._
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -167,12 +167,12 @@ class ClioWebClient(
   }
 
   def getClioServerVersion: Future[Json] = {
-    dispatchRequest(HttpRequest(uri = "/version"), includeAuth = false)
+    dispatchRequest(HttpRequest(uri = s"/$versionString"), includeAuth = false)
       .flatMap(unmarshal[Json])
   }
 
   def getClioServerHealth: Future[Json] = {
-    dispatchRequest(HttpRequest(uri = "/health"), includeAuth = false)
+    dispatchRequest(HttpRequest(uri = s"/$healthString"), includeAuth = false)
       .flatMap(unmarshal[Json])
   }
 

@@ -2,14 +2,14 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.actor.{ActorSystem, Terminated}
 import akka.http.scaladsl._
-import akka.http.scaladsl.server.{Directive0, Route, RouteConcatenation}
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.{Directive0, Route, RouteConcatenation}
 import akka.stream.Materializer
 import cats.implicits._
 import com.typesafe.scalalogging.StrictLogging
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.model.ApiNotReadyRejection
-import org.broadinstitute.clio.util.ApiConstants._
+import org.broadinstitute.clio.transfer.model.ApiConstants._
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 import scala.concurrent.{Await, ExecutionContext, Future}

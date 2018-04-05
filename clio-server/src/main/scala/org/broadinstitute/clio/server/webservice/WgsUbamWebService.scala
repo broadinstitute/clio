@@ -2,15 +2,13 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
-import akka.stream.Materializer
 import org.broadinstitute.clio.server.service.IndexService
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.UbamKey
 import org.broadinstitute.clio.util.model.Location
 
-class WgsUbamWebService(wgsUbamService: IndexService[WgsUbamIndex.type])(
-  implicit materializer: Materializer
-) extends IndexWebService(wgsUbamService) {
+class WgsUbamWebService(wgsUbamService: IndexService[WgsUbamIndex.type])
+    extends IndexWebService(wgsUbamService) {
 
   private[webservice] val pathPrefixKey: Directive1[UbamKey] = {
     for {

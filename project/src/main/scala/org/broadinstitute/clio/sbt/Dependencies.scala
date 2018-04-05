@@ -73,6 +73,7 @@ object Dependencies {
     "com.dimafeng" %% "testcontainers-scala" % TestContainersScalaVersion,
     "com.google.jimfs" % "jimfs" % JimfsVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
+    "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
     "org.scalatest" %% "scalatest" % ScalaTestVersion
   ).map(_ % Test)
 

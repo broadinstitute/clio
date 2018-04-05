@@ -14,7 +14,7 @@ import io.circe.Json
 import org.broadinstitute.clio.status.model.{StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model.ModelMockIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.ApiConstants._
+import org.broadinstitute.clio.transfer.model.ApiConstants._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -33,7 +33,7 @@ class MockClioServer(index: ModelMockIndex)(implicit system: ActorSystem)
 
   /** Subset of routes exposed by the clio-server, added to as needed for testing. */
   val route: Route =
-    path("health") {
+    path(healthString) {
       get {
         /*
          * We purposefully set up this endpoint to trigger a timeout in the client
@@ -46,7 +46,7 @@ class MockClioServer(index: ModelMockIndex)(implicit system: ActorSystem)
         complete(slowResult)
       }
     } ~
-      path("version") {
+      path(versionString) {
         get {
           /*
            * Purposefully set up this endpoint to take awhile, so we can build up a
