@@ -317,14 +317,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val flowcellBarcode = "barcode2"
     val lane = 2
     val location = Location.GCP
-    val project = "testProject" + randomId
+    val project = s"testProject$randomId"
 
-    val libraries = Seq.fill(3)("library" + randomId)
-    val samples = {
-      val sameId = "testSample" + randomId
-      Seq(sameId, sameId, "testSample" + randomId)
-    }
-    val researchProjectIds = Seq.fill(3)("rpId" + randomId)
+    val samples = Seq.fill(3)(s"sample$randomId")
+
+    val researchProjectIds = Seq.fill(3)(s"rpId$randomId")
 
     val aggregations = Seq(
       AggregatedBy.Squid,
@@ -333,11 +330,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
     )
 
     val upserts = Future.sequence {
-      libraries zip samples zip researchProjectIds zip aggregations map {
-        case (((lib, samp), rpid), agg) => (lib, samp, rpid, agg)
+      samples zip researchProjectIds zip aggregations map {
+        case ((samp, rpid), agg) => (samp, rpid, agg)
       } map {
-        case (library, sample, researchProjectId, aggregation) =>
-          val key = UbamKey(location, flowcellBarcode, lane, library)
+        case (sample, researchProjectId, aggregation) =>
+          val key = UbamKey(location, flowcellBarcode, lane, s"library$randomId")
           val metadata = UbamMetadata(
             project = Some(project),
             sampleAlias = Some(sample),
