@@ -21,7 +21,7 @@ class FailingSearchDAO extends SearchDAO {
 
   override def close(): Future[Unit] = failure
 
-  override def queryMetadata(queryDefinition: QueryDefinition)(
+  override def rawQuery(query: Json)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = Source.failed(ex)
 

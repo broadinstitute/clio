@@ -6,6 +6,7 @@ import org.broadinstitute.clio.transfer.model._
 import caseapp.{CommandName, Recurse}
 import caseapp.core.help.CommandsHelp
 import caseapp.core.commandparser.CommandParser
+import io.circe.Json
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfQueryInput}
 import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramQueryInput}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
@@ -33,6 +34,11 @@ sealed abstract class QueryCommand[CI <: ClioIndex](val index: CI)
     extends RetrieveAndPrintCommand {
   def queryInput: index.QueryInputType
   def includeDeleted: Boolean
+}
+
+sealed abstract class RawQueryCommand[CI <: ClioIndex](val index: CI)
+    extends RetrieveAndPrintCommand {
+  def queryInput: Json
 }
 
 sealed abstract class MoveCommand[+CI <: ClioIndex](val index: CI) extends ClioCommand {
@@ -79,6 +85,11 @@ final case class QueryWgsUbam(
   includeDeleted: Boolean = false
 ) extends QueryCommand(WgsUbamIndex)
 
+@CommandName(ClioCommand.rawQueryWgsUbamName)
+final case class RawQueryWgsUbam(
+  queryInput: Json
+) extends RawQueryCommand(WgsUbamIndex)
+
 @CommandName(ClioCommand.moveWgsUbamName)
 final case class MoveWgsUbam(
   @Recurse key: UbamKey,
@@ -108,6 +119,11 @@ final case class QueryGvcf(
   includeDeleted: Boolean = false
 ) extends QueryCommand(GvcfIndex)
 
+@CommandName(ClioCommand.rawQueryGvcfName)
+final case class RawQueryGvcf(
+  queryInput: Json
+) extends RawQueryCommand(GvcfIndex)
+
 @CommandName(ClioCommand.moveGvcfName)
 final case class MoveGvcf(
   @Recurse key: GvcfKey,
@@ -136,6 +152,11 @@ final case class QueryWgsCram(
   @Recurse queryInput: WgsCramQueryInput,
   includeDeleted: Boolean = false
 ) extends QueryCommand(WgsCramIndex)
+
+@CommandName(ClioCommand.rawQueryWgsCramName)
+final case class RawQueryWgsCram(
+  queryInput: Json
+) extends RawQueryCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.moveWgsCramName)
 final case class MoveWgsCram(
@@ -174,6 +195,11 @@ final case class QueryHybselUbam(
   includeDeleted: Boolean = false
 ) extends QueryCommand(HybselUbamIndex)
 
+@CommandName(ClioCommand.rawQueryHybselUbamName)
+final case class RawQueryHybselUbam(
+  queryInput: Json
+) extends RawQueryCommand(HybselUbamIndex)
+
 @CommandName(ClioCommand.moveHybselUbamName)
 final case class MoveHybselUbam(
   @Recurse key: UbamKey,
@@ -202,6 +228,11 @@ final case class QueryArrays(
   @Recurse queryInput: ArraysQueryInput,
   includeDeleted: Boolean = false
 ) extends QueryCommand(ArraysIndex)
+
+@CommandName(ClioCommand.rawQueryArraysName)
+final case class RawQueryArrays(
+  queryInput: Json
+) extends RawQueryCommand(ArraysIndex)
 
 @CommandName(ClioCommand.moveArraysName)
 final case class MoveArrays(
@@ -233,6 +264,7 @@ object ClioCommand extends ClioParsers {
 
   val addPrefix = "add-"
   val queryPrefix = "query-"
+  val rawQueryPrefix = "raw-query-"
   val movePrefix = "move-"
   val deletePrefix = "delete-"
   val deliverPrefix = "deliver-"
@@ -240,18 +272,21 @@ object ClioCommand extends ClioParsers {
   // Names for WGS uBAM commands.
   val addWgsUbamName: String = addPrefix + WgsUbamIndex.commandName
   val queryWgsUbamName: String = queryPrefix + WgsUbamIndex.commandName
+  val rawQueryWgsUbamName: String = rawQueryPrefix + WgsUbamIndex.commandName
   val moveWgsUbamName: String = movePrefix + WgsUbamIndex.commandName
   val deleteWgsUbamName: String = deletePrefix + WgsUbamIndex.commandName
 
   // Names for GVCF commands.
   val addGvcfName: String = addPrefix + GvcfIndex.commandName
   val queryGvcfName: String = queryPrefix + GvcfIndex.commandName
+  val rawQueryGvcfName: String = rawQueryPrefix + GvcfIndex.commandName
   val moveGvcfName: String = movePrefix + GvcfIndex.commandName
   val deleteGvcfName: String = deletePrefix + GvcfIndex.commandName
 
   // Names for WGS cram commands.
   val addWgsCramName: String = addPrefix + WgsCramIndex.commandName
   val queryWgsCramName: String = queryPrefix + WgsCramIndex.commandName
+  val rawQueryWgsCramName: String = rawQueryPrefix + WgsCramIndex.commandName
   val moveWgsCramName: String = movePrefix + WgsCramIndex.commandName
   val deleteWgsCramName: String = deletePrefix + WgsCramIndex.commandName
   val deliverWgsCramName: String = deliverPrefix + WgsCramIndex.commandName
@@ -259,12 +294,14 @@ object ClioCommand extends ClioParsers {
   // Names for Hybsel uBAM commands.
   val addHybselUbamName: String = addPrefix + HybselUbamIndex.commandName
   val queryHybselUbamName: String = queryPrefix + HybselUbamIndex.commandName
+  val rawQueryHybselUbamName: String = rawQueryPrefix + HybselUbamIndex.commandName
   val moveHybselUbamName: String = movePrefix + HybselUbamIndex.commandName
   val deleteHybselUbamName: String = deletePrefix + HybselUbamIndex.commandName
 
   // Names for Arrays commands.
   val addArraysName: String = addPrefix + ArraysIndex.commandName
   val queryArraysName: String = queryPrefix + ArraysIndex.commandName
+  val rawQueryArraysName: String = queryPrefix + ArraysIndex.commandName
   val moveArraysName: String = movePrefix + ArraysIndex.commandName
   val deleteArraysName: String = deletePrefix + ArraysIndex.commandName
   val deliverArraysName: String = deliverPrefix + ArraysIndex.commandName

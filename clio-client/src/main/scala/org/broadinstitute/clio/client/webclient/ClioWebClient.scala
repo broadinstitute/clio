@@ -14,7 +14,7 @@ import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.UpsertId
+import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -203,12 +203,13 @@ class ClioWebClient(
     ).flatMap(unmarshal[UpsertId])
   }
 
-  def query[CI <: ClioIndex](clioIndex: CI)(
+  def queryWithInputDTO[CI <: ClioIndex](clioIndex: CI)(
     input: clioIndex.QueryInputType,
     includeDeleted: Boolean
   ): Future[Json] = {
     import clioIndex.implicits._
-    rawQuery(clioIndex)(input.asJson, includeDeleted)
+    if (includeDeleted) query(clioIndex)(input.asJson)
+    else query(clioIndex)(input.withDocumentStatus(Some(DocumentStatus.Normal)).asJson)
   }
 
   def getMetadataForKey[CI <: ClioIndex](clioIndex: CI)(
@@ -218,11 +219,18 @@ class ClioWebClient(
     import clioIndex.implicits._
     import s_mach.string._
 
-    val keyJson = input.asJson
+    val keyJson =
+      if (includeDeleted) {
+        input.asJson
+      } else {
+        input.asJson.mapObject(
+          obj => obj.add("document_status", (DocumentStatus.Normal:DocumentStatus).asJson)
+        )
+      }
     val keyFields = FieldMapper[clioIndex.KeyType].fields.keySet
       .map(_.toSnakeCase(CirceEquivalentCamelCaseLexer))
 
-    rawQuery(clioIndex)(keyJson, includeDeleted).map { out =>
+    query(clioIndex)(keyJson).map { out =>
       val metadata = for {
         jsons <- out.as[Seq[Json]]
         json <- jsons match {
@@ -249,12 +257,13 @@ class ClioWebClient(
     }
   }
 
-  private[webclient] def rawQuery(clioIndex: ClioIndex)(
-    input: Json,
-    includeDeleted: Boolean
+  private[webclient] def query(
+    clioIndex: ClioIndex,
+    raw: Boolean = false
+  )(
+    input: Json
   ): Future[Json] = {
-    val queryPath = if (includeDeleted) "queryall" else "query"
-
+    val queryPath = if (raw) "queryraw" else "query"
     val entity = HttpEntity(
       ContentTypes.`application/json`,
       input.pretty(implicitly[Printer])

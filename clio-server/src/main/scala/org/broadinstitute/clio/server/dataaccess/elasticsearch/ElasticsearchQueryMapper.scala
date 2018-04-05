@@ -1,8 +1,7 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import com.sksamuel.elastic4s.http.ElasticDsl.boolQuery
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import io.circe.Json
+import com.sksamuel.elastic4s.http.search.queries.compound.BoolQueryBuilderFn
 import org.broadinstitute.clio.util.generic.{CaseClassMapperWithTypes, FieldMapper}
 
 import scala.reflect.ClassTag
@@ -19,24 +18,14 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
   val inputMapper = new CaseClassMapperWithTypes[Input]
 
   /**
-    * Returns true if the client sent a query that doesn't contain any filters.
-    *
-    * @param queryInput The query input.
-    * @return True if the client sent a query that doesn't contain any filters.
-    */
-  def isEmpty(queryInput: Input): Boolean = {
-    flattenVals(queryInput).isEmpty
-  }
-
-  /**
-    * Builds an elastic4s query definition from the query input.
+    * Builds an elastic4s query as a json string from the query input.
     *
     * @param queryInput The query input.
     * @return An elastic4s query definition from the query input.
     */
   def buildQuery(queryInput: Input)(
     implicit index: ElasticsearchIndex[_]
-  ): QueryDefinition = {
+  ): String = {
     val queries = flattenVals(queryInput) map {
       case (name, value) => {
         index.fieldMapper.valueToQuery(
@@ -45,25 +34,8 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
         )(value)
       }
     }
-    boolQuery must queries
-  }
-
-  private val keysToDrop =
-    Set(
-      ElasticsearchIndex.UpsertIdElasticsearchName,
-      ElasticsearchIndex.EntityIdElasticsearchName
-    )
-
-  /**
-    * Munges the query result document into the appropriate form for the query output.
-    *
-    * @param document A query result document.
-    * @return The query output.
-    */
-  def toQueryOutput(document: Json): Json = {
-    document.mapObject(_.filterKeys({ key =>
-      !keysToDrop.contains(key)
-    }))
+    val queryDefinition = boolQuery must queries
+    BoolQueryBuilderFn(queryDefinition).string
   }
 
   /**

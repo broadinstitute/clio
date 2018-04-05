@@ -9,7 +9,7 @@ import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.cluster.ClusterHealthResponse
 import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
+import com.sksamuel.elastic4s.searches.queries.{QueryDefinition, RawQueryDefinition}
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.Json
@@ -51,14 +51,14 @@ class HttpElasticsearchDAO private[dataaccess] (
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = bulkUpdate(documents.map(updatePartialDocument(index, _)))
 
-  override def queryMetadata(queryDefinition: QueryDefinition)(
+  override def rawQuery(json: String)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
       .size(HttpElasticsearchDAO.DocumentScrollSize)
       .sortByFieldAsc(HttpElasticsearchDAO.DocumentScrollSort)
-      .query(queryDefinition)
+      .query(RawQueryDefinition(json))
 
     val responsePublisher = httpClient.publisher(searchDefinition)
     Source

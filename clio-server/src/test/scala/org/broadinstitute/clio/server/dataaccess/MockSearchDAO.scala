@@ -22,7 +22,7 @@ class MockSearchDAO extends SearchDAO {
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = Future.unit
 
-  override def queryMetadata(queryDefinition: QueryDefinition)(
+  override def rawQuery(query: Json)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
     Source.empty[Json]

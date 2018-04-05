@@ -2,7 +2,6 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
@@ -41,12 +40,12 @@ trait SearchDAO {
   ): Future[Unit]
 
   /**
-    * Query a metadata index.
+    * Submit a raw json query of a metadata index
     *
-    * @param queryDefinition       The query to run.
-    * @param index       The index to run the query against.
+    * @param json  The json string of the query to run.
+    * @param index  The index to run the query against.
     */
-  def queryMetadata(queryDefinition: QueryDefinition)(
+  def rawQuery(json: String)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed]
 

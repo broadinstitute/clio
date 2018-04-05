@@ -19,7 +19,7 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand) extends Executo
       case GetServerHealth  => webClient.getClioServerHealth
       case GetServerVersion => webClient.getClioServerVersion
       case query: QueryCommand[_] => {
-        webClient.query(query.index)(query.queryInput, query.includeDeleted)
+        webClient.queryWithInputDTO(query.index)(query.queryInput, query.includeDeleted)
       }
     }
 
