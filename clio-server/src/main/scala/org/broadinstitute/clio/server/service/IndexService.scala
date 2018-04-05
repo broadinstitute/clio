@@ -46,34 +46,44 @@ abstract class IndexService[CI <: ClioIndex](
     force: Boolean = false
   ): Source[UpsertId, NotUsed] = {
     // query by key to see if the document already exists
-    queryMetadataForKey(indexKey)
-      .fold[Either[Exception, clioIndex.MetadataType]](
-        // If the query doesn't return a document and the document status is not set default to Normal.
-        Right(
-          metadata.documentStatus
-            .fold(metadata.withDocumentStatus(Some(Normal)))(_ => metadata)
-        )
-      ) { (_, existingMetadataJson) =>
-        // if we are not forcing the we want to run validation
-        if (!force) {
+    if (!force) {
+      queryMetadataForKey(indexKey)
+        .fold[Either[Exception, clioIndex.MetadataType]](
+          // If the query doesn't return a document and the document status is not set default to Normal.
+          Right(
+            setDefaultDocumentStatus(metadata)
+          )
+        ) { (_, existingMetadataJson) =>
           // validation will check to make sure no fields are being overwritten
           validateUpsert(existingMetadataJson, metadata)
-        } else {
-          Right(metadata)
         }
-      }
-      .flatMapConcat[UpsertId, NotUsed] {
-        case Right(updatedMetadata) =>
-          Source.fromFuture(
-            persistenceService.upsertMetadata(
-              indexKey,
-              updatedMetadata,
-              documentConverter,
-              elasticsearchIndex
-            )
-          )
-        case Left(rejection) => Source.failed(rejection)
-      }
+        .flatMapConcat[UpsertId, NotUsed] {
+          case Right(updatedMetadata) =>
+            upsertToStream(indexKey, updatedMetadata)
+          case Left(rejection) => Source.failed(rejection)
+        }
+    } else {
+      upsertToStream(indexKey, metadata)
+    }
+  }
+
+  private def upsertToStream(
+    indexKey: clioIndex.KeyType,
+    updatedMetadata: clioIndex.MetadataType
+  ) = {
+    Source.fromFuture(
+      persistenceService.upsertMetadata(
+        indexKey,
+        setDefaultDocumentStatus(updatedMetadata),
+        documentConverter,
+        elasticsearchIndex
+      )
+    )
+  }
+
+  private def setDefaultDocumentStatus(metadata: clioIndex.MetadataType) = {
+    metadata.documentStatus
+      .fold(metadata.withDocumentStatus(Some(Normal)))(_ => metadata)
   }
 
   def queryMetadata(

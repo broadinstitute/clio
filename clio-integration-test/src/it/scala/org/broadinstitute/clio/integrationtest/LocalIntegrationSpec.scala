@@ -36,6 +36,8 @@ class LocalIntegrationSpec extends BaseIntegrationSpec(s"Clio local") {
   override def rootPersistenceDir: File = {
     File(ClioBuildInfo.persistenceDir)
   }
+
+  override lazy val rootTestStorageDir: File = rootPersistenceDir
 }
 
 class LocalBasicSpec extends LocalIntegrationSpec with BasicTests

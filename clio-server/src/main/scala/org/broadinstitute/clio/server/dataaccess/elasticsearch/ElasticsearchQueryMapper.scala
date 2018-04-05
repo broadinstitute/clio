@@ -76,7 +76,6 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
     val vals = inputMapper.vals(queryInput).toSeq
     val flattened = vals flatMap {
       case (name, value) =>
-        // Currently, this throws when encountering a non-option
         value match {
           case opt: Option[_] => opt.map(name -> _)
           case nonOpt         => Some(name -> nonOpt)
