@@ -43,7 +43,7 @@ case class ModelMockIndex(
 
 case class ModelMockKey(mockKeyLong: Long, mockKeyString: String) extends IndexKey {
   override val location = Location.OnPrem
-  override def getUrlSegments = Seq.empty[String]
+  override def getUrlSegments = Seq(mockKeyLong + "." + mockKeyString)
 }
 
 case class ModelMockMetadata(

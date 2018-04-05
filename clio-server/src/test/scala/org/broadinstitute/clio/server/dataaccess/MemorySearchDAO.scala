@@ -40,7 +40,7 @@ class MemorySearchDAO extends MockSearchDAO {
           queryDefinition
             .asInstanceOf[SimpleStringQueryDefinition]
             .query
-            .contains(keySegment)
+            .contains(keySegment.replace("\"", ""))
         }
       })
       .fold(
