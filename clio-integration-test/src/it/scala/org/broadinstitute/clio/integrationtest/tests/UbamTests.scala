@@ -313,6 +313,61 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "handle querying ubams by aggregated-by" in {
+    val flowcellBarcode = "barcode2"
+    val lane = 2
+    val location = Location.GCP
+    val project = "testProject" + randomId
+
+    val libraries = Seq.fill(3)("library" + randomId)
+    val samples = {
+      val sameId = "testSample" + randomId
+      Seq(sameId, sameId, "testSample" + randomId)
+    }
+    val researchProjectIds = Seq.fill(3)("rpId" + randomId)
+
+    val aggregations = Seq(
+      AggregatedBy.Squid.entryName,
+      AggregatedBy.Squid.entryName,
+      AggregatedBy.RP.entryName
+    )
+
+    val upserts = Future.sequence {
+      Seq(libraries, samples, researchProjectIds, aggregations).transpose.map {
+        case Seq(library, sample, researchProjectId, aggregation) =>
+          val key = UbamKey(location, flowcellBarcode, lane, library)
+          val metadata = UbamMetadata(
+            project = Some(project),
+            sampleAlias = Some(sample),
+            researchProjectId = Some(researchProjectId),
+            aggregatedBy = Some(AggregatedBy.withName(aggregation))
+          )
+          runUpsertUbam(key, metadata, SequencingType.WholeGenome)
+      }
+    }
+
+    for {
+      _ <- upserts
+      queryResults <- runClientGetJsonAs[Seq[Json]](
+        ClioCommand.queryWgsUbamName,
+        "--project",
+        project,
+        "--aggregated-by",
+        AggregatedBy.Squid.entryName
+      )
+    } yield {
+      queryResults should have length 2
+      queryResults.foldLeft(succeed) { (_, result) =>
+        result.unsafeGet[String]("project") should be(project)
+      }
+      queryResults.foldLeft(succeed) { (_, result) =>
+        researchProjectIds.take(2) should contain(
+          result.unsafeGet[String]("research_project_id")
+        )
+      }
+    }
+  }
+
   it should "handle updates to wgs-ubam metadata" in {
     val key = UbamKey(Location.GCP, "barcode2", 2, s"library$randomId")
     val project = s"testProject$randomId"
