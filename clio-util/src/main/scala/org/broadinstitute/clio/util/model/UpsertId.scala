@@ -129,11 +129,6 @@ object UpsertId {
     List(idText).filter(isValidId).map(new UpsertId(_)).headOption
   }
 
-  def fromJson(idJson: Json): Option[UpsertId] = {
-    println(idJson.asArray.get.head)
-    None
-  }
-
   /**
     * Return the next unique ID.
     *
