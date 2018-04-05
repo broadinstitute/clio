@@ -36,16 +36,19 @@ class MemorySearchDAO extends MockSearchDAO {
     updateCalls
       .flatMap(_._1)
       .find(update => {
-        update.findAllByKey("entity_id").head.toString().split('.').forall { keySegment =>
-          queryDefinition
-            .asInstanceOf[SimpleStringQueryDefinition]
-            .query
-            .contains(keySegment.replace("\"", ""))
+        update.findAllByKey("entity_id").headOption.fold(false) { entityId =>
+          entityId.toString().split('.').forall { keySegment =>
+            queryDefinition
+              .asInstanceOf[SimpleStringQueryDefinition]
+              .query
+              .contains(keySegment.replace("\"", ""))
+          }
         }
       })
       .fold(
         super.queryMetadata(queryDefinition)
       )(Source.single)
+
   }
 
   override def getMostRecentDocument(

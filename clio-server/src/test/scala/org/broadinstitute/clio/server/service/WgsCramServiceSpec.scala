@@ -34,7 +34,7 @@ class WgsCramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramSer
   }
 
   def copyDummyMetadataChangeField(metadata: WgsCramMetadata): WgsCramMetadata = {
-    metadata.copy(workspaceName = Some(util.Random.nextString(10)))
+    metadata.copy(workspaceName = Some(randomString))
   }
 
   def getService(

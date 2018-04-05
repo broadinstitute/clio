@@ -1,5 +1,7 @@
 package org.broadinstitute.clio.server.service
 
+import java.security.SecureRandom
+
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.TestSink
 import com.sksamuel.elastic4s.searches.queries.SimpleStringQueryDefinition
@@ -27,6 +29,9 @@ abstract class IndexServiceSpec[
     getService(persistenceService, searchService)
   }
   import indexService.clioIndex.implicits._
+
+  def randomString: String =
+    util.Random.javaRandomToRandom(new SecureRandom()).nextString(10)
 
   def elasticsearchIndex: ElasticsearchIndex[CI]
   def dummyKey: indexService.clioIndex.KeyType

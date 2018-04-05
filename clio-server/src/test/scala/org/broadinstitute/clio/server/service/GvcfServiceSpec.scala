@@ -33,7 +33,7 @@ class GvcfServiceSpec extends IndexServiceSpec[GvcfIndex.type]("GvcfService") {
   }
 
   def copyDummyMetadataChangeField(metadata: GvcfMetadata): GvcfMetadata = {
-    metadata.copy(notes = Some(util.Random.nextString(10)))
+    metadata.copy(notes = Some(randomString))
   }
 
   def getService(

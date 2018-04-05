@@ -29,7 +29,7 @@ class ArraysServiceSpec extends IndexServiceSpec[ArraysIndex.type]("ArraysServic
   }
 
   def copyDummyMetadataChangeField(metadata: ArraysMetadata): ArraysMetadata = {
-    metadata.copy(project = Some(util.Random.nextString(10)))
+    metadata.copy(project = Some(randomString))
   }
 
   def getService(
