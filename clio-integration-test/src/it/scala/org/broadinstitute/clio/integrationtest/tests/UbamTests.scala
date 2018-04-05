@@ -299,11 +299,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
     } yield {
       projectResults should have length 3
-      projectResults.foldLeft(succeed) { (_, result) =>
+      projectResults.foreach { result =>
         result.unsafeGet[String]("project") should be(project)
       }
       sampleResults should have length 2
-      sampleResults.foldLeft(succeed) { (_, result) =>
+      sampleResults.foreach { result =>
         result.unsafeGet[String]("sample_alias") should be(samples.head)
       }
       rpIdResults should have length 1
@@ -359,14 +359,15 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
     } yield {
       queryResults should have length 2
-      queryResults.foldLeft(succeed) { (_, result) =>
+      queryResults.foreach { result =>
         result.unsafeGet[String]("project") should be(project)
       }
-      queryResults.foldLeft(succeed) { (_, result) =>
+      queryResults.foreach { result =>
         researchProjectIds.take(2) should contain(
           result.unsafeGet[String]("research_project_id")
         )
       }
+      succeed
     }
   }
 
@@ -489,7 +490,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
     } yield {
       results.length should be(keysWithMetadata.length)
-      results.foldLeft(succeed) { (_, result) =>
+      results.foreach { result =>
         result.unsafeGet[String]("project") should be(project)
         result.unsafeGet[String]("sample_alias") should be(sample)
 
@@ -504,6 +505,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           if (resultKey == deleteKey) DocumentStatus.Deleted else DocumentStatus.Normal
         }
       }
+      succeed
     }
   }
 
