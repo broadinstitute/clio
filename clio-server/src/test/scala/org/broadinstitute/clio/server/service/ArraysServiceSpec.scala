@@ -1,5 +1,9 @@
 package org.broadinstitute.clio.server.service
 
+import com.sksamuel.elastic4s.searches.queries.{
+  BoolQueryDefinition,
+  QueryStringQueryDefinition
+}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.ArraysIndex
 import org.broadinstitute.clio.transfer.model.arrays.{
@@ -17,6 +21,23 @@ class ArraysServiceSpec extends IndexServiceSpec[ArraysIndex.type]("ArraysServic
   val dummyKey = ArraysKey(Location.GCP, Symbol("chipwell_barcode"), 1)
 
   val dummyInput = ArraysQueryInput(project = Option("testProject"))
+
+  val dummyKeyQuery = BoolQueryDefinition(
+    must = Seq(
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.chipwellBarcode.name + "\"",
+        defaultField = Some("chipwell_barcode")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.location.toString + "\"",
+        defaultField = Some("location")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.version.toString + "\"",
+        defaultField = Some("version")
+      )
+    )
+  )
 
   def getDummyMetadata(
     documentStatus: Option[DocumentStatus]

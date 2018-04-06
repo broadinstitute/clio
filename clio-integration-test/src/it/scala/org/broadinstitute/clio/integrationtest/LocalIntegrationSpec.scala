@@ -1,11 +1,19 @@
 package org.broadinstitute.clio.integrationtest
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers.GenericHttpCredentials
 import better.files.File
-import org.broadinstitute.clio.client.webclient.ClioWebClient
+import com.google.auth.oauth2.OAuth2Credentials
+import org.broadinstitute.clio.client.webclient.{ClioWebClient, GoogleCredentialsGenerator}
 import org.broadinstitute.clio.integrationtest.tests._
+import org.broadinstitute.clio.util.auth.AuthUtil
 
 class LocalIntegrationSpec extends BaseIntegrationSpec(s"Clio local") {
+
+  protected lazy val googleCredential: OAuth2Credentials = AuthUtil
+    .getCredsFromServiceAccount(serviceAccount)
+    .fold(
+      fail(s"Couldn't get access token for account $serviceAccount", _),
+      identity
+    )
 
   /**
     * The web client to use within the tested clio-client.
@@ -18,9 +26,7 @@ class LocalIntegrationSpec extends BaseIntegrationSpec(s"Clio local") {
     maxConcurrentRequests,
     clientTimeout,
     maxRequestRetries,
-    () => {
-      GenericHttpCredentials("fake", "fake")
-    }
+    new GoogleCredentialsGenerator(googleCredential)
   )
 
   /**
@@ -36,8 +42,6 @@ class LocalIntegrationSpec extends BaseIntegrationSpec(s"Clio local") {
   override def rootPersistenceDir: File = {
     File(ClioBuildInfo.persistenceDir)
   }
-
-  override lazy val rootTestStorageDir: File = rootPersistenceDir
 }
 
 class LocalBasicSpec extends LocalIntegrationSpec with BasicTests

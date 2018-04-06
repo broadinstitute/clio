@@ -2,6 +2,10 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 
+import com.sksamuel.elastic4s.searches.queries.{
+  BoolQueryDefinition,
+  QueryStringQueryDefinition
+}
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
@@ -19,6 +23,27 @@ class GvcfServiceSpec extends IndexServiceSpec[GvcfIndex.type]("GvcfService") {
   val dummyKey = GvcfKey(Location.GCP, "project1", "sample1", 1)
 
   val dummyInput = GvcfQueryInput(project = Option("testProject"))
+
+  val dummyKeyQuery = BoolQueryDefinition(
+    must = Seq(
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.location.toString + "\"",
+        defaultField = Some("location")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.project + "\"",
+        defaultField = Some("project.exact")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.sampleAlias + "\"",
+        defaultField = Some("sample_alias.exact")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.version.toString + "\"",
+        defaultField = Some("version")
+      )
+    )
+  )
 
   def getDummyMetadata(
     documentStatus: Option[DocumentStatus]

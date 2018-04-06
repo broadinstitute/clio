@@ -38,7 +38,8 @@ abstract class IndexWebService[CI <: ClioIndex](
                   // but maybe we can massage it in a different way
                   val fut = indexService
                     .upsertMetadata(key, metadata, force)
-                    .runWith(Sink.head[UpsertId])
+                    //we force run this stream here to get a strict Future to avoid creating a chunked HttpEntity
+                    .runWith(Sink.headOption[UpsertId])
                   fut
                 }
               }

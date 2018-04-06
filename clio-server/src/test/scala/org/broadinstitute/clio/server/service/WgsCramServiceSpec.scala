@@ -2,13 +2,17 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 
+import com.sksamuel.elastic4s.searches.queries.{
+  BoolQueryDefinition,
+  QueryStringQueryDefinition
+}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{
+  WgsCramExtensions,
   WgsCramKey,
   WgsCramMetadata,
-  WgsCramQueryInput,
-  WgsCramExtensions
+  WgsCramQueryInput
 }
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
@@ -20,6 +24,27 @@ class WgsCramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramSer
   val dummyKey = WgsCramKey(Location.GCP, "project1", "sample1", 1)
 
   val dummyInput = WgsCramQueryInput(project = Option("testProject"))
+
+  val dummyKeyQuery = BoolQueryDefinition(
+    must = Seq(
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.location.toString + "\"",
+        defaultField = Some("location")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.project + "\"",
+        defaultField = Some("project.exact")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.sampleAlias + "\"",
+        defaultField = Some("sample_alias.exact")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.version.toString + "\"",
+        defaultField = Some("version")
+      )
+    )
+  )
 
   def getDummyMetadata(
     documentStatus: Option[DocumentStatus]

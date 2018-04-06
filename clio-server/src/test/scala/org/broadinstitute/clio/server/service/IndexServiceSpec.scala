@@ -4,7 +4,7 @@ import java.security.SecureRandom
 
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.scaladsl.TestSink
-import com.sksamuel.elastic4s.searches.queries.SimpleStringQueryDefinition
+import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
 import io.circe.syntax._
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
@@ -28,13 +28,13 @@ abstract class IndexServiceSpec[
     val persistenceService = new PersistenceService(memoryPersistenceDAO, memorySearchDAO)
     getService(persistenceService, searchService)
   }
-  import indexService.clioIndex.implicits._
 
   def randomString: String =
     util.Random.javaRandomToRandom(new SecureRandom()).nextString(10)
 
   def elasticsearchIndex: ElasticsearchIndex[CI]
   def dummyKey: indexService.clioIndex.KeyType
+  def dummyKeyQuery: BoolQueryDefinition
   def dummyInput: indexService.clioIndex.QueryInputType
 
   def getDummyMetadata(
@@ -125,8 +125,7 @@ abstract class IndexServiceSpec[
       )
       memorySearchDAO.queryCalls should be(
         Seq(
-          SimpleStringQueryDefinition(dummyKey.asJson.noSpaces),
-          SimpleStringQueryDefinition(dummyKey.asJson.noSpaces)
+          dummyKeyQuery
         )
       )
     }
@@ -198,7 +197,7 @@ abstract class IndexServiceSpec[
         Seq((Seq(expectedDocument), elasticsearchIndex))
       )
       memorySearchDAO.queryCalls should be(
-        Seq(SimpleStringQueryDefinition(dummyKey.asJson.noSpaces))
+        Seq(dummyKeyQuery)
       )
     }
   }

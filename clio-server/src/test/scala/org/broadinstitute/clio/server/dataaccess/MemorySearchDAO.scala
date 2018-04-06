@@ -3,8 +3,9 @@ package org.broadinstitute.clio.server.dataaccess
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.sksamuel.elastic4s.searches.queries.{
+  BoolQueryDefinition,
   QueryDefinition,
-  SimpleStringQueryDefinition
+  QueryStringQueryDefinition
 }
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
@@ -33,22 +34,30 @@ class MemorySearchDAO extends MockSearchDAO {
     index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
     queryCalls += queryDefinition
-    updateCalls
-      .flatMap(_._1)
-      .find(update => {
-        update.findAllByKey("entity_id").headOption.fold(false) { entityId =>
-          entityId.toString().split('.').forall { keySegment =>
-            queryDefinition
-              .asInstanceOf[SimpleStringQueryDefinition]
-              .query
-              .contains(keySegment.replace("\"", ""))
-          }
-        }
-      })
-      .fold(
-        super.queryMetadata(queryDefinition)
-      )(Source.single)
-
+    queryDefinition match {
+      case boolQuery: BoolQueryDefinition =>
+        val entityId = boolQuery.must.map {
+          case innerQuery: QueryStringQueryDefinition =>
+            innerQuery.query.replace("\"", "")
+          case _ => Source.empty
+        }.mkString(".")
+        updateCalls
+          .flatMap(_._1)
+          .find(update => {
+            update
+              .findAllByKey("entity_id")
+              .forall(
+                updateEntityId =>
+                  updateEntityId.toString().split(".").deep == entityId.toString
+                    .split(".")
+                    .deep
+              )
+          })
+          .fold(
+            super.queryMetadata(queryDefinition)
+          )(Source.single)
+      case _ => Source.empty
+    }
   }
 
   override def getMostRecentDocument(

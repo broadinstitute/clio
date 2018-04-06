@@ -49,7 +49,7 @@ abstract class IndexService[CI <: ClioIndex](
     if (!force) {
       queryMetadataForKey(indexKey)
         .fold[Either[Exception, clioIndex.MetadataType]](
-          // If the query doesn't return a document and the document status is not set default to Normal.
+          // If the query doesn't return a document and the document status is null then set it to the default value.
           Right(
             setDefaultDocumentStatus(metadata)
           )
@@ -81,7 +81,9 @@ abstract class IndexService[CI <: ClioIndex](
     )
   }
 
-  private def setDefaultDocumentStatus(metadata: clioIndex.MetadataType) = {
+  private def setDefaultDocumentStatus(
+    metadata: clioIndex.MetadataType
+  ): clioIndex.MetadataType = {
     metadata.documentStatus
       .fold(metadata.withDocumentStatus(Some(Normal)))(_ => metadata)
   }
