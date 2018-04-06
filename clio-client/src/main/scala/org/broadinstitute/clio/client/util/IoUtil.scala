@@ -5,8 +5,13 @@ import java.math.BigInteger
 import java.net.URI
 import java.util.Base64
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import better.files.File
+import cats.syntax.either._
 
+import scala.collection.immutable
+import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process.{Process, ProcessBuilder}
 
 /**
@@ -34,6 +39,67 @@ trait IoUtil {
 
   def readFileData(location: URI): String =
     File(location.getPath).contentAsString
+
+  /**
+    * Build a stream which, when pulled, will delete all of the
+    * given cloud objects in parallel.
+    */
+  def deleteCloudObjects(
+    paths: immutable.Iterable[URI]
+  )(implicit ec: ExecutionContext): Source[Unit, NotUsed] = {
+    Source(paths)
+      .mapAsyncUnordered(paths.size + 1) { path =>
+        Future(Either.catchNonFatal(deleteGoogleObject(path)))
+      }
+      .fold(Seq.empty[Throwable]) { (acc, attempt) =>
+        attempt.fold(acc :+ _, _ => acc)
+      }
+      .flatMapConcat { errs =>
+        if (errs.isEmpty) {
+          Source.single(())
+        } else {
+          Source.failed(
+            new IOException(
+              s"""Failed to delete cloud objects:
+                 |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
+            )
+          )
+        }
+      }
+  }
+
+  /**
+    * Build a stream which, when pulled, will perform all of the given cloud
+    * copies in parallel.
+    *
+    * @param copiesToPerform Tuples describing the copies to perform. The object
+    *                        pointed to by the LHS of each tuple will be copied
+    *                        to the path in the RHS.
+    */
+  def copyCloudObjects(
+    copiesToPerform: immutable.Iterable[(URI, URI)]
+  )(implicit ec: ExecutionContext): Source[Unit, NotUsed] = {
+    Source(copiesToPerform)
+      .mapAsyncUnordered(copiesToPerform.size + 1) {
+        case (src, dest) =>
+          Future(Either.catchNonFatal(copyGoogleObject(src, dest)))
+      }
+      .fold(Seq.empty[Throwable]) { (acc, attempt) =>
+        attempt.fold(acc :+ _, _ => acc)
+      }
+      .flatMapConcat { errs =>
+        if (errs.isEmpty) {
+          Source.single(())
+        } else {
+          Source.failed(
+            new IOException(
+              s"""Failed to copy cloud objects:
+                 |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
+            )
+          )
+        }
+      }
+  }
 
   /*
    * FIXME for all below:

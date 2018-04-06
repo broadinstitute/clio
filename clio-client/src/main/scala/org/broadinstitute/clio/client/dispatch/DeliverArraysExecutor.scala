@@ -36,11 +36,11 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
           deliverCommand.destination,
           ArraysExtensions.IdatExtension
         )
-        val movesToPerform = Map(grn -> movedGrnIdat, red -> movedRedIdat).filterNot {
-          case (old, moved) => moved == old
+        val idatCopies = Map(grn -> movedGrnIdat, red -> movedRedIdat).filterNot {
+          case (old, moved) => moved.equals(old)
         }
 
-        copyPaths(movesToPerform, ioUtil).map { _ =>
+        ioUtil.copyCloudObjects(idatCopies).map { _ =>
           metadata
             .withWorkspaceName(deliverCommand.workspaceName)
             .copy(

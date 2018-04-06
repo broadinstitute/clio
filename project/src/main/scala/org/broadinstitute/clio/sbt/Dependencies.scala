@@ -27,6 +27,7 @@ object Dependencies {
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
   private val ScalaLoggingVersion = "3.8.0"
+  private val ScalamockVersion = "4.1.0"
   // Not the latest version, but 3.0.1+ dumps spurious
   // exceptions to console even on test success.
   private val ScalaTestVersion = "3.0.0"
@@ -38,7 +39,7 @@ object Dependencies {
   private val VaultJavaDriverVersion = "3.1.0"
 
   /** Version of Scala to build Clio with. */
-  val ScalaVersion = "2.12.4"
+  val ScalaVersion = "2.12.5"
 
   /**
     * Version of scalafmt to pull in via plugin.
@@ -107,6 +108,7 @@ object Dependencies {
 
   private val ClientTestDependencies: Seq[ModuleID] = Seq(
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
+    "org.scalamock" %% "scalamock" % ScalamockVersion,
     "org.scalatest" %% "scalatest" % ScalaTestVersion
   ).map(_ % Test)
 

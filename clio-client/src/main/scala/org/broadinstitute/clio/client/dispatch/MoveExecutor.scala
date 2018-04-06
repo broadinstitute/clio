@@ -4,7 +4,6 @@ import java.net.URI
 
 import akka.{Done, NotUsed}
 import akka.stream.scaladsl.Source
-import cats.syntax.either._
 import io.circe.Json
 import org.broadinstitute.clio.client.commands.MoveCommand
 import org.broadinstitute.clio.client.util.IoUtil
@@ -14,7 +13,7 @@ import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.Location
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.collection.immutable
 
 class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
@@ -73,9 +72,16 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
       } else {
         val oldPaths = movesToPerform.keys.to[immutable.Iterable]
 
-        checkPaths(oldPaths, ioUtil)
-          .flatMapConcat(_ => copyPaths(movesToPerform, ioUtil))
-          .flatMapConcat(_ => customMetadataOperations(movedMetadata, ioUtil))
+        checkPaths(oldPaths, ioUtil).flatMapConcat { _ =>
+          ioUtil.copyCloudObjects(movesToPerform).mapError {
+            case ex =>
+              new RuntimeException(
+                s"""Errors encountered while copying files for $prettyKey.
+                   |Clio hasn't been updated, but some files may exist in two locations.""".stripMargin,
+                ex
+              )
+          }
+        }.flatMapConcat(_ => customMetadataOperations(movedMetadata, ioUtil))
           .flatMapConcat { newMetadata =>
             if (newMetadata == existingMetadata) {
               logger.info(
@@ -90,13 +96,20 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
                   case ex =>
                     new RuntimeException(
                       s"""An error occurred while updating the $name record in Clio. All files associated with
-                       |$prettyKey exist at both the old and new locations, but Clio only knows about the old
-                       |location. Try re-running the command.""".stripMargin,
+                         |$prettyKey exist at both the old and new locations, but Clio only knows about the old
+                         |location. Try re-running the command.""".stripMargin,
                       ex
                     )
                 }
                 .flatMapConcat { upsertId =>
-                  deletePaths(oldPaths, ioUtil).map(_ => upsertId)
+                  ioUtil.deleteCloudObjects(oldPaths).map(_ => upsertId).mapError {
+                    case ex =>
+                      new RuntimeException(
+                        s"""Errors encountered while deleting old files for $prettyKey.
+                           |Please manually delete the old files.""".stripMargin,
+                        ex
+                      )
+                  }
                 }
             }
           }
@@ -181,72 +194,6 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
           )
         }
       }
-  }
-
-  protected def copyPaths(
-    movesToPerform: immutable.Iterable[(URI, URI)],
-    ioUtil: IoUtil
-  ): Source[Done, NotUsed] = {
-    val done = Source.single(Done)
-
-    // `mapAsync` fails at runtime if constructed with parallelism of 0.
-    if (movesToPerform.isEmpty) {
-      done
-    } else {
-      Source(movesToPerform)
-        .mapAsync(movesToPerform.size) {
-          case (oldPath, newPath) =>
-            Future(Either.catchNonFatal(ioUtil.copyGoogleObject(oldPath, newPath)))
-        }
-        .fold(Seq.empty[Throwable]) { (acc, attempt) =>
-          attempt.fold(acc :+ _, _ => acc)
-        }
-        .flatMapConcat { errs =>
-          if (errs.isEmpty) {
-            done
-          } else {
-            Source.failed(
-              new RuntimeException(
-                s"""Errors encountered while copying files in the cloud. Clio hasn't been updated,
-                   |but some files for $prettyKey may exist in two locations. Errors were:
-                   |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
-              )
-            )
-          }
-        }
-    }
-  }
-
-  private def deletePaths(
-    oldPaths: immutable.Iterable[URI],
-    ioUtil: IoUtil
-  ): Source[Done, NotUsed] = {
-    val done = Source.single(Done)
-
-    if (oldPaths.isEmpty) {
-      done
-    } else {
-      Source(oldPaths)
-        .mapAsync(oldPaths.size) { path =>
-          Future(Either.catchNonFatal(ioUtil.deleteGoogleObject(path)))
-        }
-        .fold(Seq.empty[Throwable]) { (acc, attempt) =>
-          attempt.fold(acc :+ _, _ => acc)
-        }
-        .flatMapConcat { errs =>
-          if (errs.isEmpty) {
-            done
-          } else {
-            Source.failed(
-              new RuntimeException(
-                s"""Errors encountered while deleting old files for $prettyKey:
-                   |${errs.map(_.getMessage).mkString("\n")}
-                   |Please manually delete the old files.""".stripMargin
-              )
-            )
-          }
-        }
-    }
   }
 
   protected def customMetadataOperations(

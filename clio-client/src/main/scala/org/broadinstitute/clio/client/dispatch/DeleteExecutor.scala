@@ -2,7 +2,7 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.{Done, NotUsed}
+import akka.NotUsed
 import akka.stream.scaladsl.Source
 import cats.syntax.either._
 import io.circe.Json
@@ -48,26 +48,33 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
         }
         .flatMapConcat { metadata =>
           val pathsToDelete = metadata.pathsToDelete.to[immutable.Iterable]
-          checkPaths(pathsToDelete, ioUtil)
-            .flatMapConcat(deletePaths(_, ioUtil))
-            .flatMapConcat { _ =>
-              webClient
-                .upsert(deleteCommand.index)(
-                  deleteCommand.key,
-                  metadata.markDeleted(deleteCommand.note),
-                  // Always force because we're purposefully overwriting document status.
-                  force = true
+          checkPaths(pathsToDelete, ioUtil).flatMapConcat {
+            ioUtil.deleteCloudObjects(_).mapError {
+              case ex =>
+                new RuntimeException(
+                  s"""Errors encountered while deleting files for $prettyKey.
+                       |The record for $prettyKey still exists in Clio.""".stripMargin,
+                  ex
                 )
-                .mapError {
-                  case ex =>
-                    new RuntimeException(
-                      s"""Failed to delete the $name record for $prettyKey in Clio.
+            }
+          }.flatMapConcat { _ =>
+            webClient
+              .upsert(deleteCommand.index)(
+                deleteCommand.key,
+                metadata.markDeleted(deleteCommand.note),
+                // Always force because we're purposefully overwriting document status.
+                force = true
+              )
+              .mapError {
+                case ex =>
+                  new RuntimeException(
+                    s"""Failed to delete the $name record for $prettyKey in Clio.
                        |The associated files have been deleted in the cloud, but Clio doesn't know.
                        |Try re-running this command with '--force'.""".stripMargin,
-                      ex
-                    )
-                }
-            }
+                    ex
+                  )
+              }
+          }
         }
     }
   }
@@ -105,13 +112,11 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
           }
         }
       }
-      .fold(Right(Seq.empty[URI]): Either[Seq[Throwable], Seq[URI]]) { (acc, attempt) =>
-        (acc, attempt) match {
-          case (Right(ps), Right(maybePath)) => Right(ps ++ maybePath.toIterable)
-          case (Right(_), Left(err))         => Left(Seq(err))
-          case (Left(errs), Right(_))        => Left(errs)
-          case (Left(errs), Left(err))       => Left(errs :+ err)
-        }
+      .fold(Right(Seq.empty[URI]): Either[Seq[Throwable], Seq[URI]]) {
+        case (Right(ps), Right(maybePath)) => Right(ps ++ maybePath.toIterable)
+        case (Right(_), Left(err))         => Left(Seq(err))
+        case (Left(errs), Right(_))        => Left(errs)
+        case (Left(errs), Left(err))       => Left(errs :+ err)
       }
       .flatMapConcat {
         _.fold(
@@ -119,38 +124,5 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
           paths => Source.single(paths.to[immutable.Iterable])
         )
       }
-  }
-
-  private def deletePaths(
-    oldPaths: immutable.Iterable[URI],
-    ioUtil: IoUtil
-  ): Source[Done, NotUsed] = {
-    val done = Source.single(Done)
-
-    // `mapAsync` fails at runtime if constructed with parallelism of 0.
-    if (oldPaths.isEmpty) {
-      done
-    } else {
-      Source(oldPaths)
-        .mapAsync(oldPaths.size) { path =>
-          Future(Either.catchNonFatal(ioUtil.deleteGoogleObject(path)))
-        }
-        .fold(Seq.empty[Throwable]) { (acc, attempt) =>
-          attempt.fold(acc :+ _, _ => acc)
-        }
-        .flatMapConcat { errs =>
-          if (errs.isEmpty) {
-            done
-          } else {
-            Source.failed(
-              new RuntimeException(
-                s"""Errors encountered while deleting files for $prettyKey.
-                   |The record for $prettyKey still exists in Clio. Errors were:
-                   |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
-              )
-            )
-          }
-        }
-    }
   }
 }
