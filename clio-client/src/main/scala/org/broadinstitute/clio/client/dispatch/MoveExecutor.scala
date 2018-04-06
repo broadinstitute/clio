@@ -2,7 +2,7 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.{Done, NotUsed}
+import akka.NotUsed
 import akka.stream.scaladsl.Source
 import io.circe.Json
 import org.broadinstitute.clio.client.commands.MoveCommand
@@ -30,94 +30,52 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     webClient: ClioWebClient,
     ioUtil: IoUtil
   ): Source[Json, NotUsed] = {
-    verifyArgs(ioUtil).flatMapConcat { _ =>
-      webClient.getMetadataForKey(moveCommand.index)(
-        moveCommand.key,
-        includeDeleted = false
-      )
-    }.orElse {
-      // Has to be lazy because `orElse` eagerly fails as soon as either branch fails.
-      Source.lazily { () =>
-        Source.failed(
-          new IllegalStateException(
-            s"No $name found in Clio for $prettyKey, nothing to move."
-          )
-        )
-      }
-    }.flatMapConcat { existingMetadata =>
-      val movedMetadata =
-        existingMetadata.moveInto(destination, moveCommand.newBasename)
-      val preMovePaths = extractPaths(existingMetadata)
-      val postMovePaths = extractPaths(movedMetadata)
+    import Executor.SourceMonadOps
 
-      val movesToPerform = preMovePaths.flatMap {
-        case (fieldName, path) => {
-          /*
-           * Assumptions:
-           *   1. If the field exists pre-move, it will still exist post-move
-           *   2. If the field is a URI pre-move, it will still be a URI post-move
-           */
-          Some(path -> postMovePaths(fieldName)).filterNot {
-            case (oldPath, newPath) => oldPath.equals(newPath)
-          }
+    for {
+      existingMetadata <- verifyArgs(ioUtil, webClient)
+      (movedMetadata, movesToPerform) <- buildMove(existingMetadata, ioUtil).orElse {
+        Source.single(existingMetadata -> immutable.Iterable.empty)
+      }
+      _ <- ioUtil.copyCloudObjects(movesToPerform).mapError {
+        case ex =>
+          new RuntimeException(
+            s"""Errors encountered while copying files for $prettyKey.
+               |Clio hasn't been updated, but some files may exist in two locations.""".stripMargin,
+            ex
+          )
+      }
+      finalMetadata <- customMetadataOperations(movedMetadata, ioUtil)
+      upsertId <- webClient
+        .upsert(moveCommand.index)(moveCommand.key, finalMetadata, force = true)
+        .mapError {
+          case ex =>
+            new RuntimeException(
+              s"""An error occurred while updating the $name record in Clio. All files associated with
+                 |$prettyKey exist at both the old and new locations, but Clio only knows about the old
+                 |location. Try re-running the command.""".stripMargin,
+              ex
+            )
         }
-      }
-
-      if (preMovePaths.isEmpty) {
-        Source.failed(
-          new IllegalStateException(
-            s"Nothing to move; no files registered to the $name for $prettyKey"
-          )
-        )
-      } else {
-        val oldPaths = movesToPerform.keys.to[immutable.Iterable]
-
-        checkPaths(oldPaths, ioUtil).flatMapConcat { _ =>
-          ioUtil.copyCloudObjects(movesToPerform).mapError {
-            case ex =>
-              new RuntimeException(
-                s"""Errors encountered while copying files for $prettyKey.
-                   |Clio hasn't been updated, but some files may exist in two locations.""".stripMargin,
-                ex
-              )
-          }
-        }.flatMapConcat(_ => customMetadataOperations(movedMetadata, ioUtil))
-          .flatMapConcat { newMetadata =>
-            if (newMetadata == existingMetadata) {
-              logger.info(
-                s"Nothing to move; all files already exist at $destination and no other metadata changes need applied."
-              )
-              Source.empty
-            } else {
-              // Always force, because we're purposefully overwriting paths.
-              webClient
-                .upsert(moveCommand.index)(moveCommand.key, newMetadata, force = true)
-                .mapError {
-                  case ex =>
-                    new RuntimeException(
-                      s"""An error occurred while updating the $name record in Clio. All files associated with
-                         |$prettyKey exist at both the old and new locations, but Clio only knows about the old
-                         |location. Try re-running the command.""".stripMargin,
-                      ex
-                    )
-                }
-                .flatMapConcat { upsertId =>
-                  ioUtil.deleteCloudObjects(oldPaths).map(_ => upsertId).mapError {
-                    case ex =>
-                      new RuntimeException(
-                        s"""Errors encountered while deleting old files for $prettyKey.
-                           |Please manually delete the old files.""".stripMargin,
-                        ex
-                      )
-                  }
-                }
-            }
-          }
-      }
+      _ <- ioUtil
+        .deleteCloudObjects(movesToPerform.map(_._1))
+        .mapError {
+          case ex =>
+            new RuntimeException(
+              s"""Errors encountered while deleting old files for $prettyKey.
+                 |Please manually delete the old files.""".stripMargin,
+              ex
+            )
+        }
+    } yield {
+      upsertId
     }
   }
 
-  private def verifyArgs(ioUtil: IoUtil): Source[Done, NotUsed] = {
+  private def verifyArgs(
+    ioUtil: IoUtil,
+    webClient: ClioWebClient
+  ): Source[moveCommand.index.MetadataType, NotUsed] = {
     if (moveCommand.key.location != Location.GCP) {
       Source.failed(
         new UnsupportedOperationException(
@@ -131,8 +89,73 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
         )
       )
     } else {
-      Source.single(Done)
+      webClient
+        .getMetadataForKey(moveCommand.index)(
+          moveCommand.key,
+          includeDeleted = false
+        )
+        .orElse {
+          // Has to be lazy because `orElse` eagerly fails as soon as either branch fails.
+          Source.lazily { () =>
+            Source.failed(
+              new IllegalStateException(
+                s"No $name found in Clio for $prettyKey, nothing to move."
+              )
+            )
+          }
+        }
     }
+  }
+
+  private def buildMove(
+    metadata: moveCommand.index.MetadataType,
+    ioUtil: IoUtil
+  ): Source[(moveCommand.index.MetadataType, immutable.Iterable[(URI, URI)]), NotUsed] = {
+    val movedMetadata = metadata.moveInto(destination, moveCommand.newBasename)
+    val preMovePaths = extractPaths(metadata)
+    val postMovePaths = extractPaths(movedMetadata)
+
+    val copiesToPerform = preMovePaths.flatMap {
+      case (fieldName, path) => {
+        /*
+         * Assumptions:
+         *   1. If the field exists pre-move, it will still exist post-move
+         *   2. If the field is a URI pre-move, it will still be a URI post-move
+         */
+        Some(path -> postMovePaths(fieldName)).filterNot {
+          case (oldPath, newPath) => oldPath.equals(newPath)
+        }
+      }
+    }
+
+    Source(copiesToPerform)
+      .fold(Seq.empty[URI]) {
+        case (acc, (src, _)) =>
+          if (ioUtil.isGoogleObject(src)) {
+            acc
+          } else {
+            acc :+ src
+          }
+      }
+      .flatMapConcat { nonCloudPaths =>
+        if (nonCloudPaths.isEmpty) {
+          if (movedMetadata == metadata) {
+            logger.info(
+              s"Nothing to move; all files already exist at $destination and no other metadata changes need applied."
+            )
+            Source.empty
+          } else {
+            Source.single(movedMetadata -> copiesToPerform)
+          }
+        } else {
+          Source.failed(
+            new IllegalStateException(
+              s"""Inconsistent state detected, non-cloud paths registered to the $name for $prettyKey:
+                 |${nonCloudPaths.mkString(",")}""".stripMargin
+            )
+          )
+        }
+      }
   }
 
   /**
@@ -167,32 +190,6 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
       .flatMap {
         case (key, value: URI) => Some(key -> value)
         case _                 => None
-      }
-  }
-
-  private def checkPaths(
-    paths: immutable.Iterable[URI],
-    ioUtil: IoUtil
-  ): Source[Done, NotUsed] = {
-    Source[URI](paths)
-      .fold(Seq.empty[URI]) { (acc, path) =>
-        if (ioUtil.isGoogleObject(path)) {
-          acc
-        } else {
-          acc :+ path
-        }
-      }
-      .flatMapConcat { nonCloudPaths =>
-        if (nonCloudPaths.isEmpty) {
-          Source.single(Done)
-        } else {
-          Source.failed(
-            new IllegalStateException(
-              s"""Inconsistent state detected, non-cloud paths registered to the $name for $prettyKey:
-                 |${nonCloudPaths.mkString(",")}""".stripMargin
-            )
-          )
-        }
       }
   }
 

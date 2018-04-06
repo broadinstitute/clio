@@ -12,3 +12,29 @@ trait Executor extends LazyLogging with ModelAutoDerivation {
 
   def execute(webClient: ClioWebClient, ioUtil: IoUtil): Source[Json, NotUsed]
 }
+
+object Executor {
+
+  /** Extension methods enabling use of for-comprehensions on Akka's `Source` type. */
+  implicit class SourceMonadOps[A, M](val source: Source[A, M]) extends AnyVal {
+
+    /**
+      * Transform every element of the wrapped stream into a new substream using
+      * the given function, an concatenate the resulting substreams in-order.
+      *
+      * Enables using `for` syntax in general.
+      */
+    def flatMap[B](f: A => Source[B, M]): Source[B, M] = source.flatMapConcat(f)
+
+    /**
+      * Build a view of the wrapped stream with the given filter applied.
+      *
+      * Akka streams don't actually perform any operations until they're run through
+      * a materializer, so the built-in `filter` method on `Source` already fits the
+      * lazy semantics of `withFilter`.
+      *
+      * Enables using pattern-matching in the LHS of `for` syntax.
+      */
+    def withFilter(p: A => Boolean): Source[A, M] = source.filter(p)
+  }
+}

@@ -27,6 +27,43 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
     webClient: ClioWebClient,
     ioUtil: IoUtil
   ): Source[Json, NotUsed] = {
+    import Executor.SourceMonadOps
+
+    for {
+      existingMetadata <- verifyArgs(webClient)
+      pathsToDelete <- buildDelete(existingMetadata, ioUtil)
+      _ <- ioUtil.deleteCloudObjects(pathsToDelete).mapError {
+        case ex =>
+          new RuntimeException(
+            s"""Errors encountered while deleting files for $prettyKey.
+               |The record for $prettyKey still exists in Clio.""".stripMargin,
+            ex
+          )
+      }
+      upsertId <- webClient
+        .upsert(deleteCommand.index)(
+          deleteCommand.key,
+          existingMetadata.markDeleted(deleteCommand.note),
+          // Always force because we're purposefully overwriting document status.
+          force = true
+        )
+        .mapError {
+          case ex =>
+            new RuntimeException(
+              s"""Failed to delete the $name record for $prettyKey in Clio.
+                 |The associated files have been deleted in the cloud, but Clio doesn't know.
+                 |Try re-running this command with '--force'.""".stripMargin,
+              ex
+            )
+        }
+    } yield {
+      upsertId
+    }
+  }
+
+  private def verifyArgs(
+    webClient: ClioWebClient
+  ): Source[deleteCommand.index.MetadataType, NotUsed] = {
     if (!deleteCommand.key.location.equals(Location.GCP)) {
       Source.failed(
         new UnsupportedOperationException(
@@ -46,43 +83,15 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
             )
           }
         }
-        .flatMapConcat { metadata =>
-          val pathsToDelete = metadata.pathsToDelete.to[immutable.Iterable]
-          checkPaths(pathsToDelete, ioUtil).flatMapConcat {
-            ioUtil.deleteCloudObjects(_).mapError {
-              case ex =>
-                new RuntimeException(
-                  s"""Errors encountered while deleting files for $prettyKey.
-                       |The record for $prettyKey still exists in Clio.""".stripMargin,
-                  ex
-                )
-            }
-          }.flatMapConcat { _ =>
-            webClient
-              .upsert(deleteCommand.index)(
-                deleteCommand.key,
-                metadata.markDeleted(deleteCommand.note),
-                // Always force because we're purposefully overwriting document status.
-                force = true
-              )
-              .mapError {
-                case ex =>
-                  new RuntimeException(
-                    s"""Failed to delete the $name record for $prettyKey in Clio.
-                       |The associated files have been deleted in the cloud, but Clio doesn't know.
-                       |Try re-running this command with '--force'.""".stripMargin,
-                    ex
-                  )
-              }
-          }
-        }
     }
   }
 
-  private def checkPaths(
-    paths: immutable.Iterable[URI],
+  private def buildDelete(
+    metadata: deleteCommand.index.MetadataType,
     ioUtil: IoUtil
   ): Source[immutable.Iterable[URI], NotUsed] = {
+
+    val paths = metadata.pathsToDelete.to[immutable.Iterable]
     Source[URI](paths)
       .mapAsync(paths.size) { path =>
         if (!ioUtil.isGoogleObject(path)) {
