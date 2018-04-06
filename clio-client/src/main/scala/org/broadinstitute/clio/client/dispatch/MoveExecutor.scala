@@ -46,6 +46,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
           )
       }
       finalMetadata <- customMetadataOperations(movedMetadata, ioUtil)
+      if finalMetadata != existingMetadata
       upsertId <- webClient
         .upsert(moveCommand.index)(moveCommand.key, finalMetadata, force = true)
         .mapError {
@@ -111,51 +112,61 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     metadata: moveCommand.index.MetadataType,
     ioUtil: IoUtil
   ): Source[(moveCommand.index.MetadataType, immutable.Iterable[(URI, URI)]), NotUsed] = {
-    val movedMetadata = metadata.moveInto(destination, moveCommand.newBasename)
+
     val preMovePaths = extractPaths(metadata)
-    val postMovePaths = extractPaths(movedMetadata)
 
-    val copiesToPerform = preMovePaths.flatMap {
-      case (fieldName, path) => {
-        /*
-         * Assumptions:
-         *   1. If the field exists pre-move, it will still exist post-move
-         *   2. If the field is a URI pre-move, it will still be a URI post-move
-         */
-        Some(path -> postMovePaths(fieldName)).filterNot {
-          case (oldPath, newPath) => oldPath.equals(newPath)
+    if (preMovePaths.isEmpty) {
+      Source.failed(
+        new IllegalStateException(
+          s"Nothing to move; no files registered to the $name for $prettyKey"
+        )
+      )
+    } else {
+      val movedMetadata = metadata.moveInto(destination, moveCommand.newBasename)
+      val postMovePaths = extractPaths(movedMetadata)
+
+      val copiesToPerform = preMovePaths.flatMap {
+        case (fieldName, path) => {
+          /*
+           * Assumptions:
+           *   1. If the field exists pre-move, it will still exist post-move
+           *   2. If the field is a URI pre-move, it will still be a URI post-move
+           */
+          Some(path -> postMovePaths(fieldName)).filterNot {
+            case (oldPath, newPath) => oldPath.equals(newPath)
+          }
         }
       }
+
+      Source(copiesToPerform)
+        .fold(Seq.empty[URI]) {
+          case (acc, (src, _)) =>
+            if (ioUtil.isGoogleObject(src)) {
+              acc
+            } else {
+              acc :+ src
+            }
+        }
+        .flatMapConcat { nonCloudPaths =>
+          if (nonCloudPaths.isEmpty) {
+            if (copiesToPerform.isEmpty) {
+              logger.info(
+                s"Nothing to move; all files already exist at $destination and no other metadata changes need applied."
+              )
+              Source.empty
+            } else {
+              Source.single(movedMetadata -> copiesToPerform)
+            }
+          } else {
+            Source.failed(
+              new IllegalStateException(
+                s"""Inconsistent state detected, non-cloud paths registered to the $name for $prettyKey:
+                   |${nonCloudPaths.mkString(",")}""".stripMargin
+              )
+            )
+          }
+        }
     }
-
-    Source(copiesToPerform)
-      .fold(Seq.empty[URI]) {
-        case (acc, (src, _)) =>
-          if (ioUtil.isGoogleObject(src)) {
-            acc
-          } else {
-            acc :+ src
-          }
-      }
-      .flatMapConcat { nonCloudPaths =>
-        if (nonCloudPaths.isEmpty) {
-          if (movedMetadata == metadata) {
-            logger.info(
-              s"Nothing to move; all files already exist at $destination and no other metadata changes need applied."
-            )
-            Source.empty
-          } else {
-            Source.single(movedMetadata -> copiesToPerform)
-          }
-        } else {
-          Source.failed(
-            new IllegalStateException(
-              s"""Inconsistent state detected, non-cloud paths registered to the $name for $prettyKey:
-                 |${nonCloudPaths.mkString(",")}""".stripMargin
-            )
-          )
-        }
-      }
   }
 
   /**
