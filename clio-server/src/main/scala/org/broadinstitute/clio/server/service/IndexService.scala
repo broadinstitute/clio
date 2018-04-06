@@ -77,8 +77,8 @@ abstract class IndexService[CI <: ClioIndex](
             //if the incoming document status is not set then set it to the existing status
             existingMetadataJson
               .as[clioIndex.MetadataType]
-              .flatMap { existing =>
-                Right(metadata.withDocumentStatus(existing.documentStatus))
+              .map { existing =>
+                metadata.withDocumentStatus(existing.documentStatus)
               }
           }
         ) { _ =>
