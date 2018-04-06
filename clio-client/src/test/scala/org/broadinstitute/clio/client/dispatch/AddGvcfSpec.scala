@@ -48,15 +48,6 @@ class AddGvcfSpec extends BaseClientSpec {
       .map(_ shouldBe an[UpsertId])
   }
 
-  it should "fail to add a gvcf that would overwrite an existing document" in {
-    recoverToSucceededIf[IllegalArgumentException] {
-      val mockIoUtil = new MockIoUtil
-
-      succeedingDispatcher(mockIoUtil, testGvcfLocation)
-        .dispatch(goodGvcfAddCommand)
-    }
-  }
-
   it should "succeed in overwriting an existing document if a force flag is set" in {
     val mockIoUtil = new MockIoUtil
     succeedingDispatcher(mockIoUtil, testGvcfLocation)
