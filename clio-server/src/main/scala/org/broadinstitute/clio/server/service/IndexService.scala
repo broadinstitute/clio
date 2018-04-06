@@ -45,41 +45,39 @@ abstract class IndexService[CI <: ClioIndex](
     metadata: clioIndex.MetadataType,
     force: Boolean = false
   ): Source[UpsertId, NotUsed] = {
+
     // query by key to see if the document already exists if force is false
+    lazy val theQuery = queryMetadataForKey(indexKey)
+      .fold[Either[Exception, clioIndex.MetadataType]](
+        // If the query doesn't return a document and the document status is null then set it to the default value.
+        Right(
+          setDefaultDocumentStatus(metadata)
+        )
+      ) { (_, existingMetadataJson) =>
+        existingMetadataJson.as[clioIndex.MetadataType]
+      }
+
     val validateOrError =
       if (!force) {
-        queryMetadataForKey(indexKey)
-          .fold[Either[Exception, clioIndex.MetadataType]](
-            // If the query doesn't return a document and the document status is null then set it to the default value.
-            Right(
-              setDefaultDocumentStatus(metadata)
-            )
-          ) { (_, existingMetadataJson) =>
-            //if the incoming document status is not set then set it to the existing status
-            for {
-              existing <- existingMetadataJson.as[clioIndex.MetadataType]
-              validated <- validateUpsert(existing, metadata)
-            } yield {
-              validated.withDocumentStatus(existing.documentStatus)
-            }
+        theQuery.map { existingOrErr =>
+          //if the incoming document status is not set then set it to the existing status
+          for {
+            existing <- existingOrErr
+            validated <- validateUpsert(existing, metadata)
+          } yield {
+            validated.withDocumentStatus(existing.documentStatus)
           }
+        }
+
       } else {
         //if the incoming document status is not set then set it to the existing status
-        metadata.documentStatus.fold(
-          queryMetadataForKey(indexKey).fold[Either[Exception, clioIndex.MetadataType]](
-            // If the query doesn't return a document and the document status is null then set it to the default value.
-            Right(
-              setDefaultDocumentStatus(metadata)
-            )
-          ) { (_, existingMetadataJson) =>
-            //if the incoming document status is not set then set it to the existing status
-            existingMetadataJson
-              .as[clioIndex.MetadataType]
-              .map { existing =>
-                metadata.withDocumentStatus(existing.documentStatus)
-              }
+        metadata.documentStatus.fold(theQuery.map { existingOrErr =>
+          for {
+            existing <- existingOrErr
+          } yield {
+            metadata.withDocumentStatus(existing.documentStatus)
           }
-        ) { _ =>
+        }) { _ =>
           Source.single(Right(metadata))
         }
       }
