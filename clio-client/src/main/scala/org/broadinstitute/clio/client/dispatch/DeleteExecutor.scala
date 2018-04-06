@@ -109,7 +109,11 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])
             )
         }
       upsertResponse <- client
-        .upsert(deleteCommand.index)(deleteCommand.key, markedAsDeleted)
+        .upsert(deleteCommand.index)(
+          deleteCommand.key,
+          markedAsDeleted,
+          force = true
+        )
         .recover {
           case ex =>
             throw new RuntimeException(

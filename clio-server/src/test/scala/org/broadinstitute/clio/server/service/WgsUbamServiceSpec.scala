@@ -1,5 +1,9 @@
 package org.broadinstitute.clio.server.service
 
+import com.sksamuel.elastic4s.searches.queries.{
+  BoolQueryDefinition,
+  QueryStringQueryDefinition
+}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata, UbamQueryInput}
@@ -14,6 +18,27 @@ class WgsUbamServiceSpec extends IndexServiceSpec[WgsUbamIndex.type]("WgsUbamSer
 
   val dummyInput = UbamQueryInput(project = Option("testProject"))
 
+  val dummyKeyQuery = BoolQueryDefinition(
+    must = Seq(
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.flowcellBarcode + "\"",
+        defaultField = Some("flowcell_barcode.exact")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.lane.toString + "\"",
+        defaultField = Some("lane")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.libraryName + "\"",
+        defaultField = Some("library_name.exact")
+      ),
+      QueryStringQueryDefinition(
+        query = "\"" + dummyKey.location.toString + "\"",
+        defaultField = Some("location")
+      )
+    )
+  )
+
   def getDummyMetadata(
     documentStatus: Option[DocumentStatus]
   ): UbamMetadata = {
@@ -22,6 +47,10 @@ class WgsUbamServiceSpec extends IndexServiceSpec[WgsUbamIndex.type]("WgsUbamSer
       notes = Option("notable update"),
       documentStatus = documentStatus
     )
+  }
+
+  def copyDummyMetadataChangeField(metadata: UbamMetadata): UbamMetadata = {
+    metadata.copy(project = Some(randomString))
   }
 
   def getService(

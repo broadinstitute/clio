@@ -75,14 +75,11 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
   private def flattenVals(queryInput: Input): Seq[(String, _)] = {
     val vals = inputMapper.vals(queryInput).toSeq
     val flattened = vals flatMap {
-      case (name, valueOption) =>
-        val tpe = inputMapper.types(name)
-        if (!valueOption.isInstanceOf[Option[_]]) {
-          throw new IllegalArgumentException(
-            s"Unexpected non-Option value '$valueOption' for $name: $tpe"
-          )
+      case (name, value) =>
+        value match {
+          case opt: Option[_] => opt.map(name -> _)
+          case nonOpt         => Some(name -> nonOpt)
         }
-        valueOption.asInstanceOf[Option[_]].map(name -> _)
     }
     flattened sortBy {
       case (name, _) => name

@@ -4,6 +4,7 @@ import com.sksamuel.elastic4s.http.HttpEntity
 import io.circe.parser._
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.server.TestKitSuite
+import org.broadinstitute.clio.transfer.model.HealthStatus
 import org.scalatest._
 
 import scala.concurrent.Future
@@ -94,9 +95,11 @@ abstract class AbstractElasticsearchDAOSpec(actorSystemName: String)
       */
     def waitForGreen(count: Int, sleep: Duration): Future[Unit] = {
       httpElasticsearchDAO.getClusterHealth transformWith {
-        case Success(response) if response.status == "green" =>
+        case Success(response)
+            if HealthStatus.withNameInsensitive(response.status) == HealthStatus.Green =>
           Future.successful(())
-        case Success(response) if response.status == "yellow" && count > 0 =>
+        case Success(response)
+            if HealthStatus.withNameInsensitive(response.status) == HealthStatus.Yellow && count > 0 =>
           // If we got a yellow, we missed disabling one of the indexes. Try again.
           performDisableReplicas flatMap { _ =>
             waitForGreen(count - 1, sleep)

@@ -38,7 +38,6 @@ class PersistenceService private[server] (
     index: ElasticsearchIndex[_]
   )(implicit ec: ExecutionContext): Future[UpsertId] = {
     val document = documentMapper.document(key, metadata)
-
     for {
       _ <- persistenceDAO.writeUpdate(document, index)
       _ <- searchDAO.updateMetadata(document)(index)

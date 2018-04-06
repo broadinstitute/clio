@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.transfer.model
 
-import io.circe.{Decoder, Encoder}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
 import org.broadinstitute.clio.transfer.model.arrays.{
   ArraysKey,
   ArraysMetadata,
@@ -31,7 +31,7 @@ sealed abstract class SemiAutoClioIndex[
   override val keyTag: ClassTag[KT],
   override val metadataTag: ClassTag[MT],
   override val queryInputTag: ClassTag[QI],
-  override val keyEncoder: Encoder[KT],
+  override val keyEncoder: ObjectEncoder[KT],
   override val metadataDecoder: Decoder[MT],
   override val metadataEncoder: Encoder[MT],
   override val queryInputEncoder: Encoder[QI],

@@ -4,6 +4,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import io.circe.syntax._
+import org.broadinstitute.clio.server.exceptions.UpsertValidationException
 import org.broadinstitute.clio.server.model.ErrorResult
 
 class ExceptionDirectives extends JsonWebService {
@@ -19,6 +20,10 @@ class ExceptionDirectives extends JsonWebService {
 
   private val completeWithInternalErrorJsonHandler: ExceptionHandler = {
     ExceptionHandler {
+      case upsertException: UpsertValidationException =>
+        complete(
+          StatusCodes.BadRequest -> upsertException.message
+        )
       case _: Exception => completeWithInternalErrorJsonRoute
     }
   }
