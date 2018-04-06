@@ -13,6 +13,7 @@ import org.broadinstitute.clio.server.exceptions.UpsertValidationException
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.DocumentStatus
+import org.broadinstitute.clio.util.model.DocumentStatus.Deleted
 abstract class IndexServiceSpec[
   CI <: ClioIndex
 ](specificService: String)
@@ -129,7 +130,126 @@ abstract class IndexServiceSpec[
         )
       )
     }
+  }
 
+  it should "not overwrite document status if it is not set" in {
+
+    clearMemory()
+    val metadata = getDummyMetadata(Some(Deleted))
+    val newMetadata = metadata.withDocumentStatus(None)
+
+    val expectedDocumentStatus = Option(DocumentStatus.Deleted)
+    for {
+      upsertId <- indexService
+        .upsertMetadata(
+          dummyKey,
+          metadata
+        )
+        .runWith(Sink.head)
+      newUpsertId <- indexService
+        .upsertMetadata(dummyKey, newMetadata)
+        .runWith(Sink.head)
+    } yield {
+
+      val expectedDocument =
+        indexService.documentConverter
+          .document(
+            dummyKey,
+            metadata.withDocumentStatus(expectedDocumentStatus)
+          )
+          .mapObject(
+            _.add(ElasticsearchIndex.UpsertIdElasticsearchName, upsertId.asJson)
+          )
+
+      val expectedDocument2 =
+        indexService.documentConverter
+          .document(
+            dummyKey,
+            newMetadata.withDocumentStatus(expectedDocumentStatus)
+          )
+          .mapObject(
+            _.add(ElasticsearchIndex.UpsertIdElasticsearchName, newUpsertId.asJson)
+          )
+
+      memoryPersistenceDAO.writeCalls should be(
+        Seq(
+          (expectedDocument, elasticsearchIndex),
+          (expectedDocument2, elasticsearchIndex)
+        )
+      )
+      memorySearchDAO.updateCalls should be(
+        Seq(
+          (Seq(expectedDocument), elasticsearchIndex),
+          (Seq(expectedDocument2), elasticsearchIndex)
+        )
+      )
+      memorySearchDAO.queryCalls should be(
+        Seq(
+          dummyKeyQuery,
+          dummyKeyQuery
+        )
+      )
+    }
+  }
+
+  it should "not overwrite document status if it is not set and force is set to true" in {
+
+    clearMemory()
+    val metadata = getDummyMetadata(Some(Deleted))
+    val newMetadata = metadata.withDocumentStatus(None)
+
+    val expectedDocumentStatus = Option(DocumentStatus.Deleted)
+    for {
+      upsertId <- indexService
+        .upsertMetadata(
+          dummyKey,
+          metadata
+        )
+        .runWith(Sink.head)
+      newUpsertId <- indexService
+        .upsertMetadata(dummyKey, newMetadata, force = true)
+        .runWith(Sink.head)
+    } yield {
+
+      val expectedDocument =
+        indexService.documentConverter
+          .document(
+            dummyKey,
+            metadata.withDocumentStatus(expectedDocumentStatus)
+          )
+          .mapObject(
+            _.add(ElasticsearchIndex.UpsertIdElasticsearchName, upsertId.asJson)
+          )
+
+      val expectedDocument2 =
+        indexService.documentConverter
+          .document(
+            dummyKey,
+            newMetadata.withDocumentStatus(expectedDocumentStatus)
+          )
+          .mapObject(
+            _.add(ElasticsearchIndex.UpsertIdElasticsearchName, newUpsertId.asJson)
+          )
+
+      memoryPersistenceDAO.writeCalls should be(
+        Seq(
+          (expectedDocument, elasticsearchIndex),
+          (expectedDocument2, elasticsearchIndex)
+        )
+      )
+      memorySearchDAO.updateCalls should be(
+        Seq(
+          (Seq(expectedDocument), elasticsearchIndex),
+          (Seq(expectedDocument2), elasticsearchIndex)
+        )
+      )
+      memorySearchDAO.queryCalls should be(
+        Seq(
+          dummyKeyQuery,
+          dummyKeyQuery
+        )
+      )
+    }
   }
 
   it should "upsertMetadata" in {

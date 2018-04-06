@@ -2,7 +2,10 @@ package org.broadinstitute.clio.integrationtest
 import akka.http.scaladsl.model.Uri
 import better.files.File
 import com.google.auth.oauth2.OAuth2Credentials
-import org.broadinstitute.clio.client.webclient.{ClioWebClient, GoogleCredentialsGenerator}
+import org.broadinstitute.clio.client.webclient.{
+  ClioWebClient,
+  GoogleCredentialsGenerator
+}
 import org.broadinstitute.clio.integrationtest.tests._
 import org.broadinstitute.clio.util.auth.AuthUtil
 

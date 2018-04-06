@@ -45,7 +45,7 @@ abstract class IndexService[CI <: ClioIndex](
     metadata: clioIndex.MetadataType,
     force: Boolean = false
   ): Source[UpsertId, NotUsed] = {
-    // query by key to see if the document already exists
+    // query by key to see if the document already exists if force is false
     if (!force) {
       queryMetadataForKey(indexKey)
         .fold[Either[Exception, clioIndex.MetadataType]](
@@ -54,8 +54,15 @@ abstract class IndexService[CI <: ClioIndex](
             setDefaultDocumentStatus(metadata)
           )
         ) { (_, existingMetadataJson) =>
-          // validation will check to make sure no fields are being overwritten
-          validateUpsert(existingMetadataJson, metadata)
+          //if the incoming document status is not set then set it to the existing status
+          existingMetadataJson
+            .as[clioIndex.MetadataType]
+            .flatMap { existing =>
+              validateUpsert(
+                existing,
+                metadata.withDocumentStatus(existing.documentStatus)
+              )
+            }
         }
         .flatMapConcat[UpsertId, NotUsed] {
           case Right(updatedMetadata) =>
@@ -63,7 +70,28 @@ abstract class IndexService[CI <: ClioIndex](
           case Left(rejection) => Source.failed(rejection)
         }
     } else {
-      upsertToStream(indexKey, metadata)
+      //if the incoming document status is not set then set it to the existing status
+      metadata.documentStatus.fold[Source[UpsertId, NotUsed]]({
+        queryMetadataForKey(indexKey).fold[Either[Exception, clioIndex.MetadataType]](
+          // If the query doesn't return a document and the document status is null then set it to the default value.
+          Right(
+            setDefaultDocumentStatus(metadata)
+          )
+        ) { (_, existingMetadataJson) =>
+          //if the incoming document status is not set then set it to the existing status
+          existingMetadataJson
+            .as[clioIndex.MetadataType]
+            .flatMap { existing =>
+              Right(metadata.withDocumentStatus(existing.documentStatus))
+            }
+        }
+      }.flatMapConcat[UpsertId, NotUsed] {
+        case Right(updatedMetadata) =>
+          upsertToStream(indexKey, updatedMetadata)
+        case Left(rejection) => Source.failed(rejection)
+      }) { _ =>
+        upsertToStream(indexKey, metadata)
+      }
     }
   }
 
@@ -74,7 +102,7 @@ abstract class IndexService[CI <: ClioIndex](
     Source.fromFuture(
       persistenceService.upsertMetadata(
         indexKey,
-        setDefaultDocumentStatus(updatedMetadata),
+        updatedMetadata,
         documentConverter,
         elasticsearchIndex
       )
@@ -108,7 +136,7 @@ abstract class IndexService[CI <: ClioIndex](
   }
 
   def validateUpsert(
-    existingMetadata: Json,
+    existingMetadata: clioIndex.MetadataType,
     newMetadata: clioIndex.MetadataType
   ): Either[Exception, clioIndex.MetadataType] = {
     val differences = JsonDiff.diff(existingMetadata, newMetadata, remember = true)
