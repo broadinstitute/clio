@@ -61,7 +61,9 @@ abstract class IndexService[CI <: ClioIndex](
               .flatMap { existing =>
                 validateUpsert(
                   existing,
-                  metadata.withDocumentStatus(existing.documentStatus)
+                  metadata.documentStatus.fold[clioIndex.MetadataType](
+                    metadata.withDocumentStatus(existing.documentStatus)
+                  )(_ => metadata)
                 )
               }
           }

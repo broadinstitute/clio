@@ -69,6 +69,13 @@ abstract class IndexServiceSpec[
     overMetadataWriteTest(Some(Deleted), None, changeField = false)
   }
 
+  it should "fail if it would overwrite document status" in {
+    recoverToSucceededIf[UpsertValidationException] {
+      clearMemory()
+      overMetadataWriteTest(Some(Deleted), Some(Normal), changeField = false)
+    }
+  }
+
   it should "not overwrite document status if it is not set and force is set to true" in {
     clearMemory()
     overMetadataWriteTest(Some(Deleted), None, changeField = false, force = true)
