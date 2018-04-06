@@ -11,13 +11,9 @@ import org.broadinstitute.clio.client.commands.AddCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.ClioIndex
-import org.broadinstitute.clio.util.ClassUtil
 
 class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI]) extends Executor {
   import addCommand.index.implicits._
-
-  private[dispatch] val name: String = addCommand.index.name
-  private[dispatch] val prettyKey = ClassUtil.formatFields(addCommand.key)
 
   override def execute(
     webClient: ClioWebClient,
@@ -26,13 +22,6 @@ class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI]) extends Executor 
     readMetadata(addCommand.metadataLocation, ioUtil).flatMapConcat { metadata =>
       webClient
         .upsert(addCommand.index)(addCommand.key, metadata, addCommand.force)
-        .mapError {
-          case ex =>
-            new RuntimeException(
-              s"An error occurred while adding the $name record in Clio.",
-              ex
-            )
-        }
     }
   }
 
