@@ -56,16 +56,12 @@ abstract class IndexService[CI <: ClioIndex](
             )
           ) { (_, existingMetadataJson) =>
             //if the incoming document status is not set then set it to the existing status
-            existingMetadataJson
-              .as[clioIndex.MetadataType]
-              .flatMap { existing =>
-                validateUpsert(
-                  existing,
-                  metadata.documentStatus.fold[clioIndex.MetadataType](
-                    metadata.withDocumentStatus(existing.documentStatus)
-                  )(_ => metadata)
-                )
-              }
+            for {
+              existing <- existingMetadataJson.as[clioIndex.MetadataType]
+              validated <- validateUpsert(existing, metadata)
+            } yield {
+              validated.withDocumentStatus(existing.documentStatus)
+            }
           }
       } else {
         //if the incoming document status is not set then set it to the existing status
