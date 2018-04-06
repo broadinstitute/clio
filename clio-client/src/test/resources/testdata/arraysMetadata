@@ -54,7 +54,6 @@
   "reported_gender"                          : "reported_gender",
   "research_project_id"                      : "research_project_id",
   "sample_alias"                             : "sample_alias",
-  "scanner_name"                             : "scanner_name",
   "total_assays"                             : 9876543210,
   "total_indels"                             : 9876543210,
   "total_snps"                               : 9876543210,
