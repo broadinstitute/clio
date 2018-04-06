@@ -57,7 +57,6 @@ abstract class IndexService[CI <: ClioIndex](
 
   def rawQuery(inputJson: String): Source[Json, NotUsed] = {
     searchService
-      .rawQuery(inputJson)(elasticsearchIndex)
-      .map(queryConverter.toQueryOutput)
+      .rawQuery(inputJson, queryConverter)(elasticsearchIndex)
   }
 }
