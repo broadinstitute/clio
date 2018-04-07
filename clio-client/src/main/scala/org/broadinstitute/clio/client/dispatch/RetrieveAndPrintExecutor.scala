@@ -11,7 +11,9 @@ import org.broadinstitute.clio.client.webclient.ClioWebClient
   * Executor for all commands that retrieve some data from the
   * clio-server and then print it as JSON.
   */
-class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand) extends Executor {
+class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String => Unit)
+    extends Executor {
+
   override def execute(
     webClient: ClioWebClient,
     ioUtil: IoUtil

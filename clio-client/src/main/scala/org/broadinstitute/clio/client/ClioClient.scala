@@ -10,8 +10,8 @@ import caseapp.core.{Error, RemainingArgs}
 import cats.syntax.either._
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Json
-import org.broadinstitute.clio.client.commands.ClioCommand
-import org.broadinstitute.clio.client.dispatch.CommandDispatch
+import org.broadinstitute.clio.client.commands._
+import org.broadinstitute.clio.client.dispatch._
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.{
   ClioWebClient,
@@ -273,8 +273,17 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(implicit ec: Executio
       command <- wrapError(commandParse.baseOrError)
       _ <- checkRemainingArgs(args.remaining)
     } yield {
-      val commandDispatch = new CommandDispatch(webClient, ioUtil)
-      commandDispatch.dispatch(command)
+      val executor = command match {
+        case deliverCommand: DeliverWgsCram  => new DeliverWgsCramExecutor(deliverCommand)
+        case deliverCommand: DeliverArrays   => new DeliverArraysExecutor(deliverCommand)
+        case addCommand: AddCommand[_]       => new AddExecutor(addCommand)
+        case moveCommand: MoveCommand[_]     => new MoveExecutor(moveCommand)
+        case deleteCommand: DeleteCommand[_] => new DeleteExecutor(deleteCommand)
+        case retrieveAndPrint: RetrieveAndPrintCommand =>
+          new RetrieveAndPrintExecutor(retrieveAndPrint, Predef.print)
+      }
+
+      executor.execute(webClient, ioUtil)
     }
   }
 }
