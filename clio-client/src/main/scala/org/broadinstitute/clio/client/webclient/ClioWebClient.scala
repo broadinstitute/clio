@@ -9,7 +9,7 @@ import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.jawn.JawnParser
 import io.circe.syntax._
-import io.circe.{Json, Printer}
+import io.circe.Json
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
@@ -17,6 +17,9 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import scala.concurrent.duration.FiniteDuration
 
 object ClioWebClient {
+
+  type UpsertAux[K, M] = ClioIndex { type KeyType = K; type MetadataType = M }
+  type QueryAux[I] = ClioIndex { type QueryInputType = I }
 
   def apply(
     clioHost: String,
@@ -52,13 +55,12 @@ object ClioWebClient {
       )
 }
 
-class ClioWebClient private[webclient] (
+class ClioWebClient private[client] (
   connectionFlow: Flow[HttpRequest, HttpResponse, _],
   requestTimeout: FiniteDuration,
   maxRequestRetries: Int,
   tokenGenerator: CredentialsGenerator
-) extends ModelAutoDerivation
-    with StrictLogging {
+) extends StrictLogging {
 
   import ApiConstants._
 
@@ -127,9 +129,9 @@ class ClioWebClient private[webclient] (
     dispatchRequest(HttpRequest(uri = s"/$healthString"), includeAuth = false)
       .via(parserFlow)
 
-  def upsert[CI <: ClioIndex](clioIndex: CI)(
-    key: clioIndex.KeyType,
-    metadata: clioIndex.MetadataType,
+  def upsert[K <: IndexKey, M](clioIndex: ClioWebClient.UpsertAux[K, M])(
+    key: K,
+    metadata: M,
     force: Boolean = false
   ): Source[Json, NotUsed] = {
 
@@ -137,7 +139,7 @@ class ClioWebClient private[webclient] (
 
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      metadata.asJson.pretty(defaultPrinter)
+      metadata.asJson.pretty(ModelAutoDerivation.defaultPrinter)
     )
     /*
      * The `/` method on Uri.Path performs a raw URI encoding on the
@@ -158,51 +160,50 @@ class ClioWebClient private[webclient] (
     ).via(parserFlow)
   }
 
-  def query[CI <: ClioIndex](clioIndex: CI)(
-    input: clioIndex.QueryInputType,
+  def query[I](clioIndex: ClioWebClient.QueryAux[I])(
+    input: I,
     includeDeleted: Boolean
   ): Source[Json, NotUsed] = {
     import clioIndex.implicits._
     rawQuery(clioIndex)(input.asJson, includeDeleted)
   }
 
-  def getMetadataForKey[CI <: ClioIndex](clioIndex: CI)(
-    input: clioIndex.KeyType,
+  def getMetadataForKey[K, M](clioIndex: ClioWebClient.UpsertAux[K, M])(
+    input: K,
     includeDeleted: Boolean
-  ): Source[clioIndex.MetadataType, NotUsed] = {
+  ): Source[M, NotUsed] = {
 
     import clioIndex.implicits._
     import s_mach.string._
 
     val keyJson = input.asJson
-    val keyFields = FieldMapper[clioIndex.KeyType].fields.keySet
+    val keyFields = FieldMapper[K].fields.keySet
       .map(_.toSnakeCase(CirceEquivalentCamelCaseLexer))
 
     rawQuery(clioIndex)(keyJson, includeDeleted)
-      .fold[Either[Throwable, Option[clioIndex.MetadataType]]](Right(None)) {
-        (acc, json) =>
-          acc match {
-            case Right(None) =>
-              json
-                .mapObject(_.filterKeys(!keyFields.contains(_)))
-                .as[clioIndex.MetadataType]
-                .map(Some(_))
-            case Right(Some(_)) =>
-              Left(
-                new IllegalStateException(
-                  s"""Got > 1 ${clioIndex.name}s from Clio for key:
-                     |${keyJson.spaces2}""".stripMargin
-                )
+      .fold[Either[Throwable, Option[M]]](Right(None)) { (acc, json) =>
+        acc match {
+          case Right(None) =>
+            json
+              .mapObject(_.filterKeys(!keyFields.contains(_)))
+              .as[M]
+              .map(Some(_))
+          case Right(Some(_)) =>
+            Left(
+              new IllegalStateException(
+                s"""Got > 1 ${clioIndex.name}s from Clio for key:
+                   |${keyJson.spaces2}""".stripMargin
               )
-            case _ => acc
-          }
+            )
+          case _ => acc
+        }
       }
       .flatMapConcat {
         _.fold(
           Source.failed,
           // Writing the 'Some' case as just 'Source.single' runs afoul of Scala's
           // restriction on dependently-typed function values.
-          _.fold(Source.empty[clioIndex.MetadataType])(m => Source.single(m))
+          _.fold(Source.empty[M])(Source.single)
         )
       }
   }
@@ -215,7 +216,7 @@ class ClioWebClient private[webclient] (
 
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      input.pretty(implicitly[Printer])
+      input.pretty(ModelAutoDerivation.defaultPrinter)
     )
     dispatchRequest(
       HttpRequest(
