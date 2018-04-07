@@ -69,7 +69,7 @@ object ClioClient extends LazyLogging {
         )
         .leftMap(AuthError.apply)
 
-      webClient = new ClioWebClient(
+      webClient = ClioWebClient(
         ClioClientConfig.ClioServer.clioServerHostName,
         ClioClientConfig.ClioServer.clioServerPort,
         ClioClientConfig.ClioServer.clioServerUseHttps,

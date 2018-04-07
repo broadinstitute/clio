@@ -48,7 +48,7 @@ abstract class DockerIntegrationSpec(
    * actually started.
    */
   override lazy val clioWebClient: ClioWebClient =
-    new ClioWebClient(
+    ClioWebClient(
       container.getServiceHost(clioFullName),
       container.getServicePort(clioFullName),
       useHttps = false,

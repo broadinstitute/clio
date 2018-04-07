@@ -13,7 +13,7 @@ class ParsersSpec extends BaseClientSpec {
 
   it should "properly parse a Location type " in {
     val parsed =
-      parse(Array(ClioCommand.queryWgsUbamName, "--location", testLocation))
+      parse(Array(ClioCommand.queryWgsUbamName, "--location", Location.GCP.entryName))
     val location: Option[Location] = (parsed match {
       case Right((_, _, optCmd)) =>
         optCmd map {
@@ -27,7 +27,7 @@ class ParsersSpec extends BaseClientSpec {
       case Left(_) => fail("Could not parse outer command.")
     }).flatten
 
-    location should be(Some(Location.namesToValuesMap(testLocation)))
+    location should be(Some(Location.GCP))
   }
 
   it should "throw an exception when given an invalid Location type" in {
@@ -62,7 +62,7 @@ class ParsersSpec extends BaseClientSpec {
       Array(
         ClioCommand.queryWgsUbamName,
         "--document-status",
-        testDocumentStatus.toString
+        DocumentStatus.Deleted.entryName
       )
     )
     val docStatus: Option[DocumentStatus] = (parsed match {
@@ -77,15 +77,17 @@ class ParsersSpec extends BaseClientSpec {
         }
       case Left(_) => fail("Could not parse outer command.")
     }).flatten
-    docStatus should be(Some(testDocumentStatus))
+    docStatus should be(Some(DocumentStatus.Deleted))
   }
 
   it should "properly parse an OffsetDateTime string" in {
+    val now = OffsetDateTime.now()
+
     val parsed = parse(
       Array(
         ClioCommand.queryWgsUbamName,
         "--run-date-start",
-        testRunDateStart.toString
+        now.toString
       )
     )
     val runDateStart: Option[OffsetDateTime] = (parsed match {
@@ -100,7 +102,7 @@ class ParsersSpec extends BaseClientSpec {
         }
       case Left(_) => fail("Could not parse outer command.")
     }).flatten
-    runDateStart should be(Some(testRunDateStart))
+    runDateStart should be(Some(now))
   }
 
   it should "parse a boolean argument as a flag" in {

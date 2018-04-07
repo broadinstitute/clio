@@ -1,53 +1,314 @@
 package org.broadinstitute.clio.client.webclient
 
+import java.time.OffsetDateTime
 import java.util.concurrent.TimeoutException
 
-import akka.stream.scaladsl.Sink
-import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.util.ByteString
+import io.circe.{Encoder, Json}
+import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.util.MockClioServer
-import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockQueryInput}
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.status.model.{
+  ClioStatus,
+  SearchStatus,
+  StatusInfo,
+  VersionInfo
+}
+import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
+import org.scalamock.scalatest.AsyncMockFactory
 
-class ClioWebClientSpec
-    extends BaseClientSpec
-    with ModelAutoDerivation
-    with ErrorAccumulatingCirceSupport {
+import scala.concurrent.duration._
+
+class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
+
   behavior of "ClioWebClient"
 
-  val index = ModelMockIndex()
-  val mockServer = new MockClioServer(index)
+  //private val index = ModelMockIndex()
+  private val timeout = 1.second
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    mockServer.start()
-  }
+  it should "dispatch requests" in {
+    val req = HttpRequest(uri = "my-cool-uri")
+    val response = "Hello World!"
 
-  override def afterAll(): Unit = {
-    mockServer.stop()
-    super.afterAll()
-  }
+    val flow = Flow[HttpRequest].map { r =>
+      r should be(req)
 
-  val client = new ClioWebClient(
-    "localhost",
-    testServerPort,
-    false,
-    testRequestTimeout,
-    testMaxRetries,
-    fakeTokenGenerator
-  )
+      val entity = HttpEntity(response)
+      HttpResponse(entity = entity)
+    }
 
-  it should "time out requests that take too long" in {
-    recoverToSucceededIf[TimeoutException] {
-      client.getClioServerHealth.runWith(Sink.ignore)
+    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
+
+    client.dispatchRequest(req, false).runFold(ByteString.empty)(_ ++ _).map {
+      _.decodeString("UTF-8") should be(response)
     }
   }
 
-  it should "retry requests that fail with connection errors" in {
-    // The mock clio-server is set up to timeout on requests to this route (maxRetries-1) times.
-    client
-      .query(index)(ModelMockQueryInput(), includeDeleted = false)
-      .runWith(Sink.ignore)
-      .map(_ => succeed)
+  it should "add an OAuth header to dispatched requests" in {
+    val req = HttpRequest(uri = "my-cool-uri")
+    val response = "Hello World!"
+
+    val token = OAuth2BearerToken("fake")
+    val generator = mock[CredentialsGenerator]
+    (generator.generateCredentials _).expects().returning(token)
+
+    val flow = Flow[HttpRequest].map { r =>
+      val authHeader = r.headers.collectFirst { case a: Authorization => a }
+      authHeader should be(Some(Authorization(token)))
+
+      val entity = HttpEntity(response)
+      HttpResponse(entity = entity)
+    }
+
+    val client = new ClioWebClient(flow, timeout, 0, generator)
+
+    client.dispatchRequest(req, true).runFold(ByteString.empty)(_ ++ _).map {
+      _.decodeString("UTF-8") should be(response)
+    }
+  }
+
+  it should "raise an error when a response has an error code" in {
+    val code = StatusCodes.BadRequest
+    val err = "Nope"
+
+    val flow = Flow[HttpRequest].map { _ =>
+      HttpResponse(status = code, entity = HttpEntity(err))
+    }
+
+    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
+
+    recoverToExceptionIf[ClioWebClient.FailedResponse] {
+      client.dispatchRequest(HttpRequest(), false).runWith(Sink.ignore)
+    }.map { ex =>
+      ex.statusCode should be(code)
+      ex.entity.data.decodeString("UTF-8") should be(err)
+    }
+  }
+
+  it should "time out requests that take too long" in {
+
+    val flow = Flow[HttpRequest].delay(timeout * 2).map(_ => HttpResponse())
+    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
+
+    recoverToSucceededIf[TimeoutException] {
+      client.dispatchRequest(HttpRequest(), false).runWith(Sink.ignore)
+    }
+  }
+
+  it should "retry requests that fail to complete" in {
+
+    val retries = 2
+    var retriesSoFar = 0
+
+    val response = "Hello World!"
+
+    val flow = Flow[HttpRequest].flatMapConcat { _ =>
+      val src = Source.single(HttpResponse(entity = HttpEntity(response)))
+
+      if (retriesSoFar < retries) {
+        retriesSoFar += 1
+        src.delay(timeout * 2)
+      } else {
+        src
+      }
+    }
+
+    val client = new ClioWebClient(flow, timeout, retries, stub[CredentialsGenerator])
+
+    client.dispatchRequest(HttpRequest(), false).runFold(ByteString.empty)(_ ++ _).map {
+      _.decodeString("UTF-8") should be(response)
+    }
+  }
+
+  def jsonResponse[A: Encoder](body: A): HttpResponse = {
+    val entity = HttpEntity(
+      ContentTypes.`application/json`,
+      body.asJson.pretty(defaultPrinter)
+    )
+    HttpResponse(entity = entity)
+  }
+
+  it should "get server health as JSON" in {
+
+    val response = StatusInfo(ClioStatus.Recovering, SearchStatus.OK)
+
+    val flow = Flow[HttpRequest].map { req =>
+      req.uri.path.toString should be(s"/${ApiConstants.healthString}")
+      jsonResponse(response)
+    }
+
+    val client = new ClioWebClient(flow, timeout, 1, stub[CredentialsGenerator])
+
+    client.getClioServerHealth.runWith(Sink.head).map {
+      _.as[StatusInfo] should be(Right(response))
+    }
+  }
+
+  it should "get server version as JSON" in {
+
+    val response = VersionInfo("the-version")
+
+    val flow = Flow[HttpRequest].map { req =>
+      req.uri.path.toString should be(s"/${ApiConstants.versionString}")
+      jsonResponse(response)
+    }
+
+    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
+
+    client.getClioServerVersion.runWith(Sink.head).map {
+      _.as[VersionInfo] should be(Right(response))
+    }
+  }
+
+  Seq(true, false).foreach { b =>
+    it should behave like upsertTest(b)
+    it should behave like queryTest(b)
+    it should behave like getMetadataTest(b)
+  }
+
+  def upsertTest(force: Boolean): Unit = {
+    it should s"upsert metadata with force=$force" in {
+
+      val now = OffsetDateTime.now()
+      val index = ModelMockIndex()
+      val key = ModelMockKey(10L, "abcdefg")
+      val metadata = ModelMockMetadata(
+        mockFieldDate = Some(now),
+        mockDocumentStatus = Some(DocumentStatus.Normal)
+      )
+      val response = UpsertId.nextId()
+
+      val expectedSegments = Seq.concat(
+        Seq(ApiConstants.apiString, "v1", index.urlSegment, ApiConstants.metadataString),
+        key.getUrlSegments
+      )
+
+      val flow = Flow[HttpRequest].map { req =>
+        req.uri.path.toString should be(expectedSegments.mkString("/", "/", ""))
+        req.entity should be(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            metadata.asJson.pretty(defaultPrinter)
+          )
+        )
+        req.uri.query().get(ApiConstants.forceString) should be(Some(force.toString))
+        jsonResponse(response)
+      }
+
+      val generator = mock[CredentialsGenerator]
+      (generator.generateCredentials _).expects().returning(OAuth2BearerToken("fake"))
+
+      val client = new ClioWebClient(flow, timeout, 0, generator)
+
+      client.upsert(index)(key, metadata, force).runWith(Sink.head).map {
+        _.as[UpsertId] should be(Right(response))
+      }
+    }
+  }
+
+  def queryTest(includeDeleted: Boolean): Unit = {
+    it should s"query metadata with includeDeleted=$includeDeleted" in {
+
+      val index = ModelMockIndex()
+
+      val query = ModelMockQueryInput(mockFieldInt = Some(1))
+
+      val keys = Seq.tabulate(3)(i => ModelMockKey(i.toLong, "abcdefg"))
+      val expectedOut =
+        keys.map { k =>
+          k.asJson.deepMerge(query.asJson.mapObject(_.filter(_._2 != Json.Null)))
+        }
+
+      val expectedSegments = Seq(
+        ApiConstants.apiString,
+        "v1",
+        index.urlSegment,
+        if (includeDeleted) ApiConstants.queryAllString else ApiConstants.queryString
+      )
+
+      val flow = Flow[HttpRequest].map { req =>
+        req.uri.path.toString should be(expectedSegments.mkString("/", "/", ""))
+        req.entity should be(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            query.asJson.pretty(defaultPrinter)
+          )
+        )
+        jsonResponse(expectedOut)
+      }
+
+      val generator = mock[CredentialsGenerator]
+      (generator.generateCredentials _).expects().returning(OAuth2BearerToken("fake"))
+
+      val client = new ClioWebClient(flow, timeout, 0, generator)
+
+      client.query(index)(query, includeDeleted).runWith(Sink.seq).map {
+        _ should contain theSameElementsAs expectedOut
+      }
+    }
+  }
+
+  def getMetadataTest(includeDeleted: Boolean): Unit = {
+    it should s"get the metadata for a key with includeDeleted=$includeDeleted" in {
+      val index = ModelMockIndex()
+
+      val key = ModelMockKey(1L, "abcdefg")
+      val metadata = ModelMockMetadata(mockFieldDouble = Some(1.23))
+      val expectedOut =
+        key.asJson.deepMerge(metadata.asJson.mapObject(_.filter(_._2 != Json.Null)))
+
+      val expectedSegments = Seq(
+        ApiConstants.apiString,
+        "v1",
+        index.urlSegment,
+        if (includeDeleted) ApiConstants.queryAllString else ApiConstants.queryString
+      )
+
+      val flow = Flow[HttpRequest].map { req =>
+        req.uri.path.toString should be(expectedSegments.mkString("/", "/", ""))
+        req.entity should be(
+          HttpEntity(
+            ContentTypes.`application/json`,
+            key.asJson.pretty(defaultPrinter)
+          )
+        )
+        jsonResponse(Seq(expectedOut))
+      }
+
+      val generator = mock[CredentialsGenerator]
+      (generator.generateCredentials _).expects().returning(OAuth2BearerToken("fake"))
+
+      val client = new ClioWebClient(flow, timeout, 0, generator)
+
+      client.getMetadataForKey(index)(key, includeDeleted).runWith(Sink.head).map {
+        _ should be(metadata)
+      }
+    }
+  }
+
+  it should "raise an error if > 1 document is returned for a key" in {
+    val index = ModelMockIndex()
+
+    val key = ModelMockKey(1L, "abcdefg")
+    val metadata = Seq.tabulate(3) { i =>
+      ModelMockMetadata(mockFieldDouble = Some(1.23), mockFieldInt = Some(i))
+    }
+    val out = metadata.map { m =>
+      key.asJson.deepMerge(m.asJson.mapObject(_.filter(_._2 != Json.Null)))
+    }
+
+    val flow = Flow[HttpRequest].map(_ => jsonResponse(out))
+
+    val generator = mock[CredentialsGenerator]
+    (generator.generateCredentials _).expects().returning(OAuth2BearerToken("fake"))
+
+    val client = new ClioWebClient(flow, timeout, 0, generator)
+
+    recoverToSucceededIf[IllegalStateException] {
+      client.getMetadataForKey(index)(key, false).runWith(Sink.head)
+    }
   }
 }

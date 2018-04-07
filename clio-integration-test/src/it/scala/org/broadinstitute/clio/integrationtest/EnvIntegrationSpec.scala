@@ -31,7 +31,7 @@ abstract class EnvIntegrationSpec(env: String)
       identity
     )
 
-  override val clioWebClient: ClioWebClient = new ClioWebClient(
+  override val clioWebClient: ClioWebClient = ClioWebClient(
     s"clio.gotc-$env.broadinstitute.org",
     443,
     useHttps = true,

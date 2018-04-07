@@ -14,39 +14,53 @@ import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
-class ClioWebClient(
-  clioHost: String,
-  clioPort: Int,
-  useHttps: Boolean,
+object ClioWebClient {
+
+  def apply(
+    clioHost: String,
+    clioPort: Int,
+    useHttps: Boolean,
+    requestTimeout: FiniteDuration,
+    maxRequestRetries: Int,
+    tokenGenerator: CredentialsGenerator
+  )(implicit system: ActorSystem): ClioWebClient = {
+
+    /*
+     * We use the "low-level" connection API from Akka HTTP instead
+     * of the higher-level "cached host connection pool" API because of a
+     * race condition in the pool implementation that can cause successful
+     * requests to be reported as failures:
+     *
+     * https://github.com/akka/akka-http/issues/1459#issuecomment-335487195
+     */
+    val connectionFlow = {
+      if (useHttps) {
+        Http().outgoingConnectionHttps(clioHost, clioPort)
+      } else {
+        Http().outgoingConnection(clioHost, clioPort)
+      }
+    }
+
+    new ClioWebClient(connectionFlow, requestTimeout, maxRequestRetries, tokenGenerator)
+  }
+
+  case class FailedResponse(statusCode: StatusCode, entity: HttpEntity.Strict)
+      extends RuntimeException(
+        s"Got an error from the Clio server. Status code: $statusCode. Entity: $entity"
+      )
+}
+
+class ClioWebClient private[webclient] (
+  connectionFlow: Flow[HttpRequest, HttpResponse, _],
   requestTimeout: FiniteDuration,
   maxRequestRetries: Int,
   tokenGenerator: CredentialsGenerator
-)(implicit system: ActorSystem)
-    extends ModelAutoDerivation
+) extends ModelAutoDerivation
     with StrictLogging {
 
   import ApiConstants._
-
-  implicit val executionContext: ExecutionContext = system.dispatcher
-
-  /**
-    * FIXME: We use the "low-level" connection API from Akka HTTP instead
-    * of the higher-level "cached host connection pool" API because of a
-    * race condition in the pool implementation that can cause successful
-    * requests to be reported as failures:
-    *
-    * https://github.com/akka/akka-http/issues/1459#issuecomment-335487195
-    */
-  private val connectionFlow = {
-    if (useHttps) {
-      Http().outgoingConnectionHttps(clioHost, clioPort)
-    } else {
-      Http().outgoingConnection(clioHost, clioPort)
-    }
-  }
 
   private val parserFlow = {
     val parser = new JawnParser
@@ -57,7 +71,7 @@ class ClioWebClient(
 
   def dispatchRequest(
     request: HttpRequest,
-    includeAuth: Boolean = true,
+    includeAuth: Boolean,
   ): Source[ByteString, NotUsed] = {
     val requestWithCreds = if (includeAuth) {
       request.addCredentials(tokenGenerator.generateCredentials())
@@ -123,7 +137,7 @@ class ClioWebClient(
 
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      metadata.asJson.pretty(implicitly[Printer])
+      metadata.asJson.pretty(defaultPrinter)
     )
     /*
      * The `/` method on Uri.Path performs a raw URI encoding on the
@@ -139,7 +153,8 @@ class ClioWebClient(
         uri = Uri(path = encodedPath).withQuery(Uri.Query(forceString -> force.toString)),
         method = HttpMethods.POST,
         entity = entity
-      )
+      ),
+      includeAuth = true
     ).via(parserFlow)
   }
 
@@ -192,7 +207,7 @@ class ClioWebClient(
       }
   }
 
-  private[webclient] def rawQuery(clioIndex: ClioIndex)(
+  private def rawQuery(clioIndex: ClioIndex)(
     input: Json,
     includeDeleted: Boolean
   ): Source[Json, NotUsed] = {
@@ -207,14 +222,8 @@ class ClioWebClient(
         uri = s"/$apiString/v1/${clioIndex.urlSegment}/$queryPath",
         method = HttpMethods.POST,
         entity = entity
-      )
+      ),
+      includeAuth = true
     ).via(JsonFraming.objectScanner(Int.MaxValue)).via(parserFlow)
   }
-}
-
-object ClioWebClient {
-  case class FailedResponse(statusCode: StatusCode, entity: HttpEntity.Strict)
-      extends RuntimeException(
-        s"Got an error from the Clio server. Status code: $statusCode. Entity: $entity"
-      )
 }
