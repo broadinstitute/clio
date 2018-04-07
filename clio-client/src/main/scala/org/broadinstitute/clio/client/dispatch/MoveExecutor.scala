@@ -20,6 +20,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
   implicit ec: ExecutionContext
 ) extends Executor {
 
+  import MoveExecutor.MoveOp
   import moveCommand.index.implicits._
 
   private[dispatch] val name: String = moveCommand.index.name
@@ -34,10 +35,11 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
 
     for {
       existingMetadata <- verifyArgs(ioUtil, webClient)
-      (movedMetadata, movesToPerform) <- buildMove(existingMetadata, ioUtil).orElse {
-        Source.single(existingMetadata -> immutable.Iterable.empty)
+      (movedMetadata, opsToPerform) <- buildMove(existingMetadata, ioUtil).orElse {
+        Source.single(existingMetadata -> immutable.Seq.empty)
       }
-      _ <- ioUtil.copyCloudObjects(movesToPerform).mapError {
+      if movedMetadata != existingMetadata
+      _ <- ioUtil.copyCloudObjects(opsToPerform.map(op => op.src -> op.dest)).mapError {
         case ex =>
           new RuntimeException(
             s"""Errors encountered while copying files for $prettyKey.
@@ -45,10 +47,8 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
             ex
           )
       }
-      finalMetadata <- customMetadataOperations(movedMetadata, ioUtil)
-      if finalMetadata != existingMetadata
       upsertId <- webClient
-        .upsert(moveCommand.index)(moveCommand.key, finalMetadata, force = true)
+        .upsert(moveCommand.index)(moveCommand.key, movedMetadata, force = true)
         .mapError {
           case ex =>
             new RuntimeException(
@@ -59,7 +59,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
             )
         }
       _ <- ioUtil
-        .deleteCloudObjects(movesToPerform.map(_._1))
+        .deleteCloudObjects(opsToPerform.collect { case op if op.deleteSrc => op.src })
         .mapError {
           case ex =>
             new RuntimeException(
@@ -108,10 +108,10 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     }
   }
 
-  private def buildMove(
+  protected def buildMove(
     metadata: moveCommand.index.MetadataType,
     ioUtil: IoUtil
-  ): Source[(moveCommand.index.MetadataType, immutable.Iterable[(URI, URI)]), NotUsed] = {
+  ): Source[(moveCommand.index.MetadataType, immutable.Seq[MoveOp]), NotUsed] = {
 
     val preMovePaths = extractPaths(metadata)
 
@@ -125,37 +125,36 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
       val movedMetadata = metadata.moveInto(destination, moveCommand.newBasename)
       val postMovePaths = extractPaths(movedMetadata)
 
-      val copiesToPerform = preMovePaths.flatMap {
+      val opsToPerform = preMovePaths.flatMap {
         case (fieldName, path) => {
           /*
            * Assumptions:
            *   1. If the field exists pre-move, it will still exist post-move
            *   2. If the field is a URI pre-move, it will still be a URI post-move
            */
-          Some(path -> postMovePaths(fieldName)).filterNot {
-            case (oldPath, newPath) => oldPath.equals(newPath)
-          }
+          Some(MoveOp(path, postMovePaths(fieldName)))
+            .filterNot(op => op.src.equals(op.dest))
         }
       }
 
-      Source(copiesToPerform)
+      Source(opsToPerform)
         .fold(Seq.empty[URI]) {
-          case (acc, (src, _)) =>
-            if (ioUtil.isGoogleObject(src)) {
+          case (acc, op) =>
+            if (ioUtil.isGoogleObject(op.src)) {
               acc
             } else {
-              acc :+ src
+              acc :+ op.src
             }
         }
         .flatMapConcat { nonCloudPaths =>
           if (nonCloudPaths.isEmpty) {
-            if (copiesToPerform.isEmpty) {
+            if (opsToPerform.isEmpty) {
               logger.info(
                 s"Nothing to move; all files already exist at $destination and no other metadata changes need applied."
               )
               Source.empty
             } else {
-              Source.single(movedMetadata -> copiesToPerform)
+              Source.single(movedMetadata -> opsToPerform.to[immutable.Seq])
             }
           } else {
             Source.failed(
@@ -198,19 +197,19 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
         case (key, optValue: Option[_]) => optValue.map(v => key -> v)
         case (key, nonOptValue)         => Some(key -> nonOptValue)
       }
-      .flatMap {
-        case (key, value: URI) => Some(key -> value)
-        case _                 => None
+      .collect {
+        /*
+         * This filters out non-`URI` values in a way that allows the compiler
+         * to change the map's type vars from `[String, Any]` to `[String, URI]`.
+         *
+         * Using `filter` with `inInstanceOf[URI]` would achieve the same filtering,
+         * but it'd leave the resulting type vars as `[String, Any]`.
+         */
+        case (key, value: URI) => key -> value
       }
   }
+}
 
-  protected def customMetadataOperations(
-    metadata: moveCommand.index.MetadataType,
-    ioUtil: IoUtil
-  ): Source[moveCommand.index.MetadataType, NotUsed] = {
-    // ioUtil and ec are used to create new files in subclass implementations, but not in the default case.
-    // Unless it is touched by default, Scala will helpfully throw compile errors to point this out to us.
-    val _ = ioUtil
-    Source.single(metadata)
-  }
+object MoveExecutor {
+  case class MoveOp(src: URI, dest: URI, deleteSrc: Boolean = true)
 }

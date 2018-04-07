@@ -6,9 +6,11 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import better.files.File
 import org.broadinstitute.clio.client.commands.DeliverWgsCram
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.MoveOp
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramExtensions, WgsCramMetadata}
+import org.broadinstitute.clio.transfer.model.wgscram.WgsCramExtensions
 
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 
 /**
@@ -23,37 +25,47 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)(
   implicit ec: ExecutionContext
 ) extends MoveExecutor(deliverCommand) {
 
-  override def customMetadataOperations(
-    metadata: WgsCramMetadata,
+  override protected def buildMove(
+    metadata: moveCommand.index.MetadataType,
     ioUtil: IoUtil
-  ): Source[WgsCramMetadata, NotUsed] = {
-    (metadata.cramMd5, metadata.cramPath) match {
-      case (Some(cramMd5), Some(cramPath)) => {
-        /*
-         * FIXME: If we enable the google-cloud-nio adapter in the client,
-         * we can write directly to the source location instead of writing
-         * to temp and then copying.
-         */
-        Source.single {
-          File.usingTemporaryFile("clio-cram-deliver", WgsCramExtensions.Md5Extension) {
-            md5Tmp =>
-              val cloudMd5Path =
-                s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}"
+  ): Source[(moveCommand.index.MetadataType, immutable.Seq[MoveOp]), NotUsed] = {
 
-              md5Tmp.write(cramMd5.name)
-              ioUtil.copyGoogleObject(
-                URI.create(md5Tmp.toString),
-                URI.create(cloudMd5Path)
-              )
+    val baseStream = super
+      .buildMove(metadata, ioUtil)
+      .orElse(Source.single(metadata -> immutable.Seq.empty))
+
+    baseStream.flatMapConcat {
+      case (movedMetadata, moveOps) =>
+        (movedMetadata.cramMd5, movedMetadata.cramPath) match {
+          case (Some(cramMd5), Some(cramPath)) => {
+
+            val newMetadata =
+              movedMetadata.withWorkspaceName(deliverCommand.workspaceName)
+
+            /*
+             * FIXME: If we enable the google-cloud-nio adapter in the client,
+             * we can write directly to the source location instead of writing
+             * to temp and then copying.
+             */
+            val md5Tmp = File
+              .newTemporaryFile("clio-cram-deliver", WgsCramExtensions.Md5Extension)
+              .write(cramMd5.name)
+              .deleteOnExit()
+              .uri
+            val cloudMd5Path =
+              URI.create(s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}")
+
+            // gsutil complains when trying to rm a local file.
+            val op = MoveOp(md5Tmp, cloudMd5Path, deleteSrc = false)
+            Source.single(newMetadata -> (moveOps :+ op))
           }
-        }.map(_ => metadata.withWorkspaceName(deliverCommand.workspaceName))
-      }
-      case _ =>
-        Source.failed(
-          new IllegalStateException(
-            s"Cram record with key ${deliverCommand.key} is missing either its cram path or cram md5"
-          )
-        )
+          case _ =>
+            Source.failed(
+              new IllegalStateException(
+                s"Cram record with key ${deliverCommand.key} is missing either its cram path or cram md5"
+              )
+            )
+        }
     }
   }
 }
