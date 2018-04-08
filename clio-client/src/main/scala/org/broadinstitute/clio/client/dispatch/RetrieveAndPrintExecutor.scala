@@ -8,8 +8,7 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 
 /**
-  * Executor for all commands that retrieve some data from the
-  * clio-server and then print it as JSON.
+  * Executor for all commands that retrieve some JSON data from the clio-server and then print it.
   */
 class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String => Unit)
     extends Executor {
@@ -26,10 +25,18 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
     }
 
     responseStream.alsoTo {
-      val stringify = Flow.fromFunction[Json, String](_.spaces2).intersperse(",\n")
+      val stringify = Flow.fromFunction[Json, String](_.spaces2)
       val flow = command match {
         case _: QueryCommand[_] =>
-          stringify.prepend(Source.single("[")).concat(Source.single("]"))
+          /*
+           * For queries we expect a stream of multiple elements, so we inject extra
+           * characters to be sure the printed stream can be parsed as a JSON array
+           * by the caller.
+           */
+          stringify
+            .intersperse(",\n")
+            .prepend(Source.single("["))
+            .concat(Source.single("]"))
         case _ => stringify
       }
 

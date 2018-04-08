@@ -12,6 +12,10 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.ClioIndex
 
+/**
+  * Executor for "add" commands, which read some metadata from disk and upsert
+  * it to the clio-server, optionally overwriting existing fields.
+  */
 class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI]) extends Executor {
   import addCommand.index.implicits._
 
@@ -25,6 +29,10 @@ class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI]) extends Executor 
     }
   }
 
+  /**
+    * Build a stream which, when pulled, will read JSON from a URI and decode it
+    * into the metadata type associated with `addCommand`.
+    */
   private def readMetadata(
     location: URI,
     ioUtil: IoUtil

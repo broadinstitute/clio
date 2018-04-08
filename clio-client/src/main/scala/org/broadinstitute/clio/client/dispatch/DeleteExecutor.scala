@@ -16,6 +16,10 @@ import org.broadinstitute.clio.util.model.Location
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+  * Executor for "delete" commands, which delete files in the cloud and
+  * record the deletion in the clio-server.
+  */
 class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
   implicit ec: ExecutionContext
 ) extends Executor {
@@ -30,7 +34,7 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
     import Executor.SourceMonadOps
 
     for {
-      existingMetadata <- verifyArgs(webClient)
+      existingMetadata <- checkPreconditions(webClient)
       pathsToDelete <- buildDelete(existingMetadata, ioUtil)
       _ <- ioUtil.deleteCloudObjects(pathsToDelete).mapError {
         case ex =>
@@ -61,7 +65,12 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
     }
   }
 
-  private def verifyArgs(
+  /**
+    * Build a stream which, when pulled, will ensure that the command being executed
+    * refers to a cloud document already registered in the clio-server, emitting the
+    * existing metadata on success.
+    */
+  private def checkPreconditions(
     webClient: ClioWebClient
   ): Source[deleteCommand.index.MetadataType, NotUsed] = {
     if (!deleteCommand.key.location.equals(Location.GCP)) {
@@ -86,6 +95,19 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
     }
   }
 
+  /**
+    * Build a stream which, when pulled, will get the paths of all files-to-delete from
+    * the given metadata, then for each path check:
+    *
+    * <ol>
+    * <li>That the path points to cloud storage, and</li>
+    * <li>That the file pointed to by the path actually exists.</li>
+    * </ol>
+    *
+    * If all the checks pass, the stream will emit the list of paths-to-delete.
+    * If not all checks pass, but the delete is being forced, the stream will emit the
+    * list of only those paths which point to existing files.
+    */
   private def buildDelete(
     metadata: deleteCommand.index.MetadataType,
     ioUtil: IoUtil
@@ -121,7 +143,7 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
           }
         }
       }
-      .fold(Right(Seq.empty[URI]): Either[Seq[Throwable], Seq[URI]]) {
+      .fold(Right(immutable.Seq.empty[URI]): Either[Seq[Throwable], immutable.Seq[URI]]) {
         case (Right(ps), Right(maybePath)) => Right(ps ++ maybePath.toIterable)
         case (Right(_), Left(err))         => Left(Seq(err))
         case (Left(errs), Right(_))        => Left(errs)
@@ -130,7 +152,7 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
       .flatMapConcat {
         _.fold(
           errs => Source.failed(new IllegalStateException(errs.mkString(", "))),
-          paths => Source.single(paths.to[immutable.Iterable])
+          paths => Source.single(paths)
         )
       }
   }

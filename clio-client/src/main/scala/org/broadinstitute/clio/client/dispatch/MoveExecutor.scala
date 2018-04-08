@@ -1,9 +1,12 @@
 package org.broadinstitute.clio.client.dispatch
 
+import java.io.IOException
 import java.net.URI
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
+import better.files.File
+import cats.syntax.either._
 import io.circe.Json
 import org.broadinstitute.clio.client.commands.MoveCommand
 import org.broadinstitute.clio.client.util.IoUtil
@@ -13,14 +16,21 @@ import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.Location
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.collection.immutable
 
+/**
+  * Executor for "move" commands, which move files in the cloud and record
+  * the new paths in the clio-server.
+  *
+  * Delivery executors can extend this class to add custom IO operations which
+  * should be performed when moving files into a FireCloud workspace.
+  */
 class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
   implicit ec: ExecutionContext
 ) extends Executor {
 
-  import MoveExecutor.MoveOp
+  import MoveExecutor._
   import moveCommand.index.implicits._
 
   private[dispatch] val name: String = moveCommand.index.name
@@ -34,12 +44,10 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     import Executor.SourceMonadOps
 
     for {
-      existingMetadata <- verifyArgs(ioUtil, webClient)
-      (movedMetadata, opsToPerform) <- buildMove(existingMetadata, ioUtil).orElse {
-        Source.single(existingMetadata -> immutable.Seq.empty)
-      }
+      existingMetadata <- checkPreconditions(ioUtil, webClient)
+      (movedMetadata, opsToPerform) <- buildMove(existingMetadata, ioUtil)
       if movedMetadata != existingMetadata
-      _ <- ioUtil.copyCloudObjects(opsToPerform.map(op => op.src -> op.dest)).mapError {
+      _ <- runPreUpsertOps(opsToPerform, ioUtil).mapError {
         case ex =>
           new RuntimeException(
             s"""Errors encountered while copying files for $prettyKey.
@@ -59,7 +67,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
             )
         }
       _ <- ioUtil
-        .deleteCloudObjects(opsToPerform.collect { case op if op.deleteSrc => op.src })
+        .deleteCloudObjects(opsToPerform.collect { case MoveOp(src, _) => src })
         .mapError {
           case ex =>
             new RuntimeException(
@@ -73,7 +81,13 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     }
   }
 
-  private def verifyArgs(
+  /**
+    * Build a stream which, when pulled, will ensure that the command being executed
+    * refers to a cloud document already registered in the clio-server, and that the
+    * destination path points to a cloud directory, emitting the existing metadata on
+    * success.
+    */
+  private def checkPreconditions(
     ioUtil: IoUtil,
     webClient: ClioWebClient
   ): Source[moveCommand.index.MetadataType, NotUsed] = {
@@ -108,10 +122,72 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     }
   }
 
+  /**
+    * Build a stream which, when pulled, will run the pre-upsert component of each of the
+    * given IO operations. If all operations succeed, the stream will emit (). Otherwise,
+    * the stream will fail with an error indicating all IO failures.
+    */
+  private def runPreUpsertOps(
+    ops: immutable.Seq[IoOp],
+    ioUtil: IoUtil
+  ): Source[Unit, NotUsed] = {
+    //ioUtil.copyCloudObjects(opsToPerform.map(op => op.src -> op.dest))
+    Source(ops)
+      .mapAsyncUnordered(ops.size + 1) { op =>
+        Future {
+          Either.catchNonFatal {
+            op match {
+              case MoveOp(src, dest)       => ioUtil.copyGoogleObject(src, dest)
+              case CopyOp(src, dest)       => ioUtil.copyGoogleObject(src, dest)
+              case WriteOp(contents, dest) =>
+                // FIXME: Using NIO / the SDK would let us avoid the temp file.
+                File.usingTemporaryFile() { tmp =>
+                  ioUtil.copyGoogleObject(tmp.write(contents).uri, dest)
+                }
+            }
+          }
+        }
+      }
+      .fold(Seq.empty[Throwable]) { (acc, attempt) =>
+        attempt.fold(acc :+ _, _ => acc)
+      }
+      .flatMapConcat { errs =>
+        if (errs.isEmpty) {
+          Source.single(())
+        } else {
+          Source.failed(
+            new IOException(
+              s"""Failed to perform pre-upsert IO operations:
+                 |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
+            )
+          )
+        }
+      }
+  }
+
+  /**
+    * Build a stream which, when pulled, will get the paths of all files-to-move from
+    * the given metadata, checking:
+    *
+    * <ol>
+    * <li>That there are some files registered to the document which can be moved, and</li>
+    * <li>That all the paths refer to cloud files.</li>
+    * </ol>
+    *
+    * If all the checks pass, the stream will emit a pair of:
+    *
+    * <ol>
+    * <li>New metadata which should be upserted to the clio-server *after* IO is performed, and</li>
+    * <li>A list of `IoOp`s representing the operations to perform as part of the move.</li>
+    * </ol>
+    *
+    * Delivery subclasses can override this method to change the returned metadata / add
+    * more IO operations.
+    */
   protected def buildMove(
     metadata: moveCommand.index.MetadataType,
     ioUtil: IoUtil
-  ): Source[(moveCommand.index.MetadataType, immutable.Seq[MoveOp]), NotUsed] = {
+  ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
 
     val preMovePaths = extractPaths(metadata)
 
@@ -211,5 +287,28 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
 }
 
 object MoveExecutor {
-  case class MoveOp(src: URI, dest: URI, deleteSrc: Boolean = true)
+
+  /**
+    * Description of an IO operation to be performed as part of moving
+    * files for a document in Clio.
+    */
+  sealed trait IoOp
+
+  /**
+    * Case for files which should be copied before updating the clio-server,
+    * with the old copy deleted after a successful upsert.
+    */
+  case class MoveOp(src: URI, dest: URI) extends IoOp
+
+  /**
+    * Case for files which should be copied, with the old copy left on disk
+    * after upsert-ing to the server.
+    */
+  case class CopyOp(src: URI, dest: URI) extends IoOp
+
+  /**
+    * Case for new files which should be generated by writing metadata
+    * contents to disk.
+    */
+  case class WriteOp(contents: String, dest: URI) extends IoOp
 }

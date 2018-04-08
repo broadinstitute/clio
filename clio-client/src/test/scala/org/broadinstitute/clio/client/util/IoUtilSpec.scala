@@ -98,63 +98,6 @@ class IoUtilSpec extends BaseClientSpec with AsyncMockFactory {
       .getGoogleObjectInfo(uri) should be(expectedSize -> None)
   }
 
-  it should "build streams for copying multiple cloud objects" in {
-
-    val uris = immutable.Iterable(
-      URI.create("gs://path/to/the.object") -> URI.create(
-        "gs://new/path/to/the.object"
-      ),
-      URI.create("gs://path/to/the/other.object") -> URI.create(
-        "gs://new/path/to/the/other.object"
-      )
-    )
-
-    val gsutil = mock[GsUtil]
-
-    uris.foreach {
-      case (src, dest) => (gsutil.cp _).expects(src.toString, dest.toString).returning(0)
-    }
-
-    val ioUtil = new IoUtil {
-      override protected def gsUtil: GsUtil = gsutil
-    }
-
-    // Expectations built into the mock will fail if we don't call the right copies.
-    ioUtil.copyCloudObjects(uris).runWith(Sink.head).map(_ => succeed)
-  }
-
-  it should "not fail when building a stream for zero copies" in {
-    val ioUtil = new IoUtil {
-      override protected def gsUtil: GsUtil = stub[GsUtil]
-    }
-    val stream = ioUtil.copyCloudObjects(immutable.Iterable.empty)
-    stream.runWith(Sink.head).map(_ should be(()))
-  }
-
-  it should "include all failures in the exception message when parallel copies fail" in {
-    val urisToFail = Set("gs://path/to/the.object", "gs://path/to/the/other.object")
-    val uriToSucceed = "gs://some/other/object"
-
-    val gsutil = mock[GsUtil]
-    urisToFail.foreach(uri => (gsutil.cp _).expects(uri, *).returning(1))
-    (gsutil.cp _).expects(uriToSucceed, *).returning(0)
-
-    val ioUtil = new IoUtil {
-      override protected def gsUtil: GsUtil = gsutil
-    }
-
-    val stream = ioUtil.copyCloudObjects(
-      (urisToFail + uriToSucceed).map(URI.create).map(_ -> URI.create("gs://blah"))
-    )
-
-    recoverToExceptionIf[IOException](stream.runWith(Sink.ignore)).map { ex =>
-      urisToFail.foreach { uri =>
-        ex.getMessage should include(uri)
-      }
-      succeed
-    }
-  }
-
   it should "build streams for deleting multiple cloud objects" in {
     val uris = immutable.Iterable(
       URI.create("gs://path/to/the.object"),

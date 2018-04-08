@@ -4,9 +4,8 @@ import java.net.URI
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import better.files.File
 import org.broadinstitute.clio.client.commands.DeliverWgsCram
-import org.broadinstitute.clio.client.dispatch.MoveExecutor.MoveOp
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, WriteOp}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.transfer.model.wgscram.WgsCramExtensions
 
@@ -28,7 +27,7 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)(
   override protected def buildMove(
     metadata: moveCommand.index.MetadataType,
     ioUtil: IoUtil
-  ): Source[(moveCommand.index.MetadataType, immutable.Seq[MoveOp]), NotUsed] = {
+  ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
 
     val baseStream = super
       .buildMove(metadata, ioUtil)
@@ -42,22 +41,10 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)(
             val newMetadata =
               movedMetadata.withWorkspaceName(deliverCommand.workspaceName)
 
-            /*
-             * FIXME: If we enable the google-cloud-nio adapter in the client,
-             * we can write directly to the source location instead of writing
-             * to temp and then copying.
-             */
-            val md5Tmp = File
-              .newTemporaryFile("clio-cram-deliver", WgsCramExtensions.Md5Extension)
-              .write(cramMd5.name)
-              .deleteOnExit()
-              .uri
             val cloudMd5Path =
               URI.create(s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}")
 
-            // gsutil complains when trying to rm a local file.
-            val op = MoveOp(md5Tmp, cloudMd5Path, deleteSrc = false)
-            Source.single(newMetadata -> (moveOps :+ op))
+            Source.single(newMetadata -> (moveOps :+ WriteOp(cramMd5.name, cloudMd5Path)))
           }
           case _ =>
             Source.failed(

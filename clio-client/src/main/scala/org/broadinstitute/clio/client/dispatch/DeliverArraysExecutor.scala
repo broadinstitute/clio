@@ -3,7 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import org.broadinstitute.clio.client.commands.DeliverArrays
-import org.broadinstitute.clio.client.dispatch.MoveExecutor.MoveOp
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, IoOp}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.transfer.model.arrays.ArraysExtensions
@@ -17,7 +17,7 @@ import scala.concurrent.ExecutionContext
   * Wraps the move CLP with extra IO / upsert logic:
   *
   *   1. Copies the idat files to the target path
-  *   2. Records the updated locations of the idat files in the metadata
+  *   2. Records the updated locations of the idat files, along with the workspace name, in the metadata
   */
 class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: ExecutionContext)
     extends MoveExecutor(deliverCommand) {
@@ -25,7 +25,7 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
   override protected def buildMove(
     metadata: moveCommand.index.MetadataType,
     ioUtil: IoUtil
-  ): Source[(moveCommand.index.MetadataType, immutable.Seq[MoveOp]), NotUsed] = {
+  ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
 
     val baseStream = super
       .buildMove(metadata, ioUtil)
@@ -47,8 +47,8 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
             )
             val idatCopies = immutable
               .Seq(
-                MoveOp(grn, movedGrnIdat, deleteSrc = false),
-                MoveOp(red, movedRedIdat, deleteSrc = false)
+                CopyOp(grn, movedGrnIdat),
+                CopyOp(red, movedRedIdat)
               )
               .filterNot { op =>
                 op.src.equals(op.dest)
@@ -66,19 +66,19 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
           case (Some(_), None) =>
             Source.failed(
               new IllegalStateException(
-                s"Arrays record with key ${deliverCommand.key} is missing its redIdatPath"
+                s"Arrays record with key ${deliverCommand.key} is missing its red idat path"
               )
             )
           case (None, Some(_)) =>
             Source.failed(
               new IllegalStateException(
-                s"Arrays record with key ${deliverCommand.key} is missing its grnIdatPath"
+                s"Arrays record with key ${deliverCommand.key} is missing its grn idat path"
               )
             )
           case _ =>
             Source.failed(
               new IllegalStateException(
-                s"Arrays record with key ${deliverCommand.key} is missing both its redIdatPath and its grnIdatPath"
+                s"Arrays record with key ${deliverCommand.key} is missing both its idat paths"
               )
             )
         }

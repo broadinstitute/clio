@@ -10,6 +10,11 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 trait Executor extends LazyLogging with ModelAutoDerivation {
 
+  /**
+    * Build a stream which, when pulled, will communicate with the clio-server
+    * to update its records about some metadata, potentially performing IO
+    * operations in the process.
+    */
   def execute(webClient: ClioWebClient, ioUtil: IoUtil): Source[Json, NotUsed]
 }
 

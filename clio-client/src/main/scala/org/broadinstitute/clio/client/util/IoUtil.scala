@@ -68,39 +68,6 @@ trait IoUtil {
       }
   }
 
-  /**
-    * Build a stream which, when pulled, will perform all of the given cloud
-    * copies in parallel.
-    *
-    * @param copiesToPerform Tuples describing the copies to perform. The object
-    *                        pointed to by the LHS of each tuple will be copied
-    *                        to the path in the RHS.
-    */
-  def copyCloudObjects(
-    copiesToPerform: immutable.Iterable[(URI, URI)]
-  )(implicit ec: ExecutionContext): Source[Unit, NotUsed] = {
-    Source(copiesToPerform)
-      .mapAsyncUnordered(copiesToPerform.size + 1) {
-        case (src, dest) =>
-          Future(Either.catchNonFatal(copyGoogleObject(src, dest)))
-      }
-      .fold(Seq.empty[Throwable]) { (acc, attempt) =>
-        attempt.fold(acc :+ _, _ => acc)
-      }
-      .flatMapConcat { errs =>
-        if (errs.isEmpty) {
-          Source.single(())
-        } else {
-          Source.failed(
-            new IOException(
-              s"""Failed to copy cloud objects:
-                 |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
-            )
-          )
-        }
-      }
-  }
-
   /*
    * FIXME for all below:
    *
