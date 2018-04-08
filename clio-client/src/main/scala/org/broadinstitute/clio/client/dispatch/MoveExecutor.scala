@@ -11,9 +11,8 @@ import io.circe.Json
 import org.broadinstitute.clio.client.commands.MoveCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.ClioIndex
+import org.broadinstitute.clio.transfer.model.{ClioIndex, Metadata}
 import org.broadinstitute.clio.util.ClassUtil
-import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -123,49 +122,6 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
   }
 
   /**
-    * Build a stream which, when pulled, will run the pre-upsert component of each of the
-    * given IO operations. If all operations succeed, the stream will emit (). Otherwise,
-    * the stream will fail with an error indicating all IO failures.
-    */
-  private def runPreUpsertOps(
-    ops: immutable.Seq[IoOp],
-    ioUtil: IoUtil
-  ): Source[Unit, NotUsed] = {
-    //ioUtil.copyCloudObjects(opsToPerform.map(op => op.src -> op.dest))
-    Source(ops)
-      .mapAsyncUnordered(ops.size + 1) { op =>
-        Future {
-          Either.catchNonFatal {
-            op match {
-              case MoveOp(src, dest)       => ioUtil.copyGoogleObject(src, dest)
-              case CopyOp(src, dest)       => ioUtil.copyGoogleObject(src, dest)
-              case WriteOp(contents, dest) =>
-                // FIXME: Using NIO / the SDK would let us avoid the temp file.
-                File.usingTemporaryFile() { tmp =>
-                  ioUtil.copyGoogleObject(tmp.write(contents).uri, dest)
-                }
-            }
-          }
-        }
-      }
-      .fold(Seq.empty[Throwable]) { (acc, attempt) =>
-        attempt.fold(acc :+ _, _ => acc)
-      }
-      .flatMapConcat { errs =>
-        if (errs.isEmpty) {
-          Source.single(())
-        } else {
-          Source.failed(
-            new IOException(
-              s"""Failed to perform pre-upsert IO operations:
-                 |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
-            )
-          )
-        }
-      }
-  }
-
-  /**
     * Build a stream which, when pulled, will get the paths of all files-to-move from
     * the given metadata, checking:
     *
@@ -189,7 +145,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     ioUtil: IoUtil
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
 
-    val preMovePaths = extractPaths(metadata)
+    val preMovePaths = Metadata.extractPaths(metadata)
 
     if (preMovePaths.isEmpty) {
       Source.failed(
@@ -199,7 +155,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
       )
     } else {
       val movedMetadata = metadata.moveInto(destination, moveCommand.newBasename)
-      val postMovePaths = extractPaths(movedMetadata)
+      val postMovePaths = Metadata.extractPaths(movedMetadata)
 
       val opsToPerform = preMovePaths.flatMap {
         case (fieldName, path) => {
@@ -243,47 +199,6 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
         }
     }
   }
-
-  /**
-    * Given one of our `Metadata` classes, extract out all fields that
-    * store path-related information into a map from 'fieldName' -> 'path'.
-    *
-    * Used to build a generic before-and-after move comparison to determine
-    * which paths in a metadata object will actually be affected by the move.
-    */
-  private def extractPaths(
-    metadata: moveCommand.index.MetadataType
-  ): Map[String, URI] = {
-    val metadataMapper = new CaseClassMapper[moveCommand.index.MetadataType]
-    /*
-     * Here there be hacks to reduce boilerplate; may the typed gods have mercy.
-     *
-     * We flatten out the metadata instances for pre- and post-move into Maps
-     * from string keys to Any values, then flatMap away Options by extracting
-     * the underlying values from Somes and removing Nones, then finally filter
-     * away any non-URI values.
-     *
-     * The Option-removal is needed so we can successfully pattern-match on URI
-     * later when building up the list of (preMove -> postMove) paths. Without it,
-     * matching on Option[URI] fails because of type erasure.
-     */
-    metadataMapper
-      .vals(metadata)
-      .flatMap {
-        case (key, optValue: Option[_]) => optValue.map(v => key -> v)
-        case (key, nonOptValue)         => Some(key -> nonOptValue)
-      }
-      .collect {
-        /*
-         * This filters out non-`URI` values in a way that allows the compiler
-         * to change the map's type vars from `[String, Any]` to `[String, URI]`.
-         *
-         * Using `filter` with `inInstanceOf[URI]` would achieve the same filtering,
-         * but it'd leave the resulting type vars as `[String, Any]`.
-         */
-        case (key, value: URI) => key -> value
-      }
-  }
 }
 
 object MoveExecutor {
@@ -311,4 +226,47 @@ object MoveExecutor {
     * contents to disk.
     */
   case class WriteOp(contents: String, dest: URI) extends IoOp
+
+  /**
+    * Build a stream which, when pulled, will run the pre-upsert component of each of the
+    * given IO operations. If all operations succeed, the stream will emit (). Otherwise,
+    * the stream will fail with an error indicating all IO failures.
+    */
+  private[dispatch] def runPreUpsertOps(
+    ops: immutable.Seq[IoOp],
+    ioUtil: IoUtil
+  )(implicit ec: ExecutionContext): Source[Unit, NotUsed] = {
+    //ioUtil.copyCloudObjects(opsToPerform.map(op => op.src -> op.dest))
+    Source(ops)
+      .mapAsyncUnordered(ops.size + 1) { op =>
+        Future {
+          Either.catchNonFatal {
+            op match {
+              case MoveOp(src, dest)       => ioUtil.copyGoogleObject(src, dest)
+              case CopyOp(src, dest)       => ioUtil.copyGoogleObject(src, dest)
+              case WriteOp(contents, dest) =>
+                // FIXME: Using NIO / the SDK would let us avoid the temp file.
+                File.usingTemporaryFile() { tmp =>
+                  ioUtil.copyGoogleObject(tmp.write(contents).uri, dest)
+                }
+            }
+          }
+        }
+      }
+      .fold(Seq.empty[Throwable]) { (acc, attempt) =>
+        attempt.fold(acc :+ _, _ => acc)
+      }
+      .flatMapConcat { errs =>
+        if (errs.isEmpty) {
+          Source.single(())
+        } else {
+          Source.failed(
+            new IOException(
+              s"""Failed to perform pre-upsert IO operations:
+                 |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
+            )
+          )
+        }
+      }
+  }
 }

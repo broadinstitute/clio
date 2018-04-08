@@ -117,7 +117,7 @@ class DeleteExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     }
   }
 
-  it should "fail if a cloud document is associated with an on-prem path" in {
+  it should "fail if on-prem paths are registered to a cloud document" in {
     val ioUtil = mock[IoUtil]
     val webClient = mock[ClioWebClient]
 

@@ -3,7 +3,10 @@ package org.broadinstitute.clio.transfer.model
 import java.io.File
 import java.net.URI
 
+import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.DocumentStatus
+
+import scala.reflect.ClassTag
 
 /**
   * Common information for metadata in all clio indexes.
@@ -99,5 +102,44 @@ object Metadata {
     val srcName = new File(source.getPath).getName
     val srcBase = srcName.take(srcName.toLowerCase.lastIndexOf(extension))
     destination.resolve(s"${newBasename.getOrElse(srcBase)}$extension")
+  }
+
+  /**
+    * Given one of our `Metadata` classes, extract out all fields that
+    * store path-related information into a map from 'fieldName' -> 'path'.
+    *
+    * Used to build a generic before-and-after move comparison to determine
+    * which paths in a metadata object will actually be affected by the move.
+    */
+  def extractPaths[M <: Metadata[M]: ClassTag](metadata: M): Map[String, URI] = {
+    val metadataMapper = new CaseClassMapper[M]
+    /*
+     * Here there be hacks to reduce boilerplate; may the typed gods have mercy.
+     *
+     * We flatten out the metadata instances for pre- and post-move into Maps
+     * from string keys to Any values, then flatMap away Options by extracting
+     * the underlying values from Somes and removing Nones, then finally filter
+     * away any non-URI values.
+     *
+     * The Option-removal is needed so we can successfully pattern-match on URI
+     * later when building up the list of (preMove -> postMove) paths. Without it,
+     * matching on Option[URI] fails because of type erasure.
+     */
+    metadataMapper
+      .vals(metadata)
+      .flatMap {
+        case (key, optValue: Option[_]) => optValue.map(v => key -> v)
+        case (key, nonOptValue)         => Some(key -> nonOptValue)
+      }
+      .collect {
+        /*
+         * This filters out non-`URI` values in a way that allows the compiler
+         * to change the map's type vars from `[String, Any]` to `[String, URI]`.
+         *
+         * Using `filter` with `inInstanceOf[URI]` would achieve the same filtering,
+         * but it'd leave the resulting type vars as `[String, Any]`.
+         */
+        case (key, value: URI) => key -> value
+      }
   }
 }
