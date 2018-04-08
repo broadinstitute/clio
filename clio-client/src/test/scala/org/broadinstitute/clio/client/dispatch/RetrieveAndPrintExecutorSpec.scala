@@ -65,6 +65,10 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
     }
   }
 
+  Seq(true, false).foreach {
+    it should behave like queryTest(_)
+  }
+
   def queryTest(includeDeleted: Boolean): Unit = {
     it should s"retrieve and print query results with includeDeleted=$includeDeleted" in {
       val query = UbamQueryInput(flowcellBarcode = Some("abcd"))
