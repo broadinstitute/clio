@@ -49,12 +49,10 @@ abstract class DockerIntegrationSpec(
    */
   override lazy val clioWebClient: ClioWebClient =
     ClioWebClient(
+      () => OAuth2BearerToken("fake-token"),
       container.getServiceHost(clioFullName),
       container.getServicePort(clioFullName),
-      useHttps = false,
-      clientTimeout,
-      maxRequestRetries,
-      () => OAuth2BearerToken("fake-token")
+      useHttps = false
     )
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)
 

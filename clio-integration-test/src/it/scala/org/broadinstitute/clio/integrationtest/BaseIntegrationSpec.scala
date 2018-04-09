@@ -26,7 +26,7 @@ import io.circe.{Decoder, Encoder, Json, Printer}
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.client.{ClioClient, ClioClientConfig}
+import org.broadinstitute.clio.client.ClioClient
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
@@ -36,7 +36,6 @@ import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * Base class for Clio integration tests, agnostic to the location
@@ -54,20 +53,6 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   behavior of clioDescription
 
   lazy implicit val m: Materializer = ActorMaterializer()
-
-  /**
-    * Timeout to use for all client requests.
-    *
-    * Use the client's default to make sure it's sane.
-    */
-  val clientTimeout: FiniteDuration = ClioClientConfig.responseTimeout
-
-  /**
-    * Request-retry count to use in the client.
-    *
-    * Use the client's default to make sure it's sane.
-    */
-  val maxRequestRetries: Int = ClioClientConfig.maxRequestRetries
 
   /**
     * The web client to use within the tested clio-client.

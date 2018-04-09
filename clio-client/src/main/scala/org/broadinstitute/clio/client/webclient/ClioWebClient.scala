@@ -10,6 +10,7 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.jawn.JawnParser
 import io.circe.syntax._
 import io.circe.Json
+import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
@@ -22,12 +23,12 @@ object ClioWebClient {
   type QueryAux[I] = ClioIndex { type QueryInputType = I }
 
   def apply(
-    clioHost: String,
-    clioPort: Int,
-    useHttps: Boolean,
-    requestTimeout: FiniteDuration,
-    maxRequestRetries: Int,
-    tokenGenerator: CredentialsGenerator
+    tokenGenerator: CredentialsGenerator,
+    clioHost: String = ClioClientConfig.ClioServer.clioServerHostName,
+    clioPort: Int = ClioClientConfig.ClioServer.clioServerPort,
+    useHttps: Boolean = ClioClientConfig.ClioServer.clioServerUseHttps,
+    requestTimeout: FiniteDuration = ClioClientConfig.responseTimeout,
+    maxRequestRetries: Int = ClioClientConfig.maxRequestRetries
   )(implicit system: ActorSystem): ClioWebClient = {
 
     /*

@@ -69,14 +69,7 @@ object ClioClient extends LazyLogging {
         )
         .leftMap(AuthError.apply)
 
-      webClient = ClioWebClient(
-        ClioClientConfig.ClioServer.clioServerHostName,
-        ClioClientConfig.ClioServer.clioServerPort,
-        ClioClientConfig.ClioServer.clioServerUseHttps,
-        ClioClientConfig.responseTimeout,
-        ClioClientConfig.maxRequestRetries,
-        new GoogleCredentialsGenerator(credentials)
-      )
+      webClient = ClioWebClient(new GoogleCredentialsGenerator(credentials))
 
       client = new ClioClient(webClient, IoUtil)
 

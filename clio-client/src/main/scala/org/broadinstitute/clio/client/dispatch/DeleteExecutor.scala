@@ -4,7 +4,6 @@ import java.net.URI
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import cats.syntax.either._
 import io.circe.Json
 import org.broadinstitute.clio.client.commands.DeleteCommand
 import org.broadinstitute.clio.client.util.IoUtil
@@ -34,7 +33,7 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
     import Executor.SourceMonadOps
 
     for {
-      existingMetadata <- checkPreconditions(webClient)
+      existingMetadata <- checkPreconditions(webClient, ioUtil)
       pathsToDelete <- buildDelete(existingMetadata, ioUtil)
       _ <- ioUtil.deleteCloudObjects(pathsToDelete).mapError {
         case ex =>
@@ -71,7 +70,8 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
     * existing metadata on success.
     */
   private def checkPreconditions(
-    webClient: ClioWebClient
+    webClient: ClioWebClient,
+    ioUtil: IoUtil
   ): Source[deleteCommand.index.MetadataType, NotUsed] = {
     if (!deleteCommand.key.location.equals(Location.GCP)) {
       Source.failed(
@@ -80,18 +80,42 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
         )
       )
     } else {
-      webClient
-        .getMetadataForKey(deleteCommand.index)(deleteCommand.key, includeDeleted = false)
-        .orElse {
-          // Has to be lazy because `orElse` eagerly fails as soon as either branch fails.
-          Source.lazily { () =>
-            Source.failed(
-              new IllegalStateException(
-                s"No $name found in Clio for $prettyKey, nothing to delete."
-              )
-            )
-          }
+      val metadata: Source[deleteCommand.index.MetadataType, NotUsed] =
+        webClient.getMetadataForKey(deleteCommand.index)(
+          deleteCommand.key,
+          includeDeleted = false
+        )
+
+      metadata.flatMapConcat { existing =>
+        val nonCloudPaths = existing.pathsToDelete.foldLeft(Seq.empty[URI]) {
+          (acc, uri) =>
+            if (ioUtil.isGoogleObject(uri)) {
+              acc
+            } else {
+              acc :+ uri
+            }
         }
+
+        if (nonCloudPaths.isEmpty) {
+          Source.single(existing)
+        } else {
+          Source.failed(
+            new IllegalStateException(
+              s"""Inconsistent state detected, non-cloud paths registered to the $name for $prettyKey:
+                 |${nonCloudPaths.mkString(",")}""".stripMargin
+            )
+          )
+        }
+      }.orElse {
+        // Has to be lazy because `orElse` eagerly fails as soon as either branch fails.
+        Source.lazily { () =>
+          Source.failed(
+            new IllegalStateException(
+              s"No $name found in Clio for $prettyKey, nothing to delete."
+            )
+          )
+        }
+      }
     }
   }
 
@@ -115,39 +139,26 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
 
     val paths = metadata.pathsToDelete.to[immutable.Iterable]
     Source[URI](paths)
-      .mapAsync(paths.size) { path =>
-        if (!ioUtil.isGoogleObject(path)) {
-          Future.successful(
-            Left(
-              new IllegalStateException(
-                s"Inconsistent state detected, non-cloud path '$path' registered to $prettyKey"
-              )
-            )
-          )
-        } else {
-          Future(Either.catchNonFatal(ioUtil.googleObjectExists(path))).map { attempt =>
-            attempt.flatMap { doesExist =>
-              if (doesExist) {
-                Right(Some(path))
-              } else {
-                val msg =
-                  s"'$path' associated with $prettyKey does not exist in the cloud."
-                if (deleteCommand.force) {
-                  logger.warn(msg)
-                  Right(None)
-                } else {
-                  Left(new IllegalStateException(msg))
-                }
-              }
-            }
-          }
-        }
+      .mapAsyncUnordered(paths.size) { path =>
+        Future(path -> ioUtil.googleObjectExists(path))
       }
       .fold(Right(immutable.Seq.empty[URI]): Either[Seq[Throwable], immutable.Seq[URI]]) {
-        case (Right(ps), Right(maybePath)) => Right(ps ++ maybePath.toIterable)
-        case (Right(_), Left(err))         => Left(Seq(err))
-        case (Left(errs), Right(_))        => Left(errs)
-        case (Left(errs), Left(err))       => Left(errs :+ err)
+        case (Right(ps), (uri, true)) => Right(ps :+ uri)
+        case (Right(ps), (uri, false)) =>
+          val msg = s"'$uri' associated with $prettyKey does not exist in the cloud."
+          if (deleteCommand.force) {
+            logger.warn(msg)
+            Right(ps)
+          } else {
+            Left(Seq(new IllegalStateException(msg)))
+          }
+        case (Left(errs), (_, true)) => Left(errs)
+        case (Left(errs), (uri, false)) =>
+          Left(
+            errs :+ new IllegalStateException(
+              s"'$uri' associated with $prettyKey does not exist in the cloud."
+            )
+          )
       }
       .flatMapConcat {
         _.fold(

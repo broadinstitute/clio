@@ -23,12 +23,10 @@ class LocalIntegrationSpec extends BaseIntegrationSpec(s"Clio local") {
     * The web client to use within the tested clio-client.
     */
   override lazy val clioWebClient: ClioWebClient = ClioWebClient(
+    new GoogleCredentialsGenerator(googleCredential),
     s"localhost",
     8080,
-    useHttps = false,
-    clientTimeout,
-    maxRequestRetries,
-    new GoogleCredentialsGenerator(googleCredential)
+    useHttps = false
   )
 
   /**
