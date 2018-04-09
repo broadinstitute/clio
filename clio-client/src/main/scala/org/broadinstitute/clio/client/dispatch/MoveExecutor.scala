@@ -226,7 +226,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])
     exceptionText: String
   )(implicit ec: ExecutionContext): Future[UpsertId] = {
     client
-      .upsert(moveCommand.index)(moveCommand.key, metadata)
+      .upsert(moveCommand.index)(moveCommand.key, metadata, force = true)
       .recover({ case ex => throw new RuntimeException(exceptionText, ex) })
   }
 

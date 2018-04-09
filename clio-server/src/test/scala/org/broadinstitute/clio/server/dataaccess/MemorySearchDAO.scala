@@ -2,6 +2,7 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
+import io.circe.syntax._
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.ClioIndex
@@ -29,7 +30,7 @@ class MemorySearchDAO extends MockSearchDAO {
     index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
     queryCalls += json
-    super.rawQuery(json)
+    Source.single(json.asJson)
   }
 
   override def getMostRecentDocument(

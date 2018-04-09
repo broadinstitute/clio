@@ -3,6 +3,7 @@ package org.broadinstitute.clio.server.dataaccess
 import akka.pattern.after
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.transfer.model.HealthStatus
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -12,9 +13,11 @@ trait SystemElasticsearchDAO extends SearchDAO { this: HttpElasticsearchDAO =>
 
   override def checkOk: Future[Unit] = {
     getClusterHealth transform {
-      case Success(health) if health.status == "green" => Success(())
+      case Success(health)
+          if HealthStatus.withNameInsensitive(health.status) == HealthStatus.Green =>
+        Success(())
       case Success(health) =>
-        val message = s"Health status was not green: $health"
+        val message = s"Health status was not ${HealthStatus.Green.toString}: $health"
         logger.error(message)
         Failure(new RuntimeException(message))
       case Failure(exception) =>

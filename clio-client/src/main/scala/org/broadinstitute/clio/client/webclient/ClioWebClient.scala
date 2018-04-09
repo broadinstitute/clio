@@ -15,7 +15,9 @@ import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
+import org.broadinstitute.clio.util.model.DocumentStatus
+import org.broadinstitute.clio.util.model.UpsertId
+import ApiConstants._
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -167,18 +169,19 @@ class ClioWebClient(
   }
 
   def getClioServerVersion: Future[Json] = {
-    dispatchRequest(HttpRequest(uri = "/version"), includeAuth = false)
+    dispatchRequest(HttpRequest(uri = s"/$versionString"), includeAuth = false)
       .flatMap(unmarshal[Json])
   }
 
   def getClioServerHealth: Future[Json] = {
-    dispatchRequest(HttpRequest(uri = "/health"), includeAuth = false)
+    dispatchRequest(HttpRequest(uri = s"/$healthString"), includeAuth = false)
       .flatMap(unmarshal[Json])
   }
 
   def upsert[CI <: ClioIndex](clioIndex: CI)(
     key: clioIndex.KeyType,
-    metadata: clioIndex.MetadataType
+    metadata: clioIndex.MetadataType,
+    force: Boolean = false
   ): Future[UpsertId] = {
     import clioIndex.implicits._
 
@@ -192,12 +195,12 @@ class ClioWebClient(
      * in the fields of the key.
      */
     val encodedPath = key.getUrlSegments.foldLeft(
-      Uri.Path(s"/api/v1/${clioIndex.urlSegment}/metadata")
+      Uri.Path(s"/$apiString/v1/${clioIndex.urlSegment}/$metadataString")
     )(_ / _)
 
     dispatchRequest(
       HttpRequest(
-        uri = Uri(path = encodedPath),
+        uri = Uri(path = encodedPath).withQuery(Uri.Query(forceString -> force.toString)),
         method = HttpMethods.POST,
         entity = entity
       )
@@ -231,6 +234,7 @@ class ClioWebClient(
     input: clioIndex.KeyType,
     includeDeleted: Boolean
   ): Future[Option[clioIndex.MetadataType]] = {
+
     import clioIndex.implicits._
     import s_mach.string._
 
@@ -275,14 +279,14 @@ class ClioWebClient(
     input: Json,
     raw: Boolean = false
   ): Future[Json] = {
-    val queryPath = if (raw) "rawquery" else "query"
+    val queryPath = if (raw) rawQueryString else queryString
     val entity = HttpEntity(
       ContentTypes.`application/json`,
       input.pretty(implicitly[Printer])
     )
     dispatchRequest(
       HttpRequest(
-        uri = s"/api/v1/${clioIndex.urlSegment}/$queryPath",
+        uri = s"/$apiString/v1/${clioIndex.urlSegment}/$queryPath",
         method = HttpMethods.POST,
         entity = entity
       )
