@@ -126,7 +126,7 @@ class RecoveryIntegrationSpec
 
   it should "reject upserts before recovery is complete" in {
     val tmpMetadata = writeLocalTmpJson(UbamMetadata())
-    recoverToExceptionIf[FailedResponse] {
+    recoverToSucceededIf[RuntimeException] {
       runClient(
         ClioCommand.addWgsUbamName,
         "--flowcell-barcode",
@@ -140,8 +140,6 @@ class RecoveryIntegrationSpec
         "--metadata-location",
         tmpMetadata.toString
       )
-    }.map { err =>
-      err.statusCode should be(StatusCodes.ServiceUnavailable)
     }
   }
 
