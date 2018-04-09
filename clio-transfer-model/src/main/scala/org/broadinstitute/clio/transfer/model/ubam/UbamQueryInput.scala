@@ -4,6 +4,7 @@ import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.transfer.model.QueryInput
 import org.broadinstitute.clio.util.model.{
+  AggregatedBy,
   DocumentStatus,
   Location,
   RegulatoryDesignation
@@ -24,7 +25,8 @@ case class UbamQueryInput(
   documentStatus: Option[DocumentStatus] = None,
   baitSet: Option[Symbol] = None,
   baitIntervals: Option[Symbol] = None,
-  targetIntervals: Option[Symbol] = None
+  targetIntervals: Option[Symbol] = None,
+  aggregatedBy: Option[AggregatedBy] = None
 ) extends QueryInput[UbamQueryInput] {
 
   def withDocumentStatus(

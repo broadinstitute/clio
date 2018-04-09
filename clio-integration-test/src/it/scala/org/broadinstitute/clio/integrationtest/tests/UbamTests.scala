@@ -299,17 +299,72 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
     } yield {
       projectResults should have length 3
-      projectResults.foldLeft(succeed) { (_, result) =>
+      projectResults.foreach { result =>
         result.unsafeGet[String]("project") should be(project)
       }
       sampleResults should have length 2
-      sampleResults.foldLeft(succeed) { (_, result) =>
+      sampleResults.foreach { result =>
         result.unsafeGet[String]("sample_alias") should be(samples.head)
       }
       rpIdResults should have length 1
       rpIdResults.head.unsafeGet[String]("research_project_id") should be(
         researchProjectIds.last
       )
+    }
+  }
+
+  it should "handle querying ubams by aggregated-by" in {
+    val flowcellBarcode = "barcode2"
+    val lane = 2
+    val location = Location.GCP
+    val project = s"testProject$randomId"
+
+    val samples = Seq.fill(3)(s"sample$randomId")
+
+    val researchProjectIds = Seq.fill(3)(s"rpId$randomId")
+
+    val aggregations = Seq(
+      AggregatedBy.Squid,
+      AggregatedBy.Squid,
+      AggregatedBy.RP
+    )
+
+    val upserts = Future.sequence {
+      samples zip researchProjectIds zip aggregations map {
+        case ((samp, rpid), agg) => (samp, rpid, agg)
+      } map {
+        case (sample, researchProjectId, aggregation) =>
+          val key = UbamKey(location, flowcellBarcode, lane, s"library$randomId")
+          val metadata = UbamMetadata(
+            project = Some(project),
+            sampleAlias = Some(sample),
+            researchProjectId = Some(researchProjectId),
+            aggregatedBy = Some(aggregation)
+          )
+          runUpsertUbam(key, metadata, SequencingType.WholeGenome)
+      }
+    }
+
+    for {
+      _ <- upserts
+      queryResults <- runClientGetJsonAs[Seq[Json]](
+        ClioCommand.queryWgsUbamName,
+        "--project",
+        project,
+        "--aggregated-by",
+        AggregatedBy.Squid.entryName
+      )
+    } yield {
+      queryResults should have length 2
+      queryResults.foreach { result =>
+        result.unsafeGet[String]("project") should be(project)
+      }
+      queryResults.foreach { result =>
+        researchProjectIds.take(2) should contain(
+          result.unsafeGet[String]("research_project_id")
+        )
+      }
+      succeed
     }
   }
 
@@ -432,7 +487,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
     } yield {
       results.length should be(keysWithMetadata.length)
-      results.foldLeft(succeed) { (_, result) =>
+      results.foreach { result =>
         result.unsafeGet[String]("project") should be(project)
         result.unsafeGet[String]("sample_alias") should be(sample)
 
@@ -447,6 +502,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           if (resultKey == deleteKey) DocumentStatus.Deleted else DocumentStatus.Normal
         }
       }
+      succeed
     }
   }
 
