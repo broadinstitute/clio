@@ -35,6 +35,8 @@ object Dependencies {
   private val TypesafeConfigVersion = "1.3.3"
   private val VaultJavaDriverVersion = "3.1.0"
 
+  val VaultVersion = "0.9.1"
+
   /** Version of Scala to build Clio with. */
   val ScalaVersion = "2.12.4"
 

@@ -65,7 +65,14 @@ object Docker {
     val artifactTargetPath = s"/app/${name.value}.jar"
     new Dockerfile {
       from("google/cloud-sdk:alpine")
-      run("apk", "--update", "add", "openjdk8-jre")
+      run("apk", "--update", "add", "openjdk8-jre", "jq", "unzip")
+
+      runRaw(
+        s"""curl https://releases.hashicorp.com/vault/${Dependencies.VaultVersion}/vault_${Dependencies.VaultVersion}_linux_amd64.zip > vault.zip && \\
+          |    unzip vault.zip -d /usr/bin/
+        """.stripMargin
+      )
+
       label("CLIO_CLIENT_VERSION", version.value)
       add(artifact, artifactTargetPath)
     }
