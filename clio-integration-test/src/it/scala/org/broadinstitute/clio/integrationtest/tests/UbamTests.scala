@@ -68,21 +68,21 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val tmpMetadata =
       writeLocalTmpJson(UbamMetadata(project = Some("fake_project")))
 
-    val addResponseFuture = runClient(
-      ClioCommand.addHybselUbamName,
-      "--flowcell-barcode",
-      stubKey.flowcellBarcode,
-      "--lane",
-      stubKey.lane.toString,
-      "--library-name",
-      stubKey.libraryName,
-      "--location",
-      stubKey.location.entryName,
-      "--metadata-location",
-      tmpMetadata.toString
-    )
-    recoverToExceptionIf[FailedResponse](addResponseFuture)
-      .map(statusCodeShouldBe(StatusCodes.NotFound))
+    recoverToSucceededIf[RuntimeException] {
+      runClient(
+        ClioCommand.addHybselUbamName,
+        "--flowcell-barcode",
+        stubKey.flowcellBarcode,
+        "--lane",
+        stubKey.lane.toString,
+        "--library-name",
+        stubKey.libraryName,
+        "--location",
+        stubKey.location.entryName,
+        "--metadata-location",
+        tmpMetadata.toString
+      )
+    }
   }
 
   it should "throw a FailedResponse 404 when running query command for hybsel ubams" in {
