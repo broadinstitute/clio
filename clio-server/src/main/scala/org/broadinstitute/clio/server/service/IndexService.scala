@@ -140,9 +140,10 @@ abstract class IndexService[CI <: ClioIndex](
         Move - effectively an Add and Remove. This will not overwrite.
         Copy - effectively an Add. This will not overwrite.
      */
-    val replaceOperations: Seq[Replace] = differences.ops.flatMap {
-      case replace: Replace => Some(replace).filter(_.value != Json.Null)
-      case _                => None
+    val replaceOperations: Seq[Replace] = differences.ops.collect {
+      case replace @ Replace(_, value, existing)
+          if value != Json.Null && !existing.contains(Json.Null) =>
+        replace
     }
 
     if (replaceOperations.isEmpty) {
