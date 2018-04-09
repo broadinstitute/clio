@@ -16,6 +16,8 @@ object Docker {
 
   private val JProfilerVersion = "jprofiler_linux_9_2_1"
 
+  private val VaultVersion = "0.9.1"
+
   /** The list of docker images to publish. */
   lazy val imageNames: Initialize[Task[Seq[ImageName]]] = Def.task {
     Seq(
@@ -68,7 +70,7 @@ object Docker {
       run("apk", "--update", "add", "openjdk8-jre", "jq", "unzip")
 
       runRaw(
-        s"""curl https://releases.hashicorp.com/vault/${Dependencies.VaultVersion}/vault_${Dependencies.VaultVersion}_linux_amd64.zip > vault.zip && \\
+        s"""curl https://releases.hashicorp.com/vault/${VaultVersion}/vault_${VaultVersion}_linux_amd64.zip > vault.zip && \\
           |    unzip vault.zip -d /usr/bin/
         """.stripMargin
       )
