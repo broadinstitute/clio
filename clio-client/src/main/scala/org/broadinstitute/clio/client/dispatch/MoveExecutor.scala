@@ -140,7 +140,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     * Delivery subclasses can override this method to change the returned metadata / add
     * more IO operations.
     */
-  protected def buildMove(
+  protected[dispatch] def buildMove(
     metadata: moveCommand.index.MetadataType,
     ioUtil: IoUtil
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {

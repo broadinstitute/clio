@@ -156,7 +156,7 @@ final case class DeliverWgsCram(
   @Recurse key: WgsCramKey,
   workspaceName: String,
   workspacePath: URI,
-  newBasename: Option[String]
+  newBasename: Option[String] = None
 ) extends DeliverCommand(WgsCramIndex)
 
 // Hybsel-uBAM commands.
@@ -222,7 +222,7 @@ final case class DeliverArrays(
   @Recurse key: ArraysKey,
   workspaceName: String,
   workspacePath: URI,
-  newBasename: Option[String]
+  newBasename: Option[String] = None
 ) extends DeliverCommand(ArraysIndex)
 
 object ClioCommand extends ClioParsers {

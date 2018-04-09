@@ -6,7 +6,7 @@ import org.broadinstitute.clio.client.commands.DeliverArrays
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, IoOp}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.transfer.model.Metadata
-import org.broadinstitute.clio.transfer.model.arrays.ArraysExtensions
+import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysMetadata}
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
@@ -22,10 +22,10 @@ import scala.concurrent.ExecutionContext
 class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: ExecutionContext)
     extends MoveExecutor(deliverCommand) {
 
-  override protected def buildMove(
-    metadata: moveCommand.index.MetadataType,
+  override protected[dispatch] def buildMove(
+    metadata: ArraysMetadata,
     ioUtil: IoUtil
-  ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
+  ): Source[(ArraysMetadata, immutable.Seq[IoOp]), NotUsed] = {
 
     val baseStream = super
       .buildMove(metadata, ioUtil)

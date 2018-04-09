@@ -7,7 +7,7 @@ import akka.stream.scaladsl.Source
 import org.broadinstitute.clio.client.commands.DeliverWgsCram
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, WriteOp}
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.transfer.model.wgscram.WgsCramExtensions
+import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramExtensions, WgsCramMetadata}
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
@@ -24,10 +24,10 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)(
   implicit ec: ExecutionContext
 ) extends MoveExecutor(deliverCommand) {
 
-  override protected def buildMove(
-    metadata: moveCommand.index.MetadataType,
+  override protected[dispatch] def buildMove(
+    metadata: WgsCramMetadata,
     ioUtil: IoUtil
-  ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
+  ): Source[(WgsCramMetadata, immutable.Seq[IoOp]), NotUsed] = {
 
     val baseStream = super
       .buildMove(metadata, ioUtil)
