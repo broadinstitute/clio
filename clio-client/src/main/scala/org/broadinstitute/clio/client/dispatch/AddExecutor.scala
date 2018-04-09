@@ -23,9 +23,17 @@ class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI]) extends Executor 
     webClient: ClioWebClient,
     ioUtil: IoUtil
   ): Source[Json, NotUsed] = {
-    readMetadata(addCommand.metadataLocation, ioUtil).flatMapConcat { metadata =>
-      webClient
-        .upsert(addCommand.index)(addCommand.key, metadata, addCommand.force)
+    import Executor.SourceMonadOps
+
+    for {
+      metadata <- readMetadata(addCommand.metadataLocation, ioUtil)
+      upsertId <- webClient.upsert(addCommand.index)(
+        addCommand.key,
+        metadata,
+        addCommand.force
+      )
+    } yield {
+      upsertId
     }
   }
 
