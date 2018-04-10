@@ -1,13 +1,16 @@
 package org.broadinstitute.clio.server.webservice
 
-import org.broadinstitute.clio.server.service.MockGvcfService
+import io.circe.Json
+import io.circe.syntax._
+import org.broadinstitute.clio.server.service.GvcfService
 import org.broadinstitute.clio.util.model.Location
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.GvcfKey
 
 class GvcfWebServiceSpec extends IndexWebServiceSpec[GvcfIndex.type] {
   def webServiceName = "GvcfWebService"
-  val mockService = new MockGvcfService()
+
+  val mockService: GvcfService = mock[GvcfService]
   val webService = new GvcfWebService(mockService)
 
   val onPremKey = GvcfKey(
@@ -29,4 +32,12 @@ class GvcfWebServiceSpec extends IndexWebServiceSpec[GvcfIndex.type] {
   val badQueryInputMap = Map(
     "version" -> "not intable"
   )
+
+  val emptyOutput: Json =
+    GvcfKey(
+      Location.GCP,
+      "project",
+      "sample",
+      1
+    ).asJson(GvcfIndex.keyEncoder)
 }

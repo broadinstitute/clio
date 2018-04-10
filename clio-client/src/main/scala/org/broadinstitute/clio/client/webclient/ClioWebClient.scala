@@ -329,15 +329,15 @@ class ClioWebClient(
       Future.successful(httpResponse)
     } else {
       httpResponse.entity.toStrict(requestTimeout).map { entity =>
-        throw ClioWebClient.FailedResponse(httpResponse.status, entity)
+        throw ClioWebClient.FailedResponse(httpResponse.status, entity.toString())
       }
     }
   }
 }
 
 object ClioWebClient {
-  case class FailedResponse(statusCode: StatusCode, entity: HttpEntity.Strict)
+  case class FailedResponse(statusCode: StatusCode, entityBody: String)
       extends RuntimeException(
-        s"Got an error from the Clio server. Status code: $statusCode. Entity: $entity"
+        s"Got an error from the Clio server. Status code: $statusCode. Entity: $entityBody"
       )
 }

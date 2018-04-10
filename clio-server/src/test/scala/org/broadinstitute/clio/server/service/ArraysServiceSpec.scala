@@ -4,6 +4,7 @@ import com.sksamuel.elastic4s.searches.queries.{
   BoolQueryDefinition,
   QueryStringQueryDefinition
 }
+import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.ArraysIndex
 import org.broadinstitute.clio.transfer.model.arrays.{
@@ -54,9 +55,9 @@ class ArraysServiceSpec extends IndexServiceSpec[ArraysIndex.type]("ArraysServic
   }
 
   def getService(
-    persistenceService: PersistenceService,
-    searchService: SearchService
+    persistenceDAO: PersistenceDAO,
+    searchDAO: SearchDAO
   ): ArraysService = {
-    new ArraysService(persistenceService, searchService)
+    new ArraysService(persistenceDAO, searchDAO)
   }
 }

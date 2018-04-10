@@ -5,21 +5,20 @@ import akka.stream.scaladsl.Source
 import gnieh.diffson.circe._
 import io.circe.Json
 import io.circe.syntax._
+import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.exceptions.UpsertValidationException
 import org.broadinstitute.clio.transfer.model.ApiConstants._
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.DocumentStatus.Normal
-import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
+import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.ExecutionContext
-import scala.reflect.ClassTag
 
 abstract class IndexService[CI <: ClioIndex](
-  persistenceService: PersistenceService,
-  searchService: SearchService,
+  persistenceDAO: PersistenceDAO,
+  searchDAO: SearchDAO,
   elasticsearchIndex: ElasticsearchIndex[CI],
   val clioIndex: CI
 )(
@@ -69,18 +68,25 @@ abstract class IndexService[CI <: ClioIndex](
     }
   }
 
+  /**
+    * Update-or-insert (upsert) metadata for a given key.
+    *
+    * @param indexKey         The DTO for the key
+    * @param updatedMetadata  The DTO for the metadata.
+    * @return the ID for this upsert
+    */
   private def upsertToStream(
     indexKey: clioIndex.KeyType,
     updatedMetadata: clioIndex.MetadataType
   ) = {
-    Source.fromFuture(
-      persistenceService.upsertMetadata(
-        indexKey,
-        setDefaultDocumentStatus(updatedMetadata),
-        documentConverter,
-        elasticsearchIndex
-      )
-    )
+    val document = documentConverter.document(indexKey, updatedMetadata)
+    val futureUpsertId = for {
+      _ <- persistenceDAO.writeUpdate(document, elasticsearchIndex)
+      _ <- searchDAO.updateMetadata(document)(elasticsearchIndex)
+    } yield {
+      ElasticsearchIndex.getUpsertId(document)
+    }
+    Source.fromFuture(futureUpsertId)
   }
 
   private def setDefaultDocumentStatus(
@@ -90,18 +96,22 @@ abstract class IndexService[CI <: ClioIndex](
       .fold(metadata.withDocumentStatus(Some(Normal)))(_ => metadata)
   }
 
-  def queryMetadata[InputDTO: ClassTag: FieldMapper](
-    input: InputDTO
-  )(
-    implicit
-    inputConverter: ElasticsearchQueryMapper[InputDTO]
+  def queryMetadata(
+    input: clioIndex.QueryInputType
   ): Source[Json, NotUsed] = {
-    rawQuery(inputConverter.buildQuery(input)(elasticsearchIndex))
+    rawQuery(queryConverter.buildQuery(input)(elasticsearchIndex))
   }
 
+  /**
+    * Run a raw Json query.
+    *
+    * @param inputJson  The json string of the query.
+    * @return           The result of the query.
+    */
   def rawQuery(inputJson: String): Source[Json, NotUsed] = {
-    searchService
-      .rawQuery(inputJson, queryConverter)(elasticsearchIndex)
+    searchDAO
+      .rawQuery(inputJson)(elasticsearchIndex)
+      .map(queryConverter.toQueryOutput)
   }
 
   def validateUpsert(
@@ -142,7 +152,7 @@ abstract class IndexService[CI <: ClioIndex](
     val keyJson = indexKey.asJsonObject
     val fieldsToDrop = keyJson.keys.toSeq
 
-    queryMetadata(indexKey, keyQueryConverter)
+    rawQuery(keyQueryConverter.buildQuery(indexKey)(elasticsearchIndex))
       .fold[Either[Exception, Option[Json]]](Right(None)) { (acc, storedDocs) =>
         acc.flatMap {
           case None =>
