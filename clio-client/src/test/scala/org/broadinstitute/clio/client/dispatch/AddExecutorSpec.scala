@@ -3,7 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import java.io.IOException
 import java.net.URI
 
-import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
@@ -117,7 +117,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       .returning(
         Source.failed(
           ClioWebClient
-            .FailedResponse(StatusCodes.InternalServerError, HttpEntity("I BROKE"))
+            .FailedResponse(StatusCodes.InternalServerError, "I BROKE")
         )
       )
 

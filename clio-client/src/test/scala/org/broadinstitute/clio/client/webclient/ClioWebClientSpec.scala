@@ -84,7 +84,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       client.dispatchRequest(HttpRequest(), false).runWith(Sink.ignore)
     }.map { ex =>
       ex.statusCode should be(code)
-      ex.entity.data.decodeString("UTF-8") should be(err)
+      ex.entityBody should be(err)
     }
   }
 

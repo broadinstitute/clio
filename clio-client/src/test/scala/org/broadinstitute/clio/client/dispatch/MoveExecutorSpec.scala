@@ -5,7 +5,7 @@ import java.net.URI
 
 import scala.concurrent.ExecutionContext
 
-import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.{Sink, Source}
 import better.files.File
 import io.circe.syntax._
@@ -42,7 +42,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   private val id = UpsertId.nextId()
 
   private val serverErr = ClioWebClient
-    .FailedResponse(StatusCodes.InternalServerError, HttpEntity("I BROKE"))
+    .FailedResponse(StatusCodes.InternalServerError, "I BROKE")
 
   type Aux = ClioWebClient.UpsertAux[WgsCramKey, WgsCramMetadata]
 

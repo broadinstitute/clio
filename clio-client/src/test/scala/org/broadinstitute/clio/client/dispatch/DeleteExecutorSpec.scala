@@ -2,7 +2,7 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.http.scaladsl.model.{HttpEntity, StatusCodes}
+import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
@@ -37,7 +37,7 @@ class DeleteExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   private val id = UpsertId.nextId()
 
   private val serverErr = ClioWebClient
-    .FailedResponse(StatusCodes.InternalServerError, HttpEntity("I BROKE"))
+    .FailedResponse(StatusCodes.InternalServerError, "I BROKE")
 
   type Aux = ClioWebClient.UpsertAux[ArraysKey, ArraysMetadata]
 

@@ -50,9 +50,9 @@ object ClioWebClient {
     new ClioWebClient(connectionFlow, requestTimeout, maxRequestRetries, tokenGenerator)
   }
 
-  case class FailedResponse(statusCode: StatusCode, entity: HttpEntity.Strict)
+  case class FailedResponse(statusCode: StatusCode, entityBody: String)
       extends RuntimeException(
-        s"Got an error from the Clio server. Status code: $statusCode. Entity: $entity"
+        s"Got an error from the Clio server. Status code: $statusCode. Entity: $entityBody"
       )
 }
 
@@ -110,11 +110,15 @@ class ClioWebClient private[client] (
         logger.debug(s"Successfully completed request: $request")
         response.entity.withoutSizeLimit().dataBytes
       } else {
-        response.entity.dataBytes.reduce(_ ++ _).flatMapConcat { entity =>
+        response.entity.dataBytes.reduce(_ ++ _).flatMapConcat { bytes =>
           Source.failed {
             ClioWebClient.FailedResponse(
               response.status,
-              HttpEntity.Strict(response.entity.contentType, entity)
+              bytes.decodeString(
+                response.entity.contentType.charsetOption
+                  .getOrElse(HttpCharsets.`UTF-8`)
+                  .value
+              )
             )
           }
         }
