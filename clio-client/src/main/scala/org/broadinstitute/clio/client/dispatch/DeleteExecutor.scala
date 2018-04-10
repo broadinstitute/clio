@@ -143,26 +143,25 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
         Future(path -> ioUtil.googleObjectExists(path))
       }
       .fold(Right(immutable.Seq.empty[URI]): Either[Seq[Throwable], immutable.Seq[URI]]) {
-        case (Right(ps), (uri, true)) => Right(ps :+ uri)
-        case (Right(ps), (uri, false)) =>
+        case (acc, (uri, false)) =>
           val msg = s"'$uri' associated with $prettyKey does not exist in the cloud."
+          val err = new IllegalStateException(msg)
           if (deleteCommand.force) {
             logger.warn(msg)
-            Right(ps)
-          } else {
-            Left(Seq(new IllegalStateException(msg)))
           }
-        case (Left(errs), (_, true)) => Left(errs)
-        case (Left(errs), (uri, false)) =>
-          Left(
-            errs :+ new IllegalStateException(
-              s"'$uri' associated with $prettyKey does not exist in the cloud."
-            )
+          acc.fold(
+            errs => Left(errs :+ err),
+            uris => if (deleteCommand.force) Right(uris) else Left(Seq(err))
           )
+
+        case (Right(uris), (uri, _)) => Right(uris :+ uri)
+        case (Left(errs), _)         => Left(errs)
       }
       .flatMapConcat {
         _.fold(
-          errs => Source.failed(new IllegalStateException(errs.mkString(", "))),
+          errs =>
+            Source
+              .failed(new IllegalStateException(errs.map(_.getMessage).mkString(", "))),
           paths => Source.single(paths)
         )
       }
