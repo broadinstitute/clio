@@ -25,7 +25,7 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
     }
 
     responseStream.alsoTo {
-      val stringify = Flow.fromFunction[Json, String](_.spaces2)
+      val stringify = Flow[Json].map(_.spaces2)
       val flow = command match {
         case _: QueryCommand[_] =>
           /*
@@ -33,10 +33,7 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
            * characters to be sure the printed stream can be parsed as a JSON array
            * by the caller.
            */
-          stringify
-            .intersperse(",\n")
-            .prepend(Source.single("["))
-            .concat(Source.single("]"))
+          stringify.intersperse("[", ",\n", "]")
         case _ => stringify
       }
 
