@@ -3,9 +3,11 @@ package org.broadinstitute.clio.integrationtest
 import java.nio.file.FileSystem
 import java.util.UUID
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.http.scaladsl.model._
-import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import better.files.File
 import com.bettercloud.vault.{Vault, VaultConfig}
@@ -24,7 +26,7 @@ import io.circe.{Decoder, Encoder, Json, Printer}
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.client.{ClioClient, ClioClientConfig}
+import org.broadinstitute.clio.client.ClioClient
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
@@ -34,7 +36,6 @@ import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 
 /**
   * Base class for Clio integration tests, agnostic to the location
@@ -51,40 +52,12 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
   behavior of clioDescription
 
-  /**
-    * Max number of requests that can be queued within the client at a time.
-    *
-    * Use the client's default to make sure it's sane.
-    */
-  val maxQueuedRequests: Int = ClioClientConfig.maxQueuedRequests
-
-  /**
-    * Max number of requests that the client can have in-flight at one time.
-    *
-    * Use the client's default to make sure it's sane.
-    */
-  val maxConcurrentRequests: Int = ClioClientConfig.maxConcurrentRequests
-
-  /**
-    * Timeout to use for all client requests.
-    *
-    * Use the client's default to make sure it's sane.
-    */
-  val clientTimeout: FiniteDuration = ClioClientConfig.responseTimeout
-
-  /**
-    * Request-retry count to use in the client.
-    *
-    * Use the client's default to make sure it's sane.
-    */
-  val maxRequestRetries: Int = ClioClientConfig.maxRequestRetries
+  lazy implicit val m: Materializer = ActorMaterializer()
 
   /**
     * The web client to use within the tested clio-client.
     */
   def clioWebClient: ClioWebClient
-
-  lazy implicit val m: ActorMaterializer = clioWebClient.materializer
 
   /**
     * The clio-client to test against.
@@ -214,28 +187,33 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * Run a command with arbitrary args through the main clio-client.
     * Returns a failed future if the command exits early.
     */
-  def runClient(command: String, args: String*): Future[_] = {
+  def runClient[Out](sink: Sink[Json, Future[Out]])(
+    command: String,
+    args: String*
+  ): Future[Out] = {
     clioClient
       .instanceMain((command +: args).toArray)
       .fold(
         earlyReturn =>
           Future
             .failed(new Exception(s"Command exited early with $earlyReturn")),
-        identity
+        _.runWith(sink)
       )
   }
 
-  /**
-    * Run a command with arbitrary args through the main clio-client,
-    * mapping the JSON response to some type.
-    * Returns a failed future if the command exits early or if the
-    * response cannot be converted to the given type.
-    */
-  def runClientGetJsonAs[A: Decoder](command: String, args: String*): Future[A] = {
-    runClient(command, args: _*)
-      .mapTo[Json]
-      .map(_.as[A].fold(throw _, identity))
+  def runCollectJson(command: String, args: String*): Future[Seq[Json]] =
+    runClient(Sink.seq)(command, args: _*)
+
+  def runDecode[A: Decoder](
+    command: String,
+    args: String*
+  ): Future[A] = {
+    val decode = Flow.fromFunction[Json, A](_.as[A].fold(throw _, identity))
+    runClient(decode.toMat(Sink.head)(Keep.right))(command, args: _*)
   }
+
+  def runIgnore(command: String, args: String*): Future[Done] =
+    runClient(Sink.ignore)(command, args: _*)
 
   /**
     * Convert one of our [[org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex]]

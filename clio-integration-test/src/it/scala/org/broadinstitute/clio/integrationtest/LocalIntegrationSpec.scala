@@ -1,4 +1,5 @@
 package org.broadinstitute.clio.integrationtest
+
 import akka.http.scaladsl.model.Uri
 import better.files.File
 import com.google.auth.oauth2.OAuth2Credentials
@@ -21,15 +22,11 @@ class LocalIntegrationSpec extends BaseIntegrationSpec(s"Clio local") {
   /**
     * The web client to use within the tested clio-client.
     */
-  override def clioWebClient: ClioWebClient = new ClioWebClient(
+  override lazy val clioWebClient: ClioWebClient = ClioWebClient(
+    new GoogleCredentialsGenerator(googleCredential),
     s"localhost",
     8080,
-    useHttps = false,
-    maxQueuedRequests,
-    maxConcurrentRequests,
-    clientTimeout,
-    maxRequestRetries,
-    new GoogleCredentialsGenerator(googleCredential)
+    useHttps = false
   )
 
   /**

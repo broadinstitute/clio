@@ -31,15 +31,11 @@ abstract class EnvIntegrationSpec(env: String)
       identity
     )
 
-  override val clioWebClient: ClioWebClient = new ClioWebClient(
+  override val clioWebClient: ClioWebClient = ClioWebClient(
+    new GoogleCredentialsGenerator(googleCredential),
     s"clio.gotc-$env.broadinstitute.org",
     443,
-    useHttps = true,
-    maxQueuedRequests,
-    maxConcurrentRequests,
-    clientTimeout,
-    maxRequestRetries,
-    new GoogleCredentialsGenerator(googleCredential)
+    useHttps = true
   )
 
   override val elasticsearchUri: Uri = Uri(

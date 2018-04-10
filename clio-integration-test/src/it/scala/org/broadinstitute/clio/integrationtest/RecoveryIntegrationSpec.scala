@@ -11,6 +11,7 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo}
+import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
 import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramMetadata}
@@ -96,6 +97,23 @@ class RecoveryIntegrationSpec
 
   private val updatedCrams = initCrams.map(updateDoc(_, "cram_path"))
 
+  private val arraysMapper =
+    ElasticsearchDocumentMapper[ArraysKey, ArraysMetadata]
+  private val initArrays = Seq.tabulate(documentCount) { i =>
+    val key = ArraysKey(
+      location = location,
+      chipwellBarcode = Symbol(s"barcocde$randomId"),
+      version = i
+    )
+    val metadata = ArraysMetadata(
+      vcfPath = Some(randomUri(i)),
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+    arraysMapper.document(key, metadata)
+  }
+
+  private val updatedArrays = initArrays.map(updateDoc(_, "vcf_path"))
+
   override val container = new ClioDockerComposeContainer(
     File(getClass.getResource(DockerIntegrationSpec.composeFilename)),
     DockerIntegrationSpec.elasticsearchServiceName,
@@ -106,7 +124,8 @@ class RecoveryIntegrationSpec
     Map(
       ElasticsearchIndex.WgsUbam -> (initUbams ++ updatedUbams),
       ElasticsearchIndex.Gvcf -> (initGvcfs ++ updatedGvcfs),
-      ElasticsearchIndex.WgsCram -> (initCrams ++ updatedCrams)
+      ElasticsearchIndex.WgsCram -> (initCrams ++ updatedCrams),
+      ElasticsearchIndex.Arrays -> (initArrays ++ updatedArrays)
     )
   )
 
@@ -115,19 +134,19 @@ class RecoveryIntegrationSpec
     .runWith(Sink.ignore)
 
   it should "accept health checks before recovery is complete" in {
-    runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName)
+    runDecode[StatusInfo](ClioCommand.getServerHealthName)
       .map(_.clio should be(ClioStatus.Recovering))
   }
 
   it should "accept version checks before recovery is complete" in {
-    runClientGetJsonAs[VersionInfo](ClioCommand.getServerVersionName)
+    runDecode[VersionInfo](ClioCommand.getServerVersionName)
       .map(_.version should be(ClioBuildInfo.version))
   }
 
   it should "reject upserts before recovery is complete" in {
     val tmpMetadata = writeLocalTmpJson(UbamMetadata())
     recoverToSucceededIf[RuntimeException] {
-      runClient(
+      runIgnore(
         ClioCommand.addWgsUbamName,
         "--flowcell-barcode",
         "some-barcode",
@@ -145,7 +164,7 @@ class RecoveryIntegrationSpec
 
   it should "reject queries before recovery is complete" in {
     recoverToExceptionIf[FailedResponse] {
-      runClient(ClioCommand.queryWgsCramName)
+      runCollectJson(ClioCommand.queryWgsCramName)
     }.map { err =>
       err.statusCode should be(StatusCodes.ServiceUnavailable)
     }
@@ -154,7 +173,7 @@ class RecoveryIntegrationSpec
   it should "signal via status update when recovery is complete" in {
     for {
       _ <- recoveryDoneFuture
-      status <- runClientGetJsonAs[StatusInfo](ClioCommand.getServerHealthName)
+      status <- runDecode[StatusInfo](ClioCommand.getServerHealthName)
     } yield {
       status.clio should be(ClioStatus.Started)
     }
@@ -169,7 +188,8 @@ class RecoveryIntegrationSpec
   Seq(
     ("wgs-ubam", ClioCommand.queryWgsUbamName, "lane", updatedUbams),
     ("gvcf", ClioCommand.queryGvcfName, "version", updatedGvcfs),
-    ("wgs-cram", ClioCommand.queryWgsCramName, "version", updatedCrams)
+    ("wgs-cram", ClioCommand.queryWgsCramName, "version", updatedCrams),
+    ("arrays", ClioCommand.queryArraysName, "version", updatedArrays)
   ).foreach {
     case (name, cmd, sortField, expected) =>
       it should behave like checkRecovery(name, cmd, sortField, expected)
@@ -196,18 +216,19 @@ class RecoveryIntegrationSpec
     it should s"recover $indexName metdata on startup" in {
       for {
         _ <- recoveryDoneFuture
-        docs <- runClient(queryCommand, "--location", location.entryName).mapTo[Json]
+        docs <- runCollectJson(queryCommand, "--location", location.entryName)
       } yield {
+
         // Helper function for filtering out values we don't care about matching.
         def mapper(json: Json): Json = {
-          json.mapObject(_.filter({
+          json.mapObject(_.filter {
             case (k, v) => !v.isNull && !keysToDrop.contains(k)
-          }))
+          })
         }
 
         // Sort before comparing so we can do a pairwise comparison, which saves a ton of time.
         // Remove null and internal values before comparing.
-        val sortedActual = docs.asArray.value.map(mapper).sorted
+        val sortedActual = docs.map(mapper).sorted
 
         // Already sorted by construction. Remove null and internal values here too.
         val sortedExpected = expected.map(mapper)

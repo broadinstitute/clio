@@ -28,7 +28,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
-    runClient(
+    runDecode[UpsertId](
       ClioCommand.addArraysName,
       Seq(
         "--location",
@@ -41,7 +41,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         tmpMetadata.toString,
         if (force) "--force" else ""
       ).filter(_.nonEmpty): _*
-    ).mapTo[UpsertId]
+    )
   }
 
   it should "create the expected arrays mapping in elasticsearch" in {
@@ -81,7 +81,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
       for {
         returnedUpsertId <- runUpsertArrays(key, metadata.copy(documentStatus = None))
-        outputs <- runClientGetJsonAs[Seq[Json]](
+        outputs <- runCollectJson(
           ClioCommand.queryArraysName,
           "--chipwell-barcode",
           key.chipwellBarcode.name
@@ -180,7 +180,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      barcodeResults <- runClientGetJsonAs[Seq[Json]](
+      barcodeResults <- runCollectJson(
         ClioCommand.queryArraysName,
         "--chipwell-barcode",
         barcodes.head
@@ -214,12 +214,12 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      prefixResults <- runClientGetJsonAs[Seq[Json]](
+      prefixResults <- runCollectJson(
         ClioCommand.queryArraysName,
         "--chipwell-barcode",
         prefix
       )
-      suffixResults <- runClientGetJsonAs[Seq[Json]](
+      suffixResults <- runCollectJson(
         ClioCommand.queryArraysName,
         "--chipwell-barcode",
         suffix
@@ -244,7 +244,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[Json]](
+        results <- runCollectJson(
           ClioCommand.queryArraysName,
           "--chipwell-barcode",
           barcode
@@ -308,7 +308,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        results <- runClientGetJsonAs[Seq[Json]](
+        results <- runCollectJson(
           ClioCommand.queryArraysName,
           "--chipwell-barcode",
           barcode
@@ -334,7 +334,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       )
       _ <- checkQuery(expectedLength = 2)
 
-      results <- runClientGetJsonAs[Seq[Json]](
+      results <- runCollectJson(
         ClioCommand.queryArraysName,
         "--chipwell-barcode",
         barcode,
@@ -433,7 +433,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val result = for {
       _ <- runUpsertArrays(key, metadata)
-      _ <- runClient(ClioCommand.moveArraysName, args: _*)
+      _ <- runIgnore(ClioCommand.moveArraysName, args: _*)
     } yield {
       Seq(alignmentMetricsDestination, vcfSource, vcfIndexSource, gtcSource)
         .foreach(_ shouldNot exist)
@@ -487,7 +487,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
   it should "not move arrays without a destination" in {
     recoverToExceptionIf[Exception] {
-      runClient(
+      runIgnore(
         ClioCommand.moveArraysName,
         "--location",
         Location.GCP.entryName,
@@ -509,7 +509,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     )
     runUpsertArrays(key, ArraysMetadata()).flatMap { _ =>
       recoverToExceptionIf[Exception] {
-        runClient(
+        runIgnore(
           ClioCommand.moveArraysName,
           "--location",
           key.location.entryName,
@@ -581,7 +581,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val result = for {
       _ <- runUpsertArrays(key, metadata)
-      _ <- runClient(
+      _ <- runIgnore(
         ClioCommand.deleteArraysName,
         Seq(
           "--location",
@@ -595,7 +595,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
           if (force) "--force" else ""
         ).filter(_.nonEmpty): _*
       )
-      outputs <- runClientGetJsonAs[Seq[Json]](
+      outputs <- runCollectJson(
         ClioCommand.queryArraysName,
         "--location",
         Location.GCP.entryName,
@@ -641,7 +641,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
   it should "not delete arrays without a note" in {
     recoverToExceptionIf[Exception] {
-      runClient(
+      runIgnore(
         ClioCommand.deleteArraysName,
         "--location",
         Location.GCP.entryName,
@@ -722,7 +722,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     }
     val result = for {
       _ <- runUpsertArrays(key, metadata)
-      _ <- runClient(
+      _ <- runIgnore(
         ClioCommand.deliverArraysName,
         "--location",
         Location.GCP.entryName,
@@ -737,7 +737,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         "--new-basename",
         newBasename
       )
-      outputs <- runClientGetJsonAs[Seq[Json]](
+      outputs <- runCollectJson(
         ClioCommand.queryArraysName,
         "--workspace-name",
         workspaceName
@@ -838,7 +838,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     }
     val result = for {
       _ <- runUpsertArrays(key, metadata)
-      _ <- runClient(
+      _ <- runIgnore(
         ClioCommand.deliverArraysName,
         "--location",
         Location.GCP.entryName,
@@ -851,7 +851,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         "--workspace-path",
         rootSource.uri.toString
       )
-      outputs <- runClientGetJsonAs[Seq[Json]](
+      outputs <- runCollectJson(
         ClioCommand.queryArraysName,
         "--workspace-name",
         workspaceName
@@ -914,7 +914,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       for {
         _ <- runUpsertArrays(key, metadata)
         // Should fail because the source files don't exist.
-        deliverResponse <- runClient(
+        deliverResponse <- runDecode[UpsertId](
           ClioCommand.deliverArraysName,
           "--location",
           Location.GCP.entryName,
@@ -932,7 +932,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       }
     }.flatMap { _ =>
       for {
-        outputs <- runClientGetJsonAs[Seq[Json]](
+        outputs <- runCollectJson(
           ClioCommand.queryArraysName,
           "--workspace-name",
           workspaceName
@@ -970,7 +970,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       for {
         _ <- runUpsertArrays(key, metadata)
         // Should fail because the idat files aren't set.
-        deliverResponse <- runClient(
+        deliverResponse <- runDecode[UpsertId](
           ClioCommand.deliverArraysName,
           "--location",
           Location.GCP.entryName,
@@ -988,7 +988,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       }
     }.flatMap { _ =>
       for {
-        outputs <- runClientGetJsonAs[Seq[Json]](
+        outputs <- runCollectJson(
           ClioCommand.queryArraysName,
           "--workspace-name",
           workspaceName

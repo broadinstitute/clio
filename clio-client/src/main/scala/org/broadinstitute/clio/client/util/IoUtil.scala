@@ -1,11 +1,17 @@
 package org.broadinstitute.clio.client.util
 
+import java.io.IOException
 import java.math.BigInteger
 import java.net.URI
 import java.util.Base64
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import better.files.File
+import cats.syntax.either._
 
+import scala.collection.immutable
+import scala.concurrent.{ExecutionContext, Future}
 import scala.sys.process.{Process, ProcessBuilder}
 
 /**
@@ -34,6 +40,34 @@ trait IoUtil {
   def readFileData(location: URI): String =
     File(location.getPath).contentAsString
 
+  /**
+    * Build a stream which, when pulled, will delete all of the
+    * given cloud objects in parallel.
+    */
+  def deleteCloudObjects(
+    paths: immutable.Iterable[URI]
+  )(implicit ec: ExecutionContext): Source[Unit, NotUsed] = {
+    Source(paths)
+      .mapAsyncUnordered(paths.size + 1) { path =>
+        Future(Either.catchNonFatal(deleteGoogleObject(path)))
+      }
+      .fold(Seq.empty[Throwable]) { (acc, attempt) =>
+        attempt.fold(acc :+ _, _ => acc)
+      }
+      .flatMapConcat { errs =>
+        if (errs.isEmpty) {
+          Source.single(())
+        } else {
+          Source.failed(
+            new IOException(
+              s"""Failed to delete cloud objects:
+                 |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
+            )
+          )
+        }
+      }
+  }
+
   /*
    * FIXME for all below:
    *
@@ -50,12 +84,16 @@ trait IoUtil {
     gsUtil.cat(location.toString)
   }
 
-  def copyGoogleObject(from: URI, to: URI): Int = {
-    gsUtil.cp(from.toString, to.toString)
+  def copyGoogleObject(from: URI, to: URI): Unit = {
+    if (gsUtil.cp(from.toString, to.toString) != 0) {
+      throw new IOException(s"Failed to copy $from to $to in the cloud.")
+    }
   }
 
-  def deleteGoogleObject(path: URI): Int = {
-    gsUtil.rm(path.toString)
+  def deleteGoogleObject(path: URI): Unit = {
+    if (gsUtil.rm(path.toString) != 0) {
+      throw new IOException(s"Failed to delete $path in the cloud.")
+    }
   }
 
   def googleObjectExists(path: URI): Boolean = {
