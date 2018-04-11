@@ -3,7 +3,7 @@ package org.broadinstitute.clio.server
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
-import org.scalamock.scalatest.MockFactory
+import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
 
 /**
@@ -16,7 +16,7 @@ abstract class TestKitSuite(actorSystemName: String)
     with AsyncFlatSpecLike
     with Matchers
     with BeforeAndAfterAll
-    with MockFactory {
+    with AsyncMockFactory {
 
   /**
     * Most Akka-streams APIs require an implicit Materializer, so we provide

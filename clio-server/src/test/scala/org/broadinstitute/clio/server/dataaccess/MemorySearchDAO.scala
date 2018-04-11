@@ -18,11 +18,17 @@ class MemorySearchDAO extends MockSearchDAO {
   val queryCalls: mutable.ArrayBuffer[String] =
     mutable.ArrayBuffer.empty
 
-  override def updateMetadata(documents: Json*)(
+  override def updateMetadata(documents: Seq[Json])(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     updateCalls += ((documents, index.asInstanceOf[ElasticsearchIndex[ClioIndex]]))
-    super.updateMetadata(documents: _*)
+    super.updateMetadata(documents)
+  }
+
+  override def updateMetadata(document: Json)(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Unit] = {
+    updateMetadata(Seq(document))
   }
 
   override def rawQuery(json: String)(

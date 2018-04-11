@@ -31,11 +31,22 @@ trait SearchDAO {
   /**
     * Update-or-insert (upsert) metadata into an index.
     *
-    * @param documents One or more (potentially partial) metadata documents containing
+    * @param documents A Seq of (potentially partial) metadata documents containing
     *                  new fields to set on the document in the index.
     * @param index    The index in which to update the document.
     */
-  def updateMetadata(documents: Json*)(
+  def updateMetadata(documents: Seq[Json])(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Unit]
+
+  /**
+    * Update-or-insert (upsert) metadata into an index.
+    *
+    * @param document A (potentially partial) metadata document containing
+    *                  new fields to set on the document in the index.
+    * @param index    The index in which to update the document.
+    */
+  def updateMetadata(document: Json)(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit]
 

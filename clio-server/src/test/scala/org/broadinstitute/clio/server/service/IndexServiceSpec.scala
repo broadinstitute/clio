@@ -15,6 +15,8 @@ import org.broadinstitute.clio.server.exceptions.UpsertValidationException
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.DocumentStatus
+import org.broadinstitute.clio.util.model.DocumentStatus.{Deleted, Normal}
+import org.scalatest.OneInstancePerTest
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -22,7 +24,8 @@ abstract class IndexServiceSpec[
   CI <: ClioIndex
 ](specificService: String)
     extends TestKitSuite(specificService + "Spec")
-    with ModelAutoDerivation {
+    with ModelAutoDerivation
+    with OneInstancePerTest {
 
   val mockPersistenceDAO: PersistenceDAO = mock[PersistenceDAO]
   val mockSearchDAO: SearchDAO = mock[SearchDAO]
@@ -56,33 +59,31 @@ abstract class IndexServiceSpec[
 
   it should "fail if the update would overwrite data" in {
     recoverToSucceededIf[UpsertValidationException] {
-      val metadata = getDummyMetadata(None)
-      val alteredMetadata = copyDummyMetadataChangeField(metadata)
-      expectRawQuery(Source.single(alteredMetadata.asJson))
-      indexService
-        .upsertMetadata(dummyKey, metadata)
-        .runWith(Sink.ignore)
+      overMetadataWriteTest(None, None, expectQueryOnly = true)
     }
   }
 
   it should "succeed if the update would overwrite data and force is set to true" in {
-    val metadata = getDummyMetadata(Option(DocumentStatus.Normal))
-    val alteredMetadata = copyDummyMetadataChangeField(metadata)
-    val expectedDocument =
-      indexService.documentConverter
-        .document(
-          dummyKey,
-          metadata.withDocumentStatus(Option(DocumentStatus.Normal))
-        )
-    expectWriteUpdate(expectedDocument)
-    expectUpdateMetadata(expectedDocument)
-    expectRawQuery(Source.single(alteredMetadata.asJson))
-    for {
-      _ <- indexService
-        .upsertMetadata(dummyKey, metadata, force = true)
-        .runWith(Sink.head)
-    } yield succeed
+    overMetadataWriteTest(Some(Normal), Some(Normal), force = true)
+  }
 
+  it should "not overwrite document status if it is not set" in {
+    overMetadataWriteTest(Some(Deleted), None, changeField = false)
+  }
+
+  it should "fail if it would overwrite document status" in {
+    recoverToSucceededIf[UpsertValidationException] {
+      overMetadataWriteTest(
+        Some(Deleted),
+        Some(Normal),
+        changeField = false,
+        expectQueryOnly = true
+      )
+    }
+  }
+
+  it should "not overwrite document status if it is not set and force is set to true" in {
+    overMetadataWriteTest(Some(Deleted), None, changeField = false, force = true)
   }
 
   it should "upsertMetadata" in {
@@ -101,8 +102,11 @@ abstract class IndexServiceSpec[
     )
   }
 
-  it should "queryMetadata" in {
-    expectRawQuery(Source.empty[Json])
+  it should "convert and execute a queryMetadata call as a raw query" in {
+    expectRawQuery(
+      inputToJsonString(dummyInput),
+      Source.empty[Json]
+    )
     for {
       _ <- indexService.queryMetadata(dummyInput).runWith(Sink.seq)
     } yield succeed
@@ -111,7 +115,10 @@ abstract class IndexServiceSpec[
   it should "not update search if writing to storage fails" in {
     val metadata = getDummyMetadata(Some(DocumentStatus.Normal))
     val expectedDocument = indexService.documentConverter.document(dummyKey, metadata)
-    expectRawQuery(Source.empty[Json])
+    expectRawQuery(
+      keyToJsonString(dummyKey),
+      Source.empty[Json]
+    )
     expectWriteUpdate(
       expectedDocument,
       Future.failed(new Exception("Write Failure Test"))
@@ -125,6 +132,10 @@ abstract class IndexServiceSpec[
 
   private def keyToJsonString(key: indexService.clioIndex.KeyType): String = {
     indexService.keyQueryConverter.buildQuery(key)(elasticsearchIndex)
+  }
+
+  private def inputToJsonString(input: indexService.clioIndex.QueryInputType): String = {
+    indexService.queryConverter.buildQuery(input)(elasticsearchIndex)
   }
 
   private def jsonWithoutUpsertId(json: Json): Json = {
@@ -148,7 +159,7 @@ abstract class IndexServiceSpec[
 
   private def expectWriteUpdate(
     expectedDocument: Json,
-    returnValue: Future[Unit] = Future.successful(())
+    returning: Future[Unit] = Future.successful(())
   ) = {
     // we don't know what upsertId to expect, so need to use
     // a custom matcher that is upsertId-agnostic
@@ -168,12 +179,12 @@ abstract class IndexServiceSpec[
           )(document, index)
         }
       )
-      .returning(returnValue)
+      .returning(returning)
   }
 
   private def expectUpdateMetadata(
     expectedDocument: Json,
-    returnValue: Future[Unit] = Future.successful(())
+    returning: Future[Unit] = Future.successful(())
   ) = {
     (mockSearchDAO
       .updateMetadata(_: Json)(_: ElasticsearchIndex[_]))
@@ -185,15 +196,17 @@ abstract class IndexServiceSpec[
           )(_, _)
         )
       )
-      .returning(returnValue)
+      .returning(returning)
   }
+
   private def expectRawQuery(
-    returnValue: Source[Json, NotUsed]
+    expectedJsonString: String,
+    returning: Source[Json, NotUsed]
   ) = {
     (mockSearchDAO
       .rawQuery(_: String)(_: ElasticsearchIndex[_]))
-      .expects(keyToJsonString(dummyKey), elasticsearchIndex)
-      .returning(returnValue)
+      .expects(expectedJsonString, elasticsearchIndex)
+      .returning(returning)
   }
 
   private def upsertMetadataTest(
@@ -209,13 +222,60 @@ abstract class IndexServiceSpec[
         )
     expectWriteUpdate(expectedDocument)
     expectUpdateMetadata(expectedDocument)
-    expectRawQuery(Source.empty[Json])
+    expectRawQuery(
+      keyToJsonString(dummyKey),
+      Source.empty[Json]
+    )
     for {
       _ <- indexService
         .upsertMetadata(
           dummyKey,
           metadata
         )
+        .runWith(Sink.head)
+    } yield succeed
+  }
+
+  private def overMetadataWriteTest(
+    originalStatus: Option[DocumentStatus],
+    newStatus: Option[DocumentStatus],
+    changeField: Boolean = true,
+    force: Boolean = false,
+    expectQueryOnly: Boolean = false
+  ) = {
+
+    val dummyMetadata = getDummyMetadata(originalStatus)
+    val newMetadata = if (changeField) {
+      copyDummyMetadataChangeField(dummyMetadata).withDocumentStatus(newStatus)
+    } else {
+      dummyMetadata.withDocumentStatus(newStatus)
+    }
+    val originalDocumentStatus = Option(originalStatus.getOrElse(Normal))
+    val expectedNewDocumentStatus = Option(
+      newStatus.getOrElse(originalStatus.getOrElse(Normal))
+    )
+    val originalMetadata = dummyMetadata.withDocumentStatus(originalDocumentStatus)
+    val expectedDocument =
+      indexService.documentConverter
+        .document(
+          dummyKey,
+          newMetadata.withDocumentStatus(expectedNewDocumentStatus)
+        )
+
+    if (!force || newStatus.isEmpty) {
+      expectRawQuery(
+        keyToJsonString(dummyKey),
+        returning = Source.single(originalMetadata.asJson)
+      )
+    }
+    if (!expectQueryOnly) {
+      expectUpdateMetadata(expectedDocument)
+      expectWriteUpdate(expectedDocument)
+    }
+
+    for {
+      _ <- indexService
+        .upsertMetadata(dummyKey, newMetadata, force)
         .runWith(Sink.head)
     } yield succeed
   }

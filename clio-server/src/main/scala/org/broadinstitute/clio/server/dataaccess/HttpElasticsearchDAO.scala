@@ -47,9 +47,13 @@ class HttpElasticsearchDAO private[dataaccess] (
     HttpClient.fromRestClient(restClient)
   }
 
-  override def updateMetadata(documents: Json*)(
+  override def updateMetadata(documents: Seq[Json])(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = bulkUpdate(documents.map(updatePartialDocument(index, _)))
+
+  override def updateMetadata(document: Json)(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Unit] = updateMetadata(Seq(document))
 
   override def rawQuery(json: String)(
     implicit index: ElasticsearchIndex[_]

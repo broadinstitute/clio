@@ -4,7 +4,11 @@ import java.net.URI
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.transfer.model.Metadata
-import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
+import org.broadinstitute.clio.util.model.{
+  AggregatedBy,
+  DocumentStatus,
+  RegulatoryDesignation
+}
 
 case class UbamMetadata(
   analysisType: Option[Symbol] = None,
@@ -41,6 +45,7 @@ case class UbamMetadata(
   ubamMd5: Option[Symbol] = None,
   ubamPath: Option[URI] = None,
   ubamSize: Option[Long] = None,
+  aggregatedBy: Option[AggregatedBy] = None,
   documentStatus: Option[DocumentStatus] = None
 ) extends Metadata[UbamMetadata] {
 

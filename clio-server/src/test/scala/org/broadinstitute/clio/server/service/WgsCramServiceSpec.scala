@@ -55,7 +55,8 @@ class WgsCramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramSer
         URI.create(s"gs://path/cramPath${WgsCramExtensions.CramExtension}")
       ),
       notes = Option("notable update"),
-      documentStatus = documentStatus
+      documentStatus = documentStatus,
+      workspaceName = Option("the workspace")
     )
   }
 

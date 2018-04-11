@@ -10,7 +10,8 @@ import akka.stream.scaladsl.{Keep, Sink, Source}
 import better.files.File
 import com.typesafe.scalalogging.StrictLogging
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import io.circe.{Json, Printer}
+import io.circe.{Json, ParsingFailure, Printer}
+import io.circe.parser._
 import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
@@ -224,8 +225,13 @@ class ClioWebClient(
   def jsonFileQuery[CI <: ClioIndex](clioIndex: CI)(
     input: File
   ): Future[Json] = {
+    val jsonInput = parse(input.contentAsString) match {
+      case Right(json) => json
+      case Left(e: ParsingFailure) =>
+        throw new IllegalArgumentException("File must contain valid Json.", e)
+    }
     query(clioIndex)(
-      input.contentAsString.asJson,
+      jsonInput,
       raw = true
     )
   }

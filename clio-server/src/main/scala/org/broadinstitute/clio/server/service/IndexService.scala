@@ -46,26 +46,47 @@ abstract class IndexService[CI <: ClioIndex](
     metadata: clioIndex.MetadataType,
     force: Boolean = false
   ): Source[UpsertId, NotUsed] = {
-    // query by key to see if the document already exists
-    if (!force) {
-      queryMetadataForKey(indexKey)
-        .fold[Either[Exception, clioIndex.MetadataType]](
-          // If the query doesn't return a document and the document status is null then set it to the default value.
-          Right(
-            setDefaultDocumentStatus(metadata)
-          )
-        ) { (_, existingMetadataJson) =>
-          // validation will check to make sure no fields are being overwritten
-          validateUpsert(existingMetadataJson, metadata)
+
+    // query by key to see if the document already exists if force is false
+    lazy val theQuery = queryMetadataForKey(indexKey)
+      .fold[Either[Exception, clioIndex.MetadataType]](
+        // If the query doesn't return a document and the document status is null then set it to the default value.
+        Right(
+          setDefaultDocumentStatus(metadata)
+        )
+      ) { (_, existingMetadataJson) =>
+        existingMetadataJson.as[clioIndex.MetadataType]
+      }
+
+    val validateOrError =
+      if (!force) {
+        theQuery.map { existingOrErr =>
+          //if the incoming document status is not set then set it to the existing status
+          for {
+            existing <- existingOrErr
+            validated <- validateUpsert(existing, metadata)
+          } yield {
+            validated.withDocumentStatus(existing.documentStatus)
+          }
         }
-        .flatMapConcat[UpsertId, NotUsed] {
-          case Right(updatedMetadata) =>
-            upsertToStream(indexKey, updatedMetadata)
-          case Left(rejection) => Source.failed(rejection)
+
+      } else {
+        //if the incoming document status is not set then set it to the existing status
+        metadata.documentStatus.fold(theQuery.map { existingOrErr =>
+          for {
+            existing <- existingOrErr
+          } yield {
+            metadata.withDocumentStatus(existing.documentStatus)
+          }
+        }) { _ =>
+          Source.single(Right(metadata))
         }
-    } else {
-      upsertToStream(indexKey, metadata)
-    }
+      }
+
+    validateOrError
+      .flatMapConcat[UpsertId, NotUsed] {
+        _.fold(Source.failed, upsertToStream(indexKey, _))
+      }
   }
 
   /**
@@ -115,7 +136,7 @@ abstract class IndexService[CI <: ClioIndex](
   }
 
   def validateUpsert(
-    existingMetadata: Json,
+    existingMetadata: clioIndex.MetadataType,
     newMetadata: clioIndex.MetadataType
   ): Either[Exception, clioIndex.MetadataType] = {
     val differences = JsonDiff.diff(existingMetadata, newMetadata, remember = true)
@@ -126,9 +147,10 @@ abstract class IndexService[CI <: ClioIndex](
         Move - effectively an Add and Remove. This will not overwrite.
         Copy - effectively an Add. This will not overwrite.
      */
-    val replaceOperations: Seq[Replace] = differences.ops.flatMap {
-      case replace: Replace => Some(replace).filter(_.value != Json.Null)
-      case _                => None
+    val replaceOperations: Seq[Replace] = differences.ops.collect {
+      case replace @ Replace(_, value, existing)
+          if value != Json.Null && !existing.contains(Json.Null) =>
+        replace
     }
 
     if (replaceOperations.isEmpty) {
