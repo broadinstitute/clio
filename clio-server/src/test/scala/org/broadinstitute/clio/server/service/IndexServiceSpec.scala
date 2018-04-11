@@ -102,13 +102,33 @@ abstract class IndexServiceSpec[
     )
   }
 
+  it should "forward a raw JSON string to the searchDAO" in {
+    val jsonString = Map("this" -> "is valid json").asJson.pretty(defaultPrinter)
+    expectRawQuery(
+      jsonString,
+      Source.empty[Json]
+    )
+    for {
+      _ <- indexService.rawQuery(jsonString).runWith(Sink.ignore)
+    } yield succeed
+  }
+
+  it should "fail if an invalid JSON string is passed in as input" in {
+    val invalidJson = "{)))\"definitely invalid json"
+    recoverToSucceededIf[IllegalArgumentException] {
+      indexService
+        .rawQuery(invalidJson)
+        .runWith(Sink.ignore)
+    }
+  }
+
   it should "convert and execute a queryMetadata call as a raw query" in {
     expectRawQuery(
       inputToJsonString(dummyInput),
       Source.empty[Json]
     )
     for {
-      _ <- indexService.queryMetadata(dummyInput).runWith(Sink.seq)
+      _ <- indexService.queryMetadata(dummyInput).runWith(Sink.ignore)
     } yield succeed
   }
 

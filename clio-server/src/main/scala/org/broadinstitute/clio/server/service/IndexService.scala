@@ -5,6 +5,7 @@ import akka.stream.scaladsl.Source
 import gnieh.diffson.circe._
 import io.circe.Json
 import io.circe.syntax._
+import io.circe.parser._
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.exceptions.UpsertValidationException
@@ -130,9 +131,16 @@ abstract class IndexService[CI <: ClioIndex](
     * @return           The result of the query.
     */
   def rawQuery(inputJson: String): Source[Json, NotUsed] = {
-    searchDAO
-      .rawQuery(inputJson)(elasticsearchIndex)
-      .map(queryConverter.toQueryOutput)
+    parse(inputJson) match {
+      case Left(e) =>
+        Source.failed(
+          new IllegalArgumentException("Received input that was not valid Json", e)
+        )
+      case Right(_) =>
+        searchDAO
+          .rawQuery(inputJson)(elasticsearchIndex)
+          .map(queryConverter.toQueryOutput)
+    }
   }
 
   def validateUpsert(

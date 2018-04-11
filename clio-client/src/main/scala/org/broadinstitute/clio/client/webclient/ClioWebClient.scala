@@ -1,194 +1,165 @@
 package org.broadinstitute.clio.client.webclient
 
-import akka.Done
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.{FromEntityUnmarshaller, Unmarshal}
-import akka.stream._
-import akka.stream.scaladsl.{Keep, Sink, Source}
 import better.files.File
-import com.typesafe.scalalogging.StrictLogging
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
-import io.circe.{Json, ParsingFailure, Printer}
+import io.circe.ParsingFailure
 import io.circe.parser._
+import akka.stream.scaladsl.{Flow, JsonFraming, Source}
+import akka.util.ByteString
+import com.typesafe.scalalogging.StrictLogging
+import io.circe.jawn.JawnParser
 import io.circe.syntax._
+import io.circe.Json
+import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.DocumentStatus
-import org.broadinstitute.clio.util.model.UpsertId
-import ApiConstants._
 
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.reflect.runtime.universe.{TypeTag, typeOf}
-import scala.util.{Failure, Success}
 
-class ClioWebClient(
-  clioHost: String,
-  clioPort: Int,
-  useHttps: Boolean,
-  maxQueuedRequests: Int,
-  maxConcurrentRequests: Int,
+object ClioWebClient {
+
+  type UpsertAux[K, M] = ClioIndex { type KeyType = K; type MetadataType = M }
+  type QueryAux[I] = ClioIndex { type QueryInputType = I }
+
+  def apply(
+    tokenGenerator: CredentialsGenerator,
+    clioHost: String = ClioClientConfig.ClioServer.clioServerHostName,
+    clioPort: Int = ClioClientConfig.ClioServer.clioServerPort,
+    useHttps: Boolean = ClioClientConfig.ClioServer.clioServerUseHttps,
+    requestTimeout: FiniteDuration = ClioClientConfig.responseTimeout,
+    maxRequestRetries: Int = ClioClientConfig.maxRequestRetries
+  )(implicit system: ActorSystem): ClioWebClient = {
+
+    /*
+     * We use the "low-level" connection API from Akka HTTP instead
+     * of the higher-level "cached host connection pool" API because of a
+     * race condition in the pool implementation that can cause successful
+     * requests to be reported as failures:
+     *
+     * https://github.com/akka/akka-http/issues/1459#issuecomment-335487195
+     */
+    val connectionFlow = {
+      if (useHttps) {
+        Http().outgoingConnectionHttps(clioHost, clioPort)
+      } else {
+        Http().outgoingConnection(clioHost, clioPort)
+      }
+    }
+
+    new ClioWebClient(connectionFlow, requestTimeout, maxRequestRetries, tokenGenerator)
+  }
+
+  case class FailedResponse(statusCode: StatusCode, entityBody: String)
+      extends RuntimeException(
+        s"Got an error from the Clio server. Status code: $statusCode. Entity: $entityBody"
+      )
+
+  def jsonWithDocumentStatus(input: Json): Json = {
+    import ModelAutoDerivation.encodeEnum
+    input.mapObject(
+      obj =>
+        obj.add(
+          "document_status",
+          (DocumentStatus.Normal: DocumentStatus).asJson
+      )
+    )
+  }
+}
+
+class ClioWebClient private[client] (
+  connectionFlow: Flow[HttpRequest, HttpResponse, _],
   requestTimeout: FiniteDuration,
   maxRequestRetries: Int,
   tokenGenerator: CredentialsGenerator
-)(implicit system: ActorSystem)
-    extends ModelAutoDerivation
-    with FailFastCirceSupport
-    with StrictLogging {
+) extends StrictLogging {
 
-  implicit val executionContext: ExecutionContext = system.dispatcher
-  implicit val materializer: ActorMaterializer = ActorMaterializer()
+  import ApiConstants._
 
-  /**
-    * FIXME: We use the "low-level" connection API from Akka HTTP instead
-    * of the higher-level "cached host connection pool" API because of a
-    * race condition in the pool implementation that can cause successful
-    * requests to be reported as failures:
-    *
-    * https://github.com/akka/akka-http/issues/1459#issuecomment-335487195
-    */
-  private val connectionFlow = {
-    if (useHttps) {
-      Http().outgoingConnectionHttps(clioHost, clioPort)
-    } else {
-      Http().outgoingConnection(clioHost, clioPort)
+  private val parserFlow = {
+    val parser = new JawnParser
+    Flow.fromFunction[ByteString, Json] { bytes =>
+      parser.parseByteBuffer(bytes.asByteBuffer).fold(throw _, identity)
     }
   }
 
-  /**
-    * Long-running HTTP request stream handling communications with the Clio server.
-    *
-    * Calls to the client will result in new HTTP requests being pushed onto this queue,
-    * paired with the Promise that should be completed with the corresponding HTTP response.
-    *
-    * As downstream resources are made available, requests will be pulled off the
-    * queue and sent to the Clio server. When a response is returned, the Promise will
-    * be completed with a corresponding Success / Failure.
-    *
-    * Based on the example at:
-    * https://doc.akka.io/docs/akka-http/current/scala/http/client-side/host-level.html#using-the-host-level-api-with-a-queue
-    */
-  private val requestStream = Source
-    .queue[(HttpRequest, Promise[HttpResponse])](
-      maxQueuedRequests,
-      OverflowStrategy.dropNew
-    )
-    .mapAsyncUnordered(maxConcurrentRequests) {
-      case (request, promise) => {
-
-        /*
-         * Reusable `Source` which will run the given `HttpRequest` over the connection
-         * flow to the Clio server, erroring out early if the request fails to complete
-         * within the request timeout.
-         */
-        val responseSource = Source
-          .single(request)
-          .via(connectionFlow)
-          .completionTimeout(requestTimeout)
-
-        /*
-         * Run the source with a `Sink` that takes the first element, retrying on any
-         * connection failures.
-         *
-         * Every retry will produce a new "materialization" of `responseSource`, so
-         * even though it's defined as a `Source.single` we can retry with it as many
-         * times as we need.
-         */
-        val response = responseSource
-          .recoverWithRetries(maxRequestRetries, {
-            case _ => responseSource
-          })
-          .runWith(Sink.head)
-
-        response.andThen {
-          /*
-           * Side-effect on the result of the HTTP request to communicate the result
-           * back to the caller.
-           *
-           * Note: `Failure` here means a failure to send the request / process the
-           * result, not a failure by the server. `Success` might contain an `HttpResponse`
-           * with an error status code, and it's up to the caller to handle that.
-           */
-          case Success(r)  => promise.success(r)
-          case Failure(ex) => promise.failure(ex)
-        }.transform { _ =>
-          /*
-           * Always return a `Success` to prevent the stream from closing on failures.
-           * The `andThen` above handles communicating the actual result back to the
-           * caller by side-effecting on the promise.
-           */
-          Success(Done)
-        }
-      }
-    }
-    /*
-     * Since we communicate `HttpResponse`s back to the caller via side-effecting on
-     * promises, we ignore the outputs of the stream here.
-     *
-     * `Keep.left` sets the output of this expression to be the input `Source.queue`
-     * instead of the output `akka.Done`.
-     */
-    .toMat(Sink.ignore)(Keep.left)
-    .run()
-
   def dispatchRequest(
     request: HttpRequest,
-    includeAuth: Boolean = true
-  ): Future[HttpResponse] = {
-    val responsePromise = Promise[HttpResponse]()
+    includeAuth: Boolean,
+  ): Source[ByteString, NotUsed] = {
     val requestWithCreds = if (includeAuth) {
       request.addCredentials(tokenGenerator.generateCredentials())
     } else {
       request
     }
 
-    requestStream.offer(requestWithCreds -> responsePromise).flatMap { queueResult =>
-      queueResult match {
-        case QueueOfferResult.Enqueued => ()
-        case QueueOfferResult.Dropped => {
-          responsePromise.failure {
-            new RuntimeException(
-              s"Client queue was too full to add the request: $request"
+    /*
+     * Reusable `Source` which will run the given `HttpRequest` over the connection
+     * flow to the Clio server, erroring out early if the request fails to complete
+     * within the request timeout.
+     */
+    val responseSource = Source
+      .single(requestWithCreds)
+      .via(connectionFlow)
+      .completionTimeout(requestTimeout)
+
+    /*
+     * Retry on any connection failures (since Akka's built-in retry mechanisms
+     * only trigger on idempotent verbs like GET).
+     *
+     * Every retry will produce a new "materialization" of `responseSource`, so
+     * even though it's defined as a `Source.single` we can retry with it as many
+     * times as we need.
+     */
+    val retriedResponse = responseSource
+      .recoverWithRetries(maxRequestRetries, {
+        case _ => responseSource
+      })
+
+    retriedResponse.flatMapConcat { response =>
+      if (response.status.isSuccess()) {
+        logger.debug(s"Successfully completed request: $request")
+        response.entity.withoutSizeLimit().dataBytes
+      } else {
+        response.entity.dataBytes.reduce(_ ++ _).flatMapConcat { bytes =>
+          Source.failed {
+            ClioWebClient.FailedResponse(
+              response.status,
+              bytes.decodeString(
+                response.entity.contentType.charsetOption
+                  .getOrElse(HttpCharsets.`UTF-8`)
+                  .value
+              )
             )
           }
         }
-        case QueueOfferResult.Failure(ex) =>
-          responsePromise.failure(ex)
-        case QueueOfferResult.QueueClosed =>
-          responsePromise.failure {
-            new RuntimeException(
-              s"Client queue was closed while adding the request: $request"
-            )
-          }
       }
-
-      responsePromise.future.flatMap(ensureOkResponse)
     }
   }
 
-  def getClioServerVersion: Future[Json] = {
+  def getClioServerVersion: Source[Json, NotUsed] =
     dispatchRequest(HttpRequest(uri = s"/$versionString"), includeAuth = false)
-      .flatMap(unmarshal[Json])
-  }
+      .via(parserFlow)
 
-  def getClioServerHealth: Future[Json] = {
+  def getClioServerHealth: Source[Json, NotUsed] =
     dispatchRequest(HttpRequest(uri = s"/$healthString"), includeAuth = false)
-      .flatMap(unmarshal[Json])
-  }
+      .via(parserFlow)
 
-  def upsert[CI <: ClioIndex](clioIndex: CI)(
-    key: clioIndex.KeyType,
-    metadata: clioIndex.MetadataType,
+  def upsert[K <: IndexKey, M](clioIndex: ClioWebClient.UpsertAux[K, M])(
+    key: K,
+    metadata: M,
     force: Boolean = false
-  ): Future[UpsertId] = {
+  ): Source[Json, NotUsed] = {
+
     import clioIndex.implicits._
 
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      metadata.asJson.pretty(implicitly[Printer])
+      metadata.asJson.pretty(ModelAutoDerivation.defaultPrinter)
     )
     /*
      * The `/` method on Uri.Path performs a raw URI encoding on the
@@ -204,42 +175,45 @@ class ClioWebClient(
         uri = Uri(path = encodedPath).withQuery(Uri.Query(forceString -> force.toString)),
         method = HttpMethods.POST,
         entity = entity
-      )
-    ).flatMap(unmarshal[UpsertId])
+      ),
+      includeAuth = true
+    ).via(parserFlow)
   }
 
-  def preformattedQuery[CI <: ClioIndex](clioIndex: CI)(
-    input: clioIndex.QueryInputType,
+  def preformattedQuery[I](clioIndex: ClioWebClient.QueryAux[I])(
+    input: I,
     includeDeleted: Boolean
-  ): Future[Json] = {
+  ): Source[Json, NotUsed] = {
     import clioIndex.implicits._
     if (includeDeleted) {
       query(clioIndex)(input.asJson)
     } else {
       query(clioIndex)(
-        jsonWithDocumentStatus(input.asJson)
+        ClioWebClient.jsonWithDocumentStatus(input.asJson)
       )
     }
   }
 
   def jsonFileQuery[CI <: ClioIndex](clioIndex: CI)(
     input: File
-  ): Future[Json] = {
-    val jsonInput = parse(input.contentAsString) match {
-      case Right(json) => json
+  ): Source[Json, NotUsed] = {
+    parse(input.contentAsString) match {
+      case Right(json) =>
+        query(clioIndex)(
+          json,
+          raw = true
+        )
       case Left(e: ParsingFailure) =>
-        throw new IllegalArgumentException("File must contain valid Json.", e)
+        Source.failed(
+          new IllegalArgumentException("File must contain valid Json.", e)
+        )
     }
-    query(clioIndex)(
-      jsonInput,
-      raw = true
-    )
   }
 
-  def getMetadataForKey[CI <: ClioIndex](clioIndex: CI)(
-    input: clioIndex.KeyType,
+  def getMetadataForKey[K, M](clioIndex: ClioWebClient.UpsertAux[K, M])(
+    input: K,
     includeDeleted: Boolean
-  ): Future[Option[clioIndex.MetadataType]] = {
+  ): Source[M, NotUsed] = {
 
     import clioIndex.implicits._
     import s_mach.string._
@@ -247,103 +221,55 @@ class ClioWebClient(
     val keyJson = if (includeDeleted) {
       input.asJson
     } else {
-      jsonWithDocumentStatus(input.asJson)
+      ClioWebClient.jsonWithDocumentStatus(input.asJson)
     }
-    val keyFields = FieldMapper[clioIndex.KeyType].fields.keySet
+    val keyFields = FieldMapper[K].fields.keySet
       .map(_.toSnakeCase(CirceEquivalentCamelCaseLexer))
 
-    query(clioIndex)(keyJson).map { out =>
-      val metadata = for {
-        jsons <- out.as[Seq[Json]]
-        json <- jsons match {
-          case Nil => Right(None)
-          case js :: Nil =>
-            js.mapObject(_.filterKeys(!keyFields.contains(_)))
-              .as[clioIndex.MetadataType]
+    query(clioIndex)(keyJson)
+      .fold[Either[Throwable, Option[M]]](Right(None)) { (acc, json) =>
+        acc match {
+          case Right(None) =>
+            json
+              .mapObject(_.filterKeys(!keyFields.contains(_)))
+              .as[M]
               .map(Some(_))
-          case many =>
+          case Right(Some(_)) =>
             Left(
               new IllegalStateException(
                 s"""Got > 1 ${clioIndex.name}s from Clio for key:
-                   |${keyJson.pretty(Printer.spaces2)}
-                   |Results:
-                   |${many.asJson.pretty(Printer.spaces2)}""".stripMargin
+                   |${keyJson.spaces2}""".stripMargin
               )
             )
+          case _ => acc
         }
-      } yield {
-        json
       }
-
-      metadata.fold(throw _, identity)
-    }
+      .flatMapConcat {
+        _.fold(
+          Source.failed,
+          // Writing the 'Some' case as just 'Source.single' runs afoul of Scala's
+          // restriction on dependently-typed function values.
+          _.fold(Source.empty[M])(Source.single)
+        )
+      }
   }
 
-  private[webclient] def query(
-    clioIndex: ClioIndex
-  )(
+  private[webclient] def query(clioIndex: ClioIndex)(
     input: Json,
     raw: Boolean = false
-  ): Future[Json] = {
+  ): Source[Json, NotUsed] = {
     val queryPath = if (raw) rawQueryString else queryString
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      input.pretty(implicitly[Printer])
+      input.pretty(ModelAutoDerivation.defaultPrinter)
     )
     dispatchRequest(
       HttpRequest(
         uri = s"/$apiString/v1/${clioIndex.urlSegment}/$queryPath",
         method = HttpMethods.POST,
         entity = entity
-      )
-    ).flatMap(unmarshal[Json])
+      ),
+      includeAuth = true
+    ).via(JsonFraming.objectScanner(Int.MaxValue)).via(parserFlow)
   }
-
-  private def jsonWithDocumentStatus(input: Json): Json = {
-    // should we add check that input is Json? should be gauranteed where this is used,
-    // since json passed in should be derived from case class
-    input.mapObject(
-      obj =>
-        obj.add(
-          "document_status",
-          (DocumentStatus.Normal: DocumentStatus).asJson
-      )
-    )
-  }
-
-  private def unmarshal[A: FromEntityUnmarshaller: TypeTag](
-    httpResponse: HttpResponse
-  ): Future[A] = {
-    Unmarshal(httpResponse)
-      .to[A]
-      .recover {
-        case ex =>
-          throw new RuntimeException(
-            s"Could not convert entity from $httpResponse to ${typeOf[A]}",
-            ex
-          )
-      }
-  }
-
-  private def ensureOkResponse(
-    httpResponse: HttpResponse
-  ): Future[HttpResponse] = {
-    if (httpResponse.status.isSuccess()) {
-      logger.debug(
-        s"Successfully completed command. Response code: ${httpResponse.status}"
-      )
-      Future.successful(httpResponse)
-    } else {
-      httpResponse.entity.toStrict(requestTimeout).map { entity =>
-        throw ClioWebClient.FailedResponse(httpResponse.status, entity.toString())
-      }
-    }
-  }
-}
-
-object ClioWebClient {
-  case class FailedResponse(statusCode: StatusCode, entityBody: String)
-      extends RuntimeException(
-        s"Got an error from the Clio server. Status code: $statusCode. Entity: $entityBody"
-      )
 }

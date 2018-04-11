@@ -34,7 +34,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       case SequencingType.WholeGenome     => ClioCommand.addWgsUbamName
       case SequencingType.HybridSelection => ClioCommand.addHybselUbamName
     }
-    runClient(
+    runDecode[UpsertId](
       command,
       Seq(
         "--flowcell-barcode",
@@ -49,7 +49,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         tmpMetadata.toString,
         if (force) "--force" else ""
       ).filter(_.nonEmpty): _*
-    ).mapTo[UpsertId]
+    )
   }
 
   def statusCodeShouldBe(expectedStatusCode: StatusCode): FailedResponse => Assertion = {
@@ -69,7 +69,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       writeLocalTmpJson(UbamMetadata(project = Some("fake_project")))
 
     recoverToSucceededIf[RuntimeException] {
-      runClient(
+      runIgnore(
         ClioCommand.addHybselUbamName,
         "--flowcell-barcode",
         stubKey.flowcellBarcode,
@@ -86,7 +86,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "throw a FailedResponse 404 when running query command for hybsel ubams" in {
-    val queryResponseFuture = runClient(
+    val queryResponseFuture = runCollectJson(
       ClioCommand.queryHybselUbamName,
       "--flowcell-barcode",
       stubKey.flowcellBarcode
@@ -100,7 +100,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "throw a FailedResponse 404 when running move command for hybsel ubams" in {
-    val moveResponseFuture = runClient(
+    val moveResponseFuture = runDecode[UpsertId](
       ClioCommand.moveHybselUbamName,
       "--flowcell-barcode",
       stubKey.flowcellBarcode,
@@ -118,7 +118,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
   }
 
   it should "throw a FailedResponse 404 when running delete command for hybsel ubams" in {
-    val deleteResponseFuture = runClient(
+    val deleteResponseFuture = runDecode[UpsertId](
       ClioCommand.deleteHybselUbamName,
       "--flowcell-barcode",
       stubKey.flowcellBarcode,
@@ -177,7 +177,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           metadata.copy(documentStatus = None),
           SequencingType.WholeGenome
         )
-        queryResponse <- runClientGetJsonAs[Seq[Json]](
+        queryResponse <- runCollectJson(
           ClioCommand.queryWgsUbamName,
           "--library-name",
           key.libraryName
@@ -282,17 +282,17 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      projectResults <- runClientGetJsonAs[Seq[Json]](
+      projectResults <- runCollectJson(
         ClioCommand.queryWgsUbamName,
         "--project",
         project
       )
-      sampleResults <- runClientGetJsonAs[Seq[Json]](
+      sampleResults <- runCollectJson(
         ClioCommand.queryWgsUbamName,
         "--sample-alias",
         samples.head
       )
-      rpIdResults <- runClientGetJsonAs[Seq[Json]](
+      rpIdResults <- runCollectJson(
         ClioCommand.queryWgsUbamName,
         "--research-project-id",
         researchProjectIds.last
@@ -347,7 +347,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     for {
       _ <- upserts
-      queryResults <- runClientGetJsonAs[Seq[Json]](
+      queryResults <- runCollectJson(
         ClioCommand.queryWgsUbamName,
         "--project",
         project,
@@ -379,7 +379,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[Json]](
+        results <- runCollectJson(
           ClioCommand.queryWgsUbamName,
           "--project",
           project
@@ -447,7 +447,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     def checkQuery(expectedLength: Int) = {
       for {
-        results <- runClientGetJsonAs[Seq[Json]](
+        results <- runCollectJson(
           ClioCommand.queryWgsUbamName,
           "--project",
           project,
@@ -477,7 +477,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
       _ <- checkQuery(expectedLength = 2)
 
-      results <- runClientGetJsonAs[Seq[Json]](
+      results <- runCollectJson(
         ClioCommand.queryWgsUbamName,
         "--project",
         project,
@@ -529,7 +529,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val _ = sourceUbam.write(fileContents)
     val result = for {
       _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
-      _ <- runClient(
+      _ <- runIgnore(
         ClioCommand.moveWgsUbamName,
         "--flowcell-barcode",
         barcode,
@@ -566,7 +566,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   it should "not move wgs-ubams without a destination" in {
     recoverToExceptionIf[Exception] {
-      runClient(
+      runDecode[UpsertId](
         ClioCommand.moveWgsUbamName,
         "--flowcell-barcode",
         randomId,
@@ -596,7 +596,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val result = for {
       _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
       _ <- recoverToSucceededIf[Exception] {
-        runClient(
+        runDecode[UpsertId](
           ClioCommand.moveWgsUbamName,
           "--flowcell-barcode",
           barcode,
@@ -610,7 +610,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           cloudPath2.uri.toString
         )
       }
-      queryOutputs <- runClientGetJsonAs[Seq[Json]](
+      queryOutputs <- runCollectJson(
         ClioCommand.queryWgsUbamName,
         "--flowcell-barcode",
         barcode,
@@ -647,7 +647,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     def query = {
       for {
-        results <- runClientGetJsonAs[Seq[Json]](
+        results <- runCollectJson(
           ClioCommand.queryWgsUbamName,
           "--flowcell-barcode",
           flowcellBarcode
@@ -692,7 +692,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     val result = for {
       _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
-      _ <- runClient(
+      _ <- runIgnore(
         ClioCommand.deleteWgsUbamName,
         Seq(
           "--flowcell-barcode",
@@ -709,7 +709,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         ).filter(_.nonEmpty): _*
       )
       _ = cloudPath shouldNot exist
-      outputs <- runClientGetJsonAs[Seq[Json]](
+      outputs <- runCollectJson(
         ClioCommand.queryWgsUbamName,
         "--flowcell-barcode",
         barcode,
@@ -759,7 +759,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   it should "not delete wgs-ubams without a note" in {
     recoverToExceptionIf[Exception] {
-      runClient(
+      runDecode[UpsertId](
         ClioCommand.deleteWgsUbamName,
         "--flowcell-barcode",
         randomId,

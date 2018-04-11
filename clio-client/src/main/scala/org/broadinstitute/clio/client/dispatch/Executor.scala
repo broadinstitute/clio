@@ -1,19 +1,45 @@
 package org.broadinstitute.clio.client.dispatch
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import com.typesafe.scalalogging.LazyLogging
-import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport
+import io.circe.Json
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
-import scala.concurrent.{ExecutionContext, Future}
+trait Executor extends LazyLogging with ModelAutoDerivation {
 
-trait Executor[Out]
-    extends LazyLogging
-    with FailFastCirceSupport
-    with ModelAutoDerivation {
+  /**
+    * Build a stream which, when pulled, will communicate with the clio-server
+    * to update its records about some metadata, potentially performing IO
+    * operations in the process.
+    */
+  def execute(webClient: ClioWebClient, ioUtil: IoUtil): Source[Json, NotUsed]
+}
 
-  def execute(webClient: ClioWebClient, ioUtil: IoUtil)(
-    implicit ec: ExecutionContext
-  ): Future[Out]
+object Executor {
+
+  /** Extension methods enabling use of for-comprehensions on Akka's `Source` type. */
+  implicit class SourceMonadOps[A, M](val source: Source[A, M]) extends AnyVal {
+
+    /**
+      * Transform every element of the wrapped stream into a new substream using
+      * the given function, an concatenate the resulting substreams in-order.
+      *
+      * Enables using `for` syntax in general.
+      */
+    def flatMap[B](f: A => Source[B, M]): Source[B, M] = source.flatMapConcat(f)
+
+    /**
+      * Build a view of the wrapped stream with the given filter applied.
+      *
+      * Akka streams don't actually perform any operations until they're run through
+      * a materializer, so the built-in `filter` method on `Source` already fits the
+      * lazy semantics of `withFilter`.
+      *
+      * Enables using pattern-matching in the LHS of `for` syntax.
+      */
+    def withFilter(p: A => Boolean): Source[A, M] = source.filter(p)
+  }
 }

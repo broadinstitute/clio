@@ -20,7 +20,7 @@ object Dependencies {
   private val EnumeratumVersion = "1.5.13"
   private val EnumeratumCirceVersion = "1.5.17"
   private val FicusVersion = "1.4.3"
-  private val GoogleAuthHttpVersion = "0.9.0"
+  private val GoogleAuthHttpVersion = "0.9.1"
   private val GoogleCloudNioVersion = "0.43.0-alpha"
   private val JacksonVersion = "2.9.5"
   private val JimfsVersion = "1.1"
@@ -28,9 +28,7 @@ object Dependencies {
   private val S_machStringVersion = "2.1.0"
   private val ScalaLoggingVersion = "3.8.0"
   private val ScalamockVersion = "4.1.0"
-  // Not the latest version, but 3.0.1+ dumps spurious
-  // exceptions to console even on test success.
-  private val ScalaTestVersion = "3.0.0"
+  private val ScalaTestVersion = "3.0.5"
   private val ShapelessVersion = "2.3.3"
   private val Slf4jVersion = "1.7.25"
   private val SwaggerUi = "3.1.5"
