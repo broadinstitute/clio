@@ -6,6 +6,7 @@ import java.time.OffsetDateTime
 import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.util.model.{
   AggregatedBy,
+  DataType,
   DocumentStatus,
   RegulatoryDesignation
 }
@@ -14,7 +15,7 @@ case class UbamMetadata(
   analysisType: Option[Symbol] = None,
   baitIntervals: Option[Symbol] = None,
   baitSet: Option[Symbol] = None,
-  dataType: Option[Symbol] = None,
+  dataType: Option[DataType] = None,
   individualAlias: Option[String] = None,
   initiative: Option[String] = None,
   lcSet: Option[Symbol] = None,
