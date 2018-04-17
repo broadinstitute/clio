@@ -50,8 +50,6 @@ class ElasticsearchIndex[CI <: ClioIndex](
 
   final val indexName: String = clioIndex.elasticsearchIndexName
 
-  type keyType = clioIndex.KeyType
-
   val defaults: Json = clioIndex.defaults
 
   /**
