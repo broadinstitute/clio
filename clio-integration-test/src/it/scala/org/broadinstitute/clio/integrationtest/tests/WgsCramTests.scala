@@ -1256,6 +1256,100 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "allow a delivery if a record has already been delivered and --force is specified" in {
+    val id = randomId
+    val project = s"project$id"
+    val sample = s"sample$id"
+    val version = 3
+
+    val cramName = s"$sample${WgsCramExtensions.CramExtension}"
+    val craiName = s"$cramName${WgsCramExtensions.CraiExtensionAddition}"
+    val md5Name = s"$cramName${WgsCramExtensions.Md5ExtensionAddition}"
+
+    val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+    val cramSource = rootSource / cramName
+    val craiSource = rootSource / craiName
+
+    val rootDestination = rootSource.parent / s"moved/$id/"
+    val cramDestination = rootDestination / cramName
+    val craiDestination = rootDestination / craiName
+    val md5Destination = rootDestination / md5Name
+
+    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val metadata = WgsCramMetadata(
+      cramPath = Some(cramSource.uri),
+      craiPath = Some(craiSource.uri),
+      cramMd5 = Some(Symbol(randomId)),
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+
+    val workspaceName = s"$id-TestWorkspace-$id"
+    val newWorkspaceName = s"$workspaceName-$randomId"
+
+    val _ = Seq((cramSource, ""), (craiSource, "")).map {
+      case (source, contents) => source.write(contents)
+    }
+    val result = for {
+      _ <- runUpsertCram(key, metadata)
+      _ <- runIgnore(
+        ClioCommand.deliverWgsCramName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--workspace-name",
+        workspaceName,
+        "--workspace-path",
+        rootDestination.uri.toString
+      )
+      _ <- runIgnore(
+        ClioCommand.deliverWgsCramName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--workspace-name",
+        newWorkspaceName,
+        "--workspace-path",
+        rootDestination.uri.toString,
+        "--force"
+      )
+      outputs <- runCollectJson(
+        ClioCommand.queryWgsCramName,
+        "--workspace-name",
+        newWorkspaceName
+      )
+    } yield {
+      outputs should contain only expectedMerge(
+        key,
+        metadata.copy(
+          workspaceName = Some(newWorkspaceName),
+          cramPath = Some(cramDestination.uri),
+          craiPath = Some(craiDestination.uri)
+        )
+      )
+    }
+    result.andThen {
+      case _ => {
+        val _ = Seq(
+          cramSource,
+          cramDestination,
+          craiSource,
+          craiDestination,
+          md5Destination
+        ).map(_.delete(swallowIOExceptions = true))
+      }
+    }
+  }
+
   it should "allow delivery if a record has been delivered if the workspace name is the same" in {
     val id = randomId
     val project = s"project$id"

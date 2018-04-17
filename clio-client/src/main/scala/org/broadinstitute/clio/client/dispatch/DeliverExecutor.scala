@@ -33,20 +33,19 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
     webClient: ClioWebClient
   ): Source[moveCommand.index.MetadataType, NotUsed] = {
     val baseStream = super.checkPreconditions(ioUtil, webClient)
-    baseStream.flatMapConcat {
-      case (metadata) =>
-        if (metadata.workspaceName.isDefined && !metadata.workspaceName.get.equals(
-              deliverCommand.workspaceName
-            )) {
-          Source.failed(
-            new UnsupportedOperationException(
-              s"Cannot deliver ${deliverCommand.index.name} because it has already " +
-                s"been delivered to workspace ${deliverCommand.workspaceName}."
-            )
+    baseStream.flatMapConcat { metadata =>
+      if (metadata.workspaceName.exists(
+            _ != deliverCommand.workspaceName && !deliverCommand.force
+          )) {
+        Source.failed(
+          new UnsupportedOperationException(
+            s"Cannot deliver ${deliverCommand.index.name} because it has already " +
+              s"been delivered to workspace ${deliverCommand.workspaceName}."
           )
-        } else {
-          Source.single(metadata)
-        }
+        )
+      } else {
+        Source.single(metadata)
+      }
     }
   }
 
