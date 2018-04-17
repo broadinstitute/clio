@@ -47,7 +47,7 @@ sealed abstract class DeleteCommand[CI <: ClioIndex](val index: CI) extends Clio
   def force: Boolean
 }
 
-sealed abstract class DeliverCommand[+CI <: ClioIndex](override val index: CI)
+sealed abstract class DeliverCommand[+CI <: DeliverableIndex](override val index: CI)
     extends MoveCommand(index) {
   def key: index.KeyType
   def workspaceName: String

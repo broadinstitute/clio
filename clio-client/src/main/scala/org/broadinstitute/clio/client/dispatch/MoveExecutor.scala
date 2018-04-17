@@ -86,7 +86,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     * destination path points to a cloud directory, emitting the existing metadata on
     * success.
     */
-  private def checkPreconditions(
+  protected def checkPreconditions(
     ioUtil: IoUtil,
     webClient: ClioWebClient
   ): Source[moveCommand.index.MetadataType, NotUsed] = {
