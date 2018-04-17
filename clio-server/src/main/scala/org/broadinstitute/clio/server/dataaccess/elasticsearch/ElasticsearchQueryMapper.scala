@@ -46,7 +46,7 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
     JsonObject(
       (
         elasticsearchQueryObjectName,
-        parse(BoolQueryBuilderFn(queryDefinition).string).toTry.get
+        parse(BoolQueryBuilderFn(queryDefinition).string).fold(throw _, identity)
       )
     )
   }
@@ -78,9 +78,7 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
     * @return The query output.
     */
   def toQueryOutput(document: Json): Json = {
-    document.mapObject(_.filterKeys({ key =>
-      !keysToDrop.contains(key)
-    }))
+    document.mapObject(_.filterKeys(!keysToDrop.contains(_)))
   }
 }
 

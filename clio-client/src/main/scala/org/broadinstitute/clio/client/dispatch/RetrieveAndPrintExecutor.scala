@@ -21,15 +21,15 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
       case GetServerHealth  => webClient.getClioServerHealth
       case GetServerVersion => webClient.getClioServerVersion
       case query: RawQueryCommand[_] =>
-        webClient.jsonFileQuery(query.index)(query.queryInput)
-      case query: QueryCommand[_] =>
-        webClient.preformattedQuery(query.index)(query.queryInput, query.includeDeleted)
+        webClient.jsonFileQuery(query.index)(query.queryInputPath)
+      case query: SimpleQueryCommand[_] =>
+        webClient.simpleQuery(query.index)(query.queryInput, query.includeDeleted)
     }
 
     responseStream.alsoTo {
       val stringify = Flow[Json].map(_.spaces2)
       val flow = command match {
-        case _: QueryCommand[_] =>
+        case _: SimpleQueryCommand[_] =>
           /*
            * For queries we expect a stream of multiple elements, so we inject extra
            * characters to be sure the printed stream can be parsed as a JSON array

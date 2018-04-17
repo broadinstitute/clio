@@ -205,14 +205,16 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
 
     val client = new ClioWebClient(flow, timeout, 0, generator)
 
-    (for {
-      tempFile <- File.temporaryFile()
-      _ = tempFile.writeText(jsonInput.pretty(defaultPrinter))
-    } yield
-      client
-        .jsonFileQuery(index)(tempFile)
-        .runWith(Sink.head)
-        .map(_ => succeed)).get
+    File
+      .temporaryFile()
+      .map(tempFile => {
+        tempFile.writeText(jsonInput.pretty(defaultPrinter))
+        client
+          .jsonFileQuery(index)(tempFile)
+          .runWith(Sink.head)
+          .map(_ => succeed)
+      })
+      .get
   }
 
   Seq(true, false).foreach { b =>
@@ -304,7 +306,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
 
       val client = new ClioWebClient(flow, timeout, 0, generator)
 
-      client.preformattedQuery(index)(query, includeDeleted).runWith(Sink.seq).map {
+      client.simpleQuery(index)(query, includeDeleted).runWith(Sink.seq).map {
         _ should contain theSameElementsAs expectedOut
       }
     }
@@ -330,7 +332,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
         if (includeDeleted) {
           key.asJson
         } else {
-          ClioWebClient.jsonWithDocumentStatus(key.asJson)
+          Metadata.jsonWithDocumentStatus(key.asJson, DocumentStatus.Normal)
         }
       ).pretty(defaultPrinter)
 

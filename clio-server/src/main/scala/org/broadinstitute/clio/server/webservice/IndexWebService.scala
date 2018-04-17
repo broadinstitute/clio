@@ -71,6 +71,12 @@ abstract class IndexWebService[CI <: ClioIndex](
             import ctx.materializer
             import ctx.executionContext
 
+            // we "prime" the response by pulling its head because
+            // otherwise, an initial successful response is sent to the client
+            // along with a stream to pull on no matter what. If we cannot then get a successful
+            // response from elasticsearch, the stream is truncated and an unhelpful exception
+            // is thrown. This way, we at least get to indicate that a problem occurred in the server
+            // with a 500 response.
             val primedResponse =
               indexService
                 .rawQuery(json)

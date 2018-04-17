@@ -79,7 +79,8 @@ class HttpElasticsearchDAO private[dataaccess] (
       .fromPublisher(responsePublisher)
       .map(_.to[Json])
       .alsoTo(
-        Sink.foreach(json => logger.info(json.pretty(ModelAutoDerivation.defaultPrinter)))
+        Sink
+          .foreach(json => logger.debug(json.pretty(ModelAutoDerivation.defaultPrinter)))
       )
   }
 

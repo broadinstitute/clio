@@ -102,10 +102,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     rawQueryTest(
       rawJsonQuery,
       runUpsertGvcf(key, metadata),
-      outputs => {
-        outputs should have length 1
-        outputs.headOption should be(Some(expected))
-      }
+      _ should contain only expected
     )
   }
 
@@ -151,10 +148,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     rawQueryTest(
       rawJsonQuery,
       setup(),
-      (outputs: Seq[Json]) => {
-        outputs should have length 2
-        outputs should be(Seq(expected, expected))
-      }
+      _ should be(Seq(expected, expected))
     )
   }
 

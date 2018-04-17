@@ -30,15 +30,15 @@ sealed abstract class AddCommand[CI <: ClioIndex](val index: CI) extends ClioCom
   def force: Boolean
 }
 
-sealed abstract class QueryCommand[CI <: ClioIndex](val index: CI)
+sealed abstract class RawQueryCommand[CI <: ClioIndex](val index: CI)
+    extends RetrieveAndPrintCommand {
+  def queryInputPath: File
+}
+
+sealed abstract class SimpleQueryCommand[CI <: ClioIndex](val index: CI)
     extends RetrieveAndPrintCommand {
   def queryInput: index.QueryInputType
   def includeDeleted: Boolean
-}
-
-sealed abstract class RawQueryCommand[CI <: ClioIndex](val index: CI)
-    extends RetrieveAndPrintCommand {
-  def queryInput: File
 }
 
 sealed abstract class MoveCommand[+CI <: ClioIndex](val index: CI) extends ClioCommand {
@@ -83,11 +83,11 @@ final case class AddWgsUbam(
 final case class QueryWgsUbam(
   @Recurse queryInput: UbamQueryInput,
   includeDeleted: Boolean = false
-) extends QueryCommand(WgsUbamIndex)
+) extends SimpleQueryCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.rawQueryWgsUbamName)
 final case class RawQueryWgsUbam(
-  queryInput: File
+  queryInputPath: File
 ) extends RawQueryCommand(WgsUbamIndex)
 
 @CommandName(ClioCommand.moveWgsUbamName)
@@ -117,11 +117,11 @@ final case class AddGvcf(
 final case class QueryGvcf(
   @Recurse queryInput: GvcfQueryInput,
   includeDeleted: Boolean = false
-) extends QueryCommand(GvcfIndex)
+) extends SimpleQueryCommand(GvcfIndex)
 
 @CommandName(ClioCommand.rawQueryGvcfName)
 final case class RawQueryGvcf(
-  queryInput: File
+  queryInputPath: File
 ) extends RawQueryCommand(GvcfIndex)
 
 @CommandName(ClioCommand.moveGvcfName)
@@ -151,11 +151,11 @@ final case class AddWgsCram(
 final case class QueryWgsCram(
   @Recurse queryInput: WgsCramQueryInput,
   includeDeleted: Boolean = false
-) extends QueryCommand(WgsCramIndex)
+) extends SimpleQueryCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.rawQueryWgsCramName)
 final case class RawQueryWgsCram(
-  queryInput: File
+  queryInputPath: File
 ) extends RawQueryCommand(WgsCramIndex)
 
 @CommandName(ClioCommand.moveWgsCramName)
@@ -193,11 +193,11 @@ final case class AddHybselUbam(
 final case class QueryHybselUbam(
   @Recurse queryInput: UbamQueryInput,
   includeDeleted: Boolean = false
-) extends QueryCommand(HybselUbamIndex)
+) extends SimpleQueryCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.rawQueryHybselUbamName)
 final case class RawQueryHybselUbam(
-  queryInput: File
+  queryInputPath: File
 ) extends RawQueryCommand(HybselUbamIndex)
 
 @CommandName(ClioCommand.moveHybselUbamName)
@@ -227,11 +227,11 @@ final case class AddArrays(
 final case class QueryArrays(
   @Recurse queryInput: ArraysQueryInput,
   includeDeleted: Boolean = false
-) extends QueryCommand(ArraysIndex)
+) extends SimpleQueryCommand(ArraysIndex)
 
 @CommandName(ClioCommand.rawQueryArraysName)
 final case class RawQueryArrays(
-  queryInput: File
+  queryInputPath: File
 ) extends RawQueryCommand(ArraysIndex)
 
 @CommandName(ClioCommand.moveArraysName)

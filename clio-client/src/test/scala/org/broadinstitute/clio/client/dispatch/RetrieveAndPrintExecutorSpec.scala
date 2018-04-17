@@ -85,7 +85,7 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
       // Type annotations needed for scalamockery.
       (
         webClient
-          .preformattedQuery(_: ClioWebClient.QueryAux[UbamQueryInput])(
+          .simpleQuery(_: ClioWebClient.QueryAux[UbamQueryInput])(
             _: UbamQueryInput,
             _: Boolean
           )
