@@ -74,7 +74,7 @@ class ServerService private[server] (
               logger.debug(
                 s"Merging upserts $oldId and $newId for id $id"
               )
-              oldJson.deepMerge(json)
+              index.defaults.deepMerge(oldJson.deepMerge(json))
             }
             case None => json
           }

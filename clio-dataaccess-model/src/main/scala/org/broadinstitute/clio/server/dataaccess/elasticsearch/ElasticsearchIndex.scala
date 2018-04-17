@@ -50,6 +50,10 @@ class ElasticsearchIndex[CI <: ClioIndex](
 
   final val indexName: String = clioIndex.elasticsearchIndexName
 
+  type keyType = clioIndex.KeyType
+
+  val defaults: Json = clioIndex.defaults
+
   /**
     * The name of the index type. Always default until ES 7 when there will be no index types.
     * https://www.elastic.co/blog/elasticsearch-6-0-0-alpha1-released#type-removal

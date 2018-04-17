@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.transfer.model
 
-import io.circe.{Decoder, Encoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
 import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.ClassTag
@@ -50,6 +50,8 @@ trait ClioIndex {
   val metadataMapper: FieldMapper[MetadataType]
 
   val queryInputMapper: FieldMapper[QueryInputType]
+
+  val defaults: Json
 
   /**
     * Container for all index parameters that are typically
