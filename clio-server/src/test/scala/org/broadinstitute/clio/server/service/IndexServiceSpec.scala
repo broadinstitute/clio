@@ -6,7 +6,7 @@ import java.time.OffsetDateTime
 import akka.NotUsed
 import akka.stream.scaladsl.{Sink, Source}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
@@ -103,28 +103,19 @@ abstract class IndexServiceSpec[
   }
 
   it should "forward a raw JSON string to the searchDAO" in {
-    val jsonString = Map("this" -> "is valid json").asJson.pretty(defaultPrinter)
+    val json = JsonObject("this" -> "is valid json".asJson)
     expectRawQuery(
-      jsonString,
+      json,
       Source.empty[Json]
     )
     for {
-      _ <- indexService.rawQuery(jsonString).runWith(Sink.ignore)
+      _ <- indexService.rawQuery(json).runWith(Sink.ignore)
     } yield succeed
-  }
-
-  it should "fail if an invalid JSON string is passed in as input" in {
-    val invalidJson = "{)))\"definitely invalid json"
-    recoverToSucceededIf[IllegalArgumentException] {
-      indexService
-        .rawQuery(invalidJson)
-        .runWith(Sink.ignore)
-    }
   }
 
   it should "convert and execute a queryMetadata call as a raw query" in {
     expectRawQuery(
-      inputToJsonString(dummyInput),
+      inputToJsonObject(dummyInput),
       Source.empty[Json]
     )
     for {
@@ -136,7 +127,7 @@ abstract class IndexServiceSpec[
     val metadata = getDummyMetadata(Some(DocumentStatus.Normal))
     val expectedDocument = indexService.documentConverter.document(dummyKey, metadata)
     expectRawQuery(
-      keyToJsonString(dummyKey),
+      keyToJsonObject(dummyKey),
       Source.empty[Json]
     )
     expectWriteUpdate(
@@ -150,11 +141,13 @@ abstract class IndexServiceSpec[
     }
   }
 
-  private def keyToJsonString(key: indexService.clioIndex.KeyType): String = {
+  private def keyToJsonObject(key: indexService.clioIndex.KeyType): JsonObject = {
     indexService.keyQueryConverter.buildQuery(key)(elasticsearchIndex)
   }
 
-  private def inputToJsonString(input: indexService.clioIndex.QueryInputType): String = {
+  private def inputToJsonObject(
+    input: indexService.clioIndex.QueryInputType
+  ): JsonObject = {
     indexService.queryConverter.buildQuery(input)(elasticsearchIndex)
   }
 
@@ -220,12 +213,12 @@ abstract class IndexServiceSpec[
   }
 
   private def expectRawQuery(
-    expectedJsonString: String,
+    expectedJson: JsonObject,
     returning: Source[Json, NotUsed]
   ) = {
     (mockSearchDAO
-      .rawQuery(_: String)(_: ElasticsearchIndex[_]))
-      .expects(expectedJsonString, elasticsearchIndex)
+      .rawQuery(_: JsonObject)(_: ElasticsearchIndex[_]))
+      .expects(expectedJson, elasticsearchIndex)
       .returning(returning)
   }
 
@@ -243,7 +236,7 @@ abstract class IndexServiceSpec[
     expectWriteUpdate(expectedDocument)
     expectUpdateMetadata(expectedDocument)
     expectRawQuery(
-      keyToJsonString(dummyKey),
+      keyToJsonObject(dummyKey),
       Source.empty[Json]
     )
     for {
@@ -284,7 +277,7 @@ abstract class IndexServiceSpec[
 
     if (!force || newStatus.isEmpty) {
       expectRawQuery(
-        keyToJsonString(dummyKey),
+        keyToJsonObject(dummyKey),
         returning = Source.single(originalMetadata.asJson)
       )
     }

@@ -3,9 +3,8 @@ package org.broadinstitute.clio.server.service
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import gnieh.diffson.circe._
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.syntax._
-import io.circe.parser._
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.server.exceptions.UpsertValidationException
@@ -127,20 +126,15 @@ abstract class IndexService[CI <: ClioIndex](
   /**
     * Run a raw Json query.
     *
-    * @param inputJson  The json string of the query.
-    * @return           The result of the query.
+    * @param json The json string of the query.
+    * @return     The result of the query.
     */
-  def rawQuery(inputJson: String): Source[Json, NotUsed] = {
-    parse(inputJson) match {
-      case Left(e) =>
-        Source.failed(
-          new IllegalArgumentException("Received input that was not valid Json", e)
-        )
-      case Right(_) =>
-        searchDAO
-          .rawQuery(inputJson)(elasticsearchIndex)
-          .map(queryConverter.toQueryOutput)
-    }
+  def rawQuery(
+    json: JsonObject
+  ): Source[Json, NotUsed] = {
+    searchDAO
+      .rawQuery(json)(elasticsearchIndex)
+      .map(queryConverter.toQueryOutput)
   }
 
   def validateUpsert(
@@ -182,8 +176,9 @@ abstract class IndexService[CI <: ClioIndex](
     val keyJson = indexKey.asJsonObject
     val fieldsToDrop = keyJson.keys.toSeq
 
-    rawQuery(keyQueryConverter.buildQuery(indexKey)(elasticsearchIndex))
-      .fold[Either[Exception, Option[Json]]](Right(None)) { (acc, storedDocs) =>
+    rawQuery(
+      keyQueryConverter.buildQuery(indexKey)(elasticsearchIndex)
+    ).fold[Either[Exception, Option[Json]]](Right(None)) { (acc, storedDocs) =>
         acc.flatMap {
           case None =>
             Right(Some(storedDocs.mapObject(_.filterKeys(!fieldsToDrop.contains(_)))))

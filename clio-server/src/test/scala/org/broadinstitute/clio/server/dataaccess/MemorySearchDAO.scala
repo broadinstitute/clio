@@ -3,7 +3,7 @@ package org.broadinstitute.clio.server.dataaccess
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import io.circe.syntax._
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.ClioIndex
 
@@ -15,7 +15,7 @@ class MemorySearchDAO extends MockSearchDAO {
   val updateCalls: mutable.ArrayBuffer[(Seq[Json], ElasticsearchIndex[ClioIndex])] =
     mutable.ArrayBuffer.empty
 
-  val queryCalls: mutable.ArrayBuffer[String] =
+  val queryCalls: mutable.ArrayBuffer[JsonObject] =
     mutable.ArrayBuffer.empty
 
   override def updateMetadata(documents: Seq[Json])(
@@ -31,7 +31,7 @@ class MemorySearchDAO extends MockSearchDAO {
     updateMetadata(Seq(document))
   }
 
-  override def rawQuery(json: String)(
+  override def rawQuery(json: JsonObject)(
     implicit
     index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {

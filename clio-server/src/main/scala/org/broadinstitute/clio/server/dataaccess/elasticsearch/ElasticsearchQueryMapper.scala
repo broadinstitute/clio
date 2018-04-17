@@ -2,7 +2,8 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import com.sksamuel.elastic4s.http.ElasticDsl.boolQuery
 import com.sksamuel.elastic4s.http.search.queries.compound.BoolQueryBuilderFn
-import io.circe.Json
+import io.circe.{Json, JsonObject}
+import io.circe.parser._
 import org.broadinstitute.clio.util.generic.{CaseClassMapperWithTypes, FieldMapper}
 
 import scala.reflect.ClassTag
@@ -18,6 +19,7 @@ import scala.reflect.ClassTag
 class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
   val inputMapper = new CaseClassMapperWithTypes[Input]
 
+  val elasticsearchQueryObjectName = "query"
   private val keysToDrop =
     Set(
       ElasticsearchIndex.UpsertIdElasticsearchName,
@@ -28,21 +30,25 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
     * Builds an elastic4s query as a json string from the query input.
     *
     * @param queryInput The query input.
-    * @return An elastic4s query definition from the query input.
+    * @return A json object representing an Elasticsearch query
     */
   def buildQuery(queryInput: Input)(
     implicit index: ElasticsearchIndex[_]
-  ): String = {
+  ): JsonObject = {
     val queries = flattenVals(queryInput) map {
-      case (name, value) => {
+      case (name, value) =>
         index.fieldMapper.valueToQuery(
           ElasticsearchUtil.toElasticsearchName(name),
           inputMapper.types(name)
         )(value)
-      }
     }
     val queryDefinition = boolQuery must queries
-    BoolQueryBuilderFn(queryDefinition).string
+    JsonObject(
+      (
+        elasticsearchQueryObjectName,
+        parse(BoolQueryBuilderFn(queryDefinition).string).toTry.get
+      )
+    )
   }
 
   /**

@@ -38,7 +38,11 @@ class ElasticsearchQueryMapperSpec
       ModelMockIndex(),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
-    mapper.buildQuery(input)(index) should be(
+    mapper
+      .buildQuery(input)(index)
+      .apply(mapper.elasticsearchQueryObjectName)
+      .asJson
+      .pretty(ModelAutoDerivation.defaultPrinter) should be(
       BoolQueryBuilderFn(
         boolQuery must (
           rangeQuery("mock_field_date").lte(endDate.toString),

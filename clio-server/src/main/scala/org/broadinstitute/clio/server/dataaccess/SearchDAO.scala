@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.collection.immutable
@@ -51,12 +51,12 @@ trait SearchDAO {
   ): Future[Unit]
 
   /**
-    * Submit a raw json query of a metadata index
+    * Submit a raw JSON query of a metadata index
     *
-    * @param json  The json string of the query to run.
+    * @param json  The JSON of the query to run.
     * @param index  The index to run the query against.
     */
-  def rawQuery(json: String)(
+  def rawQuery(json: JsonObject)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed]
 

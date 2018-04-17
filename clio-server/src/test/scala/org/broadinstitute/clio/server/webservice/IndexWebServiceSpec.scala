@@ -3,7 +3,8 @@ package org.broadinstitute.clio.server.webservice
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
 import akka.stream.scaladsl.Source
-import io.circe.Json
+import io.circe.{Json, JsonObject}
+import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
 import org.broadinstitute.clio.server.service.IndexService
 import org.broadinstitute.clio.transfer.model.ClioIndex
@@ -84,13 +85,25 @@ abstract class IndexWebServiceSpec[
     }
   }
 
-  it should "successfully submit an arbitrary json string as a raw query" in {
+  it should "successfully submit an arbitrary json object as a raw query" in {
     (mockService
-      .rawQuery(_: String))
+      .rawQuery(_: JsonObject))
       .expects(*)
       .returns(Source.single(emptyOutput))
-    Post("/rawquery", "{\"key\": \"this is json\"}") ~> webService.rawquery ~> check {
+    Post("/rawquery", JsonObject(("key", "this is Json".asJson))) ~> webService.rawquery ~> check {
       status shouldEqual StatusCodes.OK
+    }
+  }
+
+  it should "reject raw query with invalid json in body" in {
+    (mockService
+      .rawQuery(_: JsonObject))
+      .expects(*)
+      .never
+    Post("/rawquery", "{{))(\"invalid json") ~> webService.rawquery ~> check {
+      rejection should matchPattern {
+        case MalformedRequestContentRejection(_, _) =>
+      }
     }
   }
 

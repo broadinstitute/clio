@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.collection.immutable
@@ -25,7 +25,7 @@ class MockSearchDAO extends SearchDAO {
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = Future.unit
 
-  override def rawQuery(json: String)(
+  override def rawQuery(json: JsonObject)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
     Source.empty[Json]
