@@ -39,8 +39,9 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
           )) {
         Source.failed(
           new UnsupportedOperationException(
-            s"Cannot deliver ${deliverCommand.index.name} because it has already " +
-              s"been delivered to workspace ${deliverCommand.workspaceName}."
+            s"Cannot deliver ${deliverCommand.index.name} to workspace '${deliverCommand.workspaceName}' " +
+              s"because it has already been delivered to workspace '${metadata.workspaceName.get}'. Use --force " +
+              "if you want to override this restriction."
           )
         )
       } else {
