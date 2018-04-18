@@ -106,15 +106,6 @@ find_vault_token() {
   fi
 }
 
-# Compute the tag of the Docker image to deploy based on the current commit.
-# Assumes the image for the current commit has already been built & pushed.
-compute_docker_tag() {
-  local -r base_version=$(cat ${CLIO_DIR}/.clio-version | tr -d '\n')
-  local -r short_sha=$(git rev-parse HEAD | cut -c1-7)
-
-  echo ${base_version}-g${short_sha}-SNAP
-}
-
 # Build a "conventional" fully-qualified domain name from a hostname and environment.
 build_fqdn() {
   echo ${1}.gotc-${ENV}.broadinstitute.org
@@ -268,7 +259,7 @@ poll_clio_health() {
 main() {
   check_usage
 
-  local -r docker_tag=$(compute_docker_tag)
+  local -r docker_tag=$(git rev-parse HEAD)
   local -r clio_fqdn=$(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))
 
   # Temporary directory to store rendered configs.

@@ -84,13 +84,13 @@ class ClioWebClient private[client] (
 
     /*
      * Reusable `Source` which will run the given `HttpRequest` over the connection
-     * flow to the Clio server, erroring out early if the request fails to complete
+     * flow to the Clio server, erroring out early if the response fails to arrive
      * within the request timeout.
      */
     val responseSource = Source
       .single(requestWithCreds)
       .via(connectionFlow)
-      .completionTimeout(requestTimeout)
+      .initialTimeout(requestTimeout)
 
     /*
      * Retry on any connection failures (since Akka's built-in retry mechanisms
@@ -108,7 +108,7 @@ class ClioWebClient private[client] (
     retriedResponse.flatMapConcat { response =>
       if (response.status.isSuccess()) {
         logger.debug(s"Successfully completed request: $request")
-        response.entity.withoutSizeLimit().dataBytes
+        response.entity.withoutSizeLimit().dataBytes.idleTimeout(requestTimeout)
       } else {
         response.entity.dataBytes.reduce(_ ++ _).flatMapConcat { bytes =>
           Source.failed {

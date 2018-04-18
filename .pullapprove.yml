@@ -13,10 +13,6 @@ group_defaults:
     ignored: true
   teams:
     - dsde-pipelines-developers
-  conditions:
-    files:
-      exclude:
-        - ".clio-version" # So Jenkins can auto-bump the version
 
 groups:
   develop-reviewers:
