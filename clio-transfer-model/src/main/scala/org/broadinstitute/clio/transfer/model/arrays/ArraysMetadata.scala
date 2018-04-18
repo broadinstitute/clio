@@ -3,20 +3,12 @@ package org.broadinstitute.clio.transfer.model.arrays
 import java.net.URI
 import java.time.OffsetDateTime
 
-import io.circe.Json
-import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model.{DeliverableMetadata, Metadata}
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.DocumentStatus
 
 /* Declare Metadata fields in lexicographic order.  Metadata is the
  * set difference of the QueryOutput and Key fields.
  */
-
-object ArraysMetadata extends ModelAutoDerivation {
-  val defaults: Json = ArraysMetadata().asJson
-}
-
 case class ArraysMetadata(
   chipType: Option[String] = None,
   clusterPath: Option[URI] = None,

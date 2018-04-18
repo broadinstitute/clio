@@ -3,18 +3,11 @@ package org.broadinstitute.clio.transfer.model.gvcf
 import java.net.URI
 import java.time.OffsetDateTime
 
-import io.circe.Json
-import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model.Metadata
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{
   DataType,
   DocumentStatus,
   RegulatoryDesignation
-}
-
-object GvcfMetadata extends ModelAutoDerivation {
-  val defaults: Json = GvcfMetadata(dataType = Option(DataType.WGS)).asJson
 }
 
 case class GvcfMetadata(

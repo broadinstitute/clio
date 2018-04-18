@@ -4,18 +4,11 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import io.circe.Json
-import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model.{DeliverableMetadata, Metadata}
-import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{
   DataType,
   DocumentStatus,
   RegulatoryDesignation
-}
-
-object WgsCramMetadata extends ModelAutoDerivation {
-  val defaults: Json = WgsCramMetadata(dataType = Option(DataType.WGS)).asJson
 }
 
 case class WgsCramMetadata(

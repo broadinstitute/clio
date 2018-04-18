@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.Json
+import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.transfer.model.arrays.ArraysMetadata
@@ -14,7 +15,7 @@ import org.broadinstitute.clio.transfer.model.ubam.UbamMetadata
 import org.broadinstitute.clio.transfer.model.wgscram.WgsCramMetadata
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.UpsertId
+import org.broadinstitute.clio.util.model.{DataType, UpsertId}
 
 /**
   * An index for an Elasticsearch document.
@@ -98,28 +99,28 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   val WgsUbam: ElasticsearchIndex[WgsUbamIndex.type] =
     new ElasticsearchIndex(
       WgsUbamIndex,
-      UbamMetadata.defaults,
+      UbamMetadata().asJson,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
   val Gvcf: ElasticsearchIndex[GvcfIndex.type] =
     new ElasticsearchIndex(
       GvcfIndex,
-      GvcfMetadata.defaults,
+      GvcfMetadata(dataType = Option(DataType.WGS)).asJson,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
   val WgsCram: ElasticsearchIndex[WgsCramIndex.type] =
     new ElasticsearchIndex(
       WgsCramIndex,
-      WgsCramMetadata.defaults,
+      WgsCramMetadata(dataType = Option(DataType.WGS)).asJson,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
   val Arrays: ElasticsearchIndex[ArraysIndex.type] =
     new ElasticsearchIndex(
       ArraysIndex,
-      ArraysMetadata.defaults,
+      ArraysMetadata().asJson,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 }
