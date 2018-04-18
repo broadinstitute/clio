@@ -51,8 +51,6 @@ trait ClioIndex {
 
   val queryInputMapper: FieldMapper[QueryInputType]
 
-  val defaults: Json
-
   /**
     * Container for all index parameters that are typically
     * used as implicit arguments.
