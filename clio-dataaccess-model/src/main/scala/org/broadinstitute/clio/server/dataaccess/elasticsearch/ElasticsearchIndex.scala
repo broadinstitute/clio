@@ -7,6 +7,7 @@ import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.Json
 import io.circe.syntax._
+import io.circe.generic.extras.Configuration.snakeCaseTransformation
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.transfer.model.arrays.ArraysMetadata
@@ -25,10 +26,12 @@ import org.broadinstitute.clio.util.model.{DataType, UpsertId}
   */
 class ElasticsearchIndex[CI <: ClioIndex](
   val clioIndex: CI,
-  val defaults: Json,
-  private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper
+  val defaults: Json = Json.obj(),
+  private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper,
+  private[elasticsearch] val additionalIdFields: Seq[String] = Seq.empty
 ) extends ModelAutoDerivation {
   import clioIndex.implicits._
+  import ElasticsearchUtil.JsonOps
 
   /**
     * The root directory to use when persisting updates of this index to storage.
@@ -52,6 +55,19 @@ class ElasticsearchIndex[CI <: ClioIndex](
   def persistenceDirForDatetime(dt: OffsetDateTime): String = {
     val dir = dt.format(ElasticsearchIndex.dateTimeFormatter)
     s"$rootDir$dir/"
+  }
+
+  /**
+    * The ID of a json record in elasticsearch. By default, each record's ID consists
+    * of the concatenated values of the Key fields.
+    * Additional fields can be added to the ID using the ElasticsearchIndex constructor.
+    */
+  def id(json: Json): String = {
+    // Very hacky way of getting key fields without instantiating dummy keys
+    val keyFields = clioIndex.keyTag.runtimeClass.getConstructors.head.getParameters
+      .map(_.getName)
+      .map(snakeCaseTransformation)
+    (keyFields ++ additionalIdFields).map(json.unsafeGet[String]).mkString
   }
 
   final val indexName: String = clioIndex.elasticsearchIndexName
