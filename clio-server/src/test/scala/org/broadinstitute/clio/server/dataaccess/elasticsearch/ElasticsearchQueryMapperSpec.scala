@@ -61,6 +61,7 @@ class ElasticsearchQueryMapperSpec
     )
     val index = new ElasticsearchIndex(
       ModelMockIndex(),
+      Map.empty[String, String].asJson,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
     mapper.buildQuery(input)(index) should be(

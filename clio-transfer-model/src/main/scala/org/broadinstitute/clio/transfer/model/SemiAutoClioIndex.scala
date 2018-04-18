@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.transfer.model
 
-import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
 import org.broadinstitute.clio.transfer.model.arrays.{
   ArraysKey,
   ArraysMetadata,
@@ -15,8 +15,6 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata, UbamQueryInput}
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation._
-import io.circe.syntax._
-import org.broadinstitute.clio.util.model.DataType
 
 import scala.reflect.ClassTag
 

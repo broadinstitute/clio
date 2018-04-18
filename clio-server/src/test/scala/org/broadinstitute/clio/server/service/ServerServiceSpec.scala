@@ -137,6 +137,7 @@ class ServerServiceSpec
 
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex(),
+      Map.empty[String, String].asJson,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 

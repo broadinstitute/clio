@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.transfer.model
 
-import io.circe.{Decoder, Encoder, Json, ObjectEncoder}
+import io.circe.{Decoder, Encoder, ObjectEncoder}
 import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.ClassTag

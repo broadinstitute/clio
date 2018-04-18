@@ -3,12 +3,19 @@ package org.broadinstitute.clio.transfer.model.ubam
 import java.net.URI
 import java.time.OffsetDateTime
 
+import io.circe.Json
+import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model.Metadata
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{
   AggregatedBy,
   DataType,
   DocumentStatus,
   RegulatoryDesignation
+}
+
+object UbamMetadata extends ModelAutoDerivation {
+  val defaults: Json = UbamMetadata().asJson
 }
 
 case class UbamMetadata(
