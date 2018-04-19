@@ -41,13 +41,13 @@ class HttpElasticsearchDAOSpec
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_update_type"),
-        Map.empty[String, String].asJson,
+        Json.obj(),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_update_type", "command_name"),
-        Map.empty[String, String].asJson,
+        Json.obj(),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
@@ -66,13 +66,13 @@ class HttpElasticsearchDAOSpec
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_fail_recreate"),
-        Map.empty[String, String].asJson,
+        Json.obj(),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_fail_recreate", "command_name"),
-        Map.empty[String, String].asJson,
+        Json.obj(),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
@@ -93,13 +93,13 @@ class HttpElasticsearchDAOSpec
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_fail_change_types"),
-        Map.empty[String, String].asJson,
+        Json.obj(),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_fail_change_types"),
-        Map.empty[String, String].asJson,
+        Json.obj(),
         ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
       )
     for {
@@ -123,7 +123,7 @@ class HttpElasticsearchDAOSpec
 
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex("docs-" + UUID.randomUUID()),
-      Map.empty[String, String].asJson,
+      Json.obj(),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
@@ -131,9 +131,6 @@ class HttpElasticsearchDAOSpec
       Map(
         ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
       ).asJson
-        .deepMerge(
-          Map(ElasticsearchIndex.EntityIdElasticsearchName -> s).asJson
-        )
 
     val documents =
       (1 to 4)
@@ -154,7 +151,7 @@ class HttpElasticsearchDAOSpec
 
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex("docs-" + UUID.randomUUID()),
-      Map.empty[String, String].asJson,
+      Json.obj(),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 

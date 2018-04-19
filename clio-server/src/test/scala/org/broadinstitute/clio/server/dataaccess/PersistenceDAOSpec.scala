@@ -29,7 +29,7 @@ class PersistenceDAOSpec
 
   implicit val index: ElasticsearchIndex[ModelMockIndex] = new ElasticsearchIndex(
     ModelMockIndex(),
-    Map.empty[String, String].asJson,
+    Json.obj(),
     ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
   )
 
@@ -76,11 +76,6 @@ class PersistenceDAOSpec
             .nextId()
         ).asJson
       )
-      .deepMerge(
-        Map(
-          ElasticsearchIndex.EntityIdElasticsearchName -> s"$key1Long.$key1String"
-        ).asJson
-      )
 
     val key2Long = 2L
     val key2String = "mock-key-2"
@@ -103,9 +98,6 @@ class PersistenceDAOSpec
           ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId
             .nextId()
         ).asJson
-      )
-      .deepMerge(
-        Map(ElasticsearchIndex.EntityIdElasticsearchName -> s"$key2Long.$key2String").asJson
       )
 
     for {
@@ -152,11 +144,6 @@ class PersistenceDAOSpec
         Map(
           ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId
             .nextId()
-        ).asJson
-      )
-      .deepMerge(
-        Map(
-          ElasticsearchIndex.EntityIdElasticsearchName -> s"$mockKeyLong.$mockKeyString"
         ).asJson
       )
   )

@@ -4,13 +4,9 @@ import java.net.URI
 import java.time.OffsetDateTime
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
+import io.circe.Json
 import io.circe.syntax._
-import org.broadinstitute.clio.transfer.model.{
-  ModelMockIndex,
-  ModelMockKey,
-  ModelMockMetadata,
-  ModelMockQueryInput
-}
+import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockKey, ModelMockMetadata, ModelMockQueryInput}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import org.scalatest.{FlatSpec, Matchers}
@@ -61,7 +57,7 @@ class ElasticsearchQueryMapperSpec
     )
     val index = new ElasticsearchIndex(
       ModelMockIndex(),
-      Map.empty[String, String].asJson,
+      Json.obj(),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
     mapper.buildQuery(input)(index) should be(
@@ -95,9 +91,6 @@ class ElasticsearchQueryMapperSpec
     val output = fields
       .deepMerge(
         Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
-      )
-      .deepMerge(
-        Map(ElasticsearchIndex.EntityIdElasticsearchName -> s"$keyLong.$keyString").asJson
       )
     mapper.toQueryOutput(output) should be(fields)
   }

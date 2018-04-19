@@ -154,9 +154,7 @@ class HttpElasticsearchDAO private[dataaccess] (
     index: ElasticsearchIndex[_],
     document: Json
   ): BulkCompatibleDefinition = {
-    val id = document.hcursor
-      .get[String](ElasticsearchIndex.EntityIdElasticsearchName)
-      .fold(throw _, identity)
+    val id = index.getId(document)
 
     update(id)
       .in(index.indexName / index.indexType)

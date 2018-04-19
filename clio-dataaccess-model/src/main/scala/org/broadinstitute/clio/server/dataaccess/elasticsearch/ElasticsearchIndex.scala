@@ -63,9 +63,7 @@ class ElasticsearchIndex[CI <: ClioIndex](
     * Additional fields can be added to the ID using the ElasticsearchIndex constructor.
     */
   def getId(json: Json): String = {
-    // Very hacky way of getting key fields without instantiating dummy keys
-    val keyFields = clioIndex.keyTag.runtimeClass.getConstructors.head.getParameters
-      .map(_.getName)
+    val keyFields = FieldMapper[clioIndex.KeyType].fields.keys
       .map(snakeCaseTransformation)
     (keyFields ++ additionalIdFields).map(json.unsafeGet[String]).mkString
   }
@@ -98,12 +96,8 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   val UpsertIdElasticsearchName = "upsert_id"
 
   val BookkeepingNames = Seq(
-    UpsertIdElasticsearchName,
-    EntityIdElasticsearchName
+    UpsertIdElasticsearchName
   )
-
-  def getEntityId(json: Json): String =
-    json.unsafeGet[String](EntityIdElasticsearchName)
 
   def getUpsertId(json: Json): UpsertId =
     json.unsafeGet[UpsertId](UpsertIdElasticsearchName)
@@ -123,14 +117,16 @@ object ElasticsearchIndex extends ModelAutoDerivation {
     new ElasticsearchIndex(
       GvcfIndex,
       GvcfMetadata(dataType = Option(DataType.WGS)).asJson,
-      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
+      Seq("data_type")
     )
 
   val WgsCram: ElasticsearchIndex[WgsCramIndex.type] =
     new ElasticsearchIndex(
       WgsCramIndex,
       WgsCramMetadata(dataType = Option(DataType.WGS)).asJson,
-      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
+      Seq("data_type")
     )
 
   val Arrays: ElasticsearchIndex[ArraysIndex.type] =
