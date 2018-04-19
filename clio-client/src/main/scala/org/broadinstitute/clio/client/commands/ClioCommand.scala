@@ -47,13 +47,14 @@ sealed abstract class DeleteCommand[CI <: ClioIndex](val index: CI) extends Clio
   def force: Boolean
 }
 
-sealed abstract class DeliverCommand[+CI <: ClioIndex](override val index: CI)
+sealed abstract class DeliverCommand[+CI <: DeliverableIndex](override val index: CI)
     extends MoveCommand(index) {
   def key: index.KeyType
   def workspaceName: String
   def workspacePath: URI
   final def destination: URI = workspacePath
   def newBasename: Option[String]
+  def force: Boolean
 }
 
 // Generic commands.
@@ -156,7 +157,8 @@ final case class DeliverWgsCram(
   @Recurse key: WgsCramKey,
   workspaceName: String,
   workspacePath: URI,
-  newBasename: Option[String] = None
+  newBasename: Option[String] = None,
+  force: Boolean = false
 ) extends DeliverCommand(WgsCramIndex)
 
 // Hybsel-uBAM commands.
@@ -222,7 +224,8 @@ final case class DeliverArrays(
   @Recurse key: ArraysKey,
   workspaceName: String,
   workspacePath: URI,
-  newBasename: Option[String] = None
+  newBasename: Option[String] = None,
+  force: Boolean = false
 ) extends DeliverCommand(ArraysIndex)
 
 object ClioCommand extends ClioParsers {
