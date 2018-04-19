@@ -29,7 +29,7 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
     responseStream.alsoTo {
       val stringify = Flow[Json].map(_.spaces2)
       val flow = command match {
-        case _: SimpleQueryCommand[_] =>
+        case _: SimpleQueryCommand[_] | _: RawQueryCommand[_] =>
           /*
            * For queries we expect a stream of multiple elements, so we inject extra
            * characters to be sure the printed stream can be parsed as a JSON array

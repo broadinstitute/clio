@@ -191,7 +191,12 @@ class ClioWebClient private[client] (
     parse(input.contentAsString)
       .fold(
         e =>
-          Source.failed(new IllegalArgumentException("File must contain valid Json.", e)),
+          Source.failed(
+            new IllegalArgumentException(
+              s"Input file at ${input.path.toString} must contain valid Json.",
+              e
+            )
+        ),
         query(clioIndex)(_, raw = true)
       )
   }

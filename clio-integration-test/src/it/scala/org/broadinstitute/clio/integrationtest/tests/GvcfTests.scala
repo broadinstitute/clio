@@ -169,17 +169,6 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "fail when submitting invalid json" in {
-    val invalidJson = "{}()})(}}}{)("
-    recoverToSucceededIf[RuntimeException] {
-      rawQueryTest(
-        invalidJson,
-        Future.successful(()),
-        _ => succeed
-      )
-    }
-  }
-
   def rawQueryTest(
     input: String,
     setup: => Future[_],
@@ -190,7 +179,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       _ <- setup
       outputs <- runCollectJson(
         ClioCommand.rawQueryGvcfName,
-        "--query-input",
+        "--query-input-path",
         tempFile.path.toString
       )
     } yield assertions(outputs)

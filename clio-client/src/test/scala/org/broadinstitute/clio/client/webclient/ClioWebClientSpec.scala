@@ -207,13 +207,13 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
 
     File
       .temporaryFile()
-      .map(tempFile => {
+      .map { tempFile =>
         tempFile.writeText(jsonInput.pretty(defaultPrinter))
         client
           .jsonFileQuery(index)(tempFile)
           .runWith(Sink.head)
           .map(_ => succeed)
-      })
+      }
       .get
   }
 
@@ -389,14 +389,16 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
 
     val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
 
-    (for {
-      tempFile <- File.temporaryFile()
-      _ = tempFile.writeText("{\"invalid json))")
-    } yield
-      recoverToSucceededIf[IllegalArgumentException] {
-        client
-          .jsonFileQuery(index)(tempFile)
-          .runWith(Sink.head)
-      }).get
+    File
+      .temporaryFile()
+      .map { tempFile =>
+        tempFile.writeText("{\"invalid json))")
+        recoverToSucceededIf[IllegalArgumentException] {
+          client
+            .jsonFileQuery(index)(tempFile)
+            .runWith(Sink.head)
+        }
+      }
+      .get
   }
 }

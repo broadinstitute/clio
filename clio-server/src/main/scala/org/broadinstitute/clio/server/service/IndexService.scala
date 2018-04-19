@@ -85,7 +85,10 @@ abstract class IndexService[CI <: ClioIndex](
 
     validateOrError
       .flatMapConcat[UpsertId, NotUsed] {
-        _.fold(Source.failed, upsertToStream(indexKey, _))
+        _.fold(
+          Source.failed,
+          metadata => Source.fromFuture(upsertToStream(indexKey, metadata))
+        )
       }
   }
 
@@ -107,7 +110,7 @@ abstract class IndexService[CI <: ClioIndex](
     } yield {
       ElasticsearchIndex.getUpsertId(document)
     }
-    Source.fromFuture(futureUpsertId)
+    futureUpsertId
   }
 
   private def setDefaultDocumentStatus(

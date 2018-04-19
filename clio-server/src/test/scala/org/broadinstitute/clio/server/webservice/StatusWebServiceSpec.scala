@@ -1,27 +1,32 @@
 package org.broadinstitute.clio.server.webservice
 
 import org.broadinstitute.clio.server.dataaccess.MockServerStatusDAO
-import org.broadinstitute.clio.status.model.{SearchStatus, StatusInfo, VersionInfo}
+import org.broadinstitute.clio.server.service.StatusService
+import org.broadinstitute.clio.status.model.{ClioStatus, SearchStatus, StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model.ApiConstants._
+import org.scalamock.scalatest.MockFactory
 
-class StatusWebServiceSpec extends BaseWebserviceSpec {
+import scala.concurrent.Future
+
+class StatusWebServiceSpec extends BaseWebserviceSpec with MockFactory {
   behavior of "StatusWebService"
 
+  val statusService: StatusService = mock[StatusService]
+  val webService = new StatusWebService(statusService)
+
   it should "versionRoute" in {
-    val webService = new MockStatusWebService()
+    val expectedVersion = VersionInfo("Mock Server Version")
+    (statusService.getVersion _).expects().returning(Future(expectedVersion))
     Get(s"/$versionString") ~> webService.versionRoute ~> check {
-      responseAs[VersionInfo] should be(
-        VersionInfo(MockServerStatusDAO.VersionMock)
-      )
+      responseAs[VersionInfo] should be(expectedVersion)
     }
   }
 
   it should "healthRoute" in {
-    val webService = new MockStatusWebService()
+    val expectedStatus = StatusInfo(ClioStatus.Started, SearchStatus.OK)
+    (statusService.getStatus _).expects().returning(Future(expectedStatus))
     Get(s"/$healthString") ~> webService.healthRoute ~> check {
-      responseAs[StatusInfo] should be(
-        StatusInfo(MockServerStatusDAO.StatusMock, SearchStatus.OK)
-      )
+      responseAs[StatusInfo] should be(expectedStatus)
     }
   }
 }
