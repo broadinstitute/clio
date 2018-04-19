@@ -56,5 +56,16 @@ object ElasticsearchUtil {
       */
     def unsafeGet[T: Decoder](key: String): T =
       json.hcursor.get[T](key).fold(throw _, identity)
+
+    def getAsString(key: String): String = {
+      json.asObject
+        .flatMap(_.apply(key))
+        .map {
+          case s if s.isString =>
+            s.asString.getOrElse("")
+          case j => j.toString()
+        }
+        .getOrElse("")
+    }
   }
 }

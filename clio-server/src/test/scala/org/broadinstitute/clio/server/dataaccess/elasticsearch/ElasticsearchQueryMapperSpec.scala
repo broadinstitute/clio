@@ -6,7 +6,12 @@ import java.time.OffsetDateTime
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import io.circe.Json
 import io.circe.syntax._
-import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockKey, ModelMockMetadata, ModelMockQueryInput}
+import org.broadinstitute.clio.transfer.model.{
+  ModelMockIndex,
+  ModelMockKey,
+  ModelMockMetadata,
+  ModelMockQueryInput
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 import org.scalatest.{FlatSpec, Matchers}

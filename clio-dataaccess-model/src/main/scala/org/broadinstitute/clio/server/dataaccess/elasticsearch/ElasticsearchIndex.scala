@@ -65,7 +65,8 @@ class ElasticsearchIndex[CI <: ClioIndex](
   def getId(json: Json): String = {
     val keyFields = FieldMapper[clioIndex.KeyType].fields.keys
       .map(snakeCaseTransformation)
-    (keyFields ++ additionalIdFields).map(json.unsafeGet[String]).mkString
+    val foo = (keyFields ++ additionalIdFields).map(f => json.getAsString(f)).mkString(".")
+    foo
   }
 
   final val indexName: String = clioIndex.elasticsearchIndexName
@@ -96,6 +97,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   val UpsertIdElasticsearchName = "upsert_id"
 
   val BookkeepingNames = Seq(
+    EntityIdElasticsearchName,
     UpsertIdElasticsearchName
   )
 
