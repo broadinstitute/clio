@@ -5,7 +5,7 @@ import java.time.OffsetDateTime
 import caseapp.core.Error
 import caseapp.core.argparser.ArgParser
 import enumeratum.{Enum, EnumEntry}
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.reflect.ClassTag
@@ -18,9 +18,13 @@ class ClioParsersSpec extends FlatSpec with Matchers with ClioParsers {
   DocumentStatus.values.foreach {
     it should behave like enumParser(_)
   }
+  DataType.values.foreach {
+    it should behave like enumParser(_)
+  }
 
   it should behave like enumParserErr[Location]
   it should behave like enumParserErr[DocumentStatus]
+  it should behave like enumParserErr[DataType]
 
   def enumParser[E <: EnumEntry: Enum](entry: E)(implicit c: ClassTag[E]): Unit = {
     val stringified = entry.entryName
