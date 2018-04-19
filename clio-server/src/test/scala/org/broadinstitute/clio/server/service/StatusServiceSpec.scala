@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.server.service
 
+import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.status.model.{
   ClioStatus,
@@ -7,12 +8,12 @@ import org.broadinstitute.clio.status.model.{
   StatusInfo,
   VersionInfo
 }
-import org.scalamock.scalatest.MockFactory
+import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
 import scala.concurrent.Future
 
-class StatusServiceSpec extends AsyncFlatSpec with Matchers with MockFactory {
+class StatusServiceSpec extends AsyncFlatSpec with Matchers with AsyncMockFactory {
   behavior of "StatusService"
 
   val statusDAO: ServerStatusDAO = mock[ServerStatusDAO]
@@ -22,7 +23,7 @@ class StatusServiceSpec extends AsyncFlatSpec with Matchers with MockFactory {
   it should "getVersion" in {
     for {
       version <- statusService.getVersion
-      _ = version should be(VersionInfo(MockServerStatusDAO.VersionMock))
+      _ = version should be(VersionInfo(ClioServerConfig.Version.value))
     } yield succeed
   }
 
