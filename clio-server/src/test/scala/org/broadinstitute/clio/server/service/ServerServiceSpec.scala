@@ -6,17 +6,10 @@ import java.time.OffsetDateTime
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchFieldMapper,
-  ElasticsearchIndex
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchFieldMapper, ElasticsearchIndex}
 import org.broadinstitute.clio.server.{ClioServerConfig, TestKitSuite}
 import org.broadinstitute.clio.status.model.ClioStatus
-import org.broadinstitute.clio.transfer.model.{
-  ModelMockIndex,
-  ModelMockKey,
-  ModelMockMetadata
-}
+import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockKey, ModelMockMetadata}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 

@@ -63,6 +63,8 @@ object ElasticsearchUtil {
         .map {
           case s if s.isString =>
             s.asString.getOrElse("")
+          case a if a.isArray =>
+            a.asArray.map(_.mkString(".")).getOrElse("")
           case j => j.toString()
         }
         .getOrElse("")

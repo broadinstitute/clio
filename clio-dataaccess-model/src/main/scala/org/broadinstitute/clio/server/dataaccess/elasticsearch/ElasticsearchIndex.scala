@@ -65,7 +65,8 @@ class ElasticsearchIndex[CI <: ClioIndex](
   def getId(json: Json): String = {
     val keyFields = FieldMapper[clioIndex.KeyType].fields.keys
       .map(snakeCaseTransformation)
-    val foo = (keyFields ++ additionalIdFields).map(f => json.getAsString(f)).mkString(".")
+    val foo =
+      (keyFields ++ additionalIdFields).map(f => json.getAsString(f)).mkString(".")
     foo
   }
 

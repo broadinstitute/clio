@@ -129,15 +129,16 @@ class HttpElasticsearchDAOSpec
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
-    def generateBookkeeping: Json =
+    def generateBookkeeping(s: String): Json =
       Map(
         ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
       ).asJson
-        .deepMerge(ModelMockKey(keyLong, keyString).asJson)
+        .deepMerge(ModelMockKey(keyLong, keyString + s).asJson)
 
     val documents =
       (1 to 4)
-        .map(_ => generateBookkeeping)
+        .map("document-" + _)
+        .map(generateBookkeeping)
 
     for {
       _ <- httpElasticsearchDAO.createOrUpdateIndex(index)
