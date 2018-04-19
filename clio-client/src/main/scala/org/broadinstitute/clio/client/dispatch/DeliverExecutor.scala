@@ -34,15 +34,16 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
   ): Source[moveCommand.index.MetadataType, NotUsed] = {
     val baseStream = super.checkPreconditions(ioUtil, webClient)
     baseStream.flatMapConcat { metadata =>
-      if (deliverCommand.force || !metadata.workspaceName.exists(
-            _ != deliverCommand.workspaceName
+      val workspaceName = metadata.workspaceName
+      if (deliverCommand.force || workspaceName.isEmpty || workspaceName.contains(
+            deliverCommand.workspaceName
           )) {
         Source.single(metadata)
       } else {
         Source.failed(
           new UnsupportedOperationException(
             s"Cannot deliver ${deliverCommand.index.name} to workspace '${deliverCommand.workspaceName}' " +
-              s"because it has already been delivered to workspace '${metadata.workspaceName.get}'. Use --force " +
+              s"because it has already been delivered to workspace '${workspaceName.get}'. Use --force " +
               "if you want to override this restriction."
           )
         )
