@@ -280,8 +280,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   }
 
   /**
-    * Validate that a String is valid JSON and write it
-    * to a local temp file if it is. Throw an exception if it isn't.
+    * Write a string to a local temp file.
     */
   def writeLocalTmpFile(str: String): File = {
     val tmpFile = File.newTemporaryFile("clio-integration", ".json")
