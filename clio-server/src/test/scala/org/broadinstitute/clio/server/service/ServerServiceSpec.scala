@@ -2,14 +2,22 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 import java.time.OffsetDateTime
+import java.util.UUID
 
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchFieldMapper, ElasticsearchIndex}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchFieldMapper,
+  ElasticsearchIndex
+}
 import org.broadinstitute.clio.server.{ClioServerConfig, TestKitSuite}
 import org.broadinstitute.clio.status.model.ClioStatus
-import org.broadinstitute.clio.transfer.model.{ModelMockIndex, ModelMockKey, ModelMockMetadata}
+import org.broadinstitute.clio.transfer.model.{
+  ModelMockIndex,
+  ModelMockKey,
+  ModelMockMetadata
+}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
 
@@ -114,7 +122,7 @@ class ServerServiceSpec
     val initInSearch = numDocs / 2
     val keyLong = 1L
     val keyString = "mock-key"
-    val key = ModelMockKey(keyLong, keyString)
+    def key = ModelMockKey(keyLong, keyString + UUID.randomUUID())
     val metadata = ModelMockMetadata(
       Some(1.0),
       Some(1),
@@ -126,8 +134,6 @@ class ServerServiceSpec
       Some(URI.create("/mock")),
       Some(1L)
     )
-    val document = key.asJson
-      .deepMerge(metadata.asJson)
 
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex(),
@@ -139,7 +145,8 @@ class ServerServiceSpec
     val initStoredDocuments = Seq.fill(numDocs)({
       // This generation is done inside this block because UpsertIds and EntityIds need to be unique.
       counter = counter + 1
-      document
+      key.asJson
+        .deepMerge(metadata.asJson)
         .deepMerge(
           Map(
             ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
