@@ -5,14 +5,14 @@ import com.sksamuel.elastic4s.searches.queries.{
   QueryStringQueryDefinition
 }
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
+import org.broadinstitute.clio.transfer.model.UbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata, UbamQueryInput}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
-class WgsUbamServiceSpec extends IndexServiceSpec[WgsUbamIndex.type]("WgsUbamService") {
+class UbamServiceSpec extends IndexServiceSpec[UbamIndex.type]("UbamService") {
 
-  val elasticsearchIndex: ElasticsearchIndex[WgsUbamIndex.type] =
-    ElasticsearchIndex.WgsUbam
+  val elasticsearchIndex: ElasticsearchIndex[UbamIndex.type] =
+    ElasticsearchIndex.Ubam
 
   val dummyKey = UbamKey(Location.GCP, "barcode1", 2, "library3")
 
@@ -56,7 +56,7 @@ class WgsUbamServiceSpec extends IndexServiceSpec[WgsUbamIndex.type]("WgsUbamSer
   def getService(
     persistenceService: PersistenceService,
     searchService: SearchService
-  ): WgsUbamService = {
-    new WgsUbamService(persistenceService, searchService)
+  ): UbamService = {
+    new UbamService(persistenceService, searchService)
   }
 }

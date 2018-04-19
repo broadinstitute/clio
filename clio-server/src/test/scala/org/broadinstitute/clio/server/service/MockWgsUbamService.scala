@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext
 
 class MockWgsUbamService()(implicit executionContext: ExecutionContext)
     extends MockIndexService(
-      elasticsearchIndex = ElasticsearchIndex.WgsUbam,
+      elasticsearchIndex = ElasticsearchIndex.Ubam,
       clioIndex = WgsUbamIndex
     ) {
 

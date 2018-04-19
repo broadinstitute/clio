@@ -32,7 +32,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val tmpMetadata = writeLocalTmpJson(metadata)
     val command = sequencingType match {
       case SequencingType.WholeGenome     => ClioCommand.addWgsUbamName
-      case SequencingType.HybridSelection => ClioCommand.addHybselUbamName
+      case SequencingType.HybridSelection => ClioCommand.addUbamName
     }
     runDecode[UpsertId](
       command,
@@ -70,7 +70,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     recoverToSucceededIf[RuntimeException] {
       runIgnore(
-        ClioCommand.addHybselUbamName,
+        ClioCommand.addUbamName,
         "--flowcell-barcode",
         stubKey.flowcellBarcode,
         "--lane",
@@ -87,7 +87,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   it should "throw a FailedResponse 404 when running query command for hybsel ubams" in {
     val queryResponseFuture = runCollectJson(
-      ClioCommand.queryHybselUbamName,
+      ClioCommand.queryUbamName,
       "--flowcell-barcode",
       stubKey.flowcellBarcode
     )
@@ -101,7 +101,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   it should "throw a FailedResponse 404 when running move command for hybsel ubams" in {
     val moveResponseFuture = runDecode[UpsertId](
-      ClioCommand.moveHybselUbamName,
+      ClioCommand.moveUbamName,
       "--flowcell-barcode",
       stubKey.flowcellBarcode,
       "--lane",
@@ -119,7 +119,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   it should "throw a FailedResponse 404 when running delete command for hybsel ubams" in {
     val deleteResponseFuture = runDecode[UpsertId](
-      ClioCommand.deleteHybselUbamName,
+      ClioCommand.deleteUbamName,
       "--flowcell-barcode",
       stubKey.flowcellBarcode,
       "--lane",
@@ -139,7 +139,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
-    val expected = ElasticsearchIndex.WgsUbam
+    val expected = ElasticsearchIndex.Ubam
     val getRequest = getMapping(IndexAndType(expected.indexName, expected.indexType))
 
     elasticsearchClient.executeAndUnpack(getRequest).map {
@@ -184,7 +184,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         )
       } yield {
         queryResponse should contain only expected
-        val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.WgsUbam)
+        val storedDocument = getJsonFrom(returnedUpsertId)(ElasticsearchIndex.Ubam)
         storedDocument.mapObject(
           _.filterKeys(!ElasticsearchIndex.BookkeepingNames.contains(_))
         ) should be(expected)
@@ -214,10 +214,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2 should be > upsertId1
 
-      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Ubam)
       storedDocument1.unsafeGet[String]("project") should be("testProject1")
 
-      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Ubam)
       storedDocument2.unsafeGet[String]("project") should be("testProject2")
 
       storedDocument1.deepMerge {
@@ -245,8 +245,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     } yield {
       upsertId2 should be > upsertId1
 
-      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Ubam)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Ubam)
 
       storedDocument1.mapObject(
         _.add(ElasticsearchIndex.UpsertIdElasticsearchName, upsertId2.asJson)
@@ -791,7 +791,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Ubam)
       storedDocument1.unsafeGet[String]("project") should be("testProject1")
     }
   }
@@ -821,8 +821,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
         force = false
       )
     } yield {
-      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
-      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.WgsUbam)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Ubam)
+      val storedDocument2 = getJsonFrom(upsertId2)(ElasticsearchIndex.Ubam)
       storedDocument1.unsafeGet[String]("project") should be("testProject1")
       storedDocument2.unsafeGet[String]("sample_alias") should be("sampleAlias1")
     }
@@ -851,7 +851,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         )
       }
     } yield {
-      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.WgsUbam)
+      val storedDocument1 = getJsonFrom(upsertId1)(ElasticsearchIndex.Ubam)
       storedDocument1.unsafeGet[String]("project") should be("testProject1")
     }
   }

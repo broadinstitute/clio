@@ -64,9 +64,15 @@ object ClioServer extends StrictLogging {
   val statusWebService =
     new StatusWebService(statusService)
 
+  // can inline this again when we get rid of wgs specific commands/endpoints
+  private val ubamService = new UbamService(persistenceService, searchService)
+
   val apiWebServices = Seq(
     new WgsUbamWebService(
-      new WgsUbamService(persistenceService, searchService)
+      ubamService
+    ),
+    new UbamWebService(
+      ubamService
     ),
     new GvcfWebService(
       new GvcfService(persistenceService, searchService)

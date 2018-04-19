@@ -67,9 +67,9 @@ case object WgsUbamIndex
       UbamQueryInput
     ] {
   override val urlSegment: String = "wgsubam"
-  override val name: String = "WgsUbam"
+  override val name: String = "Ubam"
   override val commandName: String = "wgs-ubam"
-  override val elasticsearchIndexName: String = "wgs-ubam"
+  override val elasticsearchIndexName: String = "ubam"
 }
 
 case object WgsCramIndex
@@ -87,16 +87,16 @@ case object WgsCramIndex
   override val elasticsearchIndexName: String = "wgs-cram-v2"
 }
 
-case object HybselUbamIndex
+case object UbamIndex
     extends SemiAutoClioIndex[
       UbamKey,
       UbamMetadata,
       UbamQueryInput
     ] {
-  override val urlSegment: String = "hybselubam"
-  override val name: String = "HybselUbam"
-  override val commandName: String = "hybsel-ubam"
-  override val elasticsearchIndexName: String = "hybsel-ubam"
+  override val urlSegment: String = "ubam"
+  override val name: String = "Ubam"
+  override val commandName: String = "ubam"
+  override val elasticsearchIndexName: String = "ubam"
 }
 
 case object ArraysIndex

@@ -159,34 +159,34 @@ final case class DeliverWgsCram(
   newBasename: Option[String] = None
 ) extends DeliverCommand(WgsCramIndex)
 
-// Hybsel-uBAM commands.
+// uBAM commands.
 
-@CommandName(ClioCommand.addHybselUbamName)
-final case class AddHybselUbam(
+@CommandName(ClioCommand.addUbamName)
+final case class AddUbam(
   @Recurse key: UbamKey,
   metadataLocation: URI,
   force: Boolean = false
-) extends AddCommand(HybselUbamIndex)
+) extends AddCommand(UbamIndex)
 
-@CommandName(ClioCommand.queryHybselUbamName)
-final case class QueryHybselUbam(
+@CommandName(ClioCommand.queryUbamName)
+final case class QueryUbam(
   @Recurse queryInput: UbamQueryInput,
   includeDeleted: Boolean = false
-) extends QueryCommand(HybselUbamIndex)
+) extends QueryCommand(UbamIndex)
 
-@CommandName(ClioCommand.moveHybselUbamName)
-final case class MoveHybselUbam(
+@CommandName(ClioCommand.moveUbamName)
+final case class MoveUbam(
   @Recurse key: UbamKey,
   destination: URI,
   newBasename: Option[String] = None
-) extends MoveCommand(HybselUbamIndex)
+) extends MoveCommand(UbamIndex)
 
-@CommandName(ClioCommand.deleteHybselUbamName)
-final case class DeleteHybselUbam(
+@CommandName(ClioCommand.deleteUbamName)
+final case class DeleteUbam(
   @Recurse key: UbamKey,
   note: String,
   force: Boolean = false
-) extends DeleteCommand(HybselUbamIndex)
+) extends DeleteCommand(UbamIndex)
 
 // ARRAYS commands.
 
@@ -256,11 +256,11 @@ object ClioCommand extends ClioParsers {
   val deleteWgsCramName: String = deletePrefix + WgsCramIndex.commandName
   val deliverWgsCramName: String = deliverPrefix + WgsCramIndex.commandName
 
-  // Names for Hybsel uBAM commands.
-  val addHybselUbamName: String = addPrefix + HybselUbamIndex.commandName
-  val queryHybselUbamName: String = queryPrefix + HybselUbamIndex.commandName
-  val moveHybselUbamName: String = movePrefix + HybselUbamIndex.commandName
-  val deleteHybselUbamName: String = deletePrefix + HybselUbamIndex.commandName
+  // Names for uBAM commands.
+  val addUbamName: String = addPrefix + UbamIndex.commandName
+  val queryUbamName: String = queryPrefix + UbamIndex.commandName
+  val moveUbamName: String = movePrefix + UbamIndex.commandName
+  val deleteUbamName: String = deletePrefix + UbamIndex.commandName
 
   // Names for Arrays commands.
   val addArraysName: String = addPrefix + ArraysIndex.commandName

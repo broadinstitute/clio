@@ -24,7 +24,7 @@ class PersistenceServiceSpec
   val mockKey = UbamKey(Location.OnPrem, "barcode", 1, "library")
   val mockMetadata = UbamMetadata()
 
-  val expectedIndex: ElasticsearchIndex[WgsUbamIndex.type] = ElasticsearchIndex.WgsUbam
+  val expectedIndex: ElasticsearchIndex[WgsUbamIndex.type] = ElasticsearchIndex.Ubam
 
   val mockDocConverter: ElasticsearchDocumentMapper[
     UbamKey,

@@ -90,9 +90,9 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   lazy val dateTimeFormatter: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
-  val WgsUbam: ElasticsearchIndex[WgsUbamIndex.type] =
+  val Ubam: ElasticsearchIndex[UbamIndex.type] =
     new ElasticsearchIndex(
-      WgsUbamIndex,
+      UbamIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
