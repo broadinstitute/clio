@@ -1,8 +1,12 @@
 package org.broadinstitute.clio.server.webservice
 
-import org.broadinstitute.clio.server.dataaccess.MockServerStatusDAO
 import org.broadinstitute.clio.server.service.StatusService
-import org.broadinstitute.clio.status.model.{ClioStatus, SearchStatus, StatusInfo, VersionInfo}
+import org.broadinstitute.clio.status.model.{
+  ClioStatus,
+  SearchStatus,
+  StatusInfo,
+  VersionInfo
+}
 import org.broadinstitute.clio.transfer.model.ApiConstants._
 import org.scalamock.scalatest.MockFactory
 

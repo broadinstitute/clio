@@ -1,7 +1,12 @@
 package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.dataaccess._
-import org.broadinstitute.clio.status.model.{ClioStatus, SearchStatus, StatusInfo, VersionInfo}
+import org.broadinstitute.clio.status.model.{
+  ClioStatus,
+  SearchStatus,
+  StatusInfo,
+  VersionInfo
+}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
