@@ -39,6 +39,7 @@ case class WgsCramMetadata(
   duplicateMetricsPath: Option[URI] = None,
   fingerprintingSummaryMetricsPath: Option[URI] = None,
   fingerprintingDetailMetricsPath: Option[URI] = None,
+  fingerprintVcfPath: Option[URI] = None,
   gcBiasPdfPath: Option[URI] = None,
   gcBiasSummaryMetricsPath: Option[URI] = None,
   gcBiasDetailMetricsPath: Option[URI] = None,
