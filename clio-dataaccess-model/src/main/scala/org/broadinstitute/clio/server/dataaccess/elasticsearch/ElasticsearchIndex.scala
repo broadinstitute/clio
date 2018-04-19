@@ -62,7 +62,7 @@ class ElasticsearchIndex[CI <: ClioIndex](
     * of the concatenated values of the Key fields.
     * Additional fields can be added to the ID using the ElasticsearchIndex constructor.
     */
-  def id(json: Json): String = {
+  def getId(json: Json): String = {
     // Very hacky way of getting key fields without instantiating dummy keys
     val keyFields = clioIndex.keyTag.runtimeClass.getConstructors.head.getParameters
       .map(_.getName)
