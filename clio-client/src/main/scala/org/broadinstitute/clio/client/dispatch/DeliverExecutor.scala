@@ -34,9 +34,11 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
   ): Source[moveCommand.index.MetadataType, NotUsed] = {
     val baseStream = super.checkPreconditions(ioUtil, webClient)
     baseStream.flatMapConcat { metadata =>
-      if (metadata.workspaceName.exists(
-            _ != deliverCommand.workspaceName && !deliverCommand.force
+      if (deliverCommand.force || !metadata.workspaceName.exists(
+            _ != deliverCommand.workspaceName
           )) {
+        Source.single(metadata)
+      } else {
         Source.failed(
           new UnsupportedOperationException(
             s"Cannot deliver ${deliverCommand.index.name} to workspace '${deliverCommand.workspaceName}' " +
@@ -44,8 +46,6 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
               "if you want to override this restriction."
           )
         )
-      } else {
-        Source.single(metadata)
       }
     }
   }
@@ -61,7 +61,10 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
 
     baseStream.flatMapConcat {
       case (movedMetadata, moveOps) =>
-        buildDelivery(movedMetadata, moveOps)
+        buildDelivery(
+          movedMetadata.withWorkspaceName(deliverCommand.workspaceName),
+          moveOps
+        )
     }
   }
 }

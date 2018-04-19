@@ -24,19 +24,18 @@ class DeliverWgsCramExecutor(deliverCommand: DeliverWgsCram)(
 ) extends DeliverExecutor(deliverCommand) {
 
   override protected def buildDelivery(
-    movedMetadata: WgsCramMetadata,
+    deliveredMetaData: WgsCramMetadata,
     moveOps: immutable.Seq[IoOp]
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
-    (movedMetadata.cramMd5, movedMetadata.cramPath) match {
+    (deliveredMetaData.cramMd5, deliveredMetaData.cramPath) match {
       case (Some(cramMd5), Some(cramPath)) => {
-
-        val newMetadata =
-          movedMetadata.withWorkspaceName(deliverCommand.workspaceName)
 
         val cloudMd5Path =
           URI.create(s"$cramPath${WgsCramExtensions.Md5ExtensionAddition}")
 
-        Source.single(newMetadata -> (moveOps :+ WriteOp(cramMd5.name, cloudMd5Path)))
+        Source.single(
+          deliveredMetaData -> (moveOps :+ WriteOp(cramMd5.name, cloudMd5Path))
+        )
       }
       case _ =>
         Source.failed(

@@ -22,10 +22,10 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
     extends DeliverExecutor(deliverCommand) {
 
   override protected[dispatch] def buildDelivery(
-    movedMetadata: ArraysMetadata,
+    deliveredMetadata: ArraysMetadata,
     moveOps: immutable.Seq[IoOp]
   ): Source[(ArraysMetadata, immutable.Seq[IoOp]), NotUsed] = {
-    (movedMetadata.grnIdatPath, movedMetadata.redIdatPath) match {
+    (deliveredMetadata.grnIdatPath, deliveredMetadata.redIdatPath) match {
       case (Some(grn), Some(red)) => {
         val movedGrnIdat = Metadata.findNewPathForMove(
           grn,
@@ -46,12 +46,10 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
             op.src.equals(op.dest)
           }
 
-        val newMetadata = movedMetadata
-          .withWorkspaceName(deliverCommand.workspaceName)
-          .copy(
-            grnIdatPath = Some(movedGrnIdat),
-            redIdatPath = Some(movedRedIdat)
-          )
+        val newMetadata = deliveredMetadata.copy(
+          grnIdatPath = Some(movedGrnIdat),
+          redIdatPath = Some(movedRedIdat)
+        )
 
         Source.single(newMetadata -> (moveOps ++ idatCopies))
       }
