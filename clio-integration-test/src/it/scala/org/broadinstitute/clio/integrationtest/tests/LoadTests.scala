@@ -8,7 +8,7 @@ import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamExtensions, UbamKey, UbamMetadata}
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DataType, Location}
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -39,7 +39,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
       ubamSize = Some(randInt.toLong),
       analysisType = Some(symbolId),
       baitIntervals = Some(symbolId),
-      dataType = Some(symbolId),
+      dataType = Some(DataType.WGS),
       individualAlias = Some(id),
       initiative = Some(id),
       lcSet = Some(symbolId),

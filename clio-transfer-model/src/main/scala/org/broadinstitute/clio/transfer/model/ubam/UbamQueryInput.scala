@@ -3,12 +3,7 @@ package org.broadinstitute.clio.transfer.model.ubam
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.transfer.model.QueryInput
-import org.broadinstitute.clio.util.model.{
-  AggregatedBy,
-  DocumentStatus,
-  Location,
-  RegulatoryDesignation
-}
+import org.broadinstitute.clio.util.model._
 
 case class UbamQueryInput(
   flowcellBarcode: Option[String] = None,
@@ -26,7 +21,8 @@ case class UbamQueryInput(
   baitSet: Option[Symbol] = None,
   baitIntervals: Option[Symbol] = None,
   targetIntervals: Option[Symbol] = None,
-  aggregatedBy: Option[AggregatedBy] = None
+  aggregatedBy: Option[AggregatedBy] = None,
+  dataType: Option[DataType] = None
 ) extends QueryInput[UbamQueryInput] {
 
   def withDocumentStatus(

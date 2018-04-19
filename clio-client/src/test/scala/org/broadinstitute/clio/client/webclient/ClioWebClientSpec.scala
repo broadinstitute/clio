@@ -123,6 +123,19 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
     }
   }
 
+  it should "raise an error if a response entity's stream goes idle for too long" in {
+    val data = Source
+      .single(ByteString("Hello"))
+      .concat(Source.single(ByteString("World!")).delay(timeout * 2))
+    val entity = HttpEntity(contentType = ContentTypes.`text/plain(UTF-8)`, data)
+    val flow = Flow[HttpRequest].map(_ => HttpResponse(entity = entity))
+
+    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
+    recoverToSucceededIf[TimeoutException] {
+      client.dispatchRequest(HttpRequest(), false).runWith(Sink.ignore)
+    }
+  }
+
   def jsonResponse[A: Encoder](body: A): HttpResponse = {
     val entity = HttpEntity(
       ContentTypes.`application/json`,
