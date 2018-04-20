@@ -1,8 +1,9 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import com.sksamuel.elastic4s.http.ElasticDsl.boolQuery
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import io.circe.Json
+import com.sksamuel.elastic4s.http.search.queries.compound.BoolQueryBuilderFn
+import io.circe.{Json, JsonObject}
+import io.circe.parser._
 import org.broadinstitute.clio.util.generic.{CaseClassMapperWithTypes, FieldMapper}
 
 import scala.reflect.ClassTag
@@ -18,36 +19,7 @@ import scala.reflect.ClassTag
 class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
   val inputMapper = new CaseClassMapperWithTypes[Input]
 
-  /**
-    * Returns true if the client sent a query that doesn't contain any filters.
-    *
-    * @param queryInput The query input.
-    * @return True if the client sent a query that doesn't contain any filters.
-    */
-  def isEmpty(queryInput: Input): Boolean = {
-    flattenVals(queryInput).isEmpty
-  }
-
-  /**
-    * Builds an elastic4s query definition from the query input.
-    *
-    * @param queryInput The query input.
-    * @return An elastic4s query definition from the query input.
-    */
-  def buildQuery(queryInput: Input)(
-    implicit index: ElasticsearchIndex[_]
-  ): QueryDefinition = {
-    val queries = flattenVals(queryInput) map {
-      case (name, value) => {
-        index.fieldMapper.valueToQuery(
-          ElasticsearchUtil.toElasticsearchName(name),
-          inputMapper.types(name)
-        )(value)
-      }
-    }
-    boolQuery must queries
-  }
-
+  val elasticsearchQueryObjectName = "query"
   private val keysToDrop =
     Set(
       ElasticsearchIndex.UpsertIdElasticsearchName,
@@ -55,15 +27,28 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
     )
 
   /**
-    * Munges the query result document into the appropriate form for the query output.
+    * Builds an elastic4s query as a json string from the query input.
     *
-    * @param document A query result document.
-    * @return The query output.
+    * @param queryInput The query input.
+    * @return A json object representing an Elasticsearch query
     */
-  def toQueryOutput(document: Json): Json = {
-    document.mapObject(_.filterKeys({ key =>
-      !keysToDrop.contains(key)
-    }))
+  def buildQuery(queryInput: Input)(
+    implicit index: ElasticsearchIndex[_]
+  ): JsonObject = {
+    val queries = flattenVals(queryInput) map {
+      case (name, value) =>
+        index.fieldMapper.valueToQuery(
+          ElasticsearchUtil.toElasticsearchName(name),
+          inputMapper.types(name)
+        )(value)
+    }
+    val queryDefinition = boolQuery must queries
+    JsonObject(
+      (
+        elasticsearchQueryObjectName,
+        parse(BoolQueryBuilderFn(queryDefinition).string).fold(throw _, identity)
+      )
+    )
   }
 
   /**
@@ -84,6 +69,16 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
     flattened sortBy {
       case (name, _) => name
     }
+  }
+
+  /**
+    * Munges the query result document into the appropriate form for the query output.
+    *
+    * @param document A query result document.
+    * @return The query output.
+    */
+  def toQueryOutput(document: Json): Json = {
+    document.mapObject(_.filterKeys(!keysToDrop.contains(_)))
   }
 }
 

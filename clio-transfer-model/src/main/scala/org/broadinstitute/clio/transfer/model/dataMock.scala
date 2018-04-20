@@ -65,7 +65,8 @@ case class ModelMockMetadata(
     pathMapper: (Option[URI], String) => Option[URI]
   ): ModelMockMetadata = this
 
-  def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockMetadata = this
+  def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockMetadata =
+    this.copy(mockDocumentStatus = documentStatus)
 }
 
 case class ModelMockQueryInput(
@@ -79,5 +80,5 @@ case class ModelMockQueryInput(
 ) extends QueryInput[ModelMockQueryInput] {
 
   def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockQueryInput =
-    this
+    this.copy(documentStatus = documentStatus)
 }

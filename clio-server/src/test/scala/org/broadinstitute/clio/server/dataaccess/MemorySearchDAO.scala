@@ -2,12 +2,8 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.sksamuel.elastic4s.searches.queries.{
-  BoolQueryDefinition,
-  QueryDefinition,
-  QueryStringQueryDefinition
-}
-import io.circe.Json
+import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.ClioIndex
 
@@ -19,45 +15,28 @@ class MemorySearchDAO extends MockSearchDAO {
   val updateCalls: mutable.ArrayBuffer[(Seq[Json], ElasticsearchIndex[ClioIndex])] =
     mutable.ArrayBuffer.empty
 
-  val queryCalls: mutable.ArrayBuffer[QueryDefinition] =
+  val queryCalls: mutable.ArrayBuffer[JsonObject] =
     mutable.ArrayBuffer.empty
 
-  override def updateMetadata(documents: Json*)(
+  override def updateMetadata(documents: Seq[Json])(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     updateCalls += ((documents, index.asInstanceOf[ElasticsearchIndex[ClioIndex]]))
-    super.updateMetadata(documents: _*)
+    super.updateMetadata(documents)
   }
 
-  override def queryMetadata(queryDefinition: QueryDefinition)(
+  override def updateMetadata(document: Json)(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Unit] = {
+    updateMetadata(Seq(document))
+  }
+
+  override def rawQuery(json: JsonObject)(
     implicit
     index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
-    queryCalls += queryDefinition
-    queryDefinition match {
-      case boolQuery: BoolQueryDefinition =>
-        val entityId = boolQuery.must.map {
-          case innerQuery: QueryStringQueryDefinition =>
-            innerQuery.query.replace("\"", "")
-          case _ => Source.empty
-        }.mkString(".")
-        updateCalls
-          .flatMap(_._1)
-          .find(update => {
-            update
-              .findAllByKey("entity_id")
-              .forall(
-                updateEntityId =>
-                  updateEntityId.toString().split(".").deep == entityId.toString
-                    .split(".")
-                    .deep
-              )
-          })
-          .fold(
-            super.queryMetadata(queryDefinition)
-          )(Source.single)
-      case _ => Source.empty
-    }
+    queryCalls += json
+    Source.single(json.asJson)
   }
 
   override def getMostRecentDocument(

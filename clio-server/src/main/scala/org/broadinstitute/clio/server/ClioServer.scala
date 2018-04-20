@@ -44,8 +44,6 @@ object ClioServer extends StrictLogging {
     ClioServerConfig.Persistence.recoveryParallelism
   )
 
-  private val persistenceService = new PersistenceService(persistenceDAO, searchDAO)
-  private val searchService = new SearchService(searchDAO)
   private val statusService = new StatusService(serverStatusDAO, searchDAO)
 
   private val exceptionDirectives = new ExceptionDirectives
@@ -65,7 +63,7 @@ object ClioServer extends StrictLogging {
     new StatusWebService(statusService)
 
   // can inline this again when we get rid of wgs specific commands/endpoints
-  private val ubamService = new UbamService(persistenceService, searchService)
+  private val ubamService = new UbamService(persistenceDAO, searchDAO)
 
   val apiWebServices = Seq(
     new WgsUbamWebService(
@@ -75,13 +73,13 @@ object ClioServer extends StrictLogging {
       ubamService
     ),
     new GvcfWebService(
-      new GvcfService(persistenceService, searchService)
+      new GvcfService(persistenceDAO, searchDAO)
     ),
     new WgsCramWebService(
-      new WgsCramService(persistenceService, searchService)
+      new WgsCramService(persistenceDAO, searchDAO)
     ),
     new ArraysWebService(
-      new ArraysService(persistenceService, searchService)
+      new ArraysService(persistenceDAO, searchDAO)
     )
   )
 

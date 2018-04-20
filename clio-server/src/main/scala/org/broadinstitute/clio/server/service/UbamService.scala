@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.server.service
 
+import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.UbamIndex
 
@@ -10,12 +11,12 @@ import scala.concurrent.ExecutionContext
   * before handing off to the generic search / persistence services.
   */
 class UbamService(
-  persistenceService: PersistenceService,
-  searchService: SearchService
+  persistenceDAO: PersistenceDAO,
+  searchDAO: SearchDAO
 )(implicit executionContext: ExecutionContext)
     extends IndexService(
-      persistenceService,
-      searchService,
+      persistenceDAO,
+      searchDAO,
       ElasticsearchIndex.Ubam,
       UbamIndex
     )

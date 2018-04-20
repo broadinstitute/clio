@@ -3,6 +3,8 @@ package org.broadinstitute.clio.transfer.model
 import java.io.File
 import java.net.URI
 
+import io.circe.Json
+import io.circe.syntax._
 import org.broadinstitute.clio.util.generic.CaseClassMapper
 import org.broadinstitute.clio.util.model.DocumentStatus
 
@@ -80,6 +82,18 @@ trait Metadata[M <: Metadata[M]] { self: M =>
 }
 
 object Metadata {
+
+  val documentStatusFieldName = "document_stats"
+
+  def jsonWithDocumentStatus(input: Json, documentStatus: DocumentStatus): Json = {
+    import org.broadinstitute.clio.util.json.ModelAutoDerivation.encodeEnum
+    input.mapObject(
+      _.add(
+        "document_status",
+        documentStatus.asJson
+      )
+    )
+  }
 
   /**
     * Given a `source` path, a `destination` directory, and an extension, figure out what

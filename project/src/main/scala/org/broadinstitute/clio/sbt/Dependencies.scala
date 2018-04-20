@@ -75,6 +75,7 @@ object Dependencies {
     "com.google.jimfs" % "jimfs" % JimfsVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
+    "org.scalamock" %% "scalamock" % ScalamockVersion,
     "org.scalatest" %% "scalatest" % ScalaTestVersion
   ).map(_ % Test)
 

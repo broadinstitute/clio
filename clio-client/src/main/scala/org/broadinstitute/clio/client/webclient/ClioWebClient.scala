@@ -4,6 +4,8 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
+import better.files.File
+import io.circe.parser._
 import akka.stream.scaladsl.{Flow, JsonFraming, Source}
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
@@ -14,6 +16,7 @@ import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
+import org.broadinstitute.clio.util.model.DocumentStatus
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -165,12 +168,37 @@ class ClioWebClient private[client] (
     ).via(parserFlow)
   }
 
-  def query[I](clioIndex: ClioWebClient.QueryAux[I])(
+  def simpleQuery[I](clioIndex: ClioWebClient.QueryAux[I])(
     input: I,
     includeDeleted: Boolean
   ): Source[Json, NotUsed] = {
     import clioIndex.implicits._
-    rawQuery(clioIndex)(input.asJson, includeDeleted)
+    if (includeDeleted) {
+      query(clioIndex)(input.asJson)
+    } else {
+      query(clioIndex)(
+        Metadata.jsonWithDocumentStatus(
+          input.asJson,
+          DocumentStatus.Normal
+        )
+      )
+    }
+  }
+
+  def jsonFileQuery[CI <: ClioIndex](clioIndex: CI)(
+    input: File
+  ): Source[Json, NotUsed] = {
+    parse(input.contentAsString)
+      .fold(
+        e =>
+          Source.failed(
+            new IllegalArgumentException(
+              s"Input file at ${input.path.toString} must contain valid Json.",
+              e
+            )
+        ),
+        query(clioIndex)(_, raw = true)
+      )
   }
 
   def getMetadataForKey[K, M](clioIndex: ClioWebClient.UpsertAux[K, M])(
@@ -181,11 +209,18 @@ class ClioWebClient private[client] (
     import clioIndex.implicits._
     import s_mach.string._
 
-    val keyJson = input.asJson
+    val keyJson = if (includeDeleted) {
+      input.asJson
+    } else {
+      Metadata.jsonWithDocumentStatus(
+        input.asJson,
+        DocumentStatus.Normal
+      )
+    }
     val keyFields = FieldMapper[K].fields.keySet
       .map(_.toSnakeCase(CirceEquivalentCamelCaseLexer))
 
-    rawQuery(clioIndex)(keyJson, includeDeleted)
+    query(clioIndex)(keyJson)
       .fold[Either[Throwable, Option[M]]](Right(None)) { (acc, json) =>
         acc match {
           case Right(None) =>
@@ -213,12 +248,11 @@ class ClioWebClient private[client] (
       }
   }
 
-  private def rawQuery(clioIndex: ClioIndex)(
+  private[webclient] def query(clioIndex: ClioIndex)(
     input: Json,
-    includeDeleted: Boolean
+    raw: Boolean = false
   ): Source[Json, NotUsed] = {
-    val queryPath = if (includeDeleted) queryAllString else queryString
-
+    val queryPath = if (raw) rawQueryString else queryString
     val entity = HttpEntity(
       ContentTypes.`application/json`,
       input.pretty(ModelAutoDerivation.defaultPrinter)

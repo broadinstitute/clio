@@ -6,6 +6,7 @@ import com.sksamuel.elastic4s.searches.queries.{
   BoolQueryDefinition,
   QueryStringQueryDefinition
 }
+import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{
@@ -64,9 +65,9 @@ class WgsCramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramSer
   }
 
   def getService(
-    persistenceService: PersistenceService,
-    searchService: SearchService
+    persistenceDAO: PersistenceDAO,
+    searchDAO: SearchDAO
   ): WgsCramService = {
-    new WgsCramService(persistenceService, searchService)
+    new WgsCramService(persistenceDAO, searchDAO)
   }
 }

@@ -2,8 +2,7 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.collection.immutable
@@ -18,11 +17,15 @@ class MockSearchDAO extends SearchDAO {
 
   override def close(): Future[Unit] = Future.unit
 
-  override def updateMetadata(documents: Json*)(
+  override def updateMetadata(documents: Seq[Json])(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = Future.unit
 
-  override def queryMetadata(queryDefinition: QueryDefinition)(
+  override def updateMetadata(document: Json)(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Unit] = Future.unit
+
+  override def rawQuery(json: JsonObject)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
     Source.empty[Json]
