@@ -263,7 +263,7 @@ object ClioCommand extends ClioParsers {
   val getServerVersionName = "get-server-version"
 
   val addPrefix = "add-"
-  val queryPrefix = "query-"
+  val simpleQueryPrefix = "query-"
   val rawQueryPrefix = "raw-query-"
   val movePrefix = "move-"
   val deletePrefix = "delete-"
@@ -271,21 +271,21 @@ object ClioCommand extends ClioParsers {
 
   // Names for WGS uBAM commands.
   val addWgsUbamName: String = addPrefix + WgsUbamIndex.commandName
-  val queryWgsUbamName: String = queryPrefix + WgsUbamIndex.commandName
+  val queryWgsUbamName: String = simpleQueryPrefix + WgsUbamIndex.commandName
   val rawQueryWgsUbamName: String = rawQueryPrefix + WgsUbamIndex.commandName
   val moveWgsUbamName: String = movePrefix + WgsUbamIndex.commandName
   val deleteWgsUbamName: String = deletePrefix + WgsUbamIndex.commandName
 
   // Names for GVCF commands.
   val addGvcfName: String = addPrefix + GvcfIndex.commandName
-  val queryGvcfName: String = queryPrefix + GvcfIndex.commandName
+  val queryGvcfName: String = simpleQueryPrefix + GvcfIndex.commandName
   val rawQueryGvcfName: String = rawQueryPrefix + GvcfIndex.commandName
   val moveGvcfName: String = movePrefix + GvcfIndex.commandName
   val deleteGvcfName: String = deletePrefix + GvcfIndex.commandName
 
   // Names for WGS cram commands.
   val addWgsCramName: String = addPrefix + WgsCramIndex.commandName
-  val queryWgsCramName: String = queryPrefix + WgsCramIndex.commandName
+  val queryWgsCramName: String = simpleQueryPrefix + WgsCramIndex.commandName
   val rawQueryWgsCramName: String = rawQueryPrefix + WgsCramIndex.commandName
   val moveWgsCramName: String = movePrefix + WgsCramIndex.commandName
   val deleteWgsCramName: String = deletePrefix + WgsCramIndex.commandName
@@ -293,15 +293,15 @@ object ClioCommand extends ClioParsers {
 
   // Names for Hybsel uBAM commands.
   val addHybselUbamName: String = addPrefix + HybselUbamIndex.commandName
-  val queryHybselUbamName: String = queryPrefix + HybselUbamIndex.commandName
+  val queryHybselUbamName: String = simpleQueryPrefix + HybselUbamIndex.commandName
   val rawQueryHybselUbamName: String = rawQueryPrefix + HybselUbamIndex.commandName
   val moveHybselUbamName: String = movePrefix + HybselUbamIndex.commandName
   val deleteHybselUbamName: String = deletePrefix + HybselUbamIndex.commandName
 
   // Names for Arrays commands.
   val addArraysName: String = addPrefix + ArraysIndex.commandName
-  val queryArraysName: String = queryPrefix + ArraysIndex.commandName
-  val rawQueryArraysName: String = queryPrefix + ArraysIndex.commandName
+  val queryArraysName: String = simpleQueryPrefix + ArraysIndex.commandName
+  val rawQueryArraysName: String = simpleQueryPrefix + ArraysIndex.commandName
   val moveArraysName: String = movePrefix + ArraysIndex.commandName
   val deleteArraysName: String = deletePrefix + ArraysIndex.commandName
   val deliverArraysName: String = deliverPrefix + ArraysIndex.commandName
