@@ -1,33 +1,38 @@
 package org.broadinstitute.clio.server.service
 
 import java.security.SecureRandom
+import java.time.OffsetDateTime
 
-import akka.stream.scaladsl.Sink
+import akka.NotUsed
+import akka.stream.scaladsl.{Sink, Source}
 import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import org.broadinstitute.clio.server.TestKitSuite
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.server.dataaccess.{MemoryPersistenceDAO, MemorySearchDAO}
+import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.exceptions.UpsertValidationException
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.DocumentStatus
 import org.broadinstitute.clio.util.model.DocumentStatus.{Deleted, Normal}
+import org.scalatest.OneInstancePerTest
+
+import scala.concurrent.{ExecutionContext, Future}
+
 abstract class IndexServiceSpec[
   CI <: ClioIndex
 ](specificService: String)
     extends TestKitSuite(specificService + "Spec")
-    with ModelAutoDerivation {
+    with ModelAutoDerivation
+    with OneInstancePerTest {
 
-  val memoryPersistenceDAO = new MemoryPersistenceDAO()
-  val memorySearchDAO = new MemorySearchDAO()
+  val mockPersistenceDAO: PersistenceDAO = mock[PersistenceDAO]
+  val mockSearchDAO: SearchDAO = mock[SearchDAO]
 
-  val indexService: IndexService[CI] = {
+  val indexService: IndexService[CI] = getService(mockPersistenceDAO, mockSearchDAO)
 
-    val searchService = new SearchService(memorySearchDAO)
-    val persistenceService = new PersistenceService(memoryPersistenceDAO, memorySearchDAO)
-    getService(persistenceService, searchService)
-  }
+  import indexService.clioIndex.implicits._
 
   def randomString: String =
     util.Random.javaRandomToRandom(new SecureRandom()).nextString(10)
@@ -46,74 +51,175 @@ abstract class IndexServiceSpec[
   ): indexService.clioIndex.MetadataType
 
   def getService(
-    persistenceService: PersistenceService,
-    searchService: SearchService
+    persistenceDAO: PersistenceDAO,
+    searchDAO: SearchDAO
   ): IndexService[CI]
 
   behavior of specificService
 
   it should "fail if the update would overwrite data" in {
     recoverToSucceededIf[UpsertValidationException] {
-      clearMemory()
-      overMetadataWriteTest(None, None)
+      overMetadataWriteTest(None, None, expectQueryOnly = true)
     }
   }
 
   it should "succeed if the update would overwrite data and force is set to true" in {
-    clearMemory()
     overMetadataWriteTest(Some(Normal), Some(Normal), force = true)
   }
 
   it should "not overwrite document status if it is not set" in {
-    clearMemory()
     overMetadataWriteTest(Some(Deleted), None, changeField = false)
   }
 
   it should "fail if it would overwrite document status" in {
     recoverToSucceededIf[UpsertValidationException] {
-      clearMemory()
-      overMetadataWriteTest(Some(Deleted), Some(Normal), changeField = false)
+      overMetadataWriteTest(
+        Some(Deleted),
+        Some(Normal),
+        changeField = false,
+        expectQueryOnly = true
+      )
     }
   }
 
   it should "not overwrite document status if it is not set and force is set to true" in {
-    clearMemory()
     overMetadataWriteTest(Some(Deleted), None, changeField = false, force = true)
   }
 
   it should "upsertMetadata" in {
-    clearMemory()
     upsertMetadataTest(None)
   }
 
   it should "upsertMetadata with document_status explicitly set to Normal" in {
-    clearMemory()
     upsertMetadataTest(
       Option(DocumentStatus.Normal)
     )
   }
 
   it should "upsertMetadata with document_status explicitly set to Deleted" in {
-    clearMemory()
     upsertMetadataTest(
       Option(DocumentStatus.Deleted)
     )
   }
 
-  it should "queryData" in {
-    clearMemory()
+  it should "forward a raw JSON string to the searchDAO" in {
+    val json = JsonObject("this" -> "is valid json".asJson)
+    expectRawQuery(
+      json,
+      Source.empty[Json]
+    )
     for {
-      _ <- indexService.queryMetadata(dummyInput).runWith(Sink.seq)
-    } yield {
-      memorySearchDAO.updateCalls should be(empty)
-      memorySearchDAO.queryCalls should be(
-        Seq(
-          indexService.queryConverter.buildQuery(
-            dummyInput.withDocumentStatus(Option(DocumentStatus.Normal))
-          )(elasticsearchIndex)
+      _ <- indexService.rawQuery(json).runWith(Sink.ignore)
+    } yield succeed
+  }
+
+  it should "convert and execute a queryMetadata call as a raw query" in {
+    expectRawQuery(
+      inputToJsonObject(dummyInput),
+      Source.empty[Json]
+    )
+    for {
+      _ <- indexService.queryMetadata(dummyInput).runWith(Sink.ignore)
+    } yield succeed
+  }
+
+  it should "not update search if writing to storage fails" in {
+    val metadata = getDummyMetadata(Some(DocumentStatus.Normal))
+    val expectedDocument = indexService.documentConverter.document(dummyKey, metadata)
+    expectRawQuery(
+      keyToJsonObject(dummyKey),
+      Source.empty[Json]
+    )
+    expectWriteUpdate(
+      expectedDocument,
+      Future.failed(new Exception("Write Failure Test"))
+    )
+    recoverToSucceededIf[Exception] {
+      indexService
+        .upsertMetadata(dummyKey, metadata)
+        .runWith(Sink.ignore)
+    }
+  }
+
+  private def keyToJsonObject(key: indexService.clioIndex.KeyType): JsonObject = {
+    indexService.keyQueryConverter.buildQuery(key)(elasticsearchIndex)
+  }
+
+  private def inputToJsonObject(
+    input: indexService.clioIndex.QueryInputType
+  ): JsonObject = {
+    indexService.queryConverter.buildQuery(input)(elasticsearchIndex)
+  }
+
+  private def jsonWithoutUpsertId(json: Json): Json = {
+    json.mapObject { obj =>
+      obj.remove(ElasticsearchIndex.UpsertIdElasticsearchName)
+    }
+  }
+
+  private def jsonSimilarAndIndexEqual(
+    expectedJson: Json,
+    expectedIndex: ElasticsearchIndex[_]
+  )(
+    json: Json,
+    index: ElasticsearchIndex[_]
+  ): Boolean = {
+    jsonWithoutUpsertId(expectedJson)
+      .equals(
+        jsonWithoutUpsertId(json)
+      ) && expectedIndex.equals(index)
+  }
+
+  private def expectWriteUpdate(
+    expectedDocument: Json,
+    returning: Future[Unit] = Future.successful(())
+  ) = {
+    // we don't know what upsertId to expect, so need to use
+    // a custom matcher that is upsertId-agnostic
+    (mockPersistenceDAO
+      .writeUpdate(
+        _: Json,
+        _: ElasticsearchIndex[_],
+        _: OffsetDateTime
+      )(
+        _: ExecutionContext
+      ))
+      .expects(
+        where { (document, index, _, _) =>
+          jsonSimilarAndIndexEqual(
+            expectedDocument,
+            elasticsearchIndex
+          )(document, index)
+        }
+      )
+      .returning(returning)
+  }
+
+  private def expectUpdateMetadata(
+    expectedDocument: Json,
+    returning: Future[Unit] = Future.successful(())
+  ) = {
+    (mockSearchDAO
+      .updateMetadata(_: Json)(_: ElasticsearchIndex[_]))
+      .expects(
+        where(
+          jsonSimilarAndIndexEqual(
+            expectedDocument,
+            elasticsearchIndex
+          )(_, _)
         )
       )
-    }
+      .returning(returning)
+  }
+
+  private def expectRawQuery(
+    expectedJson: JsonObject,
+    returning: Source[Json, NotUsed]
+  ) = {
+    (mockSearchDAO
+      .rawQuery(_: JsonObject)(_: ElasticsearchIndex[_]))
+      .expects(expectedJson, elasticsearchIndex)
+      .returning(returning)
   }
 
   private def upsertMetadataTest(
@@ -121,107 +227,69 @@ abstract class IndexServiceSpec[
   ) = {
     val metadata = getDummyMetadata(documentStatus)
     val expectedDocumentStatus = Option(documentStatus.getOrElse(DocumentStatus.Normal))
+    val expectedDocument =
+      indexService.documentConverter
+        .document(
+          dummyKey,
+          metadata.withDocumentStatus(expectedDocumentStatus)
+        )
+    expectWriteUpdate(expectedDocument)
+    expectUpdateMetadata(expectedDocument)
+    expectRawQuery(
+      keyToJsonObject(dummyKey),
+      Source.empty[Json]
+    )
     for {
-      returnedUpsertId <- indexService
+      _ <- indexService
         .upsertMetadata(
           dummyKey,
           metadata
         )
         .runWith(Sink.head)
-    } yield {
-      val expectedDocument =
-        indexService.documentConverter
-          .document(
-            dummyKey,
-            metadata.withDocumentStatus(expectedDocumentStatus)
-          )
-          .mapObject(
-            _.add(ElasticsearchIndex.UpsertIdElasticsearchName, returnedUpsertId.asJson)
-          )
-
-      memoryPersistenceDAO.writeCalls should be(
-        Seq((expectedDocument, elasticsearchIndex))
-      )
-      memorySearchDAO.updateCalls should be(
-        Seq((Seq(expectedDocument), elasticsearchIndex))
-      )
-      memorySearchDAO.queryCalls should be(
-        Seq(dummyKeyQuery)
-      )
-    }
+    } yield succeed
   }
 
   private def overMetadataWriteTest(
     originalStatus: Option[DocumentStatus],
     newStatus: Option[DocumentStatus],
     changeField: Boolean = true,
-    force: Boolean = false
+    force: Boolean = false,
+    expectQueryOnly: Boolean = false
   ) = {
 
-    val metadata = getDummyMetadata(originalStatus)
+    val dummyMetadata = getDummyMetadata(originalStatus)
     val newMetadata = if (changeField) {
-      copyDummyMetadataChangeField(metadata).withDocumentStatus(newStatus)
+      copyDummyMetadataChangeField(dummyMetadata).withDocumentStatus(newStatus)
     } else {
-      metadata.withDocumentStatus(newStatus)
+      dummyMetadata.withDocumentStatus(newStatus)
     }
-
-    val expectedOriginalDocumentStatus = Option(originalStatus.getOrElse(Normal))
+    val originalDocumentStatus = Option(originalStatus.getOrElse(Normal))
     val expectedNewDocumentStatus = Option(
       newStatus.getOrElse(originalStatus.getOrElse(Normal))
     )
-    for {
-      upsertId <- indexService
-        .upsertMetadata(
+    val originalMetadata = dummyMetadata.withDocumentStatus(originalDocumentStatus)
+    val expectedDocument =
+      indexService.documentConverter
+        .document(
           dummyKey,
-          metadata
+          newMetadata.withDocumentStatus(expectedNewDocumentStatus)
         )
-        .runWith(Sink.head)
-      newUpsertId <- indexService
-        .upsertMetadata(dummyKey, newMetadata, force)
-        .runWith(Sink.head)
-    } yield {
 
-      val expectedDocument =
-        indexService.documentConverter
-          .document(
-            dummyKey,
-            metadata.withDocumentStatus(expectedOriginalDocumentStatus)
-          )
-          .mapObject(
-            _.add(ElasticsearchIndex.UpsertIdElasticsearchName, upsertId.asJson)
-          )
-
-      val expectedDocument2 =
-        indexService.documentConverter
-          .document(
-            dummyKey,
-            newMetadata.withDocumentStatus(expectedNewDocumentStatus)
-          )
-          .mapObject(
-            _.add(ElasticsearchIndex.UpsertIdElasticsearchName, newUpsertId.asJson)
-          )
-
-      memoryPersistenceDAO.writeCalls should be(
-        Seq(
-          (expectedDocument, elasticsearchIndex),
-          (expectedDocument2, elasticsearchIndex)
-        )
-      )
-      memorySearchDAO.updateCalls should be(
-        Seq(
-          (Seq(expectedDocument), elasticsearchIndex),
-          (Seq(expectedDocument2), elasticsearchIndex)
-        )
-      )
-      memorySearchDAO.queryCalls should be(
-        if (newStatus.isEmpty) Seq(dummyKeyQuery, dummyKeyQuery) else Seq(dummyKeyQuery)
+    if (!force || newStatus.isEmpty) {
+      expectRawQuery(
+        keyToJsonObject(dummyKey),
+        returning = Source.single(originalMetadata.asJson)
       )
     }
-  }
+    if (!expectQueryOnly) {
+      expectUpdateMetadata(expectedDocument)
+      expectWriteUpdate(expectedDocument)
+    }
 
-  private def clearMemory(): Unit = {
-    memoryPersistenceDAO.writeCalls.clear()
-    memorySearchDAO.updateCalls.clear()
-    memorySearchDAO.queryCalls.clear()
+    for {
+      _ <- indexService
+        .upsertMetadata(dummyKey, newMetadata, force)
+        .runWith(Sink.head)
+    } yield succeed
   }
 }

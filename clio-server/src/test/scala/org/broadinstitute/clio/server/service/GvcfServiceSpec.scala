@@ -6,6 +6,7 @@ import com.sksamuel.elastic4s.searches.queries.{
   BoolQueryDefinition,
   QueryStringQueryDefinition
 }
+import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.gvcf.{
@@ -62,9 +63,9 @@ class GvcfServiceSpec extends IndexServiceSpec[GvcfIndex.type]("GvcfService") {
   }
 
   def getService(
-    persistenceService: PersistenceService,
-    searchService: SearchService
+    persistenceDAO: PersistenceDAO,
+    searchDAO: SearchDAO
   ): GvcfService = {
-    new GvcfService(persistenceService, searchService)
+    new GvcfService(persistenceDAO, searchDAO)
   }
 }

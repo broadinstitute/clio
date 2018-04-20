@@ -6,6 +6,7 @@ import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
+import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
@@ -65,6 +66,123 @@ trait GvcfTests { self: BaseIntegrationSpec =>
   // Generate a test for every possible Location value.
   Location.values.foreach {
     it should behave like testGvcfLocation(_)
+  }
+
+  it should "handle raw queries for specific fields only" in {
+    val sampleAlias = s"someAlias $randomId"
+    val key = GvcfKey(
+      location = Location.GCP,
+      project = "test project",
+      sampleAlias = sampleAlias,
+      version = 2
+    )
+    val gvcfPath = Some(URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"))
+    val metadata = GvcfMetadata(
+      gvcfPath = gvcfPath,
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+    val expected = Map("gvcf_path" -> gvcfPath).asJson
+    val rawJsonQuery =
+      s"""{
+         |  "_source": "gvcf_path",
+         |  "query": {
+         |    "bool": {
+         |      "must": [
+         |        {
+         |          "query_string": {
+         |            "default_field": "sample_alias.exact",
+         |            "query": "\\"$sampleAlias\\""
+         |          }
+         |        }
+         |      ]
+         |    }
+         |  }
+         |}
+      """.stripMargin
+    rawQueryTest(
+      rawJsonQuery,
+      runUpsertGvcf(key, metadata),
+      _ should contain only expected
+    )
+  }
+
+  it should "handle raw queries returning more than one document" in {
+    val sampleAlias = s"someAlias $randomId"
+    val key = GvcfKey(
+      location = Location.GCP,
+      project = "test project",
+      sampleAlias = sampleAlias,
+      version = 2
+    )
+    val gvcfPath = Some(URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"))
+    val metadata = GvcfMetadata(
+      gvcfPath = gvcfPath,
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+    def setup(): Future[Unit] =
+      for {
+        _ <- runUpsertGvcf(key, metadata)
+        _ <- runUpsertGvcf(
+          key.copy(project = "a different test project"),
+          metadata.copy(notes = Some("this is a different note"))
+        )
+      } yield ()
+    val expected = Map("gvcf_path" -> gvcfPath).asJson
+    val rawJsonQuery =
+      s"""{
+         |  "_source": "gvcf_path",
+         |  "query": {
+         |    "bool": {
+         |      "must": [
+         |        {
+         |          "query_string": {
+         |            "default_field": "sample_alias.exact",
+         |            "query": "\\"$sampleAlias\\""
+         |          }
+         |        }
+         |      ]
+         |    }
+         |  }
+         |}
+      """.stripMargin
+    rawQueryTest(
+      rawJsonQuery,
+      setup(),
+      _ should be(Seq(expected, expected))
+    )
+  }
+
+  it should "fail when submitting a bogus raw query that is valid json" in {
+    val rawJsonQuery =
+      s"""{
+         |  "valid": "json",
+         |  "but": "bogus",
+         |  "elasticsearch": "query"
+         |}
+      """.stripMargin
+    recoverToSucceededIf[FailedResponse] {
+      rawQueryTest(
+        rawJsonQuery,
+        Future.successful(()),
+        _ => succeed
+      )
+    }
+  }
+
+  def rawQueryTest(
+    input: String,
+    setup: => Future[_],
+    assertions: Seq[Json] => Assertion
+  ): Future[Assertion] = {
+    val tempFile = writeLocalTmpFile(input)
+    for {
+      _ <- setup
+      outputs <- runCollectJson(
+        ClioCommand.rawQueryGvcfName,
+        "--query-input-path",
+        tempFile.path.toString
+      )
+    } yield assertions(outputs)
   }
 
   /**

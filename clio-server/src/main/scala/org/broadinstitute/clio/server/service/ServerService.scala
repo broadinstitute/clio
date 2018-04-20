@@ -81,8 +81,8 @@ class ServerService private[server] (
           idMap.updated(id, newJson)
         }
         .runWith(Sink.foldAsync(()) { (_, jsonMap) =>
-          val jsons = jsonMap.valuesIterator.toVector
-          searchDAO.updateMetadata(jsons: _*).map { _ =>
+          val jsons = jsonMap.values.toSeq
+          searchDAO.updateMetadata(jsons).map { _ =>
             logger.debug(s"Sent ${jsons.size} upserts to Elasticsearch for index $name")
           }
         })

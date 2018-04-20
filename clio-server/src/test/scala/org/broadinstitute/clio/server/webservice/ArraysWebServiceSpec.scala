@@ -1,13 +1,16 @@
 package org.broadinstitute.clio.server.webservice
 
-import org.broadinstitute.clio.server.service.MockArraysService
+import io.circe.Json
+import io.circe.syntax._
+import org.broadinstitute.clio.server.service.ArraysService
 import org.broadinstitute.clio.transfer.model.ArraysIndex
 import org.broadinstitute.clio.transfer.model.arrays.ArraysKey
 import org.broadinstitute.clio.util.model.Location
 
 class ArraysWebServiceSpec extends IndexWebServiceSpec[ArraysIndex.type] {
   def webServiceName = "ArraysWebService"
-  val mockService = new MockArraysService()
+
+  val mockService: ArraysService = mock[ArraysService]
   val webService = new ArraysWebService(mockService)
 
   val onPremKey = ArraysKey(
@@ -28,4 +31,12 @@ class ArraysWebServiceSpec extends IndexWebServiceSpec[ArraysIndex.type] {
   def badQueryInputMap = Map(
     "version" -> "not intable"
   )
+
+  val emptyOutput: Json = {
+    ArraysKey(
+      Location.GCP,
+      Symbol("chipwell_barcode"),
+      1
+    ).asJson(ArraysIndex.keyEncoder)
+  }
 }

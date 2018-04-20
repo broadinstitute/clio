@@ -1,13 +1,15 @@
 package org.broadinstitute.clio.client.dispatch
 
 import akka.stream.scaladsl.{Sink, Source}
+import better.files.File
 import io.circe.jawn.JawnParser
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.{
   GetServerHealth,
   GetServerVersion,
-  QueryWgsUbam
+  QueryWgsUbam,
+  RawQueryWgsUbam
 }
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -83,8 +85,13 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
 
       val webClient = mock[ClioWebClient]
       // Type annotations needed for scalamockery.
-      (webClient
-        .query(_: ClioWebClient.QueryAux[UbamQueryInput])(_: UbamQueryInput, _: Boolean))
+      (
+        webClient
+          .simpleQuery(_: ClioWebClient.QueryAux[UbamQueryInput])(
+            _: UbamQueryInput,
+            _: Boolean
+          )
+        )
         .expects(WgsUbamIndex, query, includeDeleted)
         .returning(Source(keys.map(_.asJson)))
 
@@ -100,5 +107,42 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
         parser.decode[Seq[UbamKey]](stdout.toString()) should be(Right(keys))
       }
     }
+  }
+
+  it should "retrieve and print raw query results" in {
+    val rawQuery = "{\"key\":\"valid json\"}"
+    val keys = immutable.Seq.tabulate(10) { i =>
+      UbamKey(
+        flowcellBarcode = "abcd",
+        lane = i,
+        libraryName = "efgh",
+        location = Location.GCP
+      )
+    }
+
+    File
+      .temporaryFile()
+      .map { tempFile =>
+        tempFile.write(rawQuery)
+        val webClient = mock[ClioWebClient]
+        (
+          webClient
+            .jsonFileQuery(_: WgsUbamIndex.type)(
+              _: File
+            )
+          )
+          .expects(WgsUbamIndex, tempFile)
+          .returning(Source(keys.map(_.asJson)))
+        val stdout = mutable.StringBuilder.newBuilder
+        val executor = new RetrieveAndPrintExecutor(RawQueryWgsUbam(tempFile), { s =>
+          stdout.append(s)
+          ()
+        })
+        executor.execute(webClient, stub[IoUtil]).runWith(Sink.seq).map { jsons =>
+          jsons.map(_.as[UbamKey]) should contain theSameElementsAs keys.map(Right(_))
+          parser.decode[Seq[UbamKey]](stdout.toString()) should be(Right(keys))
+        }
+      }
+      .get
   }
 }
