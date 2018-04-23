@@ -276,10 +276,17 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * Registers the temp file for deletion.
     */
   def writeLocalTmpJson[A: Encoder](obj: A): File = {
+    writeLocalTmpFile(obj.asJson.pretty(implicitly[Printer]))
+  }
+
+  /**
+    * Write a string to a local temp file.
+    */
+  def writeLocalTmpFile(str: String): File = {
     val tmpFile = File.newTemporaryFile("clio-integration", ".json")
     tmpFile
       .deleteOnExit()
-      .write(obj.asJson.pretty(implicitly[Printer]))
+      .write(str)
   }
 
   /**

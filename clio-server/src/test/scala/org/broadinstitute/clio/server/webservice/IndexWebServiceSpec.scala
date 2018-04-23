@@ -2,45 +2,48 @@ package org.broadinstitute.clio.server.webservice
 
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{MalformedRequestContentRejection, Route}
+import akka.stream.scaladsl.Source
+import io.circe.{Json, JsonObject}
+import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.MemorySearchDAO
-import org.broadinstitute.clio.server.service.MockIndexService
+import org.broadinstitute.clio.server.service.IndexService
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.model.UpsertId
 import org.broadinstitute.clio.transfer.model.ApiConstants._
+import org.scalamock.scalatest.MockFactory
 abstract class IndexWebServiceSpec[
   CI <: ClioIndex
-] extends BaseWebserviceSpec {
+] extends BaseWebserviceSpec
+    with MockFactory {
 
   val memorySearchDAO = new MemorySearchDAO()
-  val test = decodeUpsertId
   def webServiceName: String
-  def mockService: MockIndexService[CI]
+  val mockService: IndexService[CI]
   val webService: IndexWebService[CI]
   def onPremKey: webService.indexService.clioIndex.KeyType
   def cloudKey: webService.indexService.clioIndex.KeyType
   def badMetadataMap: Map[String, String]
   def badQueryInputMap: Map[String, String]
+  def emptyOutput: Json
 
   behavior of webServiceName
 
   it should "postMetadata with OnPrem location" in {
-    mockService.upsertCalls.clear()
+    expectUpsert()
     Post(metadataRouteFromKey(onPremKey), Map("notes" -> "some note")) ~> webService.postMetadata ~> check {
       UpsertId.isValidId(responseAs[String]) should be(true)
     }
-    mockService.upsertCalls should have length 1
   }
 
   it should "postMetadata with GCP location" in {
-    mockService.upsertCalls.clear()
+    expectUpsert()
     Post(metadataRouteFromKey(cloudKey), Map("notes" -> "some note")) ~> webService.postMetadata ~> check {
       UpsertId.isValidId(responseAs[String]) should be(true)
     }
-    mockService.upsertCalls should have length 1
   }
 
   it should "reject postMetadata with BoGuS location" in {
-    mockService.upsertCalls.clear()
+    expectNoUpsert()
     val bogusRoute = replaceLocationWithBogusInRoute(
       metadataRouteFromKey(onPremKey)
     )
@@ -48,69 +51,60 @@ abstract class IndexWebServiceSpec[
       .seal(webService.postMetadata) ~> check {
       status shouldEqual StatusCodes.NotFound
     }
-    mockService.upsertCalls should have length 0
   }
 
   it should "reject postMetadata with incorrect data types in body" in {
-    mockService.upsertCalls.clear()
+    expectNoUpsert()
     Post(metadataRouteFromKey(onPremKey), badMetadataMap) ~> webService.postMetadata ~> check {
       rejection should matchPattern {
         case MalformedRequestContentRejection(_, _) =>
       }
     }
-    mockService.upsertCalls should have length 0
-  }
-
-  it should "successfully queryall with an empty request" in {
-    mockService.queryAllCalls.clear()
-    Post("/queryall", Map.empty[String, String]) ~> webService.queryall ~> check {
-      status shouldEqual StatusCodes.OK
-    }
-    mockService.queryAllCalls should have length 1
-  }
-
-  it should "successfully queryall without an empty request" in {
-    mockService.queryAllCalls.clear()
-    Post(s"/$queryAllString", Map("project" -> "project")) ~> webService.queryall ~> check {
-      status shouldEqual StatusCodes.OK
-    }
-    mockService.queryAllCalls should have length 1
-  }
-
-  it should "reject queryall with incorrect datatypes in body" in {
-    mockService.queryAllCalls.clear()
-    Post(s"/$queryAllString", badQueryInputMap) ~> webService.queryall ~> check {
-      rejection should matchPattern {
-        case MalformedRequestContentRejection(_, _) =>
-      }
-    }
-    mockService.queryAllCalls should have length 0
   }
 
   it should "successfully query with an empty request" in {
-    mockService.queryCalls.clear()
+    expectQueryMetadata()
     Post(s"/$queryString", Map.empty[String, String]) ~> webService.query ~> check {
       status shouldEqual StatusCodes.OK
     }
-    mockService.queryCalls should have length 1
   }
 
   it should "successfully query without an empty request" in {
-    mockService.queryCalls.clear()
+    expectQueryMetadata()
     Post(s"/$queryString", Map("project" -> "project")) ~> webService.query ~> check {
       status shouldEqual StatusCodes.OK
     }
-    mockService.queryCalls should have length 1
   }
 
   it should "reject query with incorrect datatypes in body" in {
-    mockService.queryCalls.clear()
+    expectNoQueryMetadata()
     Post(s"/$queryString", badQueryInputMap) ~> webService.query ~> check {
       rejection should matchPattern {
         case MalformedRequestContentRejection(_, _) =>
       }
     }
-    mockService.queryCalls should have length 0
+  }
+
+  it should "successfully submit an arbitrary json object as a raw query" in {
+    (mockService
+      .rawQuery(_: JsonObject))
+      .expects(*)
+      .returns(Source.single(emptyOutput))
+    Post("/rawquery", JsonObject(("key", "this is Json".asJson))) ~> webService.rawquery ~> check {
+      status shouldEqual StatusCodes.OK
+    }
+  }
+
+  it should "reject raw query with invalid json in body" in {
+    (mockService
+      .rawQuery(_: JsonObject))
+      .expects(*)
+      .never
+    Post("/rawquery", "{{))(\"invalid json") ~> webService.rawquery ~> check {
+      rejection should matchPattern {
+        case MalformedRequestContentRejection(_, _) =>
+      }
+    }
   }
 
   def metadataRouteFromKey(key: webService.indexService.clioIndex.KeyType): String = {
@@ -121,5 +115,49 @@ abstract class IndexWebServiceSpec[
     route
       .replace("OnPrem", "Bogus")
       .replace("GCP", "Bogus")
+  }
+
+  private def expectUpsert() = {
+    (
+      mockService
+        .upsertMetadata(
+          _: mockService.clioIndex.KeyType,
+          _: mockService.clioIndex.MetadataType,
+          _: Boolean
+        )
+      )
+      .expects(*, *, *)
+      .returns(Source.single(UpsertId.nextId()))
+  }
+
+  private def expectNoUpsert() = {
+    (
+      mockService
+        .upsertMetadata(
+          _: mockService.clioIndex.KeyType,
+          _: mockService.clioIndex.MetadataType,
+          _: Boolean
+        )
+      )
+      .expects(*, *, *)
+      .never
+  }
+
+  private def expectQueryMetadata() = {
+    (mockService
+      .queryMetadata(
+        _: mockService.clioIndex.QueryInputType
+      ))
+      .expects(*)
+      .returns(Source.single(emptyOutput))
+  }
+
+  private def expectNoQueryMetadata() = {
+    (mockService
+      .queryMetadata(
+        _: mockService.clioIndex.QueryInputType
+      ))
+      .expects(*)
+      .never
   }
 }

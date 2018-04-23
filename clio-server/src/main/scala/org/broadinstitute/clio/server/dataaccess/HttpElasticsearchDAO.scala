@@ -2,17 +2,17 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Sink, Source}
 import com.sksamuel.elastic4s.RefreshPolicy
 import com.sksamuel.elastic4s.bulk.BulkCompatibleDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.cluster.ClusterHealthResponse
 import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.Json
+import io.circe.{Json, JsonObject}
+import io.circe.syntax._
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
@@ -47,23 +47,41 @@ class HttpElasticsearchDAO private[dataaccess] (
     HttpClient.fromRestClient(restClient)
   }
 
-  override def updateMetadata(documents: Json*)(
+  override def updateMetadata(documents: Seq[Json])(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit] = bulkUpdate(documents.map(updatePartialDocument(index, _)))
 
-  override def queryMetadata(queryDefinition: QueryDefinition)(
+  override def updateMetadata(document: Json)(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Unit] = updateMetadata(Seq(document))
+
+  override def rawQuery(json: JsonObject)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
+    val requestBody =
+      json
+        .add(
+          HttpElasticsearchDAO.DocumentScrollSizeName,
+          HttpElasticsearchDAO.DocumentScrollSize.asJson
+        )
+        .add(
+          HttpElasticsearchDAO.DocumentScrollSortName,
+          HttpElasticsearchDAO.DocumentScrollSort.asJson
+        )
+        .asJson
+        .pretty(ModelAutoDerivation.defaultPrinter)
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
-      .size(HttpElasticsearchDAO.DocumentScrollSize)
-      .sortByFieldAsc(HttpElasticsearchDAO.DocumentScrollSort)
-      .query(queryDefinition)
+      .source(requestBody)
 
     val responsePublisher = httpClient.publisher(searchDefinition)
     Source
       .fromPublisher(responsePublisher)
       .map(_.to[Json])
+      .alsoTo(
+        Sink
+          .foreach(json => logger.debug(json.pretty(ModelAutoDerivation.defaultPrinter)))
+      )
   }
 
   override def getMostRecentDocument(
@@ -178,6 +196,8 @@ object HttpElasticsearchDAO extends StrictLogging {
   }
 
   private val DocumentScrollKeepAlive = "1m"
+  private val DocumentScrollSizeName = "size"
   private val DocumentScrollSize = 1024
-  private val DocumentScrollSort = "_doc"
+  private val DocumentScrollSortName = "sort"
+  private val DocumentScrollSort = Seq("_doc")
 }

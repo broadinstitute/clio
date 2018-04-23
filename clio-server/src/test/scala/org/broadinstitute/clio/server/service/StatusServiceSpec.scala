@@ -1,26 +1,40 @@
 package org.broadinstitute.clio.server.service
 
+import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.dataaccess._
-import org.broadinstitute.clio.status.model.{SearchStatus, StatusInfo, VersionInfo}
+import org.broadinstitute.clio.status.model.{
+  ClioStatus,
+  SearchStatus,
+  StatusInfo,
+  VersionInfo
+}
+import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.{AsyncFlatSpec, Matchers}
 
-class StatusServiceSpec extends AsyncFlatSpec with Matchers {
+import scala.concurrent.Future
+
+class StatusServiceSpec extends AsyncFlatSpec with Matchers with AsyncMockFactory {
   behavior of "StatusService"
 
+  val statusDAO: ServerStatusDAO = mock[ServerStatusDAO]
+  val searchDAO: SearchDAO = mock[SearchDAO]
+  val statusService = new StatusService(statusDAO, searchDAO)
+
   it should "getVersion" in {
-    val statusService = new MockStatusService()
     for {
       version <- statusService.getVersion
-      _ = version should be(VersionInfo(MockServerStatusDAO.VersionMock))
+      _ = version should be(VersionInfo(ClioServerConfig.Version.value))
     } yield succeed
   }
 
   it should "getStatus" in {
-    val statusService = new MockStatusService()
+    val expectedServerStatus = ClioStatus.Started
+    (statusDAO.getStatus _).expects().returning(Future.successful(expectedServerStatus))
+    (searchDAO.checkOk _).expects().returning(Future.successful(()))
     for {
       status <- statusService.getStatus
       _ = status should be(
-        StatusInfo(MockServerStatusDAO.StatusMock, SearchStatus.OK)
+        StatusInfo(expectedServerStatus, SearchStatus.OK)
       )
     } yield succeed
   }

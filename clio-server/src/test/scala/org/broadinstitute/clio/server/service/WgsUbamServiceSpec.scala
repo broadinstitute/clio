@@ -4,6 +4,7 @@ import com.sksamuel.elastic4s.searches.queries.{
   BoolQueryDefinition,
   QueryStringQueryDefinition
 }
+import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.WgsUbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata, UbamQueryInput}
@@ -54,9 +55,9 @@ class WgsUbamServiceSpec extends IndexServiceSpec[WgsUbamIndex.type]("WgsUbamSer
   }
 
   def getService(
-    persistenceService: PersistenceService,
-    searchService: SearchService
+    persistenceDAO: PersistenceDAO,
+    searchDAO: SearchDAO
   ): WgsUbamService = {
-    new WgsUbamService(persistenceService, searchService)
+    new WgsUbamService(persistenceDAO, searchDAO)
   }
 }

@@ -2,8 +2,7 @@ package org.broadinstitute.clio.server.dataaccess
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 
 import scala.collection.immutable
@@ -32,21 +31,32 @@ trait SearchDAO {
   /**
     * Update-or-insert (upsert) metadata into an index.
     *
-    * @param documents One or more (potentially partial) metadata documents containing
+    * @param documents A Seq of (potentially partial) metadata documents containing
     *                  new fields to set on the document in the index.
     * @param index    The index in which to update the document.
     */
-  def updateMetadata(documents: Json*)(
+  def updateMetadata(documents: Seq[Json])(
     implicit index: ElasticsearchIndex[_]
   ): Future[Unit]
 
   /**
-    * Query a metadata index.
+    * Update-or-insert (upsert) metadata into an index.
     *
-    * @param queryDefinition       The query to run.
-    * @param index       The index to run the query against.
+    * @param document A (potentially partial) metadata document containing
+    *                  new fields to set on the document in the index.
+    * @param index    The index in which to update the document.
     */
-  def queryMetadata(queryDefinition: QueryDefinition)(
+  def updateMetadata(document: Json)(
+    implicit index: ElasticsearchIndex[_]
+  ): Future[Unit]
+
+  /**
+    * Submit a raw JSON query of a metadata index
+    *
+    * @param json  The JSON of the query to run.
+    * @param index  The index to run the query against.
+    */
+  def rawQuery(json: JsonObject)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed]
 
