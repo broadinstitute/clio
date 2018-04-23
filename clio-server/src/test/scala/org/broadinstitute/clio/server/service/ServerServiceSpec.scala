@@ -4,7 +4,8 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import io.circe.Json
+import io.circe.{Json, JsonObject}
+import io.circe.parser._
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -137,7 +138,7 @@ class ServerServiceSpec
 
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex(),
-      Json.obj(),
+      ModelMockMetadata(mockDefaultField = Option("mock-default")).asJson,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
@@ -146,7 +147,7 @@ class ServerServiceSpec
       // This generation is done inside this block because UpsertIds and EntityIds need to be unique.
       counter = counter + 1
       key.asJson
-        .deepMerge(metadata.asJson)
+        .deepMerge(parse(metadata.asJson.pretty(implicitly)).getOrElse(Json.obj()))
         .deepMerge(
           Map(
             ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
@@ -167,7 +168,18 @@ class ServerServiceSpec
     } yield {
       val upsertedDocs = searchDAO.updateCalls
         .flatMap(_._1)
-      upsertedDocs should contain theSameElementsAs initStoredDocuments
+
+      upsertedDocs.take(initInSearch) should contain theSameElementsAs initStoredDocuments.take(initInSearch)
+
+      upsertedDocs.map(_.mapObject(_.filter {
+        case (k, _) => k != "mock_default_field"
+      })) should contain theSameElementsAs initStoredDocuments
+
+      upsertedDocs
+        .drop(initInSearch)
+        .forall(
+          js => js.asObject.getOrElse(JsonObject.empty).contains("mock_default_field")
+        ) should be(true)
     }
   }
 

@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.Json
+import io.circe.parser._
 import io.circe.syntax._
 import io.circe.generic.extras.Configuration.snakeCaseTransformation
 import org.broadinstitute.clio.transfer.model.ClioIndex
@@ -26,7 +27,7 @@ import org.broadinstitute.clio.util.model.{DataType, UpsertId}
   */
 class ElasticsearchIndex[CI <: ClioIndex](
   val clioIndex: CI,
-  val defaults: Json = Json.obj(),
+  private[elasticsearch] val defaultFields: Json = Json.obj(),
   private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper,
   private[elasticsearch] val additionalIdFields: Seq[String] = Seq.empty
 ) extends ModelAutoDerivation {
@@ -66,7 +67,9 @@ class ElasticsearchIndex[CI <: ClioIndex](
     val keyFields = FieldMapper[clioIndex.KeyType].fields.keys
       .map(snakeCaseTransformation)
     val foo =
-      (keyFields ++ additionalIdFields).map(f => json.getAsString(f)).mkString(".")
+      (keyFields ++ additionalIdFields).toSeq.sorted
+        .map(f => json.getAsString(f))
+        .mkString(".")
     foo
   }
 
@@ -77,6 +80,8 @@ class ElasticsearchIndex[CI <: ClioIndex](
     * https://www.elastic.co/blog/elasticsearch-6-0-0-alpha1-released#type-removal
     */
   final val indexType: String = "default"
+
+  final val defaults: Json = parse(defaultFields.pretty(implicitly)).getOrElse(Json.obj())
 
   /** The fields for the index. */
   def fields: Seq[FieldDefinition] =

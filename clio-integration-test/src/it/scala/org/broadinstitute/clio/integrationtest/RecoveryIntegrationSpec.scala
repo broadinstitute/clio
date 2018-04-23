@@ -5,7 +5,7 @@ import java.net.URI
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.Sink
 import better.files.File
-import io.circe.Json
+import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
@@ -186,20 +186,39 @@ class RecoveryIntegrationSpec
     )
 
   Seq(
-    ("wgs-ubam", ClioCommand.queryWgsUbamName, "lane", updatedUbams),
-    ("gvcf", ClioCommand.queryGvcfName, "version", updatedGvcfs),
-    ("wgs-cram", ClioCommand.queryWgsCramName, "version", updatedCrams),
-    ("arrays", ClioCommand.queryArraysName, "version", updatedArrays)
+    (
+      "wgs-ubam",
+      ClioCommand.queryWgsUbamName,
+      "lane",
+      updatedUbams,
+      ElasticsearchIndex.WgsUbam
+    ),
+    ("gvcf", ClioCommand.queryGvcfName, "version", updatedGvcfs, ElasticsearchIndex.Gvcf),
+    (
+      "wgs-cram",
+      ClioCommand.queryWgsCramName,
+      "version",
+      updatedCrams,
+      ElasticsearchIndex.WgsCram
+    ),
+    (
+      "arrays",
+      ClioCommand.queryArraysName,
+      "version",
+      updatedArrays,
+      ElasticsearchIndex.Arrays
+    )
   ).foreach {
-    case (name, cmd, sortField, expected) =>
-      it should behave like checkRecovery(name, cmd, sortField, expected)
+    case (name, cmd, sortField, expected, index) =>
+      it should behave like checkRecovery(name, cmd, sortField, expected, index)
   }
 
   def checkRecovery(
     indexName: String,
     queryCommand: String,
     sortField: String,
-    expected: Seq[Json]
+    expected: Seq[Json],
+    elasticsearchIndex: ElasticsearchIndex[_]
   ): Unit = {
     implicit val jsonOrdering: Ordering[Json] =
       (x, y) => {
@@ -213,7 +232,7 @@ class RecoveryIntegrationSpec
         maybeRes.fold(throw _, identity)
       }
 
-    it should s"recover $indexName metdata on startup" in {
+    it should s"recover $indexName metadata on startup" in {
       for {
         _ <- recoveryDoneFuture
         docs <- runCollectJson(queryCommand, "--location", location.entryName)
@@ -233,7 +252,20 @@ class RecoveryIntegrationSpec
         // Already sorted by construction. Remove null and internal values here too.
         val sortedExpected = expected.map(mapper)
 
-        sortedActual should contain theSameElementsInOrderAs sortedExpected
+        val defaultKeys =
+          elasticsearchIndex.defaults.asObject.getOrElse(JsonObject.empty).keys.toSeq
+
+        sortedActual.map(
+          _.mapObject(_.filterKeys(!defaultKeys.contains(_)))
+        ) should contain theSameElementsInOrderAs sortedExpected
+
+        sortedActual.forall(
+          json =>
+            defaultKeys
+              .forall(json.asObject.getOrElse(JsonObject.empty).keys.toSeq.contains)
+        ) should be(
+          true
+        )
       }
     }
   }

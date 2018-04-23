@@ -62,6 +62,7 @@ class ServerService private[server] (
 
       persistenceDAO
         .getAllSince(latestUpsert)
+        .map(index.defaults.deepMerge)
         .batch(
           ServerService.RecoveryMaxBulkSize,
           json => Map(index.getId(json) -> json)
@@ -74,7 +75,7 @@ class ServerService private[server] (
               logger.debug(
                 s"Merging upserts $oldId and $newId for id $id"
               )
-              index.defaults.deepMerge(oldJson.deepMerge(json))
+              oldJson.deepMerge(json)
             }
             case None => json
           }
