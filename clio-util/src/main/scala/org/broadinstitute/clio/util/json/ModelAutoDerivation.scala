@@ -7,6 +7,7 @@ import cats.syntax.either._
 import enumeratum._
 import io.circe.generic.extras.{AutoDerivation, Configuration}
 import io.circe._
+import io.circe.parser._
 import org.broadinstitute.clio.util.model.UpsertId
 
 /**
@@ -117,6 +118,10 @@ trait ModelAutoDerivation extends AutoDerivation {
 
   implicit val decodeSymbol: Decoder[Symbol] =
     Decoder.decodeString.map(Symbol.apply)
+
+  def dropNullsFromJson(json: Json): Json = {
+    parse(json.pretty(implicitly)).getOrElse(Json.obj())
+  }
 }
 
 /**
