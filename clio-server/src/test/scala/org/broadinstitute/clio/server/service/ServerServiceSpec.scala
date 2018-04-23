@@ -169,7 +169,8 @@ class ServerServiceSpec
       val upsertedDocs = searchDAO.updateCalls
         .flatMap(_._1)
 
-      upsertedDocs.take(initInSearch) should contain theSameElementsAs initStoredDocuments.take(initInSearch)
+      upsertedDocs.take(initInSearch) should contain theSameElementsAs initStoredDocuments
+        .take(initInSearch)
 
       upsertedDocs.map(_.mapObject(_.filter {
         case (k, _) => k != "mock_default_field"
