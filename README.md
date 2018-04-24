@@ -32,13 +32,13 @@ Metadata Manager
 
 `sbt clio-server/docker`
 
-### Run integration tests against a local Docker image for the current commit
+### Run all integration tests against a local Docker image for the current commit
 
-`sbt "it:testOnly *DockerIntegrationSpec"`
+`sbt "it:testOnly *Docker*Spec"`
 
 ### Build and then use docker-compose to run the docker images
 
-`sbt docker "it:testOnly *DockerIntegrationSpec"`
+`sbt docker "it:testOnly *Docker*Spec"`
 
 ### Run the server docker image
 
