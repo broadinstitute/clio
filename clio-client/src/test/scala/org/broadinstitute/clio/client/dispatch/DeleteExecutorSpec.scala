@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.client.dispatch
 
+import java.io.{PrintWriter, StringWriter}
 import java.net.URI
 
 import akka.http.scaladsl.model.StatusCodes
@@ -166,7 +167,9 @@ class DeleteExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       executor.execute(webClient, ioUtil).runWith(Sink.ignore)
     }.map { ex =>
       paths.foreach { uri =>
-        ex.getMessage should include(uri.toString)
+        val sw = new StringWriter
+        ex.printStackTrace(new PrintWriter(sw))
+        sw.toString should include(uri.toString)
       }
       succeed
     }

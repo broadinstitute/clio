@@ -1,13 +1,11 @@
 package org.broadinstitute.clio.client.dispatch
 
-import java.io.IOException
+import java.io.{IOException, PrintWriter, StringWriter}
 import java.net.URI
 
 import scala.concurrent.ExecutionContext
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.{Sink, Source}
-import better.files.File
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.MoveWgsCram
@@ -54,13 +52,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val ioUtil = mock[IoUtil]
     (ioUtil.copyGoogleObject _).expects(move.src, move.dest).returning(())
     (ioUtil.copyGoogleObject _).expects(copy.src, copy.dest).returning(())
-    (ioUtil.copyGoogleObject _)
-      .expects(
-        where { (src, dst) =>
-          File(src).contentAsString == write.contents && dst == write.dest
-        }
-      )
-      .returning(())
+    (ioUtil.writeGoogleObjectData _).expects(write.contents, write.dest).returning(())
 
     MoveExecutor
       .runPreUpsertOps(immutable.Seq(move, copy, write), ioUtil)
@@ -80,20 +72,16 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     (ioUtil.copyGoogleObject _)
       .expects(copy.src, copy.dest)
       .throwing(new IOException(msg))
-    (ioUtil.copyGoogleObject _)
-      .expects(
-        where { (src, dst) =>
-          File(src).contentAsString == write.contents && dst == write.dest
-        }
-      )
-      .returning(())
+    (ioUtil.writeGoogleObjectData _).expects(write.contents, write.dest).returning(())
 
     recoverToExceptionIf[IOException] {
       MoveExecutor
         .runPreUpsertOps(immutable.Seq(move, copy, write), ioUtil)
         .runWith(Sink.ignore)
     }.map { ex =>
-      ex.getMessage should include(msg)
+      val sw = new StringWriter
+      ex.printStackTrace(new PrintWriter(sw))
+      sw.toString should include(msg)
     }
   }
 

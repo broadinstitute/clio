@@ -1,6 +1,6 @@
 package org.broadinstitute.clio.client.util
 
-import java.io.IOException
+import java.io.{IOException, PrintWriter, StringWriter}
 import java.net.URI
 
 import akka.stream.scaladsl.Sink
@@ -82,7 +82,9 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
     for {
       _ <- recoverToExceptionIf[IOException](stream.runWith(Sink.ignore)).map { ex =>
         urisToFail.foreach { uri =>
-          ex.getMessage should include(uri.toString)
+          val sw = new StringWriter
+          ex.printStackTrace(new PrintWriter(sw))
+          sw.toString should include(uri.toString)
         }
         succeed
       }
