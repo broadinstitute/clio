@@ -245,26 +245,28 @@ class RecoveryIntegrationSpec
           })
         }
 
+        val defaultKeyValues =
+          elasticsearchIndex.defaults.asObject.getOrElse(JsonObject.empty).toIterable
+
         // Sort before comparing so we can do a pairwise comparison, which saves a ton of time.
         // Remove null and internal values before comparing.
         val sortedActual = docs.map(mapper).sorted
 
         // Already sorted by construction. Remove null and internal values here too.
-        val sortedExpected = expected.map(mapper)
+        val sortedExpected: Seq[Json] = expected
+          .map(mapper)
+          .flatMap(
+            _.asObject.map { json =>
+              defaultKeyValues.foldLeft(json) { (j, kv) =>
+                {
+                  val (key, value) = kv
+                  j.add(key, value)
+                }
+              }
+            }.map(_.asJson)
+          )
 
-        val defaultKeys =
-          elasticsearchIndex.defaults.asObject.getOrElse(JsonObject.empty).keys.toSeq
-
-        sortedActual.map(
-          _.mapObject(_.filterKeys(!defaultKeys.contains(_)))
-        ) should contain theSameElementsInOrderAs sortedExpected
-
-        val fields = sortedActual
-          .map(_.asObject.map(_.keys.toSet).getOrElse(Set.empty))
-          .reduce(_ intersect _)
-        defaultKeys.map(fields should contain(_))
-
-        succeed
+        sortedActual should contain theSameElementsInOrderAs sortedExpected
       }
     }
   }
