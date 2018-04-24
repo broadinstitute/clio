@@ -60,16 +60,25 @@ case object GvcfIndex
   override val elasticsearchIndexName = "gvcf-v2"
 }
 
-case object WgsUbamIndex
+// Temporary trait to remain until WgsUbam fully phased out
+trait BackCompatibleUbamIndex
     extends SemiAutoClioIndex[
       UbamKey,
       UbamMetadata,
       UbamQueryInput
     ] {
-  override val urlSegment: String = "wgsubam"
   override val name: String = "Ubam"
-  override val commandName: String = "wgs-ubam"
   override val elasticsearchIndexName: String = "ubam"
+}
+
+case object WgsUbamIndex extends BackCompatibleUbamIndex {
+  override val urlSegment: String = "wgsubam"
+  override val commandName: String = "wgs-ubam"
+}
+
+case object UbamIndex extends BackCompatibleUbamIndex {
+  override val urlSegment: String = "ubam"
+  override val commandName: String = "ubam"
 }
 
 case object WgsCramIndex
@@ -85,18 +94,6 @@ case object WgsCramIndex
   // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
   // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
   override val elasticsearchIndexName: String = "wgs-cram-v2"
-}
-
-case object UbamIndex
-    extends SemiAutoClioIndex[
-      UbamKey,
-      UbamMetadata,
-      UbamQueryInput
-    ] {
-  override val urlSegment: String = "ubam"
-  override val name: String = "Ubam"
-  override val commandName: String = "ubam"
-  override val elasticsearchIndexName: String = "ubam"
 }
 
 case object ArraysIndex

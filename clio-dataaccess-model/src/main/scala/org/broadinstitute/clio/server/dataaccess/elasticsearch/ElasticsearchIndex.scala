@@ -18,7 +18,7 @@ import org.broadinstitute.clio.util.model.UpsertId
   * @param fieldMapper The version of the mapping used to generate the index.
   * @tparam CI The ClioIndex of the document.
   */
-class ElasticsearchIndex[CI <: ClioIndex](
+class ElasticsearchIndex[+CI <: ClioIndex](
   val clioIndex: CI,
   private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper
 ) extends ModelAutoDerivation {

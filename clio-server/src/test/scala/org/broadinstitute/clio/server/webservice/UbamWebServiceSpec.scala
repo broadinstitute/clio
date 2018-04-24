@@ -4,15 +4,15 @@ import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.util.model.Location
 import org.broadinstitute.clio.server.service.UbamService
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
+import org.broadinstitute.clio.transfer.model.{BackCompatibleUbamIndex, UbamIndex}
 import org.broadinstitute.clio.transfer.model.ubam.UbamKey
 
-class WgsUbamWebServiceSpec extends IndexWebServiceSpec[WgsUbamIndex.type] {
+class UbamWebServiceSpec extends IndexWebServiceSpec[BackCompatibleUbamIndex] {
 
-  def webServiceName = "WgsUbamWebService"
+  def webServiceName = "UbamWebService"
 
   val mockService: UbamService = mock[UbamService]
-  val webService = new WgsUbamWebService(mockService)
+  val webService = new UbamWebService(mockService)
 
   val onPremKey = UbamKey(
     Location.OnPrem,
@@ -40,6 +40,6 @@ class WgsUbamWebServiceSpec extends IndexWebServiceSpec[WgsUbamIndex.type] {
       "barcode",
       1,
       "library"
-    ).asJson(WgsUbamIndex.keyEncoder)
+    ).asJson(UbamIndex.keyEncoder)
   }
 }

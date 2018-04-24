@@ -16,7 +16,7 @@ import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.concurrent.ExecutionContext
 
-abstract class IndexService[CI <: ClioIndex](
+abstract class IndexService[+CI <: ClioIndex](
   persistenceDAO: PersistenceDAO,
   searchDAO: SearchDAO,
   elasticsearchIndex: ElasticsearchIndex[CI],

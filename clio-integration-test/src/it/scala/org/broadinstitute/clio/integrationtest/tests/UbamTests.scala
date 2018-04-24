@@ -2,12 +2,10 @@ package org.broadinstitute.clio.integrationtest.tests
 
 import java.net.URI
 
-import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import io.circe.syntax._
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 import org.broadinstitute.clio.client.commands.ClioCommand
-import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
@@ -26,14 +24,14 @@ trait UbamTests { self: BaseIntegrationSpec =>
   def runUpsertUbam(
     key: UbamKey,
     metadata: UbamMetadata,
-    sequencingType: SequencingType,
+    // TODO: Rip this param out when finished phasing out wgs command usage in other codebases
+    useOldCommands: Boolean = false,
     force: Boolean = true
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
-    val command = sequencingType match {
-      case SequencingType.WholeGenome     => ClioCommand.addWgsUbamName
-      case SequencingType.HybridSelection => ClioCommand.addUbamName
-    }
+    val command =
+      if (useOldCommands) ClioCommand.addWgsUbamName
+      else ClioCommand.addUbamName
     runDecode[UpsertId](
       command,
       Seq(
@@ -52,90 +50,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     )
   }
 
-  def statusCodeShouldBe(expectedStatusCode: StatusCode): FailedResponse => Assertion = {
-    e: FailedResponse =>
-      e.statusCode should be(expectedStatusCode)
-  }
-
-  val stubKey = UbamKey(
-    Location.GCP,
-    "fake_barcode",
-    2,
-    "fake_library"
-  )
-
-  it should "throw a FailedResponse 404 when running add command for hybsel ubams" in {
-    val tmpMetadata =
-      writeLocalTmpJson(UbamMetadata(project = Some("fake_project")))
-
-    recoverToSucceededIf[RuntimeException] {
-      runIgnore(
-        ClioCommand.addUbamName,
-        "--flowcell-barcode",
-        stubKey.flowcellBarcode,
-        "--lane",
-        stubKey.lane.toString,
-        "--library-name",
-        stubKey.libraryName,
-        "--location",
-        stubKey.location.entryName,
-        "--metadata-location",
-        tmpMetadata.toString
-      )
-    }
-  }
-
-  it should "throw a FailedResponse 404 when running query command for hybsel ubams" in {
-    val queryResponseFuture = runCollectJson(
-      ClioCommand.queryUbamName,
-      "--flowcell-barcode",
-      stubKey.flowcellBarcode
-    )
-    recoverToExceptionIf[FailedResponse](queryResponseFuture)
-      .map(statusCodeShouldBe(StatusCodes.NotFound))
-  }
-
-  def messageShouldBe(expectedMessage: String): Exception => Assertion = { e: Exception =>
-    e.getMessage should be(expectedMessage)
-  }
-
-  it should "throw a FailedResponse 404 when running move command for hybsel ubams" in {
-    val moveResponseFuture = runDecode[UpsertId](
-      ClioCommand.moveUbamName,
-      "--flowcell-barcode",
-      stubKey.flowcellBarcode,
-      "--lane",
-      stubKey.lane.toString,
-      "--library-name",
-      stubKey.libraryName,
-      "--location",
-      stubKey.location.entryName,
-      "--destination",
-      "gs://fake-path/"
-    )
-    recoverToExceptionIf[FailedResponse](moveResponseFuture)
-      .map(statusCodeShouldBe(StatusCodes.NotFound))
-  }
-
-  it should "throw a FailedResponse 404 when running delete command for hybsel ubams" in {
-    val deleteResponseFuture = runDecode[UpsertId](
-      ClioCommand.deleteUbamName,
-      "--flowcell-barcode",
-      stubKey.flowcellBarcode,
-      "--lane",
-      stubKey.lane.toString,
-      "--library-name",
-      stubKey.libraryName,
-      "--location",
-      stubKey.location.entryName,
-      "--note",
-      "note"
-    )
-    recoverToExceptionIf[FailedResponse](deleteResponseFuture)
-      .map(statusCodeShouldBe(StatusCodes.NotFound))
-  }
-
-  it should "create the expected wgs-ubam mapping in elasticsearch" in {
+  it should "create the expected  ubam mapping in elasticsearch" in {
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
@@ -147,9 +62,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  // Generate a test for every possible Location value.
-  Location.values.foreach {
-    it should behave like testWgsUbamLocation(_)
+  // Generate a test for every combination of Location value and command type.
+  Location.values.foreach { location =>
+    Seq(true, false).foreach {
+      it should behave like testUbamLocation(location, _)
+    }
   }
 
   /**
@@ -157,8 +74,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
     *
     * @see http://www.scalatest.org/user_guide/sharing_tests
     */
-  def testWgsUbamLocation(location: Location): Unit = {
-    it should s"handle upserts and queries for wgs-ubam location $location" in {
+  def testUbamLocation(location: Location, useOldCommands: Boolean): Unit = {
+    val testNameAddition =
+      if (useOldCommands) " using the old wgs commands"
+      else ""
+    it should s"handle upserts and queries for ubam location $location$testNameAddition" in {
       val key = UbamKey(
         location = location,
         flowcellBarcode = "barcode2",
@@ -170,15 +90,18 @@ trait UbamTests { self: BaseIntegrationSpec =>
         project = Some("test project")
       )
       val expected = expectedMerge(key, metadata)
+      val queryCommand =
+        if (useOldCommands) ClioCommand.queryWgsUbamName
+        else ClioCommand.queryUbamName
 
       for {
         returnedUpsertId <- runUpsertUbam(
           key,
           metadata.copy(documentStatus = None),
-          SequencingType.WholeGenome
+          useOldCommands = useOldCommands
         )
         queryResponse <- runCollectJson(
-          ClioCommand.queryWgsUbamName,
+          queryCommand,
           "--library-name",
           key.libraryName
         )
@@ -192,7 +115,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "assign different upsertIds to different wgs-ubam upserts" in {
+  it should "assign different upsertIds to different ubam upserts" in {
     val upsertKey = UbamKey(
       Location.GCP,
       "testupsertIdBarcode",
@@ -203,13 +126,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
     for {
       upsertId1 <- runUpsertUbam(
         upsertKey,
-        UbamMetadata(project = Some("testProject1")),
-        SequencingType.WholeGenome
+        UbamMetadata(project = Some("testProject1"))
       )
       upsertId2 <- runUpsertUbam(
         upsertKey,
-        UbamMetadata(project = Some("testProject2")),
-        SequencingType.WholeGenome
+        UbamMetadata(project = Some("testProject2"))
       )
     } yield {
       upsertId2 should be > upsertId1
@@ -229,7 +150,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "assign different upsertIds to equal wgs-ubam upserts" in {
+  it should "assign different upsertIds to equal ubam upserts" in {
     val upsertKey = UbamKey(
       Location.GCP,
       "testupsertIdBarcode",
@@ -237,11 +158,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
       s"library$randomId"
     )
     val metadata = UbamMetadata(project = Some("testProject1"))
-    val ubamType = SequencingType.WholeGenome
 
     for {
-      upsertId1 <- runUpsertUbam(upsertKey, metadata, ubamType)
-      upsertId2 <- runUpsertUbam(upsertKey, metadata, ubamType)
+      upsertId1 <- runUpsertUbam(upsertKey, metadata)
+      upsertId2 <- runUpsertUbam(upsertKey, metadata)
     } yield {
       upsertId2 should be > upsertId1
 
@@ -254,7 +174,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "handle querying wgs-ubams by sample, project, and research-project-id" in {
+  it should "handle querying ubams by sample, project, and research-project-id" in {
     val flowcellBarcode = "barcode2"
     val lane = 2
     val location = Location.GCP
@@ -276,24 +196,24 @@ trait UbamTests { self: BaseIntegrationSpec =>
             sampleAlias = Some(sample),
             researchProjectId = Some(researchProjectId)
           )
-          runUpsertUbam(key, metadata, SequencingType.WholeGenome)
+          runUpsertUbam(key, metadata)
       }
     }
 
     for {
       _ <- upserts
       projectResults <- runCollectJson(
-        ClioCommand.queryWgsUbamName,
+        ClioCommand.queryUbamName,
         "--project",
         project
       )
       sampleResults <- runCollectJson(
-        ClioCommand.queryWgsUbamName,
+        ClioCommand.queryUbamName,
         "--sample-alias",
         samples.head
       )
       rpIdResults <- runCollectJson(
-        ClioCommand.queryWgsUbamName,
+        ClioCommand.queryUbamName,
         "--research-project-id",
         researchProjectIds.last
       )
@@ -341,14 +261,14 @@ trait UbamTests { self: BaseIntegrationSpec =>
             researchProjectId = Some(researchProjectId),
             aggregatedBy = Some(aggregation)
           )
-          runUpsertUbam(key, metadata, SequencingType.WholeGenome)
+          runUpsertUbam(key, metadata)
       }
     }
 
     for {
       _ <- upserts
       queryResults <- runCollectJson(
-        ClioCommand.queryWgsUbamName,
+        ClioCommand.queryUbamName,
         "--project",
         project,
         "--aggregated-by",
@@ -368,7 +288,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "handle updates to wgs-ubam metadata" in {
+  it should "handle updates to ubam metadata" in {
     val key = UbamKey(Location.GCP, "barcode2", 2, s"library$randomId")
     val project = s"testProject$randomId"
     val metadata = UbamMetadata(
@@ -380,7 +300,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     def query = {
       for {
         results <- runCollectJson(
-          ClioCommand.queryWgsUbamName,
+          ClioCommand.queryUbamName,
           "--project",
           project
         )
@@ -396,21 +316,20 @@ trait UbamTests { self: BaseIntegrationSpec =>
     )
 
     for {
-      _ <- runUpsertUbam(key, upsertData, SequencingType.WholeGenome)
+      _ <- runUpsertUbam(key, upsertData)
       original <- query
       _ = original.unsafeGet[String]("sample_alias") should be("sampleAlias1")
       _ = original.unsafeGet[Option[String]]("notes") should be(None)
 
       upsertData2 = upsertData.copy(notes = metadata.notes)
-      _ <- runUpsertUbam(key, upsertData2, SequencingType.WholeGenome)
+      _ <- runUpsertUbam(key, upsertData2)
       withNotes <- query
       _ = withNotes.unsafeGet[String]("sample_alias") should be("sampleAlias1")
       _ = withNotes.unsafeGet[String]("notes") should be("Breaking news")
 
       _ <- runUpsertUbam(
         key,
-        upsertData2.copy(sampleAlias = Some("sampleAlias2"), notes = Some("")),
-        SequencingType.WholeGenome
+        upsertData2.copy(sampleAlias = Some("sampleAlias2"), notes = Some(""))
       )
       emptyNotes <- query
     } yield {
@@ -441,14 +360,14 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     val upserts = Future.sequence {
       keysWithMetadata.map {
-        case (key, metadata) => runUpsertUbam(key, metadata, SequencingType.WholeGenome)
+        case (key, metadata) => runUpsertUbam(key, metadata)
       }
     }
 
     def checkQuery(expectedLength: Int) = {
       for {
         results <- runCollectJson(
-          ClioCommand.queryWgsUbamName,
+          ClioCommand.queryUbamName,
           "--project",
           project,
           "--flowcell-barcode",
@@ -472,13 +391,12 @@ trait UbamTests { self: BaseIntegrationSpec =>
       _ <- checkQuery(expectedLength = 3)
       _ <- runUpsertUbam(
         deleteKey,
-        deleteData.copy(documentStatus = Some(DocumentStatus.Deleted)),
-        SequencingType.WholeGenome
+        deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
       )
       _ <- checkQuery(expectedLength = 2)
 
       results <- runCollectJson(
-        ClioCommand.queryWgsUbamName,
+        ClioCommand.queryUbamName,
         "--project",
         project,
         "--flowcell-barcode",
@@ -506,14 +424,18 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testMoveUbam(srcIsDest: Boolean = false): Future[Assertion] = {
+  def testMoveUbam(
+    srcIsDest: Boolean = false,
+    // TODO: Rip this param out when finished phasing out wgs command usage in other codebases
+    useOldCommand: Boolean = false
+  ): Future[Assertion] = {
     val barcode = s"barcode$randomId"
     val lane = 3
     val library = s"lib$randomId"
 
     val fileContents = s"$randomId --- I am a dummy ubam --- $randomId"
     val ubamName = s"$randomId${UbamExtensions.UbamExtension}"
-    val sourceDir = rootTestStorageDir / s"wgs-ubam/$barcode/$lane/$library/$ubamName/"
+    val sourceDir = rootTestStorageDir / s"ubam/$barcode/$lane/$library/$ubamName/"
     val targetDir = if (srcIsDest) {
       sourceDir
     } else {
@@ -527,10 +449,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
     // Clio needs the metadata to be added before it can be moved.
     val _ = sourceUbam.write(fileContents)
+    val moveCommand =
+      if (useOldCommand) ClioCommand.moveWgsUbamName
+      else ClioCommand.moveUbamName
     val result = for {
-      _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
+      _ <- runUpsertUbam(key, metadata)
       _ <- runIgnore(
-        ClioCommand.moveWgsUbamName,
+        moveCommand,
         "--flowcell-barcode",
         barcode,
         "--lane",
@@ -558,16 +483,18 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "move wgs-ubams in GCP" in testMoveUbam()
+  it should "move ubams in GCP" in testMoveUbam()
 
-  it should "not delete wgs-ubams when moving and source == destination" in testMoveUbam(
+  it should "move ubams using the old wgs command" in testMoveUbam(useOldCommand = true)
+
+  it should "not delete ubams when moving and source == destination" in testMoveUbam(
     srcIsDest = true
   )
 
-  it should "not move wgs-ubams without a destination" in {
+  it should "not move ubams without a destination" in {
     recoverToExceptionIf[Exception] {
       runDecode[UpsertId](
-        ClioCommand.moveWgsUbamName,
+        ClioCommand.moveUbamName,
         "--flowcell-barcode",
         randomId,
         "--lane",
@@ -582,22 +509,22 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "not move wgs-ubams when the source file doesn't exist" in {
+  it should "not move ubams when the source file doesn't exist" in {
     val barcode = s"barcode$randomId"
     val lane = 3
     val library = s"lib$randomId"
 
-    val cloudPath = rootTestStorageDir / s"wgs-ubam/$barcode/$lane/$library/$randomId${UbamExtensions.UbamExtension}"
+    val cloudPath = rootTestStorageDir / s"ubam/$barcode/$lane/$library/$randomId${UbamExtensions.UbamExtension}"
     val cloudPath2 = cloudPath.parent / s"moved/$randomId${UbamExtensions.UbamExtension}"
 
     val key = UbamKey(Location.GCP, barcode, lane, library)
     val metadata = UbamMetadata(ubamPath = Some(cloudPath.uri))
 
     val result = for {
-      _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
+      _ <- runUpsertUbam(key, metadata)
       _ <- recoverToSucceededIf[Exception] {
         runDecode[UpsertId](
-          ClioCommand.moveWgsUbamName,
+          ClioCommand.moveUbamName,
           "--flowcell-barcode",
           barcode,
           "--lane",
@@ -611,7 +538,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         )
       }
       queryOutputs <- runCollectJson(
-        ClioCommand.queryWgsUbamName,
+        ClioCommand.queryUbamName,
         "--flowcell-barcode",
         barcode,
         "--lane",
@@ -634,7 +561,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "respect user-set regulatory designation for wgs ubams" in {
+  it should "respect user-set regulatory designation for ubams" in {
     val flowcellBarcode = s"testRegulatoryDesignation.$randomId"
     val library = s"library.$randomId"
     val lane = 1
@@ -648,7 +575,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     def query = {
       for {
         results <- runCollectJson(
-          ClioCommand.queryWgsUbamName,
+          ClioCommand.queryUbamName,
           "--flowcell-barcode",
           flowcellBarcode
         )
@@ -658,7 +585,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       }
     }
     for {
-      upsert <- runUpsertUbam(upsertKey, metadata, SequencingType.WholeGenome)
+      upsert <- runUpsertUbam(upsertKey, metadata)
       queried <- query
     } yield {
       queried.unsafeGet[RegulatoryDesignation]("regulatory_designation") should be(
@@ -670,7 +597,9 @@ trait UbamTests { self: BaseIntegrationSpec =>
   def testDeleteUbam(
     existingNote: Option[String] = None,
     testNonExistingFile: Boolean = false,
-    force: Boolean = false
+    force: Boolean = false,
+    // TODO: Rip this param out when finished phasing out wgs command usage in other codebases
+    useOldCommand: Boolean = false
   ): Future[Assertion] = {
     val deleteNote = s"$randomId --- Deleted by the integration tests --- $randomId"
 
@@ -679,7 +608,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val library = s"lib$randomId"
 
     val fileContents = s"$randomId --- I am fated to die --- $randomId"
-    val cloudPath = rootTestStorageDir / s"wgs-ubam/$barcode/$lane/$library/$randomId${UbamExtensions.UbamExtension}"
+    val cloudPath = rootTestStorageDir / s"ubam/$barcode/$lane/$library/$randomId${UbamExtensions.UbamExtension}"
 
     val key = UbamKey(Location.GCP, barcode, lane, library)
     val metadata =
@@ -689,11 +618,14 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val _ = if (!testNonExistingFile) {
       cloudPath.write(fileContents)
     }
+    val deleteCommand =
+      if (useOldCommand) ClioCommand.deleteWgsUbamName
+      else ClioCommand.deleteUbamName
 
     val result = for {
-      _ <- runUpsertUbam(key, metadata, SequencingType.WholeGenome)
+      _ <- runUpsertUbam(key, metadata)
       _ <- runIgnore(
-        ClioCommand.deleteWgsUbamName,
+        deleteCommand,
         Seq(
           "--flowcell-barcode",
           barcode,
@@ -710,7 +642,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
       _ = cloudPath shouldNot exist
       outputs <- runCollectJson(
-        ClioCommand.queryWgsUbamName,
+        ClioCommand.queryUbamName,
         "--flowcell-barcode",
         barcode,
         "--lane",
@@ -740,9 +672,13 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "delete wgs-ubams in GCP" in testDeleteUbam()
+  it should "delete ubams in GCP" in testDeleteUbam()
 
-  it should "preserve existing notes when deleting wgs-ubams" in testDeleteUbam(
+  it should "delete ubams using the old wgs commands" in testDeleteUbam(
+    useOldCommand = true
+  )
+
+  it should "preserve existing notes when deleting ubams" in testDeleteUbam(
     existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
   )
 
@@ -757,10 +693,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
     force = true
   )
 
-  it should "not delete wgs-ubams without a note" in {
+  it should "not delete ubams without a note" in {
     recoverToExceptionIf[Exception] {
       runDecode[UpsertId](
-        ClioCommand.deleteWgsUbamName,
+        ClioCommand.deleteUbamName,
         "--flowcell-barcode",
         randomId,
         "--lane",
@@ -787,7 +723,6 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertUbam(
         upsertKey,
         UbamMetadata(project = Some("testProject1")),
-        SequencingType.WholeGenome,
         force = false
       )
     } yield {
@@ -808,7 +743,6 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertUbam(
         upsertKey,
         UbamMetadata(project = Some("testProject1")),
-        SequencingType.WholeGenome,
         force = false
       )
       upsertId2 <- runUpsertUbam(
@@ -817,7 +751,6 @@ trait UbamTests { self: BaseIntegrationSpec =>
           project = Some("testProject1"),
           sampleAlias = Some("sampleAlias1")
         ),
-        SequencingType.WholeGenome,
         force = false
       )
     } yield {
@@ -839,14 +772,12 @@ trait UbamTests { self: BaseIntegrationSpec =>
       upsertId1 <- runUpsertUbam(
         upsertKey,
         UbamMetadata(project = Some("testProject1")),
-        SequencingType.WholeGenome,
         force = false
       )
       _ <- recoverToSucceededIf[Exception] {
         runUpsertUbam(
           upsertKey,
           UbamMetadata(project = Some("testProject2")),
-          SequencingType.WholeGenome,
           force = false
         )
       }
