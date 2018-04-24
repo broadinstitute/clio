@@ -5,7 +5,7 @@ import java.net.URI
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.Sink
 import better.files.File
-import io.circe.{Json, JsonObject}
+import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
@@ -245,9 +245,6 @@ class RecoveryIntegrationSpec
           })
         }
 
-        val defaultKeyValues =
-          elasticsearchIndex.defaults.asObject.getOrElse(JsonObject.empty).toIterable
-
         // Sort before comparing so we can do a pairwise comparison, which saves a ton of time.
         // Remove null and internal values before comparing.
         val sortedActual = docs.map(mapper).sorted
@@ -255,16 +252,7 @@ class RecoveryIntegrationSpec
         // Already sorted by construction. Remove null and internal values here too.
         val sortedExpected: Seq[Json] = expected
           .map(mapper)
-          .flatMap(
-            _.asObject.map { json =>
-              defaultKeyValues.foldLeft(json) { (j, kv) =>
-                {
-                  val (key, value) = kv
-                  j.add(key, value)
-                }
-              }
-            }.map(_.asJson)
-          )
+          .map(_.deepMerge(elasticsearchIndex.defaults))
 
         sortedActual should contain theSameElementsInOrderAs sortedExpected
       }

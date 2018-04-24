@@ -171,14 +171,10 @@ class ServerServiceSpec
       upsertedDocs.take(initInSearch) should contain theSameElementsAs initStoredDocuments
         .take(initInSearch)
 
-      upsertedDocs.map(_.mapObject(_.filter {
-        case (k, _) => k != "mock_default_field"
-      })) should contain theSameElementsAs initStoredDocuments
-
-      upsertedDocs
+      upsertedDocs.drop(initInSearch) should contain theSameElementsAs initStoredDocuments
         .drop(initInSearch)
-        .map(_.asObject.map(_.keys.toSet).getOrElse(Set.empty))
-        .reduce(_ intersect _) should contain("mock_default_field")
+        .map(_.deepMerge(index.defaults))
+
     }
   }
 
