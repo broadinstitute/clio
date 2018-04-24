@@ -23,10 +23,8 @@ class ElasticsearchDocumentMapper[Key <: IndexKey: Encoder, Metadata: Encoder](
     * @return
     */
   def document(key: Key, metadata: Metadata): Json = {
-    val bookkeeping = Json.fromFields(
-      Seq(
-        ElasticsearchIndex.UpsertIdElasticsearchName -> genId().asJson
-      )
+    val bookkeeping = Json.obj(
+      ElasticsearchIndex.UpsertIdElasticsearchName -> genId().asJson
     )
 
     val keyJson = key.asJson

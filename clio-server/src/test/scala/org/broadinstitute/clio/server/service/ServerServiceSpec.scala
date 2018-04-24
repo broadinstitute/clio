@@ -138,8 +138,8 @@ class ServerServiceSpec
 
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex(),
-      ModelMockMetadata(mockDefaultField = Option("mock-default")).asJson,
-      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
+      ModelMockMetadata(mockDefaultField = Option("mock-default")).asJson
     )
 
     var counter = 0

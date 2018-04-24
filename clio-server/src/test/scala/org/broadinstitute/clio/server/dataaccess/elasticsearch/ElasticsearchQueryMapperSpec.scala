@@ -4,7 +4,6 @@ import java.net.URI
 import java.time.OffsetDateTime
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import io.circe.Json
 import com.sksamuel.elastic4s.http.search.queries.compound.BoolQueryBuilderFn
 import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model.{
@@ -37,7 +36,6 @@ class ElasticsearchQueryMapperSpec
     )
     val index = new ElasticsearchIndex(
       ModelMockIndex(),
-      Json.obj(),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
     mapper

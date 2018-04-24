@@ -41,13 +41,11 @@ class HttpElasticsearchDAOSpec
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_update_type"),
-        Json.obj(),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_update_type", "command_name"),
-        Json.obj(),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
@@ -66,13 +64,11 @@ class HttpElasticsearchDAOSpec
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_fail_recreate"),
-        Json.obj(),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_fail_recreate", "command_name"),
-        Json.obj(),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
@@ -93,13 +89,11 @@ class HttpElasticsearchDAOSpec
     val indexVersion1: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_fail_change_types"),
-        Json.obj(),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex("test_index_fail_change_types"),
-        Json.obj(),
         ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
       )
     for {
@@ -125,7 +119,6 @@ class HttpElasticsearchDAOSpec
     val keyString = "key"
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex("docs-" + UUID.randomUUID()),
-      Json.obj(),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
@@ -154,7 +147,6 @@ class HttpElasticsearchDAOSpec
 
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex("docs-" + UUID.randomUUID()),
-      Json.obj(),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 

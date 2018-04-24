@@ -1,7 +1,6 @@
 package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import io.circe.Json
 import org.broadinstitute.clio.transfer.model.ModelMockIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.scalatest.{FlatSpec, Matchers}
@@ -12,14 +11,12 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
   it should behave like aV1Index(
     new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex("mock"),
-      Json.obj(),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
   )
   it should behave like aV2Index(
     new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex("mock-v2"),
-      Json.obj(),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
   )

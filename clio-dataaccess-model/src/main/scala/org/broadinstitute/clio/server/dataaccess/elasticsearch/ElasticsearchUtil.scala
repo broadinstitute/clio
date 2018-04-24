@@ -67,7 +67,13 @@ object ElasticsearchUtil {
             a.asArray.map(_.mkString(".")).getOrElse("")
           case j => j.toString()
         }
-        .getOrElse("")
+        .getOrElse(throw new RuntimeException(s"Could not get field $key as String"))
+    }
+
+    def dropNulls: Json = {
+      json.mapObject(_.filter {
+        case (_, v) => !v.isNull
+      })
     }
   }
 }

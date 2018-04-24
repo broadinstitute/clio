@@ -19,6 +19,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
 
 import scala.concurrent.Future
 
@@ -29,7 +30,6 @@ class PersistenceDAOSpec
 
   implicit val index: ElasticsearchIndex[ModelMockIndex] = new ElasticsearchIndex(
     ModelMockIndex(),
-    Json.obj(),
     ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
   )
 
@@ -69,7 +69,7 @@ class PersistenceDAOSpec
       Some(1234L)
     )
     val document1 = key1.asJson
-      .deepMerge(dropNullsFromJson(metadata1.asJson))
+      .deepMerge(metadata1.asJson.dropNulls)
       .deepMerge(
         Map(
           ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId
@@ -92,7 +92,7 @@ class PersistenceDAOSpec
       Some(9876L)
     )
     val document2 = key2.asJson
-      .deepMerge(dropNullsFromJson(metadata2.asJson))
+      .deepMerge(metadata2.asJson.dropNulls)
       .deepMerge(
         Map(
           ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId
@@ -125,19 +125,17 @@ class PersistenceDAOSpec
   val mockKeyString = "mock"
   val mockKeyJson = ModelMockKey(mockKeyLong, mockKeyString).asJson
 
-  val mockMetadataJson = dropNullsFromJson(
-    ModelMockMetadata(
-      Some(0.0),
-      Some(0),
-      Some(OffsetDateTime.now()),
-      Some(Seq.empty[String]),
-      Some(Seq.empty[URI]),
-      Some(DocumentStatus.Normal),
-      Some('md5),
-      Some(URI.create("no")),
-      Some(0L)
-    ).asJson
-  )
+  val mockMetadataJson = ModelMockMetadata(
+    Some(0.0),
+    Some(0),
+    Some(OffsetDateTime.now()),
+    Some(Seq.empty[String]),
+    Some(Seq.empty[URI]),
+    Some(DocumentStatus.Normal),
+    Some('md5),
+    Some(URI.create("no")),
+    Some(0L)
+  ).asJson.dropNulls
 
   val testDocs: List[Json] = List.fill(1)(
     mockKeyJson
