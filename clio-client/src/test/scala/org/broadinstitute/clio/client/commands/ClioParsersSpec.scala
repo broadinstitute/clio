@@ -5,7 +5,7 @@ import java.time.OffsetDateTime
 import caseapp.core.Error
 import caseapp.core.argparser.ArgParser
 import enumeratum.{Enum, EnumEntry}
-import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.reflect.ClassTag

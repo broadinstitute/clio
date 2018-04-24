@@ -259,7 +259,9 @@ class RecoveryIntegrationSpec
           _.mapObject(_.filterKeys(!defaultKeys.contains(_)))
         ) should contain theSameElementsInOrderAs sortedExpected
 
-        val fields = sortedActual.map(_.asObject.map(_.keys.toSet).getOrElse(Set.empty)).reduce(_ intersect _)
+        val fields = sortedActual
+          .map(_.asObject.map(_.keys.toSet).getOrElse(Set.empty))
+          .reduce(_ intersect _)
         defaultKeys.map(fields should contain(_))
 
         succeed
