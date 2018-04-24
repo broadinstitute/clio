@@ -32,7 +32,7 @@ class ElasticsearchIndex[CI <: ClioIndex](
   private[elasticsearch] val additionalIdFields: Seq[String] = Seq.empty
 ) extends ModelAutoDerivation {
   import clioIndex.implicits._
-  import ElasticsearchUtil.JsonOps
+  import ElasticsearchIndex._
 
   /**
     * The root directory to use when persisting updates of this index to storage.
@@ -107,6 +107,20 @@ object ElasticsearchIndex extends ModelAutoDerivation {
 
   def getUpsertId(json: Json): UpsertId =
     json.unsafeGet[UpsertId](UpsertIdElasticsearchName)
+
+  implicit class IdJson(val json: Json) extends AnyVal {
+    def getAsString(key: String): String = {
+      json.asObject
+        .flatMap(_.apply(key))
+        .flatMap {
+          case s if s.isString =>
+            s.asString
+          case a if a.isArray || a.isObject =>
+            throw new RuntimeException("Arrays and objects cannot be used as ID fields")
+          case j => Option(j.toString())
+        }.getOrElse(throw new RuntimeException(s"Could not get $key from json"))
+    }
+  }
 
   /** Format the directory path for the indexed meta-data files. */
   lazy val dateTimeFormatter: DateTimeFormatter =

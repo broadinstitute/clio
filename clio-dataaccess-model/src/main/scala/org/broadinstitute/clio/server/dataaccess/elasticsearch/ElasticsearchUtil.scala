@@ -57,18 +57,6 @@ object ElasticsearchUtil {
     def unsafeGet[T: Decoder](key: String): T =
       json.hcursor.get[T](key).fold(throw _, identity)
 
-    def getAsString(key: String): String = {
-      json.asObject
-        .flatMap(_.apply(key))
-        .map {
-          case s if s.isString =>
-            s.asString.getOrElse("")
-          case a if a.isArray =>
-            a.asArray.map(_.mkString(".")).getOrElse("")
-          case j => j.toString()
-        }
-        .getOrElse(throw new RuntimeException(s"Could not get field $key as String"))
-    }
 
     def dropNulls: Json = {
       json.mapObject(_.filter {
