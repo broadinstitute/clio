@@ -6,7 +6,7 @@ import java.time.format.DateTimeFormatter
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.Json
-import io.circe.parser._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
 import io.circe.syntax._
 import io.circe.generic.extras.Configuration.snakeCaseTransformation
 import org.broadinstitute.clio.transfer.model.ClioIndex
@@ -78,7 +78,7 @@ class ElasticsearchIndex[CI <: ClioIndex](
     */
   final val indexType: String = "default"
 
-  final val defaults: Json = parse(defaultFields.pretty(implicitly)).getOrElse(Json.obj())
+  final val defaults: Json = defaultFields.dropNulls
 
   /** The fields for the index. */
   def fields: Seq[FieldDefinition] =

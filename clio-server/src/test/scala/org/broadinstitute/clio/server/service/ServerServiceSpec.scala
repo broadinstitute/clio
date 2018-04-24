@@ -4,8 +4,7 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import io.circe.{Json, JsonObject}
-import io.circe.parser._
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -147,7 +146,7 @@ class ServerServiceSpec
       // This generation is done inside this block because UpsertIds and EntityIds need to be unique.
       counter = counter + 1
       key.asJson
-        .deepMerge(parse(metadata.asJson.pretty(implicitly)).getOrElse(Json.obj()))
+        .deepMerge(metadata.asJson.dropNulls)
         .deepMerge(
           Map(
             ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
@@ -178,9 +177,8 @@ class ServerServiceSpec
 
       upsertedDocs
         .drop(initInSearch)
-        .forall(
-          js => js.asObject.getOrElse(JsonObject.empty).contains("mock_default_field")
-        ) should be(true)
+        .map(_.asObject.map(_.keys.toSet).getOrElse(Set.empty))
+        .reduce(_ intersect _) should contain("mock_default_field")
     }
   }
 
