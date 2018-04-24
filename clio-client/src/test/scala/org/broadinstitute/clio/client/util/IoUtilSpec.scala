@@ -15,7 +15,7 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
 
   class TestIoUtil extends IoUtil {
 
-    override def readGoogleObjectData(location: URI): String = { " " }
+    override def readGoogleObjectData(location: URI): String = " "
 
     override def writeGoogleObjectData(data: String, location: URI): Unit = {}
 
@@ -23,7 +23,7 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
 
     override def deleteGoogleObject(path: URI): Unit = {}
 
-    override def googleObjectExists(path: URI): Boolean = { false }
+    override def googleObjectExists(path: URI): Boolean = false
   }
 
   it should "read a metadata file from file location" in {
