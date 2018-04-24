@@ -28,8 +28,7 @@ import org.broadinstitute.clio.util.model.{DataType, UpsertId}
 class ElasticsearchIndex[CI <: ClioIndex](
   val clioIndex: CI,
   private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper,
-  private[elasticsearch] val defaultFields: Json = Json.obj(),
-  private[elasticsearch] val additionalIdFields: Seq[String] = Seq.empty
+  private[elasticsearch] val defaultFields: Json = Json.obj()
 ) extends ModelAutoDerivation {
   import clioIndex.implicits._
   import ElasticsearchIndex._
@@ -66,7 +65,7 @@ class ElasticsearchIndex[CI <: ClioIndex](
   def getId(json: Json): String = {
     val keyFields = FieldMapper[clioIndex.KeyType].fields.keys
       .map(snakeCaseTransformation)
-    (keyFields ++ additionalIdFields).toSeq.sorted
+    (keyFields ++ defaults.asObject.map(_.keys).getOrElse(Iterable.empty)).toSeq.sorted
       .map(json.getAsString)
       .mkString(".")
   }
@@ -109,6 +108,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
     json.unsafeGet[UpsertId](UpsertIdElasticsearchName)
 
   implicit class IdJson(val json: Json) extends AnyVal {
+
     def getAsString(key: String): String = {
       json.asObject
         .flatMap(_.apply(key))
@@ -118,7 +118,8 @@ object ElasticsearchIndex extends ModelAutoDerivation {
           case a if a.isArray || a.isObject =>
             throw new RuntimeException("Arrays and objects cannot be used as ID fields")
           case j => Option(j.toString())
-        }.getOrElse(throw new RuntimeException(s"Could not get $key from json"))
+        }
+        .getOrElse(throw new RuntimeException(s"Could not get $key from json"))
     }
   }
 
@@ -137,16 +138,14 @@ object ElasticsearchIndex extends ModelAutoDerivation {
     new ElasticsearchIndex(
       GvcfIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
-      GvcfMetadata(dataType = Option(DataType.WGS)).asJson,
-      Seq("data_type")
+      GvcfMetadata(dataType = Option(DataType.WGS)).asJson
     )
 
   val WgsCram: ElasticsearchIndex[WgsCramIndex.type] =
     new ElasticsearchIndex(
       WgsCramIndex,
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
-      WgsCramMetadata(dataType = Option(DataType.WGS)).asJson,
-      Seq("data_type")
+      WgsCramMetadata(dataType = Option(DataType.WGS)).asJson
     )
 
   val Arrays: ElasticsearchIndex[ArraysIndex.type] =

@@ -169,6 +169,8 @@ class ServerServiceSpec
       val upsertedDocs = searchDAO.updateCalls
         .flatMap(_._1)
 
+      upsertedDocs.
+
       upsertedDocs.take(initInSearch) should contain theSameElementsAs initStoredDocuments
         .take(initInSearch)
 

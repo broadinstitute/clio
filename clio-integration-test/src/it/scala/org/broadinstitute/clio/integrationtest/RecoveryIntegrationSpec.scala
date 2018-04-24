@@ -259,13 +259,10 @@ class RecoveryIntegrationSpec
           _.mapObject(_.filterKeys(!defaultKeys.contains(_)))
         ) should contain theSameElementsInOrderAs sortedExpected
 
-        sortedActual.forall(
-          json =>
-            defaultKeys
-              .forall(json.asObject.getOrElse(JsonObject.empty).keys.toSeq.contains)
-        ) should be(
-          true
-        )
+        val fields = sortedActual.map(_.asObject.map(_.keys.toSet).getOrElse(Set.empty)).reduce(_ intersect _)
+        defaultKeys.map(fields should contain(_))
+
+        succeed
       }
     }
   }

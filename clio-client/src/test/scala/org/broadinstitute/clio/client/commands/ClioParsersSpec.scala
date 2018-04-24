@@ -18,13 +18,9 @@ class ClioParsersSpec extends FlatSpec with Matchers with ClioParsers {
   DocumentStatus.values.foreach {
     it should behave like enumParser(_)
   }
-  DataType.values.foreach {
-    it should behave like enumParser(_)
-  }
 
   it should behave like enumParserErr[Location]
   it should behave like enumParserErr[DocumentStatus]
-  it should behave like enumParserErr[DataType]
 
   def enumParser[E <: EnumEntry: Enum](entry: E)(implicit c: ClassTag[E]): Unit = {
     val stringified = entry.entryName
