@@ -5,7 +5,6 @@ import java.net.URI
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import better.files.File
 import cats.syntax.either._
 import io.circe.Json
 import org.broadinstitute.clio.client.commands.MoveCommand
@@ -236,7 +235,6 @@ object MoveExecutor {
     ops: immutable.Seq[IoOp],
     ioUtil: IoUtil
   )(implicit ec: ExecutionContext): Source[Unit, NotUsed] = {
-    //ioUtil.copyCloudObjects(opsToPerform.map(op => op.src -> op.dest))
     Source(ops)
       .mapAsyncUnordered(ops.size + 1) { op =>
         Future {
@@ -244,11 +242,7 @@ object MoveExecutor {
             op match {
               case MoveOp(src, dest)       => ioUtil.copyGoogleObject(src, dest)
               case CopyOp(src, dest)       => ioUtil.copyGoogleObject(src, dest)
-              case WriteOp(contents, dest) =>
-                // FIXME: Using NIO / the SDK would let us avoid the temp file.
-                File.usingTemporaryFile() { tmp =>
-                  ioUtil.copyGoogleObject(tmp.write(contents).uri, dest)
-                }
+              case WriteOp(contents, dest) => ioUtil.writeGoogleObjectData(contents, dest)
             }
           }
         }
@@ -256,17 +250,13 @@ object MoveExecutor {
       .fold(Seq.empty[Throwable]) { (acc, attempt) =>
         attempt.fold(acc :+ _, _ => acc)
       }
-      .flatMapConcat { errs =>
-        if (errs.isEmpty) {
-          Source.single(())
-        } else {
-          Source.failed(
-            new IOException(
-              s"""Failed to perform pre-upsert IO operations:
-                 |${errs.map(_.getMessage).mkString("\n")}""".stripMargin
-            )
-          )
-        }
+      .flatMapConcat {
+        case Seq() => Source.single(())
+        case head +: tail =>
+          val exception =
+            new IOException("Failed to perform pre-upsert IO operations", head)
+          tail.foreach(exception.addSuppressed)
+          Source.failed(exception)
       }
   }
 }

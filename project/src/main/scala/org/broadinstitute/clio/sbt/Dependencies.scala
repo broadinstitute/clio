@@ -35,6 +35,7 @@ object Dependencies {
   private val TestContainersScalaVersion = "0.16.0"
   private val TypesafeConfigVersion = "1.3.3"
   private val VaultJavaDriverVersion = "3.1.0"
+  private val GoogleCloudStorageVersion = "1.14.0"
 
   /** Version of Scala to build Clio with. */
   val ScalaVersion = "2.12.5"
@@ -93,6 +94,7 @@ object Dependencies {
   val ClientMainDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,
     "com.github.alexarchambault" %% "case-app" % CaseAppVersion,
+    "com.google.cloud" % "google-cloud-storage" % GoogleCloudStorageVersion,
     "com.iheart" %% "ficus" % FicusVersion,
     "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.akka" %% "akka-stream" % AkkaVersion,

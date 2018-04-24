@@ -6,96 +6,32 @@ import java.net.URI
 import akka.stream.scaladsl.Sink
 import better.files.File
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.util.IoUtil.GsUtil
-import org.scalamock.scalatest.AsyncMockFactory
+import org.scalatest.AsyncTestSuite
 
 import scala.collection.immutable
 
-class IoUtilSpec extends BaseClientSpec with AsyncMockFactory {
+class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
   behavior of "IoUtil"
 
-  val uri = URI.create(
-    "gs://broad-gotc-dev-storage/pipeline/C1963/CHMI_CHMI3_Nex1/v1/id.txt"
-  )
+  class TestIoUtil extends IoUtil {
+
+    override def readGoogleObjectData(location: URI): String = { " " }
+
+    override def writeGoogleObjectData(data: String, location: URI): Unit = {}
+
+    override def copyGoogleObject(from: URI, to: URI): Unit = {}
+
+    override def deleteGoogleObject(path: URI): Unit = {}
+
+    override def googleObjectExists(path: URI): Boolean = { false }
+  }
 
   it should "read a metadata file from file location" in {
     val contents = "I'm a file!"
 
     File.temporaryFile() { f =>
-      IoUtil.readMetadata(f.write(contents).uri) should be(contents)
+      new TestIoUtil().readMetadata(f.write(contents).uri) should be(contents)
     }
-  }
-
-  it should "parse the md5 hash out of 'gsutil hash' output" in {
-    val gsutil = stub[GsUtil]
-    val expectedHash = Symbol("998e42da13d7bd619f798baf8ea08a13")
-
-    (gsutil.hash _).when(uri.toString).returns {
-      s"""Hashes [hex] for pipeline/C1963/CHMI_CHMI3_Nex1/v1/id.txt:
-         |        Hash (crc32c):          392eca9a
-         |        Hash (md5):             ${expectedHash.name}
-       """.stripMargin
-    }
-
-    new IoUtil { override val gsUtil: GsUtil = gsutil }
-      .getMd5HashOfGoogleObject(uri) should be(Some(expectedHash))
-  }
-
-  it should "not fail when 'gsutil hash' doesn't output an md5 hash" in {
-    val gsutil = stub[GsUtil]
-
-    (gsutil.hash _).when(uri.toString).returns {
-      """Hashes [hex] for pipeline/C1963/CHMI_CHMI3_Nex1/v1/id.txt:
-        |        Hash (crc32c):          392eca9a
-      """.stripMargin
-    }
-
-    new IoUtil { override val gsUtil: GsUtil = gsutil }
-      .getMd5HashOfGoogleObject(uri) should be(None)
-  }
-
-  it should "parse object size and hash out of 'gsutil stat' output" in {
-    val gsutil = stub[GsUtil]
-    val expectedSize = 123412L
-    val expectedMd5Hash = Symbol("d41d8cd98f00b204e9800998ecf8427e")
-
-    (gsutil.stat _).when(uri.toString).returns {
-      s"""    Creation time:          Wed, 24 Jan 2018 23:00:14 GMT
-         |    Update time:            Wed, 24 Jan 2018 23:00:14 GMT
-         |    Storage class:          STANDARD
-         |    Content-Length:         $expectedSize
-         |    Content-Type:           application/octet-stream
-         |    Hash (crc32c):          AAAAAA==
-         |    Hash (md5):             1B2M2Y8AsgTpgAmY7PhCfg==
-         |    ETag:                   CKCYzILa8dgCEAE=
-         |    Generation:             1516834814888992
-         |    Metageneration:         1
-       """.stripMargin
-    }
-
-    new IoUtil { override val gsUtil: GsUtil = gsutil }
-      .getGoogleObjectInfo(uri) should be(expectedSize -> Some(expectedMd5Hash))
-  }
-
-  it should "not fail when 'gsutil stat' doesn't output an md5 hash" in {
-    val gsutil = stub[GsUtil]
-    val expectedSize = 123412L
-
-    (gsutil.stat _).when(uri.toString).returns {
-      s"""    Creation time:          Wed, 24 Jan 2018 23:00:14 GMT
-         |    Update time:            Wed, 24 Jan 2018 23:00:14 GMT
-         |    Storage class:          STANDARD
-         |    Content-Length:         $expectedSize
-         |    Content-Type:           application/octet-stream
-         |    Hash (crc32c):          AAAAAA==
-         |    ETag:                   CKCYzILa8dgCEAE=
-         |    Generation:             1516834814888992
-         |    Metageneration:         1
-       """.stripMargin
-    }
-
-    new IoUtil { override val gsUtil: GsUtil = gsutil }
-      .getGoogleObjectInfo(uri) should be(expectedSize -> None)
   }
 
   it should "build streams for deleting multiple cloud objects" in {
@@ -104,44 +40,54 @@ class IoUtilSpec extends BaseClientSpec with AsyncMockFactory {
       URI.create("gs://path/to/the/other.object")
     )
 
-    val gsutil = mock[GsUtil]
-    uris.foreach(uri => (gsutil.rm _).expects(uri.toString).returning(0))
+    var deleted: List[URI] = List()
 
-    val ioUtil = new IoUtil {
-      override protected def gsUtil: GsUtil = gsutil
+    val gsutil = new TestIoUtil() {
+      override def deleteGoogleObject(path: URI): Unit = {
+        deleted = deleted :+ path
+      }
     }
 
-    // Expectations built into the mock will fail if we don't call the right deletes.
-    ioUtil.deleteCloudObjects(uris).runWith(Sink.head).map(_ should be(()))
+    for {
+      result <- gsutil.deleteCloudObjects(uris).runWith(Sink.head)
+    } yield {
+      result should be(())
+      deleted should be(uris)
+    }
   }
 
   it should "not fail when building a stream for zero deletes" in {
-    val ioUtil = new IoUtil {
-      override protected def gsUtil: GsUtil = stub[GsUtil]
-    }
-    val stream = ioUtil.deleteCloudObjects(immutable.Iterable.empty)
+    val stream = new TestIoUtil().deleteCloudObjects(immutable.Iterable.empty)
     stream.runWith(Sink.head).map(_ should be(()))
   }
 
   it should "include all failures in the exception message when parallel deletes fail" in {
-    val urisToFail = Set("gs://path/to/the.object", "gs://path/to/the/other.object")
-    val uriToSucceed = "gs://some/other/object"
+    val urisToFail =
+      Set("gs://path/to/the.object", "gs://path/to/the/other.object").map(URI.create)
+    val uriToSucceed = URI.create("gs://some/other/object")
 
-    val gsutil = mock[GsUtil]
-    urisToFail.foreach(uri => (gsutil.rm _).expects(uri).returning(1))
-    (gsutil.rm _).expects(uriToSucceed).returning(0)
+    var deleted: List[URI] = List()
 
-    val ioUtil = new IoUtil {
-      override protected def gsUtil: GsUtil = gsutil
+    val gsutil = new TestIoUtil() {
+      override def deleteGoogleObject(path: URI): Unit = {
+        if (urisToFail.contains(path)) {
+          throw new IOException(path.toString)
+        }
+        deleted = deleted :+ path
+      }
     }
 
-    val stream = ioUtil.deleteCloudObjects((urisToFail + uriToSucceed).map(URI.create))
+    val stream = gsutil.deleteCloudObjects(urisToFail + uriToSucceed)
 
-    recoverToExceptionIf[IOException](stream.runWith(Sink.ignore)).map { ex =>
-      urisToFail.foreach { uri =>
-        ex.getMessage should include(uri)
+    for {
+      _ <- recoverToExceptionIf[IOException](stream.runWith(Sink.ignore)).map { ex =>
+        urisToFail.foreach { uri =>
+          ex.getMessage should include(uri.toString)
+        }
+        succeed
       }
-      succeed
+    } yield {
+      deleted should be(Seq(uriToSucceed))
     }
   }
 }
