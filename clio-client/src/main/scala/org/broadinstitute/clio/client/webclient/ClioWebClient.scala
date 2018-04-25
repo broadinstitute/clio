@@ -59,7 +59,7 @@ object ClioWebClient {
       )
 }
 
-class ClioWebClient private[client] (
+class ClioWebClient(
   connectionFlow: Flow[HttpRequest, HttpResponse, _],
   requestTimeout: FiniteDuration,
   maxRequestRetries: Int,
