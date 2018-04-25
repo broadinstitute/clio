@@ -92,6 +92,8 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   val Ubam: ElasticsearchIndex[UbamIndex.type] =
     new ElasticsearchIndex(
       UbamIndex,
+      // We need to keep this name consistent with GCS, so we cannot easily change it.
+      // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       "wgs-ubam",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
@@ -117,6 +119,8 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   val Arrays: ElasticsearchIndex[ArraysIndex.type] =
     new ElasticsearchIndex(
       ArraysIndex,
+      // We need to keep this name consistent with GCS, so we cannot easily change it.
+      // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       "arrays",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
