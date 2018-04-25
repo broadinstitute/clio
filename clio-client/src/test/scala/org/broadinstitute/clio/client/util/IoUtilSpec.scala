@@ -81,10 +81,11 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
 
     for {
       _ <- recoverToExceptionIf[IOException](stream.runWith(Sink.ignore)).map { ex =>
+        val sw = new StringWriter
+        ex.printStackTrace(new PrintWriter(sw))
+        val errorText = sw.toString
         urisToFail.foreach { uri =>
-          val sw = new StringWriter
-          ex.printStackTrace(new PrintWriter(sw))
-          sw.toString should include(uri.toString)
+          errorText should include(uri.toString)
         }
         succeed
       }

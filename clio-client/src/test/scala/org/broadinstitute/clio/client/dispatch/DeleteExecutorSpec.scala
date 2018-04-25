@@ -166,10 +166,11 @@ class DeleteExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     recoverToExceptionIf[IllegalStateException] {
       executor.execute(webClient, ioUtil).runWith(Sink.ignore)
     }.map { ex =>
+      val sw = new StringWriter
+      ex.printStackTrace(new PrintWriter(sw))
+      val errorText = sw.toString
       paths.foreach { uri =>
-        val sw = new StringWriter
-        ex.printStackTrace(new PrintWriter(sw))
-        sw.toString should include(uri.toString)
+        errorText should include(uri.toString)
       }
       succeed
     }
