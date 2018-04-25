@@ -36,6 +36,7 @@ class ElasticsearchQueryMapperSpec
     )
     val index = new ElasticsearchIndex(
       ModelMockIndex(),
+      "mock",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
     mapper
