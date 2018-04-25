@@ -123,6 +123,7 @@ class ServerServiceSpec
     val keyLong = 1L
     val keyString = "mock-key"
     def key = ModelMockKey(keyLong, keyString + UUID.randomUUID())
+    val nonDefaultString = Some("this is not the default string.")
     val metadata = ModelMockMetadata(
       Some(1.0),
       Some(1),
@@ -145,13 +146,20 @@ class ServerServiceSpec
     val initStoredDocuments = Seq.fill(numDocs)({
       // This generation is done inside this block because UpsertIds and EntityIds need to be unique.
       counter = counter + 1
-      key.asJson
+      val document = key.asJson
         .deepMerge(metadata.asJson.dropNulls)
         .deepMerge(
           Map(
             ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
           ).asJson
         )
+      if (counter <= initInSearch) {
+        document.deepMerge(
+          ModelMockMetadata(mockDefaultField = nonDefaultString).asJson.dropNulls
+        )
+      } else {
+        document
+      }
     })
     val initSearchDocuments = initStoredDocuments.take(initInSearch)
 
@@ -168,7 +176,13 @@ class ServerServiceSpec
       val upsertedDocs = searchDAO.updateCalls
         .flatMap(_._1)
 
-      upsertedDocs.take(initInSearch) should contain theSameElementsAs initStoredDocuments
+      upsertedDocs
+        .take(initInSearch)
+        .map(
+          _.deepMerge(
+            ModelMockMetadata(mockDefaultField = nonDefaultString).asJson.dropNulls
+          )
+        ) should contain theSameElementsAs initStoredDocuments
         .take(initInSearch)
 
       upsertedDocs.drop(initInSearch) should contain theSameElementsAs initStoredDocuments
