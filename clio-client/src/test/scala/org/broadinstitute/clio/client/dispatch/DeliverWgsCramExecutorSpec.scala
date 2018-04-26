@@ -7,12 +7,8 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeliverWgsCram
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.WriteOp
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  WgsCramExtensions,
-  WgsCramKey,
-  WgsCramMetadata
-}
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramExtensions, WgsCramKey, WgsCramMetadata}
+import org.broadinstitute.clio.util.model.{DataType, Location}
 import org.scalamock.scalatest.AsyncMockFactory
 
 class DeliverWgsCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
@@ -22,7 +18,8 @@ class DeliverWgsCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     location = Location.GCP,
     project = "the-project",
     sampleAlias = "the-sample",
-    version = 1
+    version = 1,
+    dataType = DataType.WGS
   )
   private val cramPath =
     URI.create(s"gs://bucket/the-cram${WgsCramExtensions.CramExtension}")

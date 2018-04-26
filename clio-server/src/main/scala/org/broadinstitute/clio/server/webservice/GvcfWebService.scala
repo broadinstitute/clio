@@ -5,7 +5,7 @@ import akka.http.scaladsl.server._
 import org.broadinstitute.clio.server.service.IndexService
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.transfer.model.gvcf.GvcfKey
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DataType, Location}
 
 class GvcfWebService(gvcfService: IndexService[GvcfIndex.type])
     extends IndexWebService(gvcfService) {
@@ -16,6 +16,14 @@ class GvcfWebService(gvcfService: IndexService[GvcfIndex.type])
       project <- pathPrefix(Segment)
       sampleAlias <- pathPrefix(Segment)
       version <- pathPrefix(IntNumber)
-    } yield GvcfKey(location, project, sampleAlias, version)
+      dataType <- pathPrefix(Segment)
+    } yield
+      GvcfKey(
+        location,
+        project,
+        sampleAlias,
+        version,
+        DataType.withNameInsensitive(dataType)
+      )
   }
 }

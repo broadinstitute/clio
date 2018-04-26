@@ -5,7 +5,7 @@ import io.circe.syntax._
 import org.broadinstitute.clio.server.service.WgsCramService
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.WgsCramKey
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DataType, Location}
 
 class WgsCramWebServiceSpec extends IndexWebServiceSpec[WgsCramIndex.type] {
   def webServiceName = "WgsCramWebService"
@@ -17,7 +17,8 @@ class WgsCramWebServiceSpec extends IndexWebServiceSpec[WgsCramIndex.type] {
     Location.OnPrem,
     "project",
     "sample_alias",
-    1
+    1,
+    DataType.WGS
   )
 
   val cloudKey: WgsCramKey = onPremKey
@@ -38,7 +39,8 @@ class WgsCramWebServiceSpec extends IndexWebServiceSpec[WgsCramIndex.type] {
       Location.GCP,
       "project",
       "sample",
-      1
+      1,
+      DataType.WGS
     ).asJson(WgsCramIndex.keyEncoder)
   }
 }

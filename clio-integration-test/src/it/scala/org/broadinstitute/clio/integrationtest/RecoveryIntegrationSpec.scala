@@ -15,7 +15,7 @@ import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
 import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramMetadata}
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location, UpsertId}
 import org.scalatest.OptionValues
 
 /** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
@@ -66,7 +66,8 @@ class RecoveryIntegrationSpec
       location = location,
       project = project,
       sampleAlias = sampleAlias,
-      version = i
+      version = i,
+      dataType = DataType.WGS
     )
     val metadata = GvcfMetadata(
       gvcfPath = Some(randomUri(i)),
@@ -86,7 +87,8 @@ class RecoveryIntegrationSpec
       location = location,
       project = project,
       sampleAlias = sampleAlias,
-      version = i
+      version = i,
+      dataType = DataType.WGS
     )
     val metadata = WgsCramMetadata(
       cramPath = Some(randomUri(i)),

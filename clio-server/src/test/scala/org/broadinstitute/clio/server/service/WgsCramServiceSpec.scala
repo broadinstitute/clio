@@ -15,14 +15,14 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
   WgsCramMetadata,
   WgsCramQueryInput
 }
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location}
 
 class WgsCramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramService") {
 
   val elasticsearchIndex: ElasticsearchIndex[WgsCramIndex.type] =
     ElasticsearchIndex.WgsCram
 
-  val dummyKey = WgsCramKey(Location.GCP, "project1", "sample1", 1)
+  val dummyKey = WgsCramKey(Location.GCP, "project1", "sample1", 1, DataType.WGS)
 
   val dummyInput = WgsCramQueryInput(project = Option("testProject"))
 

@@ -4,7 +4,6 @@ import java.io.IOException
 import java.net.URI
 
 import scala.concurrent.ExecutionContext
-
 import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.{Sink, Source}
 import better.files.File
@@ -15,12 +14,8 @@ import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, MoveOp, Wri
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{Metadata, WgsCramIndex}
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  WgsCramExtensions,
-  WgsCramKey,
-  WgsCramMetadata
-}
-import org.broadinstitute.clio.util.model.{Location, UpsertId}
+import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramExtensions, WgsCramKey, WgsCramMetadata}
+import org.broadinstitute.clio.util.model.{DataType, Location, UpsertId}
 import org.scalamock.scalatest.AsyncMockFactory
 
 import scala.collection.immutable
@@ -32,7 +27,8 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     location = Location.GCP,
     project = "the-project",
     sampleAlias = "the-sample",
-    version = 1
+    version = 1,
+    dataType = DataType.WGS
   )
   private val metadata = WgsCramMetadata(
     cramPath = Some(URI.create(s"gs://bucket/the-cram${WgsCramExtensions.CramExtension}")),

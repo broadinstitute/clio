@@ -10,7 +10,7 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramMetadata}
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DataType, Location}
 import org.scalamock.scalatest.AsyncMockFactory
 
 import scala.collection.immutable
@@ -22,7 +22,8 @@ class DeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     location = Location.GCP,
     project = "project",
     sampleAlias = "sample",
-    version = 1
+    version = 1,
+    dataType = DataType.WGS
   )
 
   private val workspaceName = "workspace"

@@ -12,12 +12,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchUtil
 }
 import org.broadinstitute.clio.transfer.model.wgscram._
-import org.broadinstitute.clio.util.model.{
-  DocumentStatus,
-  Location,
-  RegulatoryDesignation,
-  UpsertId
-}
+import org.broadinstitute.clio.util.model._
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
@@ -78,7 +73,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         location = location,
         project = "test project",
         sampleAlias = s"someAlias $randomId",
-        version = 2
+        version = 2,
+        dataType = DataType.WGS
       )
       val metadata = WgsCramMetadata(
         documentStatus = Some(DocumentStatus.Normal),
@@ -108,7 +104,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
-      version = 1
+      version = 1,
+      dataType = DataType.WGS
     )
 
     for {
@@ -155,7 +152,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
-      version = 1
+      version = 1,
+      dataType = DataType.WGS
     )
     val upsertData = WgsCramMetadata(
       cramPath = Some(URI.create(s"gs://path/cram1${WgsCramExtensions.CramExtension}"))
@@ -187,7 +185,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       samples.zip(1 to 3).map {
         case (sample, version) =>
-          val key = WgsCramKey(location, project, sample, version)
+          val key = WgsCramKey(location, project, sample, version, DataType.WGS)
           val data = WgsCramMetadata(
             cramPath = Some(
               URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
@@ -233,7 +231,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       samples.zip(1 to 3).map {
         case (sample, version) =>
-          val key = WgsCramKey(location, project, sample, version)
+          val key = WgsCramKey(location, project, sample, version, DataType.WGS)
           val data = WgsCramMetadata(
             cramPath = Some(
               URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
@@ -264,7 +262,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
   it should "handle updates to wgs-cram metadata" in {
     val project = s"testProject$randomId"
-    val key = WgsCramKey(Location.GCP, project, s"testSample$randomId", 1)
+    val key = WgsCramKey(Location.GCP, project, s"testSample$randomId", 1, DataType.WGS)
     val cramPath = URI.create(s"gs://path/cram${WgsCramExtensions.CramExtension}")
     val cramSize = 1000L
     val initialNotes = "Breaking news"
@@ -327,7 +325,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         location = Location.GCP,
         project = project,
         sampleAlias = sampleAlias,
-        version = version
+        version = version,
+        dataType = DataType.WGS
       )
       val upsertMetadata = WgsCramMetadata(
         cramPath = Some(URI.create(s"gs://cram/$sampleAlias.$version"))
@@ -391,7 +390,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           location = result.unsafeGet[Location]("location"),
           project = result.unsafeGet[String]("project"),
           sampleAlias = result.unsafeGet[String]("sample_alias"),
-          version = result.unsafeGet[Int]("version")
+          version = result.unsafeGet[Int]("version"),
+          dataType = result.unsafeGet[DataType]("data_type")
         )
 
         result.unsafeGet[DocumentStatus]("document_status") should be {
@@ -437,7 +437,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val alignmentMetricsDestination = rootDestination / alignmentMetricsName
     val fingerprintMetricsDestination = rootDestination / fingerprintMetricsName
 
-    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val key = WgsCramKey(Location.GCP, project, sample, version, DataType.WGS)
     val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -549,7 +549,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       Location.GCP,
       s"project$randomId",
       s"sample$randomId",
-      1
+      1,
+      DataType.WGS
     )
     runUpsertCram(key, WgsCramMetadata()).flatMap { _ =>
       recoverToExceptionIf[Exception] {
@@ -596,7 +597,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val metrics1Path = storageDir / s"$randomId.metrics"
     val metrics2Path = storageDir / s"$randomId.metrics"
 
-    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val key = WgsCramKey(Location.GCP, project, sample, version, DataType.WGS)
     val metadata = WgsCramMetadata(
       cramPath = Some(cramPath.uri),
       craiPath = Some(craiPath.uri),
@@ -743,7 +744,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiDestination = rootDestination / s"$prefix$craiName"
     val md5Destination = rootDestination / s"$prefix$md5Name"
 
-    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val key = WgsCramKey(Location.GCP, project, sample, version, DataType.WGS)
     val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -836,7 +837,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val md5Destination = rootSource / md5Name
 
-    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val key = WgsCramKey(Location.GCP, project, sample, version, DataType.WGS)
     val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -911,7 +912,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val cramSource = rootSource / cramName
     val craiSource = rootSource / craiName
 
-    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val key = WgsCramKey(Location.GCP, project, sample, version, DataType.WGS)
     val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -966,7 +967,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiDestination = rootDestination / craiName
     val md5Destination = rootDestination / md5Name
 
-    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val key = WgsCramKey(Location.GCP, project, sample, version, DataType.WGS)
     val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -1055,7 +1056,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val rootDestination = rootSource.parent / s"moved/$randomId/"
 
-    val key = WgsCramKey(Location.GCP, project, sample, version)
+    val key = WgsCramKey(Location.GCP, project, sample, version, DataType.WGS)
     val metadata = WgsCramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -1105,7 +1106,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
-      version = 1
+      version = 1,
+      dataType = DataType.WGS
     )
     for {
       upsertId1 <- runUpsertCram(
@@ -1124,7 +1126,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
-      version = 1
+      version = 1,
+      dataType = DataType.WGS
     )
     for {
       upsertId1 <- runUpsertCram(
@@ -1150,7 +1153,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       location = Location.GCP,
       project = s"project$randomId",
       sampleAlias = s"sample$randomId",
-      version = 1
+      version = 1,
+      dataType = DataType.WGS
     )
     for {
       upsertId1 <- runUpsertCram(

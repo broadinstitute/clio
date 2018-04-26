@@ -5,7 +5,7 @@ import akka.http.scaladsl.server._
 import org.broadinstitute.clio.server.service.IndexService
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.WgsCramKey
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DataType, Location}
 
 class WgsCramWebService(wgsCramService: IndexService[WgsCramIndex.type])
     extends IndexWebService(wgsCramService) {
@@ -16,6 +16,14 @@ class WgsCramWebService(wgsCramService: IndexService[WgsCramIndex.type])
       project <- pathPrefix(Segment)
       sampleAlias <- pathPrefix(Segment)
       version <- pathPrefix(IntNumber)
-    } yield WgsCramKey(location, project, sampleAlias, version)
+      dataType <- pathPrefix(Segment)
+    } yield
+      WgsCramKey(
+        location,
+        project,
+        sampleAlias,
+        version,
+        DataType.withNameInsensitive(dataType)
+      )
   }
 }
