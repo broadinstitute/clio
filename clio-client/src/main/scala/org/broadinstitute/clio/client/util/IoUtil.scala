@@ -9,7 +9,7 @@ import akka.stream.scaladsl.Source
 import better.files.File
 import cats.syntax.either._
 import com.google.auth.Credentials
-import com.google.cloud.storage.{BlobId, BlobInfo, Storage, StorageOptions}
+import com.google.cloud.storage.{Blob, BlobId, BlobInfo, Storage, StorageOptions}
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -62,11 +62,11 @@ class IoUtil(storage: Storage) {
       }
   }
 
-  private def getBlob(path: URI) = {
+  def getBlob(path: URI): Option[Blob] = {
     Option(storage.get(toBlobId(path)))
   }
 
-  private def requireBlob(path: URI) = {
+  def requireBlob(path: URI): Blob = {
     getBlob(path).getOrElse(
       throw new IllegalArgumentException(s"Invalid google path $path")
     )
