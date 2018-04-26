@@ -5,59 +5,61 @@ import java.net.URI
 
 import akka.stream.scaladsl.Sink
 import better.files.File
+import com.google.cloud.storage.BlobInfo
+import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.scalatest.AsyncTestSuite
 
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 
 class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
   behavior of "IoUtil"
 
-  class TestIoUtil extends IoUtil {
+  private def uriToBlobInfo(uri: URI) = {
+    BlobInfo.newBuilder(IoUtil.toBlobId(uri)).build()
+  }
 
-    override def readGoogleObjectData(location: URI): String = " "
-
-    override def writeGoogleObjectData(data: String, location: URI): Unit = {}
-
-    override def copyGoogleObject(from: URI, to: URI): Unit = {}
-
-    override def deleteGoogleObject(path: URI): Unit = {}
-
-    override def googleObjectExists(path: URI): Boolean = false
+  private def createStorage = {
+    LocalStorageHelper.getOptions.getService
   }
 
   it should "read a metadata file from file location" in {
     val contents = "I'm a file!"
 
     File.temporaryFile() { f =>
-      new TestIoUtil().readMetadata(f.write(contents).uri) should be(contents)
+      new IoUtil(createStorage)
+        .readMetadata(f.write(contents).uri) should be(contents)
     }
+  }
+
+  it should "identify google directories" in {
+    val ioUtil = new IoUtil(createStorage)
+    ioUtil.isGoogleDirectory(URI.create("gs://bucket/directory/")) should be(true)
+    ioUtil.isGoogleDirectory(URI.create("gs://bucket/file.txt")) should be(false)
+    ioUtil.isGoogleDirectory(URI.create("foo")) should be(false)
   }
 
   it should "build streams for deleting multiple cloud objects" in {
     val uris = immutable.Iterable(
-      URI.create("gs://path/to/the.object"),
-      URI.create("gs://path/to/the/other.object")
+      URI.create("gs://bucket/to/the.object"),
+      URI.create("gs://bucket/to/the/other.object")
     )
 
-    var deleted: List[URI] = List()
+    val storage = createStorage
+    uris.foreach(uri => storage.create(uriToBlobInfo(uri)))
 
-    val gsutil = new TestIoUtil() {
-      override def deleteGoogleObject(path: URI): Unit = {
-        deleted = deleted :+ path
-      }
-    }
+    val ioUtil = new IoUtil(storage)
 
-    for {
-      result <- gsutil.deleteCloudObjects(uris).runWith(Sink.head)
-    } yield {
+    ioUtil.deleteCloudObjects(uris).runWith(Sink.head).map { result =>
       result should be(())
-      deleted should be(uris)
+      storage.list("bucket").getValues.asScala should be(empty)
     }
   }
 
   it should "not fail when building a stream for zero deletes" in {
-    val stream = new TestIoUtil().deleteCloudObjects(immutable.Iterable.empty)
+    val stream = new IoUtil(createStorage)
+      .deleteCloudObjects(immutable.Iterable.empty)
     stream.runWith(Sink.head).map(_ should be(()))
   }
 
@@ -66,31 +68,71 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
       Set("gs://path/to/the.object", "gs://path/to/the/other.object").map(URI.create)
     val uriToSucceed = URI.create("gs://some/other/object")
 
-    var deleted: List[URI] = List()
+    val storage = createStorage
+    storage.create(uriToBlobInfo(uriToSucceed))
 
-    val gsutil = new TestIoUtil() {
-      override def deleteGoogleObject(path: URI): Unit = {
-        if (urisToFail.contains(path)) {
-          throw new IOException(path.toString)
-        }
-        deleted = deleted :+ path
+    val stream = new IoUtil(storage).deleteCloudObjects(urisToFail + uriToSucceed)
+
+    recoverToExceptionIf[IOException](stream.runWith(Sink.ignore)).map { ex =>
+      val sw = new StringWriter
+      ex.printStackTrace(new PrintWriter(sw))
+      val errorText = sw.toString
+      urisToFail.foreach { uri =>
+        errorText should include(uri.toString)
       }
+      storage.list("bucket").getValues.asScala should be(empty)
     }
+  }
 
-    val stream = gsutil.deleteCloudObjects(urisToFail + uriToSucceed)
+  it should "read google object data" in {
+    val location = URI.create("gs://bucket/path/data")
+    val contents = "my data"
+    val storage = createStorage
+    storage.create(uriToBlobInfo(location), contents.getBytes)
 
-    for {
-      _ <- recoverToExceptionIf[IOException](stream.runWith(Sink.ignore)).map { ex =>
-        val sw = new StringWriter
-        ex.printStackTrace(new PrintWriter(sw))
-        val errorText = sw.toString
-        urisToFail.foreach { uri =>
-          errorText should include(uri.toString)
-        }
-        succeed
-      }
-    } yield {
-      deleted should be(Seq(uriToSucceed))
-    }
+    new IoUtil(storage).readMetadata(location) should be(contents)
+  }
+
+  it should "write google object data" in {
+    val location = URI.create("gs://bucket/path/data")
+    val contents = "my data"
+    val storage = createStorage
+
+    new IoUtil(storage).writeGoogleObjectData(contents, location)
+
+    storage.readAllBytes(IoUtil.toBlobId(location)) should be(contents.getBytes)
+  }
+
+  it should "write google object data when the file already exists" in {
+    val location = URI.create("gs://bucket/path/data")
+    val contents = "my data"
+    val storage = createStorage
+    storage.create(uriToBlobInfo(location), "original data".getBytes)
+
+    new IoUtil(storage).writeGoogleObjectData(contents, location)
+
+    storage.readAllBytes(IoUtil.toBlobId(location)) should be(contents.getBytes)
+  }
+
+  it should "detect if a google object exists or not" in {
+    val location = URI.create("gs://bucket/path/data")
+    val storage = createStorage
+    val ioutil = new IoUtil(storage)
+
+    ioutil.googleObjectExists(location) should be(false)
+    storage.create(uriToBlobInfo(location), "data".getBytes)
+    ioutil.googleObjectExists(location) should be(true)
+  }
+
+  it should "copy a google object" in {
+    val source = URI.create("gs://bucket/path/data")
+    val destination = URI.create("gs://bucket/path/newdata")
+    val contents = "my data"
+    val storage = createStorage
+    storage.create(uriToBlobInfo(source), contents.getBytes)
+
+    new IoUtil(storage).copyGoogleObject(source, destination)
+
+    storage.readAllBytes(IoUtil.toBlobId(destination)) should be(contents.getBytes)
   }
 }

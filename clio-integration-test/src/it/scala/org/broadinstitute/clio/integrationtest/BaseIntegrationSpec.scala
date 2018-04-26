@@ -26,7 +26,7 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, Printer}
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.client.ClioClient
-import org.broadinstitute.clio.client.util.GsUtil
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
@@ -78,7 +78,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * The clio-client to test against.
     */
   lazy val clioClient: ClioClient =
-    new ClioClient(clioWebClient, new GsUtil(googleCredential))
+    new ClioClient(clioWebClient, IoUtil(googleCredential))
 
   /**
     * The URI of the Elasticsearch instance to test in a suite.

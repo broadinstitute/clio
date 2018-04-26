@@ -12,7 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.circe.Json
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.dispatch._
-import org.broadinstitute.clio.client.util.{IoUtil, GsUtil}
+import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.{
   ClioWebClient,
   GoogleCredentialsGenerator
@@ -71,7 +71,7 @@ object ClioClient extends LazyLogging {
 
       webClient = ClioWebClient(new GoogleCredentialsGenerator(credentials))
 
-      client = new ClioClient(webClient, new GsUtil(credentials))
+      client = new ClioClient(webClient, IoUtil(credentials))
 
       resultStream <- client.instanceMain(args)
     } yield {

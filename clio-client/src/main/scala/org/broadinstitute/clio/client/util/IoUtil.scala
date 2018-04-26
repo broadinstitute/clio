@@ -9,7 +9,7 @@ import akka.stream.scaladsl.Source
 import better.files.File
 import cats.syntax.either._
 import com.google.auth.Credentials
-import com.google.cloud.storage.{Blob, BlobId, BlobInfo, StorageOptions}
+import com.google.cloud.storage.{BlobId, BlobInfo, Storage, StorageOptions}
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Clio-client component handling all file IO operations.
   */
-trait IoUtil {
+class IoUtil(storage: Storage) {
 
   import IoUtil._
 
@@ -62,36 +62,65 @@ trait IoUtil {
       }
   }
 
-  def readGoogleObjectData(location: URI): String
+  private def getBlob(path: URI) = {
+    Option(storage.get(toBlobId(path)))
+  }
 
-  def writeGoogleObjectData(data: String, location: URI): Unit
+  private def requireBlob(path: URI) = {
+    getBlob(path).fold(throw new IllegalArgumentException(s"Invalid google path $path"))(
+      identity
+    )
+  }
 
-  def copyGoogleObject(from: URI, to: URI): Unit
+  def readGoogleObjectData(location: URI): String = {
+    new String(requireBlob(location).getContent())
+  }
 
-  def deleteGoogleObject(path: URI): Unit
+  def writeGoogleObjectData(data: String, location: URI): Unit = {
+    getBlob(location) match {
+      case Some(blob) =>
+        val channel = blob.writer()
+        try {
+          channel.write(ByteBuffer.wrap(data.getBytes()))
+        } finally {
+          channel.close()
+        }
+      case None =>
+        val info = BlobInfo.newBuilder(toBlobId(location)).build()
+        storage.create(info, data.getBytes())
+    }
+    ()
+  }
 
-  def googleObjectExists(path: URI): Boolean
+  def copyGoogleObject(from: URI, to: URI): Unit = {
+    requireBlob(from).copyTo(toBlobId(to))
+    ()
+  }
+
+  def deleteGoogleObject(path: URI): Unit = {
+    if (!storage.delete(toBlobId(path))) {
+      throw new IllegalArgumentException(
+        s"Cannot delete '$path' because it does not exist."
+      )
+    }
+  }
+
+  def googleObjectExists(path: URI): Boolean = {
+    getBlob(path).fold(false)(_.exists())
+  }
 }
 
 object IoUtil {
-  val GoogleCloudStorageScheme = "gs"
-}
 
-class GsUtil(credentials: Credentials) extends IoUtil {
-
-  private val storage = {
-    val storageOptions = StorageOptions
-      .newBuilder()
-      .setCredentials(credentials)
-      .build()
-
-    storageOptions.getService
-  }
-
-  private val GoogleCloudPathPrefix = IoUtil.GoogleCloudStorageScheme + "//"
+  private val GoogleCloudStorageScheme = "gs"
+  private val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "//"
   private val GoogleCloudPathSeparator = "/"
 
-  private def toBlobId(path: URI) = {
+  def apply(credentials: Credentials): IoUtil = {
+    new IoUtil(StorageOptions.newBuilder().setCredentials(credentials).build().getService)
+  }
+
+  def toBlobId(path: URI): BlobId = {
     val noPrefix = path.toString.substring(GoogleCloudPathPrefix.length + 1)
     val firstSeparator = noPrefix.indexOf(GoogleCloudPathSeparator)
     // Get the bucket and the object name (aka path) from the gcs path.
@@ -99,47 +128,5 @@ class GsUtil(credentials: Credentials) extends IoUtil {
       noPrefix.substring(0, firstSeparator),
       noPrefix.substring(firstSeparator + 1)
     )
-  }
-
-  private def getBlob(path: URI) = {
-    storage.get(toBlobId(path))
-  }
-
-  override def readGoogleObjectData(location: URI): String = {
-    new String(getBlob(location).getContent())
-  }
-
-  override def writeGoogleObjectData(data: String, location: URI): Unit = {
-    getBlob(location) match {
-      case blob: Blob =>
-        val channel = blob.writer()
-        try {
-          channel.write(ByteBuffer.wrap(data.getBytes()))
-        } finally {
-          channel.close()
-        }
-      case _ =>
-        val info = BlobInfo.newBuilder(toBlobId(location)).build()
-        storage.create(info, data.getBytes())
-    }
-    ()
-  }
-
-  override def copyGoogleObject(from: URI, to: URI): Unit = {
-    getBlob(from).copyTo(toBlobId(to))
-    ()
-  }
-
-  override def deleteGoogleObject(path: URI): Unit = {
-    if (!getBlob(path).delete()) {
-      throw new RuntimeException(s"Cannot delete '$path' because it does not exist.")
-    }
-  }
-
-  override def googleObjectExists(path: URI): Boolean = {
-    getBlob(path) match {
-      case blob: Blob => blob.exists()
-      case _          => false
-    }
   }
 }

@@ -108,6 +108,7 @@ object Dependencies {
   )
 
   private val ClientTestDependencies: Seq[ModuleID] = Seq(
+    "com.google.cloud" % "google-cloud-nio" % GoogleCloudNioVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "org.scalamock" %% "scalamock" % ScalamockVersion,
     "org.scalatest" %% "scalatest" % ScalaTestVersion
