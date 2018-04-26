@@ -7,7 +7,7 @@ import org.broadinstitute.clio.transfer.model.UbamIndex
 import scala.concurrent.ExecutionContext
 
 /**
-  * Service responsible for performing all wgs-ubam-specific logic
+  * Service responsible for performing all ubam-specific logic
   * before handing off to the generic search / persistence services.
   */
 class UbamService(

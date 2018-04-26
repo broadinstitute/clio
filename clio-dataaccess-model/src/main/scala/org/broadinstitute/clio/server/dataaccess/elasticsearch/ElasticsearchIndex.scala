@@ -103,7 +103,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       GvcfIndex,
       // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
-      "gvcf-v2",
+      indexName = "gvcf-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 

@@ -50,7 +50,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     )
   }
 
-  it should "create the expected  ubam mapping in elasticsearch" in {
+  it should "create the expected ubam mapping in elasticsearch" in {
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
@@ -63,11 +63,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
   }
 
   // Generate a test for every combination of Location value and command type.
-  Location.values.foreach { location =>
-    Seq(true, false).foreach {
-      it should behave like testUbamLocation(location, _)
-    }
-  }
+  for {
+    location <- Location.values
+    useOldCommands <- Seq(true, false)
+  } yield it should behave like testUbamLocation(location, useOldCommands)
 
   /**
     * Utility method for generating an assertion about behavior for a Location key.
