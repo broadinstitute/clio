@@ -115,7 +115,7 @@ class ServerService private[server] (
   private[service] def startup(): Future[Unit] = {
 
     val indexes = immutable.Seq(
-      ElasticsearchIndex.WgsUbam,
+      ElasticsearchIndex.Ubam,
       ElasticsearchIndex.Gvcf,
       ElasticsearchIndex.WgsCram,
       ElasticsearchIndex.Arrays

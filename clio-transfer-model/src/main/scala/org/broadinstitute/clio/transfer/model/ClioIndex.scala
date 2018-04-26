@@ -21,8 +21,6 @@ trait ClioIndex {
 
   val commandName: String
 
-  val elasticsearchIndexName: String
-
   type KeyType <: IndexKey
 
   type MetadataType <: Metadata[MetadataType]

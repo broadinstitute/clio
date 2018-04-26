@@ -11,7 +11,6 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 import scala.reflect.ClassTag
 
 case class ModelMockIndex(
-  elasticsearchIndexName: String = "mock",
   name: String = "mock",
   commandName: String = "mock",
   urlSegment: String = "mock"
