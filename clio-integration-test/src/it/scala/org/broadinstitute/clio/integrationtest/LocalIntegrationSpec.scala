@@ -46,6 +46,7 @@ class LocalIntegrationSpec extends BaseIntegrationSpec(s"Clio local") {
 
 class LocalBasicSpec extends LocalIntegrationSpec with BasicTests
 class LocalUbamSpec extends LocalIntegrationSpec with UbamTests
-class LocalCramSpec extends LocalIntegrationSpec with WgsCramTests
+class LocalCramSpec extends LocalIntegrationSpec with CramTests
+class LocalWgsCramSpec extends LocalIntegrationSpec with WgsCramTests
 class LocalGvcfSpec extends LocalIntegrationSpec with GvcfTests
 class LocalArraysSpec extends LocalIntegrationSpec with ArraysTests

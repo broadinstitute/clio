@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.transfer.model.wgscram
 
 /** Expected extensions for files tracked by the wgs-cram index. */
-object WgsCramExtensions {
+object CramExtensions {
 
   /** File extension for crams. */
   val CramExtension = ".cram"

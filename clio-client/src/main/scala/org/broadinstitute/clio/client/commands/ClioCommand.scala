@@ -8,7 +8,11 @@ import caseapp.{CommandName, Recurse}
 import caseapp.core.help.CommandsHelp
 import caseapp.core.commandparser.CommandParser
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfQueryInput}
-import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramQueryInput}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  CramKey,
+  CramQueryInput,
+  WgsCramKey
+}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysQueryInput}
 
@@ -139,7 +143,50 @@ final case class DeleteGvcf(
   force: Boolean = false
 ) extends DeleteCommand(GvcfIndex)
 
-// WGS-cram commands.
+// cram commands.
+
+@CommandName(ClioCommand.addCramName)
+final case class AddCram(
+  @Recurse key: CramKey,
+  metadataLocation: URI,
+  force: Boolean = false
+) extends AddCommand(CramIndex)
+
+@CommandName(ClioCommand.queryCramName)
+final case class QueryCram(
+  @Recurse queryInput: CramQueryInput,
+  includeDeleted: Boolean = false
+) extends SimpleQueryCommand(CramIndex)
+
+@CommandName(ClioCommand.rawQueryCramName)
+final case class RawQueryCram(
+  queryInputPath: File
+) extends RawQueryCommand(CramIndex)
+
+@CommandName(ClioCommand.moveCramName)
+final case class MoveCram(
+  @Recurse key: CramKey,
+  destination: URI,
+  newBasename: Option[String] = None
+) extends MoveCommand(CramIndex)
+
+@CommandName(ClioCommand.deleteCramName)
+final case class DeleteCram(
+  @Recurse key: CramKey,
+  note: String,
+  force: Boolean = false
+) extends DeleteCommand(CramIndex)
+
+@CommandName(ClioCommand.deliverCramName)
+final case class DeliverCram(
+  @Recurse key: CramKey,
+  workspaceName: String,
+  workspacePath: URI,
+  newBasename: Option[String] = None,
+  force: Boolean = false
+) extends DeliverCommand(CramIndex)
+
+// TESTING
 
 @CommandName(ClioCommand.addWgsCramName)
 final case class AddWgsCram(
@@ -150,7 +197,7 @@ final case class AddWgsCram(
 
 @CommandName(ClioCommand.queryWgsCramName)
 final case class QueryWgsCram(
-  @Recurse queryInput: WgsCramQueryInput,
+  @Recurse queryInput: CramQueryInput,
   includeDeleted: Boolean = false
 ) extends SimpleQueryCommand(WgsCramIndex)
 
@@ -286,13 +333,22 @@ object ClioCommand extends ClioParsers {
   val moveGvcfName: String = movePrefix + GvcfIndex.commandName
   val deleteGvcfName: String = deletePrefix + GvcfIndex.commandName
 
-  // Names for WGS cram commands.
+  // Names for WGS cram commands. Here for compatibility.
+  //TODO Delete these when WgsCram API is no longer used.
   val addWgsCramName: String = addPrefix + WgsCramIndex.commandName
   val queryWgsCramName: String = simpleQueryPrefix + WgsCramIndex.commandName
   val rawQueryWgsCramName: String = rawQueryPrefix + WgsCramIndex.commandName
   val moveWgsCramName: String = movePrefix + WgsCramIndex.commandName
   val deleteWgsCramName: String = deletePrefix + WgsCramIndex.commandName
   val deliverWgsCramName: String = deliverPrefix + WgsCramIndex.commandName
+
+  // Names for cram commands.
+  val addCramName: String = addPrefix + CramIndex.commandName
+  val queryCramName: String = simpleQueryPrefix + CramIndex.commandName
+  val rawQueryCramName: String = rawQueryPrefix + CramIndex.commandName
+  val moveCramName: String = movePrefix + CramIndex.commandName
+  val deleteCramName: String = deletePrefix + CramIndex.commandName
+  val deliverCramName: String = deliverPrefix + CramIndex.commandName
 
   // Names for uBAM commands.
   val addUbamName: String = addPrefix + UbamIndex.commandName

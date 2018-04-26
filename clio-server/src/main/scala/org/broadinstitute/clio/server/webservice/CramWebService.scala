@@ -3,14 +3,14 @@ package org.broadinstitute.clio.server.webservice
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server._
 import org.broadinstitute.clio.server.service.IndexService
-import org.broadinstitute.clio.transfer.model.WgsCramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.WgsCramKey
+import org.broadinstitute.clio.transfer.model.BackCompatibleCramIndex
+import org.broadinstitute.clio.transfer.model.wgscram.CramKey
 import org.broadinstitute.clio.util.model.{DataType, Location}
 
-class WgsCramWebService(wgsCramService: IndexService[WgsCramIndex.type])
-    extends IndexWebService(wgsCramService) {
+class CramWebService(cramService: IndexService[BackCompatibleCramIndex])
+    extends IndexWebService(cramService) {
 
-  private[webservice] val pathPrefixKey: Directive1[WgsCramKey] = {
+  private[webservice] val pathPrefixKey: Directive1[CramKey] = {
     for {
       location <- pathPrefix(Location.namesToValuesMap)
       project <- pathPrefix(Segment)
@@ -18,7 +18,7 @@ class WgsCramWebService(wgsCramService: IndexService[WgsCramIndex.type])
       version <- pathPrefix(IntNumber)
       dataType <- pathPrefix(Segment)
     } yield
-      WgsCramKey(
+      CramKey(
         location,
         project,
         sampleAlias,

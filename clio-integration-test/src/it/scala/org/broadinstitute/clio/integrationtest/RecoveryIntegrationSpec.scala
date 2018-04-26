@@ -14,7 +14,7 @@ import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
-import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramMetadata}
+import org.broadinstitute.clio.transfer.model.wgscram.{CramKey, CramMetadata}
 import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location, UpsertId}
 import org.scalatest.OptionValues
 
@@ -79,18 +79,18 @@ class RecoveryIntegrationSpec
   private val updatedGvcfs = initGvcfs.map(updateDoc(_, "gvcf_path"))
 
   private val cramMapper =
-    ElasticsearchDocumentMapper[WgsCramKey, WgsCramMetadata]
+    ElasticsearchDocumentMapper[CramKey, CramMetadata]
   private val initCrams = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
-    val key = WgsCramKey(
+    val key = CramKey(
       location = location,
       project = project,
       sampleAlias = sampleAlias,
       version = i,
       dataType = DataType.WGS
     )
-    val metadata = WgsCramMetadata(
+    val metadata = CramMetadata(
       cramPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     )
@@ -126,7 +126,7 @@ class RecoveryIntegrationSpec
     Map(
       ElasticsearchIndex.Ubam -> (initUbams ++ updatedUbams),
       ElasticsearchIndex.Gvcf -> (initGvcfs ++ updatedGvcfs),
-      ElasticsearchIndex.WgsCram -> (initCrams ++ updatedCrams),
+      ElasticsearchIndex.Cram -> (initCrams ++ updatedCrams),
       ElasticsearchIndex.Arrays -> (initArrays ++ updatedArrays)
     )
   )
@@ -201,7 +201,7 @@ class RecoveryIntegrationSpec
       ClioCommand.queryWgsCramName,
       "version",
       updatedCrams,
-      ElasticsearchIndex.WgsCram
+      ElasticsearchIndex.Cram
     ),
     (
       "arrays",

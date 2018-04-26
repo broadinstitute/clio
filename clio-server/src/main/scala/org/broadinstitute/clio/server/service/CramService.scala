@@ -2,15 +2,15 @@ package org.broadinstitute.clio.server.service
 
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.WgsCramIndex
+import org.broadinstitute.clio.transfer.model.CramIndex
 
 import scala.concurrent.ExecutionContext
 
 /**
-  * Service responsible for performing all wgs-cram-specific logic
+  * Service responsible for performing all cram-specific logic
   * before handing off to the generic search / persistence services.
   */
-class WgsCramService(
+class CramService(
   persistenceDAO: PersistenceDAO,
   searchDAO: SearchDAO
 )(implicit executionContext: ExecutionContext)
@@ -18,5 +18,5 @@ class WgsCramService(
       persistenceDAO,
       searchDAO,
       ElasticsearchIndex.Cram,
-      WgsCramIndex
+      CramIndex
     )

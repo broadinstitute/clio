@@ -9,12 +9,16 @@ import akka.stream.scaladsl.{Sink, Source}
 import better.files.File
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.commands.MoveWgsCram
+import org.broadinstitute.clio.client.commands.MoveCram
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, MoveOp, WriteOp}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{Metadata, WgsCramIndex}
-import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramExtensions, WgsCramKey, WgsCramMetadata}
+import org.broadinstitute.clio.transfer.model.{CramIndex, Metadata}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  CramExtensions,
+  CramKey,
+  CramMetadata
+}
 import org.broadinstitute.clio.util.model.{DataType, Location, UpsertId}
 import org.scalamock.scalatest.AsyncMockFactory
 
@@ -23,16 +27,16 @@ import scala.collection.immutable
 class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   behavior of "MoveExecutor"
 
-  private val theKey = WgsCramKey(
+  private val theKey = CramKey(
     location = Location.GCP,
     project = "the-project",
     sampleAlias = "the-sample",
     version = 1,
     dataType = DataType.WGS
   )
-  private val metadata = WgsCramMetadata(
-    cramPath = Some(URI.create(s"gs://bucket/the-cram${WgsCramExtensions.CramExtension}")),
-    craiPath = Some(URI.create(s"gs://bucket/the-cram${WgsCramExtensions.CraiExtension}"))
+  private val metadata = CramMetadata(
+    cramPath = Some(URI.create(s"gs://bucket/the-cram${CramExtensions.CramExtension}")),
+    craiPath = Some(URI.create(s"gs://bucket/the-cram${CramExtensions.CraiExtension}"))
   )
   private val destination = URI.create("gs://the-destination/")
   private val id = UpsertId.nextId()
@@ -40,7 +44,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   private val serverErr = ClioWebClient
     .FailedResponse(StatusCodes.InternalServerError, "I BROKE")
 
-  type Aux = ClioWebClient.UpsertAux[WgsCramKey, WgsCramMetadata]
+  type Aux = ClioWebClient.UpsertAux[CramKey, CramMetadata]
 
   it should "perform IO ops" in {
     val move = MoveOp(URI.create("gs://the-src1"), URI.create("gs://the-dest1"))
@@ -103,13 +107,13 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       val webClient = mock[ClioWebClient]
 
       (webClient
-        .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-        .expects(WgsCramIndex, theKey, false)
+        .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+        .expects(CramIndex, theKey, false)
         .returning(Source.single(metadata))
 
       val paths = Seq
         .concat(metadata.cramPath, metadata.craiPath)
-        .zip(Seq(WgsCramExtensions.CramExtension, WgsCramExtensions.CraiExtension))
+        .zip(Seq(CramExtensions.CramExtension, CramExtensions.CraiExtension))
 
       (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
       paths.foreach {
@@ -129,11 +133,11 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
         .returning(Source.single(()))
 
       (webClient
-        .upsert(_: Aux)(_: WgsCramKey, _: WgsCramMetadata, _: Boolean))
-        .expects(WgsCramIndex, theKey, metadata.moveInto(destination, newBasename), true)
+        .upsert(_: Aux)(_: CramKey, _: CramMetadata, _: Boolean))
+        .expects(CramIndex, theKey, metadata.moveInto(destination, newBasename), true)
         .returning(Source.single(id.asJson))
 
-      val executor = new MoveExecutor(MoveWgsCram(theKey, destination, newBasename))
+      val executor = new MoveExecutor(MoveCram(theKey, destination, newBasename))
       executor.execute(webClient, ioUtil).runWith(Sink.head).map { json =>
         json.as[UpsertId] should be(Right(id))
       }
@@ -142,7 +146,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   it should "not move on-prem documents" in {
     val executor =
-      new MoveExecutor(MoveWgsCram(theKey.copy(location = Location.OnPrem), destination))
+      new MoveExecutor(MoveCram(theKey.copy(location = Location.OnPrem), destination))
     recoverToSucceededIf[UnsupportedOperationException] {
       executor.execute(stub[ClioWebClient], stub[IoUtil]).runWith(Sink.ignore)
     }
@@ -152,7 +156,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val ioUtil = mock[IoUtil]
     (ioUtil.isGoogleDirectory _).expects(destination).returning(false)
 
-    val executor = new MoveExecutor(MoveWgsCram(theKey, destination))
+    val executor = new MoveExecutor(MoveCram(theKey, destination))
     recoverToSucceededIf[IllegalArgumentException] {
       executor.execute(stub[ClioWebClient], ioUtil).runWith(Sink.head)
     }
@@ -164,11 +168,11 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
     val webClient = mock[ClioWebClient]
     (webClient
-      .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-      .expects(WgsCramIndex, theKey, false)
+      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+      .expects(CramIndex, theKey, false)
       .returning(Source.failed(serverErr))
 
-    val executor = new MoveExecutor(MoveWgsCram(theKey, destination))
+    val executor = new MoveExecutor(MoveCram(theKey, destination))
     recoverToSucceededIf[ClioWebClient.FailedResponse] {
       executor.execute(webClient, ioUtil).runWith(Sink.head)
     }
@@ -180,11 +184,11 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
     val webClient = mock[ClioWebClient]
     (webClient
-      .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-      .expects(WgsCramIndex, theKey, false)
+      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+      .expects(CramIndex, theKey, false)
       .returning(Source.empty)
 
-    val executor = new MoveExecutor(MoveWgsCram(theKey, destination))
+    val executor = new MoveExecutor(MoveCram(theKey, destination))
     recoverToSucceededIf[IllegalStateException] {
       executor.execute(webClient, ioUtil).runWith(Sink.head)
     }
@@ -194,15 +198,15 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val ioUtil = mock[IoUtil]
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
 
-    val empty = WgsCramMetadata()
+    val empty = CramMetadata()
 
     val webClient = mock[ClioWebClient]
     (webClient
-      .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-      .expects(WgsCramIndex, theKey, false)
+      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+      .expects(CramIndex, theKey, false)
       .returning(Source.single(empty))
 
-    val executor = new MoveExecutor(MoveWgsCram(theKey, destination))
+    val executor = new MoveExecutor(MoveCram(theKey, destination))
     recoverToSucceededIf[IllegalStateException] {
       executor.execute(webClient, ioUtil).runWith(Sink.head)
     }
@@ -213,18 +217,18 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val webClient = mock[ClioWebClient]
 
     val movedCram = metadata.cramPath.map(
-      Metadata.findNewPathForMove(_, destination, WgsCramExtensions.CramExtension)
+      Metadata.findNewPathForMove(_, destination, CramExtensions.CramExtension)
     )
 
     (webClient
-      .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-      .expects(WgsCramIndex, theKey, false)
+      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+      .expects(CramIndex, theKey, false)
       .returning(Source.single(metadata.copy(cramPath = movedCram)))
 
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
 
     val movedCrai = metadata.craiPath.map(
-      Metadata.findNewPathForMove(_, destination, WgsCramExtensions.CraiExtension)
+      Metadata.findNewPathForMove(_, destination, CramExtensions.CraiExtension)
     )
     metadata.craiPath.zip(movedCrai).foreach {
       case (src, dest) =>
@@ -237,11 +241,11 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     }
 
     (webClient
-      .upsert(_: Aux)(_: WgsCramKey, _: WgsCramMetadata, _: Boolean))
-      .expects(WgsCramIndex, theKey, metadata.moveInto(destination), true)
+      .upsert(_: Aux)(_: CramKey, _: CramMetadata, _: Boolean))
+      .expects(CramIndex, theKey, metadata.moveInto(destination), true)
       .returning(Source.single(id.asJson))
 
-    val executor = new MoveExecutor(MoveWgsCram(theKey, destination))
+    val executor = new MoveExecutor(MoveCram(theKey, destination))
     executor.execute(webClient, ioUtil).runWith(Sink.head).map { json =>
       json.as[UpsertId] should be(Right(id))
     }
@@ -252,20 +256,20 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val webClient = mock[ClioWebClient]
 
     val movedCram = metadata.cramPath.map(
-      Metadata.findNewPathForMove(_, destination, WgsCramExtensions.CramExtension)
+      Metadata.findNewPathForMove(_, destination, CramExtensions.CramExtension)
     )
     val movedCrai = metadata.craiPath.map(
-      Metadata.findNewPathForMove(_, destination, WgsCramExtensions.CraiExtension)
+      Metadata.findNewPathForMove(_, destination, CramExtensions.CraiExtension)
     )
 
     (webClient
-      .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-      .expects(WgsCramIndex, theKey, false)
+      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+      .expects(CramIndex, theKey, false)
       .returning(Source.single(metadata.copy(cramPath = movedCram, craiPath = movedCrai)))
 
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
 
-    val executor = new MoveExecutor(MoveWgsCram(theKey, destination))
+    val executor = new MoveExecutor(MoveCram(theKey, destination))
     executor.execute(webClient, ioUtil).runWith(Sink.headOption).map { maybeJson =>
       maybeJson should be(None)
     }
@@ -276,8 +280,8 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val webClient = mock[ClioWebClient]
 
     (webClient
-      .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-      .expects(WgsCramIndex, theKey, false)
+      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+      .expects(CramIndex, theKey, false)
       .returning(Source.single(metadata))
 
     val paths = Seq.concat(metadata.cramPath, metadata.craiPath)
@@ -287,7 +291,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       (ioUtil.isGoogleObject _).expects(uri).returning(false)
     }
 
-    val executor = new MoveExecutor(MoveWgsCram(theKey, destination))
+    val executor = new MoveExecutor(MoveCram(theKey, destination))
     recoverToExceptionIf[IllegalStateException] {
       executor.execute(webClient, ioUtil).runWith(Sink.ignore)
     }.map { ex =>
@@ -303,13 +307,13 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val webClient = mock[ClioWebClient]
 
     (webClient
-      .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-      .expects(WgsCramIndex, theKey, false)
+      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+      .expects(CramIndex, theKey, false)
       .returning(Source.single(metadata))
 
     val paths = Seq
       .concat(metadata.cramPath, metadata.craiPath)
-      .zip(Seq(WgsCramExtensions.CramExtension, WgsCramExtensions.CraiExtension))
+      .zip(Seq(CramExtensions.CramExtension, CramExtensions.CraiExtension))
 
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
     paths.foreach {
@@ -323,7 +327,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
           .throwing(new IOException(uri.toString))
     }
 
-    val executor = new MoveExecutor(MoveWgsCram(theKey, destination))
+    val executor = new MoveExecutor(MoveCram(theKey, destination))
     recoverToSucceededIf[RuntimeException] {
       executor.execute(webClient, ioUtil).runWith(Sink.ignore)
     }
@@ -334,13 +338,13 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val webClient = mock[ClioWebClient]
 
     (webClient
-      .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-      .expects(WgsCramIndex, theKey, false)
+      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+      .expects(CramIndex, theKey, false)
       .returning(Source.single(metadata))
 
     val paths = Seq
       .concat(metadata.cramPath, metadata.craiPath)
-      .zip(Seq(WgsCramExtensions.CramExtension, WgsCramExtensions.CraiExtension))
+      .zip(Seq(CramExtensions.CramExtension, CramExtensions.CraiExtension))
 
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
     paths.foreach {
@@ -353,11 +357,11 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     }
 
     (webClient
-      .upsert(_: Aux)(_: WgsCramKey, _: WgsCramMetadata, _: Boolean))
-      .expects(WgsCramIndex, theKey, metadata.moveInto(destination), true)
+      .upsert(_: Aux)(_: CramKey, _: CramMetadata, _: Boolean))
+      .expects(CramIndex, theKey, metadata.moveInto(destination), true)
       .returning(Source.failed(serverErr))
 
-    val executor = new MoveExecutor(MoveWgsCram(theKey, destination))
+    val executor = new MoveExecutor(MoveCram(theKey, destination))
     recoverToSucceededIf[RuntimeException] {
       executor.execute(webClient, ioUtil).runWith(Sink.ignore)
     }
@@ -368,13 +372,13 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val webClient = mock[ClioWebClient]
 
     (webClient
-      .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-      .expects(WgsCramIndex, theKey, false)
+      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+      .expects(CramIndex, theKey, false)
       .returning(Source.single(metadata))
 
     val paths = Seq
       .concat(metadata.cramPath, metadata.craiPath)
-      .zip(Seq(WgsCramExtensions.CramExtension, WgsCramExtensions.CraiExtension))
+      .zip(Seq(CramExtensions.CramExtension, CramExtensions.CraiExtension))
 
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
     paths.foreach {
@@ -394,11 +398,11 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       .returning(Source.failed(new IOException("Nope")))
 
     (webClient
-      .upsert(_: Aux)(_: WgsCramKey, _: WgsCramMetadata, _: Boolean))
-      .expects(WgsCramIndex, theKey, metadata.moveInto(destination), true)
+      .upsert(_: Aux)(_: CramKey, _: CramMetadata, _: Boolean))
+      .expects(CramIndex, theKey, metadata.moveInto(destination), true)
       .returning(Source.single(id.asJson))
 
-    val executor = new MoveExecutor(MoveWgsCram(theKey, destination))
+    val executor = new MoveExecutor(MoveCram(theKey, destination))
     recoverToSucceededIf[RuntimeException] {
       executor.execute(webClient, ioUtil).runWith(Sink.ignore)
     }

@@ -10,21 +10,21 @@ import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.WgsCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{
-  WgsCramExtensions,
-  WgsCramKey,
-  WgsCramMetadata,
-  WgsCramQueryInput
+  CramExtensions,
+  CramKey,
+  CramMetadata,
+  CramQueryInput
 }
 import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location}
 
-class WgsCramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramService") {
+class CramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramService") {
 
   val elasticsearchIndex: ElasticsearchIndex[WgsCramIndex.type] =
-    ElasticsearchIndex.WgsCram
+    ElasticsearchIndex.Cram
 
-  val dummyKey = WgsCramKey(Location.GCP, "project1", "sample1", 1, DataType.WGS)
+  val dummyKey = CramKey(Location.GCP, "project1", "sample1", 1, DataType.WGS)
 
-  val dummyInput = WgsCramQueryInput(project = Option("testProject"))
+  val dummyInput = CramQueryInput(project = Option("testProject"))
 
   val dummyKeyQuery = BoolQueryDefinition(
     must = Seq(
@@ -49,10 +49,10 @@ class WgsCramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramSer
 
   def getDummyMetadata(
     documentStatus: Option[DocumentStatus]
-  ): WgsCramMetadata = {
-    WgsCramMetadata(
+  ): CramMetadata = {
+    CramMetadata(
       cramPath = Option(
-        URI.create(s"gs://path/cramPath${WgsCramExtensions.CramExtension}")
+        URI.create(s"gs://path/cramPath${CramExtensions.CramExtension}")
       ),
       notes = Option("notable update"),
       documentStatus = documentStatus,
@@ -60,7 +60,7 @@ class WgsCramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramSer
     )
   }
 
-  def copyDummyMetadataChangeField(metadata: WgsCramMetadata): WgsCramMetadata = {
+  def copyDummyMetadataChangeField(metadata: CramMetadata): CramMetadata = {
     metadata.copy(workspaceName = Some(randomString))
   }
 

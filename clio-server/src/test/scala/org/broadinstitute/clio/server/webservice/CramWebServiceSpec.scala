@@ -2,18 +2,18 @@ package org.broadinstitute.clio.server.webservice
 
 import io.circe.Json
 import io.circe.syntax._
-import org.broadinstitute.clio.server.service.WgsCramService
-import org.broadinstitute.clio.transfer.model.WgsCramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.WgsCramKey
+import org.broadinstitute.clio.server.service.CramService
+import org.broadinstitute.clio.transfer.model.{BackCompatibleCramIndex, CramIndex}
+import org.broadinstitute.clio.transfer.model.wgscram.CramKey
 import org.broadinstitute.clio.util.model.{DataType, Location}
 
-class WgsCramWebServiceSpec extends IndexWebServiceSpec[WgsCramIndex.type] {
-  def webServiceName = "WgsCramWebService"
+class CramWebServiceSpec extends IndexWebServiceSpec[BackCompatibleCramIndex] {
+  def webServiceName = "CramWebService"
 
-  val mockService: WgsCramService = mock[WgsCramService]
-  val webService = new WgsCramWebService(mockService)
+  val mockService: CramService = mock[CramService]
+  val webService = new CramWebService(mockService)
 
-  val onPremKey = WgsCramKey(
+  val onPremKey = CramKey(
     Location.OnPrem,
     "project",
     "sample_alias",
@@ -21,7 +21,7 @@ class WgsCramWebServiceSpec extends IndexWebServiceSpec[WgsCramIndex.type] {
     DataType.WGS
   )
 
-  val cloudKey: WgsCramKey = onPremKey
+  val cloudKey: CramKey = onPremKey
     .copy(
       location = Location.GCP
     )
@@ -35,12 +35,12 @@ class WgsCramWebServiceSpec extends IndexWebServiceSpec[WgsCramIndex.type] {
   )
 
   val emptyOutput: Json = {
-    WgsCramKey(
+    CramKey(
       Location.GCP,
       "project",
       "sample",
       1,
       DataType.WGS
-    ).asJson(WgsCramIndex.keyEncoder)
+    ).asJson(CramIndex.keyEncoder)
   }
 }

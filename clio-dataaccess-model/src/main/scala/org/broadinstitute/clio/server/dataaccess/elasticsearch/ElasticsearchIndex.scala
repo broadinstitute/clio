@@ -137,7 +137,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       Json.obj("data_type" -> DataType.WGS.asJson)
     )
 
-  val WgsCram: ElasticsearchIndex[WgsCramIndex.type] =
+  val Cram: ElasticsearchIndex[WgsCramIndex.type] =
     new ElasticsearchIndex(
       WgsCramIndex,
       // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.

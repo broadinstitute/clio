@@ -267,7 +267,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(implicit ec: Executio
       _ <- checkRemainingArgs(args.remaining)
     } yield {
       val executor = command match {
-        case deliverCommand: DeliverWgsCram  => new DeliverWgsCramExecutor(deliverCommand)
+        case deliverCommand: DeliverCram     => new DeliverCramExecutor(deliverCommand)
         case deliverCommand: DeliverArrays   => new DeliverArraysExecutor(deliverCommand)
         case addCommand: AddCommand[_]       => new AddExecutor(addCommand)
         case moveCommand: MoveCommand[_]     => new MoveExecutor(moveCommand)
