@@ -36,7 +36,6 @@ class ElasticsearchDocumentMapperSpec
 
     val document = mapper.document(key, metadata)
     ElasticsearchIndex.getUpsertId(document) should be(expectedId)
-    ElasticsearchIndex.getEntityId(document) should be(s"$keyLong.$keyString")
     document.unsafeGet[Double]("mock_field_double") should be(mockFieldDouble)
     document.unsafeGet[Int]("mock_field_int") should be(mockFieldInt)
     document.unsafeGet[Long]("mock_key_long") should be(keyLong)

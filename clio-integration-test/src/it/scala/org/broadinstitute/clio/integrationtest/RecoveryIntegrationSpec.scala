@@ -186,20 +186,39 @@ class RecoveryIntegrationSpec
     )
 
   Seq(
-    ("wgs-ubam", ClioCommand.queryWgsUbamName, "lane", updatedUbams),
-    ("gvcf", ClioCommand.queryGvcfName, "version", updatedGvcfs),
-    ("wgs-cram", ClioCommand.queryWgsCramName, "version", updatedCrams),
-    ("arrays", ClioCommand.queryArraysName, "version", updatedArrays)
+    (
+      "wgs-ubam",
+      ClioCommand.queryWgsUbamName,
+      "lane",
+      updatedUbams,
+      ElasticsearchIndex.Ubam
+    ),
+    ("gvcf", ClioCommand.queryGvcfName, "version", updatedGvcfs, ElasticsearchIndex.Gvcf),
+    (
+      "wgs-cram",
+      ClioCommand.queryWgsCramName,
+      "version",
+      updatedCrams,
+      ElasticsearchIndex.WgsCram
+    ),
+    (
+      "arrays",
+      ClioCommand.queryArraysName,
+      "version",
+      updatedArrays,
+      ElasticsearchIndex.Arrays
+    )
   ).foreach {
-    case (name, cmd, sortField, expected) =>
-      it should behave like checkRecovery(name, cmd, sortField, expected)
+    case (name, cmd, sortField, expected, index) =>
+      it should behave like checkRecovery(name, cmd, sortField, expected, index)
   }
 
   def checkRecovery(
     indexName: String,
     queryCommand: String,
     sortField: String,
-    expected: Seq[Json]
+    expected: Seq[Json],
+    elasticsearchIndex: ElasticsearchIndex[_]
   ): Unit = {
     implicit val jsonOrdering: Ordering[Json] =
       (x, y) => {
@@ -213,7 +232,7 @@ class RecoveryIntegrationSpec
         maybeRes.fold(throw _, identity)
       }
 
-    it should s"recover $indexName metdata on startup" in {
+    it should s"recover $indexName metadata on startup" in {
       for {
         _ <- recoveryDoneFuture
         docs <- runCollectJson(queryCommand, "--location", location.entryName)
@@ -231,7 +250,9 @@ class RecoveryIntegrationSpec
         val sortedActual = docs.map(mapper).sorted
 
         // Already sorted by construction. Remove null and internal values here too.
-        val sortedExpected = expected.map(mapper)
+        val sortedExpected: Seq[Json] = expected
+          .map(mapper)
+          .map(_.deepMerge(elasticsearchIndex.defaults))
 
         sortedActual should contain theSameElementsInOrderAs sortedExpected
       }

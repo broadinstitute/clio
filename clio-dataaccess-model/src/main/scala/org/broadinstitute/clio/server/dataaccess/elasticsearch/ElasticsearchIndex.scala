@@ -6,6 +6,8 @@ import java.time.format.DateTimeFormatter
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.Json
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
+import io.circe.generic.extras.Configuration.snakeCaseTransformation
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.FieldMapper
@@ -21,7 +23,8 @@ import org.broadinstitute.clio.util.model.UpsertId
 class ElasticsearchIndex[+CI <: ClioIndex](
   val clioIndex: CI,
   final val indexName: String,
-  private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper
+  private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper,
+  private[elasticsearch] val defaultFields: Json = Json.obj()
 ) extends ModelAutoDerivation {
   import clioIndex.implicits._
 
@@ -50,10 +53,38 @@ class ElasticsearchIndex[+CI <: ClioIndex](
   }
 
   /**
+    * The ID of a json record in elasticsearch. By default, each record's ID consists
+    * of the concatenated values of the Key fields.
+    * Additional fields can be added to the ID using the ElasticsearchIndex constructor.
+    */
+  def getId(json: Json): String = {
+
+    def getAsString(key: String): String = {
+      json.asObject
+        .flatMap(_.apply(key))
+        .flatMap {
+          case s if s.isString =>
+            s.asString
+          case a if a.isArray || a.isObject =>
+            throw new RuntimeException("Arrays and objects cannot be used as ID fields")
+          case j => Some(j.toString())
+        }
+        .getOrElse(throw new RuntimeException(s"Could not get $key from json"))
+    }
+
+    FieldMapper[clioIndex.KeyType].fields.keys
+      .map(snakeCaseTransformation)
+      .map(getAsString)
+      .mkString(".")
+  }
+
+  /**
     * The name of the index type. Always default until ES 7 when there will be no index types.
     * https://www.elastic.co/blog/elasticsearch-6-0-0-alpha1-released#type-removal
     */
   final val indexType: String = "default"
+
+  final val defaults: Json = defaultFields.dropNulls
 
   /** The fields for the index. */
   def fields: Seq[FieldDefinition] =
@@ -75,12 +106,9 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   val UpsertIdElasticsearchName = "upsert_id"
 
   val BookkeepingNames = Seq(
-    UpsertIdElasticsearchName,
-    EntityIdElasticsearchName
+    EntityIdElasticsearchName,
+    UpsertIdElasticsearchName
   )
-
-  def getEntityId(json: Json): String =
-    json.unsafeGet[String](EntityIdElasticsearchName)
 
   def getUpsertId(json: Json): UpsertId =
     json.unsafeGet[UpsertId](UpsertIdElasticsearchName)

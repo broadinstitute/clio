@@ -14,7 +14,7 @@ import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.RequestException
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
-import org.broadinstitute.clio.transfer.model.{HealthStatus, ModelMockIndex}
+import org.broadinstitute.clio.transfer.model.{HealthStatus, ModelMockIndex, ModelMockKey}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.UpsertId
 import org.scalatest._
@@ -121,6 +121,8 @@ class HttpElasticsearchDAOSpec
   it should "return the most recent document" in {
     import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 
+    val keyLong = 12345L
+    val keyString = "key"
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex(),
       "docs-" + UUID.randomUUID(),
@@ -131,9 +133,7 @@ class HttpElasticsearchDAOSpec
       Map(
         ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
       ).asJson
-        .deepMerge(
-          Map(ElasticsearchIndex.EntityIdElasticsearchName -> s).asJson
-        )
+        .deepMerge(ModelMockKey(keyLong, keyString + s).asJson)
 
     val documents =
       (1 to 4)

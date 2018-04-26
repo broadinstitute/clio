@@ -2,7 +2,9 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 import java.time.OffsetDateTime
+import java.util.UUID
 
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -120,7 +122,8 @@ class ServerServiceSpec
     val initInSearch = numDocs / 2
     val keyLong = 1L
     val keyString = "mock-key"
-    val key = ModelMockKey(keyLong, keyString)
+    def key = ModelMockKey(keyLong, keyString + UUID.randomUUID())
+    val nonDefaultString = Some("this is not the default string.")
     val metadata = ModelMockMetadata(
       Some(1.0),
       Some(1),
@@ -132,30 +135,32 @@ class ServerServiceSpec
       Some(URI.create("/mock")),
       Some(1L)
     )
-    val document = key.asJson
-      .deepMerge(metadata.asJson)
 
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex(),
       "mock",
-      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
+      ModelMockMetadata(mockDefaultField = Option("mock-default")).asJson
     )
 
     var counter = 0
     val initStoredDocuments = Seq.fill(numDocs)({
       // This generation is done inside this block because UpsertIds and EntityIds need to be unique.
       counter = counter + 1
-      document
+      val document = key.asJson
+        .deepMerge(metadata.asJson.dropNulls)
         .deepMerge(
           Map(
             ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()
           ).asJson
         )
-        .deepMerge(
-          Map(
-            ElasticsearchIndex.EntityIdElasticsearchName -> s"$keyLong.$keyString-$counter"
-          ).asJson
+      if (counter <= initInSearch) {
+        document.deepMerge(
+          ModelMockMetadata(mockDefaultField = nonDefaultString).asJson.dropNulls
         )
+      } else {
+        document
+      }
     })
     val initSearchDocuments = initStoredDocuments.take(initInSearch)
 
@@ -171,7 +176,20 @@ class ServerServiceSpec
     } yield {
       val upsertedDocs = searchDAO.updateCalls
         .flatMap(_._1)
-      upsertedDocs should contain theSameElementsAs initStoredDocuments
+
+      upsertedDocs
+        .take(initInSearch)
+        .map(
+          _.deepMerge(
+            ModelMockMetadata(mockDefaultField = nonDefaultString).asJson.dropNulls
+          )
+        ) should contain theSameElementsAs initStoredDocuments
+        .take(initInSearch)
+
+      upsertedDocs.drop(initInSearch) should contain theSameElementsAs initStoredDocuments
+        .drop(initInSearch)
+        .map(_.deepMerge(index.defaults))
+
     }
   }
 

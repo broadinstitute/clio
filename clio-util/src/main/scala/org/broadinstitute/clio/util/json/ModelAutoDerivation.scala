@@ -117,6 +117,7 @@ trait ModelAutoDerivation extends AutoDerivation {
 
   implicit val decodeSymbol: Decoder[Symbol] =
     Decoder.decodeString.map(Symbol.apply)
+
 }
 
 /**

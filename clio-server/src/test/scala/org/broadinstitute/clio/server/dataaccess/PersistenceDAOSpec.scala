@@ -19,6 +19,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
 
 import scala.concurrent.Future
 
@@ -69,16 +70,11 @@ class PersistenceDAOSpec
       Some(1234L)
     )
     val document1 = key1.asJson
-      .deepMerge(metadata1.asJson)
+      .deepMerge(metadata1.asJson.dropNulls)
       .deepMerge(
         Map(
           ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId
             .nextId()
-        ).asJson
-      )
-      .deepMerge(
-        Map(
-          ElasticsearchIndex.EntityIdElasticsearchName -> s"$key1Long.$key1String"
         ).asJson
       )
 
@@ -97,15 +93,12 @@ class PersistenceDAOSpec
       Some(9876L)
     )
     val document2 = key2.asJson
-      .deepMerge(metadata2.asJson)
+      .deepMerge(metadata2.asJson.dropNulls)
       .deepMerge(
         Map(
           ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId
             .nextId()
         ).asJson
-      )
-      .deepMerge(
-        Map(ElasticsearchIndex.EntityIdElasticsearchName -> s"$key2Long.$key2String").asJson
       )
 
     for {
@@ -143,7 +136,7 @@ class PersistenceDAOSpec
     Some('md5),
     Some(URI.create("no")),
     Some(0L)
-  ).asJson
+  ).asJson.dropNulls
 
   val testDocs: List[Json] = List.fill(1)(
     mockKeyJson
@@ -152,11 +145,6 @@ class PersistenceDAOSpec
         Map(
           ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId
             .nextId()
-        ).asJson
-      )
-      .deepMerge(
-        Map(
-          ElasticsearchIndex.EntityIdElasticsearchName -> s"$mockKeyLong.$mockKeyString"
         ).asJson
       )
   )
