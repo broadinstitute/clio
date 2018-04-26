@@ -67,7 +67,9 @@ class IoUtil(storage: Storage) {
   }
 
   private def requireBlob(path: URI) = {
-    getBlob(path).getOrElse(throw new IllegalArgumentException(s"Invalid google path $path"))
+    getBlob(path).getOrElse(
+      throw new IllegalArgumentException(s"Invalid google path $path")
+    )
   }
 
   def readGoogleObjectData(location: URI): String = {
