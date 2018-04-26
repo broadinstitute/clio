@@ -67,9 +67,7 @@ class IoUtil(storage: Storage) {
   }
 
   private def requireBlob(path: URI) = {
-    getBlob(path).fold(throw new IllegalArgumentException(s"Invalid google path $path"))(
-      identity
-    )
+    getBlob(path).getOrElse(throw new IllegalArgumentException(s"Invalid google path $path"))
   }
 
   def readGoogleObjectData(location: URI): String = {
@@ -106,7 +104,7 @@ class IoUtil(storage: Storage) {
   }
 
   def googleObjectExists(path: URI): Boolean = {
-    getBlob(path).fold(false)(_.exists())
+    getBlob(path).exists(_.exists())
   }
 }
 
