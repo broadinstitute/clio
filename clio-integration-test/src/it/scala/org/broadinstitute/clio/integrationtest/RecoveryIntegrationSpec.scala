@@ -122,7 +122,7 @@ class RecoveryIntegrationSpec
       esFullName -> DockerIntegrationSpec.elasticsearchServicePort
     ),
     Map(
-      ElasticsearchIndex.WgsUbam -> (initUbams ++ updatedUbams),
+      ElasticsearchIndex.Ubam -> (initUbams ++ updatedUbams),
       ElasticsearchIndex.Gvcf -> (initGvcfs ++ updatedGvcfs),
       ElasticsearchIndex.WgsCram -> (initCrams ++ updatedCrams),
       ElasticsearchIndex.Arrays -> (initArrays ++ updatedArrays)
