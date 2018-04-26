@@ -5,11 +5,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import org.broadinstitute.clio.transfer.model.{DeliverableMetadata, Metadata}
-import org.broadinstitute.clio.util.model.{
-  DataType,
-  DocumentStatus,
-  RegulatoryDesignation
-}
+import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
 case class WgsCramMetadata(
   documentStatus: Option[DocumentStatus] = None,
@@ -28,7 +24,6 @@ case class WgsCramMetadata(
   wdlPath: Option[URI] = None,
   readgroupMd5: Option[Symbol] = None,
   workspaceName: Option[String] = None,
-  dataType: Option[DataType] = None,
   notes: Option[String] = None,
   analysisFilesTxtPath: Option[URI] = None,
   /* These fields were originally meant to be part of the cram metrics index. */

@@ -4,16 +4,11 @@ import java.net.URI
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.transfer.model.Metadata
-import org.broadinstitute.clio.util.model.{
-  DataType,
-  DocumentStatus,
-  RegulatoryDesignation
-}
+import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
 case class GvcfMetadata(
   analysisDate: Option[OffsetDateTime] = None,
   contamination: Option[Float] = None,
-  dataType: Option[DataType] = None,
   documentStatus: Option[DocumentStatus] = None,
   gvcfMd5: Option[Symbol] = None,
   gvcfPath: Option[URI] = None,

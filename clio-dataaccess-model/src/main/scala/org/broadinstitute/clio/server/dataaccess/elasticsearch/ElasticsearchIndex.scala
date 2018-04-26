@@ -7,17 +7,12 @@ import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.Json
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
-import io.circe.syntax._
 import io.circe.generic.extras.Configuration.snakeCaseTransformation
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.transfer.model.arrays.ArraysMetadata
-import org.broadinstitute.clio.transfer.model.gvcf.GvcfMetadata
-import org.broadinstitute.clio.transfer.model.ubam.UbamMetadata
-import org.broadinstitute.clio.transfer.model.wgscram.WgsCramMetadata
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{DataType, UpsertId}
+import org.broadinstitute.clio.util.model.UpsertId
 
 /**
   * An index for an Elasticsearch document.
@@ -76,9 +71,8 @@ class ElasticsearchIndex[CI <: ClioIndex](
         .getOrElse(throw new RuntimeException(s"Could not get $key from json"))
     }
 
-    val keyFields = FieldMapper[clioIndex.KeyType].fields.keys
+    FieldMapper[clioIndex.KeyType].fields.keys
       .map(snakeCaseTransformation)
-    (keyFields ++ defaults.asObject.map(_.keys).getOrElse(Iterable.empty)).toSeq.sorted
       .map(getAsString)
       .mkString(".")
   }
@@ -127,28 +121,24 @@ object ElasticsearchIndex extends ModelAutoDerivation {
   val WgsUbam: ElasticsearchIndex[WgsUbamIndex.type] =
     new ElasticsearchIndex(
       WgsUbamIndex,
-      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
-      UbamMetadata().asJson
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
   val Gvcf: ElasticsearchIndex[GvcfIndex.type] =
     new ElasticsearchIndex(
       GvcfIndex,
-      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
-      GvcfMetadata(dataType = Option(DataType.WGS)).asJson
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
   val WgsCram: ElasticsearchIndex[WgsCramIndex.type] =
     new ElasticsearchIndex(
       WgsCramIndex,
-      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
-      WgsCramMetadata(dataType = Option(DataType.WGS)).asJson
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
   val Arrays: ElasticsearchIndex[ArraysIndex.type] =
     new ElasticsearchIndex(
       ArraysIndex,
-      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
-      ArraysMetadata().asJson
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 }
