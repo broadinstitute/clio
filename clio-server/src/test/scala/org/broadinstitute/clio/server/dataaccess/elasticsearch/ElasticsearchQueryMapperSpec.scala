@@ -36,6 +36,7 @@ class ElasticsearchQueryMapperSpec
     )
     val index = new ElasticsearchIndex(
       ModelMockIndex(),
+      "mock",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
     mapper
@@ -75,9 +76,6 @@ class ElasticsearchQueryMapperSpec
     val output = fields
       .deepMerge(
         Map(ElasticsearchIndex.UpsertIdElasticsearchName -> UpsertId.nextId()).asJson
-      )
-      .deepMerge(
-        Map(ElasticsearchIndex.EntityIdElasticsearchName -> s"$keyLong.$keyString").asJson
       )
     mapper.toQueryOutput(output) should be(fields)
   }

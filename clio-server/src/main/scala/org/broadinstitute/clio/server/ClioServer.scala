@@ -63,7 +63,10 @@ object ClioServer extends StrictLogging {
     new StatusWebService(statusService)
 
   val apiWebServices = Seq(
-    new WgsUbamWebService(
+    new UbamWebService(
+      new UbamService(persistenceDAO, searchDAO)
+    ),
+    new UbamWebService(
       new WgsUbamService(persistenceDAO, searchDAO)
     ),
     new GvcfWebService(

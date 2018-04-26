@@ -56,5 +56,11 @@ object ElasticsearchUtil {
       */
     def unsafeGet[T: Decoder](key: String): T =
       json.hcursor.get[T](key).fold(throw _, identity)
+
+    def dropNulls: Json = {
+      json.mapObject(_.filter {
+        case (_, v) => !v.isNull
+      })
+    }
   }
 }

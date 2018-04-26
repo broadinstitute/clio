@@ -62,11 +62,12 @@ class ServerService private[server] (
 
       persistenceDAO
         .getAllSince(latestUpsert)
+        .map(index.defaults.deepMerge)
         .batch(
           ServerService.RecoveryMaxBulkSize,
-          json => Map(ElasticsearchIndex.getEntityId(json) -> json)
+          json => Map(index.getId(json) -> json)
         ) { (idMap, json) =>
-          val id = ElasticsearchIndex.getEntityId(json)
+          val id = index.getId(json)
           val newJson = idMap.get(id) match {
             case Some(oldJson) => {
               val oldId = ElasticsearchIndex.getUpsertId(oldJson)
@@ -115,7 +116,7 @@ class ServerService private[server] (
   private[service] def startup(): Future[Unit] = {
 
     val indexes = immutable.Seq(
-      ElasticsearchIndex.WgsUbam,
+      ElasticsearchIndex.Ubam,
       ElasticsearchIndex.Gvcf,
       ElasticsearchIndex.WgsCram,
       ElasticsearchIndex.Arrays

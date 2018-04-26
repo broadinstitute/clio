@@ -11,7 +11,6 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 import scala.reflect.ClassTag
 
 case class ModelMockIndex(
-  elasticsearchIndexName: String = "mock",
   name: String = "mock",
   commandName: String = "mock",
   urlSegment: String = "mock"
@@ -56,6 +55,8 @@ case class ModelMockMetadata(
   mockFileMd5: Option[Symbol] = None,
   mockFilePath: Option[URI] = None,
   mockFileSize: Option[Long] = None,
+  mockDefaultField: Option[String] = None,
+  mockEmptyField: Option[String] = None
 ) extends Metadata[ModelMockMetadata] {
   override val documentStatus: Option[DocumentStatus] = mockDocumentStatus
   override val notes: Option[String] = None
