@@ -191,7 +191,7 @@ class RecoveryIntegrationSpec
       ClioCommand.queryWgsUbamName,
       "lane",
       updatedUbams,
-      ElasticsearchIndex.WgsUbam
+      ElasticsearchIndex.Ubam
     ),
     ("gvcf", ClioCommand.queryGvcfName, "version", updatedGvcfs, ElasticsearchIndex.Gvcf),
     (
