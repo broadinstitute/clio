@@ -186,7 +186,7 @@ final case class DeliverCram(
   force: Boolean = false
 ) extends DeliverCommand(CramIndex)
 
-// TESTING
+//TODO Get rid of these wgs-cram commands when they're no longer being used
 
 @CommandName(ClioCommand.addWgsCramName)
 final case class AddWgsCram(
