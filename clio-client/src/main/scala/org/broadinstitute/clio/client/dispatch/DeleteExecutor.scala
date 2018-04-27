@@ -159,9 +159,12 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
       }
       .flatMapConcat {
         _.fold(
-          errs =>
-            Source
-              .failed(new IllegalStateException(errs.map(_.getMessage).mkString(", "))),
+          {
+            case head +: tail =>
+              val exception = head
+              tail.foreach(exception.addSuppressed)
+              Source.failed(exception)
+          },
           paths => Source.single(paths)
         )
       }

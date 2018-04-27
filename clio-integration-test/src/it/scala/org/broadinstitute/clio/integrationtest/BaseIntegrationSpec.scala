@@ -11,6 +11,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import better.files.File
 import com.bettercloud.vault.{Vault, VaultConfig}
+import com.google.auth.Credentials
 import com.google.cloud.storage.StorageOptions
 import com.google.cloud.storage.contrib.nio.{
   CloudStorageConfiguration,
@@ -24,9 +25,9 @@ import io.circe.parser._
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, Json, Printer}
 import org.apache.http.HttpHost
+import org.broadinstitute.clio.client.ClioClient
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.client.ClioClient
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
@@ -59,10 +60,25 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   def clioWebClient: ClioWebClient
 
+  private lazy val googleCredential: Credentials =
+    serviceAccount
+      .credentialForScopes(testStorageScopes)
+      .fold(
+        { err =>
+          val scopesString = testStorageScopes.mkString("[", ", ", "]")
+          fail(
+            s"Failed to get credential for scopes $scopesString",
+            err
+          )
+        },
+        identity
+      )
+
   /**
     * The clio-client to test against.
     */
-  lazy val clioClient: ClioClient = new ClioClient(clioWebClient, IoUtil)
+  lazy val clioClient: ClioClient =
+    new ClioClient(clioWebClient, IoUtil(googleCredential))
 
   /**
     * The URI of the Elasticsearch instance to test in a suite.

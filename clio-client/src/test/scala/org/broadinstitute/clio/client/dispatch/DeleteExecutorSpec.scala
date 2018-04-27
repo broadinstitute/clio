@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.client.dispatch
 
+import java.io.{PrintWriter, StringWriter}
 import java.net.URI
 
 import akka.http.scaladsl.model.StatusCodes
@@ -165,8 +166,11 @@ class DeleteExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     recoverToExceptionIf[IllegalStateException] {
       executor.execute(webClient, ioUtil).runWith(Sink.ignore)
     }.map { ex =>
+      val sw = new StringWriter
+      ex.printStackTrace(new PrintWriter(sw))
+      val errorText = sw.toString
       paths.foreach { uri =>
-        ex.getMessage should include(uri.toString)
+        errorText should include(uri.toString)
       }
       succeed
     }

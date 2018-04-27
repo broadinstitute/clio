@@ -40,7 +40,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   def upsertTest(force: Boolean): Unit = {
     it should s"read and upsert metadata with force=$force" in {
       val ioUtil = mock[IoUtil]
-      (ioUtil.readMetadata _)
+      (ioUtil.readFileData _)
         .expects(loc)
         .returning(metadata.asJson.pretty(defaultPrinter))
 
@@ -64,7 +64,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   it should "fail if the given metadata can't be read from disk" in {
     val ioUtil = mock[IoUtil]
-    (ioUtil.readMetadata _)
+    (ioUtil.readFileData _)
       .expects(loc)
       .throwing(new IOException("I BROKE"))
 
@@ -76,7 +76,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   it should "fail if the metadata read from disk can't be parsed as JSON" in {
     val ioUtil = mock[IoUtil]
-    (ioUtil.readMetadata _)
+    (ioUtil.readFileData _)
       .expects(loc)
       .returning("Definitely not JSON")
 
@@ -90,7 +90,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val otherMetadata = ArraysMetadata(chipType = Some("the-type"))
 
     val ioUtil = mock[IoUtil]
-    (ioUtil.readMetadata _)
+    (ioUtil.readFileData _)
       .expects(loc)
       .returning(otherMetadata.asJson.pretty(defaultPrinter))
 
@@ -102,7 +102,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   it should "fail if the upsert to the server fails" in {
     val ioUtil = mock[IoUtil]
-    (ioUtil.readMetadata _)
+    (ioUtil.readFileData _)
       .expects(loc)
       .returning(metadata.asJson.pretty(defaultPrinter))
 
