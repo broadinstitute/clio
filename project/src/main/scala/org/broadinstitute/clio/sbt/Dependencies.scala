@@ -27,6 +27,7 @@ object Dependencies {
   private val JimfsVersion = "1.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
+  private val ScalaArmVersion = "2.0"
   private val ScalaLoggingVersion = "3.8.0"
   private val ScalaTestVersion = "3.0.5"
   private val ScalamockVersion = "4.1.0"
@@ -126,6 +127,7 @@ object Dependencies {
     "com.github.pathikrit" %% "better-files" % BetterFilesVersion,
     "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
     "com.iheart" %% "ficus" % FicusVersion,
+    "com.jsuereth" %% "scala-arm" % ScalaArmVersion,
     "com.typesafe" % "config" % TypesafeConfigVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "io.circe" %% "circe-core" % CirceVersion,

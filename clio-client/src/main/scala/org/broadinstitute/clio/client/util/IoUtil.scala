@@ -79,11 +79,9 @@ class IoUtil(storage: Storage) {
   def writeGoogleObjectData(data: String, location: URI): Unit = {
     getBlob(location) match {
       case Some(blob) =>
-        val channel = blob.writer()
-        try {
+        for (channel <- resource.managed(blob.writer())) {
           channel.write(ByteBuffer.wrap(data.getBytes()))
-        } finally {
-          channel.close()
+          ()
         }
       case None =>
         val info = BlobInfo.newBuilder(toBlobId(location)).build()
