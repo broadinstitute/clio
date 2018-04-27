@@ -91,7 +91,7 @@ class IoUtil(storage: Storage) {
   }
 
   def copyGoogleObject(from: URI, to: URI): Unit = {
-    requireBlob(from).copyTo(toBlobId(to))
+    requireBlob(from).copyTo(toBlobId(to)).getResult
     ()
   }
 
