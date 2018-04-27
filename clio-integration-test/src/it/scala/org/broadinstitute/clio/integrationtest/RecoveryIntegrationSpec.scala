@@ -197,8 +197,8 @@ class RecoveryIntegrationSpec
     ),
     ("gvcf", ClioCommand.queryGvcfName, "version", updatedGvcfs, ElasticsearchIndex.Gvcf),
     (
-      "wgs-cram",
-      ClioCommand.queryWgsCramName,
+      "cram",
+      ClioCommand.queryCramName,
       "version",
       updatedCrams,
       ElasticsearchIndex.Cram
@@ -254,7 +254,7 @@ class RecoveryIntegrationSpec
         // Already sorted by construction. Remove null and internal values here too.
         val sortedExpected: Seq[Json] = expected
           .map(mapper)
-          .map(_.deepMerge(elasticsearchIndex.defaults))
+          .map(elasticsearchIndex.defaults.deepMerge)
 
         sortedActual should contain theSameElementsInOrderAs sortedExpected
       }

@@ -94,7 +94,10 @@ abstract class DockerIntegrationSpec(
 class CoreDockerBasicSpec extends DockerIntegrationSpec("Clio in Docker") with BasicTests
 class CoreDockerUbamSpec extends DockerIntegrationSpec("Clio in Docker") with UbamTests
 class CoreDockerCramSpec extends DockerIntegrationSpec("Clio in Docker") with CramTests
-class CoreDockerWgsCramSpec extends DockerIntegrationSpec("Clio in Docker") with WgsCramTests
+
+class CoreDockerWgsCramSpec
+    extends DockerIntegrationSpec("Clio in Docker")
+    with WgsCramTests
 class CoreDockerGvcfSpec extends DockerIntegrationSpec("Clio in Docker") with GvcfTests
 
 class CoreDockerArraysSpec
