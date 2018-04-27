@@ -8,7 +8,7 @@ import com.sksamuel.elastic4s.searches.queries.{
 }
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
-import org.broadinstitute.clio.transfer.model.WgsCramIndex
+import org.broadinstitute.clio.transfer.model.BackCompatibleCramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{
   CramExtensions,
   CramKey,
@@ -17,9 +17,10 @@ import org.broadinstitute.clio.transfer.model.wgscram.{
 }
 import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location}
 
-class CramServiceSpec extends IndexServiceSpec[WgsCramIndex.type]("WgsCramService") {
+class CramServiceSpec
+    extends IndexServiceSpec[BackCompatibleCramIndex]("WgsCramService") {
 
-  val elasticsearchIndex: ElasticsearchIndex[WgsCramIndex.type] =
+  val elasticsearchIndex: ElasticsearchIndex[BackCompatibleCramIndex] =
     ElasticsearchIndex.Cram
 
   val dummyKey = CramKey(Location.GCP, "project1", "sample1", 1, DataType.WGS)
