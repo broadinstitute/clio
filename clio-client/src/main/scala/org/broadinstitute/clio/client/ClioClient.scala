@@ -71,7 +71,7 @@ object ClioClient extends LazyLogging {
 
       webClient = ClioWebClient(new GoogleCredentialsGenerator(credentials))
 
-      client = new ClioClient(webClient, IoUtil)
+      client = new ClioClient(webClient, IoUtil(credentials))
 
       resultStream <- client.instanceMain(args)
     } yield {

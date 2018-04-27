@@ -1,147 +1,138 @@
 package org.broadinstitute.clio.client.util
 
-import java.io.IOException
+import java.io.{IOException, PrintWriter, StringWriter}
 import java.net.URI
 
 import akka.stream.scaladsl.Sink
 import better.files.File
+import com.google.cloud.storage.BlobInfo
+import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.util.IoUtil.GsUtil
-import org.scalamock.scalatest.AsyncMockFactory
+import org.scalatest.AsyncTestSuite
 
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 
-class IoUtilSpec extends BaseClientSpec with AsyncMockFactory {
+class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
   behavior of "IoUtil"
 
-  val uri = URI.create(
-    "gs://broad-gotc-dev-storage/pipeline/C1963/CHMI_CHMI3_Nex1/v1/id.txt"
-  )
+  private def uriToBlobInfo(uri: URI) = {
+    BlobInfo.newBuilder(IoUtil.toBlobId(uri)).build()
+  }
+
+  private def createStorage = {
+    LocalStorageHelper.getOptions.getService
+  }
 
   it should "read a metadata file from file location" in {
     val contents = "I'm a file!"
 
     File.temporaryFile() { f =>
-      IoUtil.readMetadata(f.write(contents).uri) should be(contents)
+      new IoUtil(createStorage)
+        .readMetadata(f.write(contents).uri) should be(contents)
     }
   }
 
-  it should "parse the md5 hash out of 'gsutil hash' output" in {
-    val gsutil = stub[GsUtil]
-    val expectedHash = Symbol("998e42da13d7bd619f798baf8ea08a13")
-
-    (gsutil.hash _).when(uri.toString).returns {
-      s"""Hashes [hex] for pipeline/C1963/CHMI_CHMI3_Nex1/v1/id.txt:
-         |        Hash (crc32c):          392eca9a
-         |        Hash (md5):             ${expectedHash.name}
-       """.stripMargin
-    }
-
-    new IoUtil { override val gsUtil: GsUtil = gsutil }
-      .getMd5HashOfGoogleObject(uri) should be(Some(expectedHash))
-  }
-
-  it should "not fail when 'gsutil hash' doesn't output an md5 hash" in {
-    val gsutil = stub[GsUtil]
-
-    (gsutil.hash _).when(uri.toString).returns {
-      """Hashes [hex] for pipeline/C1963/CHMI_CHMI3_Nex1/v1/id.txt:
-        |        Hash (crc32c):          392eca9a
-      """.stripMargin
-    }
-
-    new IoUtil { override val gsUtil: GsUtil = gsutil }
-      .getMd5HashOfGoogleObject(uri) should be(None)
-  }
-
-  it should "parse object size and hash out of 'gsutil stat' output" in {
-    val gsutil = stub[GsUtil]
-    val expectedSize = 123412L
-    val expectedMd5Hash = Symbol("d41d8cd98f00b204e9800998ecf8427e")
-
-    (gsutil.stat _).when(uri.toString).returns {
-      s"""    Creation time:          Wed, 24 Jan 2018 23:00:14 GMT
-         |    Update time:            Wed, 24 Jan 2018 23:00:14 GMT
-         |    Storage class:          STANDARD
-         |    Content-Length:         $expectedSize
-         |    Content-Type:           application/octet-stream
-         |    Hash (crc32c):          AAAAAA==
-         |    Hash (md5):             1B2M2Y8AsgTpgAmY7PhCfg==
-         |    ETag:                   CKCYzILa8dgCEAE=
-         |    Generation:             1516834814888992
-         |    Metageneration:         1
-       """.stripMargin
-    }
-
-    new IoUtil { override val gsUtil: GsUtil = gsutil }
-      .getGoogleObjectInfo(uri) should be(expectedSize -> Some(expectedMd5Hash))
-  }
-
-  it should "not fail when 'gsutil stat' doesn't output an md5 hash" in {
-    val gsutil = stub[GsUtil]
-    val expectedSize = 123412L
-
-    (gsutil.stat _).when(uri.toString).returns {
-      s"""    Creation time:          Wed, 24 Jan 2018 23:00:14 GMT
-         |    Update time:            Wed, 24 Jan 2018 23:00:14 GMT
-         |    Storage class:          STANDARD
-         |    Content-Length:         $expectedSize
-         |    Content-Type:           application/octet-stream
-         |    Hash (crc32c):          AAAAAA==
-         |    ETag:                   CKCYzILa8dgCEAE=
-         |    Generation:             1516834814888992
-         |    Metageneration:         1
-       """.stripMargin
-    }
-
-    new IoUtil { override val gsUtil: GsUtil = gsutil }
-      .getGoogleObjectInfo(uri) should be(expectedSize -> None)
+  it should "identify google directories" in {
+    val ioUtil = new IoUtil(createStorage)
+    ioUtil.isGoogleDirectory(URI.create("gs://bucket/directory/")) should be(true)
+    ioUtil.isGoogleDirectory(URI.create("gs://bucket/file.txt")) should be(false)
+    ioUtil.isGoogleDirectory(URI.create("foo")) should be(false)
   }
 
   it should "build streams for deleting multiple cloud objects" in {
     val uris = immutable.Iterable(
-      URI.create("gs://path/to/the.object"),
-      URI.create("gs://path/to/the/other.object")
+      URI.create("gs://bucket/to/the.object"),
+      URI.create("gs://bucket/to/the/other.object")
     )
 
-    val gsutil = mock[GsUtil]
-    uris.foreach(uri => (gsutil.rm _).expects(uri.toString).returning(0))
+    val storage = createStorage
+    uris.foreach(uri => storage.create(uriToBlobInfo(uri)))
 
-    val ioUtil = new IoUtil {
-      override protected def gsUtil: GsUtil = gsutil
+    val ioUtil = new IoUtil(storage)
+
+    ioUtil.deleteCloudObjects(uris).runWith(Sink.head).map { result =>
+      result should be(())
+      storage.list("bucket").getValues.asScala should be(empty)
     }
-
-    // Expectations built into the mock will fail if we don't call the right deletes.
-    ioUtil.deleteCloudObjects(uris).runWith(Sink.head).map(_ should be(()))
   }
 
   it should "not fail when building a stream for zero deletes" in {
-    val ioUtil = new IoUtil {
-      override protected def gsUtil: GsUtil = stub[GsUtil]
-    }
-    val stream = ioUtil.deleteCloudObjects(immutable.Iterable.empty)
+    val stream = new IoUtil(createStorage)
+      .deleteCloudObjects(immutable.Iterable.empty)
     stream.runWith(Sink.head).map(_ should be(()))
   }
 
   it should "include all failures in the exception message when parallel deletes fail" in {
-    val urisToFail = Set("gs://path/to/the.object", "gs://path/to/the/other.object")
-    val uriToSucceed = "gs://some/other/object"
+    val urisToFail =
+      Set("gs://path/to/the.object", "gs://path/to/the/other.object").map(URI.create)
+    val uriToSucceed = URI.create("gs://some/other/object")
 
-    val gsutil = mock[GsUtil]
-    urisToFail.foreach(uri => (gsutil.rm _).expects(uri).returning(1))
-    (gsutil.rm _).expects(uriToSucceed).returning(0)
+    val storage = createStorage
+    storage.create(uriToBlobInfo(uriToSucceed))
 
-    val ioUtil = new IoUtil {
-      override protected def gsUtil: GsUtil = gsutil
-    }
-
-    val stream = ioUtil.deleteCloudObjects((urisToFail + uriToSucceed).map(URI.create))
+    val stream = new IoUtil(storage).deleteCloudObjects(urisToFail + uriToSucceed)
 
     recoverToExceptionIf[IOException](stream.runWith(Sink.ignore)).map { ex =>
+      val sw = new StringWriter
+      ex.printStackTrace(new PrintWriter(sw))
+      val errorText = sw.toString
       urisToFail.foreach { uri =>
-        ex.getMessage should include(uri)
+        errorText should include(uri.toString)
       }
-      succeed
+      storage.list("bucket").getValues.asScala should be(empty)
     }
+  }
+
+  it should "read google object data" in {
+    val location = URI.create("gs://bucket/path/data")
+    val contents = "my data"
+    val storage = createStorage
+    storage.create(uriToBlobInfo(location), contents.getBytes)
+
+    new IoUtil(storage).readMetadata(location) should be(contents)
+  }
+
+  it should "write google object data" in {
+    val location = URI.create("gs://bucket/path/data")
+    val contents = "my data"
+    val storage = createStorage
+
+    new IoUtil(storage).writeGoogleObjectData(contents, location)
+
+    storage.readAllBytes(IoUtil.toBlobId(location)) should be(contents.getBytes)
+  }
+
+  it should "write google object data when the file already exists" in {
+    val location = URI.create("gs://bucket/path/data")
+    val contents = "my data"
+    val storage = createStorage
+    storage.create(uriToBlobInfo(location), "original data".getBytes)
+
+    new IoUtil(storage).writeGoogleObjectData(contents, location)
+
+    storage.readAllBytes(IoUtil.toBlobId(location)) should be(contents.getBytes)
+  }
+
+  it should "detect if a google object exists or not" in {
+    val location = URI.create("gs://bucket/path/data")
+    val storage = createStorage
+    val ioutil = new IoUtil(storage)
+
+    ioutil.googleObjectExists(location) should be(false)
+    storage.create(uriToBlobInfo(location), "data".getBytes)
+    ioutil.googleObjectExists(location) should be(true)
+  }
+
+  it should "copy a google object" in {
+    val source = URI.create("gs://bucket/path/data")
+    val destination = URI.create("gs://bucket/path/newdata")
+    val contents = "my data"
+    val storage = createStorage
+    storage.create(uriToBlobInfo(source), contents.getBytes)
+
+    new IoUtil(storage).copyGoogleObject(source, destination)
+
+    storage.readAllBytes(IoUtil.toBlobId(destination)) should be(contents.getBytes)
   }
 }

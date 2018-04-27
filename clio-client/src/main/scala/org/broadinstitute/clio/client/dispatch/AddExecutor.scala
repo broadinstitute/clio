@@ -47,7 +47,7 @@ class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI]) extends Executor 
   ): Source[addCommand.index.MetadataType, NotUsed] = {
     Source
       .single(location)
-      .map(ioUtil.readMetadata)
+      .map(ioUtil.readFileData)
       .map {
         parse(_).valueOr { err =>
           throw new IllegalArgumentException(
