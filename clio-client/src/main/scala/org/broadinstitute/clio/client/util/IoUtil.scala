@@ -8,8 +8,8 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import better.files.File
 import cats.syntax.either._
-import com.google.auth.Credentials
 import com.google.cloud.storage.{Blob, BlobId, BlobInfo, Storage, StorageOptions}
+import org.broadinstitute.clio.util.auth.ClioCredentials
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -114,8 +114,14 @@ object IoUtil {
   private val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "//"
   private val GoogleCloudPathSeparator = "/"
 
-  def apply(credentials: Credentials): IoUtil = {
-    new IoUtil(StorageOptions.newBuilder().setCredentials(credentials).build().getService)
+  def apply(credentials: ClioCredentials): IoUtil = {
+    new IoUtil(
+      StorageOptions
+        .newBuilder()
+        .setCredentials(credentials.storage(readOnly = false))
+        .build()
+        .getService
+    )
   }
 
   def toBlobId(path: URI): BlobId = {

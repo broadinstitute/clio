@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.integrationtest
 
+import java.io.ByteArrayInputStream
 import java.nio.file.FileSystem
 import java.util.UUID
 
@@ -11,7 +12,7 @@ import akka.stream.{ActorMaterializer, Materializer}
 import akka.testkit.TestKit
 import better.files.File
 import com.bettercloud.vault.{Vault, VaultConfig}
-import com.google.auth.Credentials
+import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.google.cloud.storage.StorageOptions
 import com.google.cloud.storage.contrib.nio.{
   CloudStorageConfiguration,
@@ -29,8 +30,9 @@ import org.broadinstitute.clio.client.ClioClient
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
+import org.broadinstitute.clio.util.auth.ClioCredentials
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{ServiceAccount, UpsertId}
+import org.broadinstitute.clio.util.model.UpsertId
 import org.elasticsearch.client.RestClient
 import org.scalatest.enablers.Existence
 import org.scalatest.{AsyncFlatSpecLike, BeforeAndAfterAll, Matchers}
@@ -55,37 +57,6 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
   lazy implicit val m: Materializer = ActorMaterializer()
 
-  /**
-    * The web client to use within the tested clio-client.
-    */
-  def clioWebClient: ClioWebClient
-
-  private lazy val googleCredential: Credentials =
-    serviceAccount
-      .credentialForScopes(testStorageScopes)
-      .fold(
-        { err =>
-          val scopesString = testStorageScopes.mkString("[", ", ", "]")
-          fail(
-            s"Failed to get credential for scopes $scopesString",
-            err
-          )
-        },
-        identity
-      )
-
-  /**
-    * The clio-client to test against.
-    */
-  lazy val clioClient: ClioClient =
-    new ClioClient(clioWebClient, IoUtil(googleCredential))
-
-  /**
-    * The URI of the Elasticsearch instance to test in a suite.
-    * Could point to a local Docker container, or to a deployed ES node.
-    */
-  def elasticsearchUri: Uri
-
   /** URL of vault server to use when getting bearer tokens for service accounts. */
   private val vaultUrl = "https://clotho.broadinstitute.org:8200/"
 
@@ -98,13 +69,8 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     File(System.getProperty("user.home"), ".vault-token")
   )
 
-  /** Scopes needed from Google to write to our test-storage bucket. */
-  private val testStorageScopes = Seq(
-    "https://www.googleapis.com/auth/devstorage.read_write"
-  )
-
-  /** Service account credentials for use when accessing cloud resources. */
-  final protected lazy val serviceAccount: ServiceAccount = {
+  /** Pull service account credentials to use when accessing cloud resources from Vault. */
+  protected def loadCredentials(): GoogleCredentials = {
     val vaultToken: String = vaultTokenPaths
       .find(_.exists)
       .map(_.contentAsString.stripLineEnd)
@@ -125,49 +91,53 @@ abstract class BaseIntegrationSpec(clioDescription: String)
         .toMap[String, String]
         .asJson
 
-    accountJSON
-      .as[ServiceAccount]
-      .fold(
-        { err =>
-          throw new RuntimeException(
-            s"Failed to decode service account JSON from Vault at $vaultPath",
-            err
-          )
-        },
-        identity
-      )
+    val jsonStream = new ByteArrayInputStream(
+      accountJSON.pretty(defaultPrinter).getBytes()
+    )
+    ServiceAccountCredentials.fromStream(jsonStream)
   }
+
+  private lazy val clioCredentials = new ClioCredentials(loadCredentials())
+
+  def clioHostname: String
+
+  def clioPort: Int
+
+  def useHttps: Boolean
+
+  /**
+    * The web client to use within the tested clio-client.
+    */
+  lazy val clioWebClient: ClioWebClient =
+    ClioWebClient(clioCredentials, clioHostname, clioPort, useHttps)
+
+  /**
+    * The clio-client to test against.
+    */
+  lazy val clioClient: ClioClient =
+    new ClioClient(clioWebClient, IoUtil(clioCredentials))
+
+  /**
+    * The URI of the Elasticsearch instance to test in a suite.
+    * Could point to a local Docker container, or to a deployed ES node.
+    */
+  def elasticsearchUri: Uri
 
   /**
     * Get a path to the root of a bucket in cloud-storage,
     * using Google's NIO filesystem adapter.
     */
-  def rootPathForBucketInEnv(env: String, scopes: Seq[String]): File = {
-    val storageOptions = {
-      val project = s"broad-gotc-$env-storage"
-      serviceAccount
-        .credentialForScopes(scopes)
-        .fold(
-          { err =>
-            val scopesString = scopes.mkString("[", ", ", "]")
-            fail(
-              s"Failed to get credential for project '$project', scopes $scopesString",
-              err
-            )
-          }, { credential =>
-            StorageOptions
-              .newBuilder()
-              .setProjectId(project)
-              .setCredentials(credential)
-              .build()
-          }
-        )
-    }
+  def rootPathForBucketInEnv(env: String, readOnly: Boolean): File = {
+    val project = s"broad-gotc-$env-storage"
 
     val gcs: FileSystem = CloudStorageFileSystem.forBucket(
       s"broad-gotc-$env-clio",
       CloudStorageConfiguration.DEFAULT,
-      storageOptions
+      StorageOptions
+        .newBuilder()
+        .setProjectId(project)
+        .setCredentials(clioCredentials.storage(readOnly))
+        .build()
     )
 
     File(gcs.getPath("/"))
@@ -178,7 +148,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * should be written.
     */
   lazy val rootTestStorageDir: File =
-    rootPathForBucketInEnv("test", testStorageScopes)
+    rootPathForBucketInEnv("test", readOnly = false)
 
   /**
     * Path to the root directory in which metadata updates will

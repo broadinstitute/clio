@@ -13,11 +13,8 @@ import io.circe.Json
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.dispatch._
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.{
-  ClioWebClient,
-  GoogleCredentialsGenerator
-}
-import org.broadinstitute.clio.util.auth.AuthUtil
+import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.util.auth.ClioCredentials
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
@@ -49,7 +46,6 @@ object ClioClient extends LazyLogging {
     */
   sealed trait EarlyReturn
   final case class ParsingError(error: Error) extends EarlyReturn
-  final case class AuthError(cause: Throwable) extends EarlyReturn
   final case class UsageOrHelpAsked(message: String) extends EarlyReturn
 
   val progName = "clio-client"
@@ -61,45 +57,33 @@ object ClioClient extends LazyLogging {
     import system.dispatcher
     sys.addShutdownHook({ val _ = system.terminate() })
 
-    val resultStreamOrErr = for {
-      credentials <- AuthUtil
-        .getCredentials(
-          ClioClientConfig.accessToken,
-          ClioClientConfig.serviceAccountJson
-        )
-        .leftMap(AuthError.apply)
-
-      webClient = ClioWebClient(new GoogleCredentialsGenerator(credentials))
-
-      client = new ClioClient(webClient, IoUtil(credentials))
-
-      resultStream <- client.instanceMain(args)
-    } yield {
-      resultStream
-    }
-
-    resultStreamOrErr.fold(
-      {
-        case UsageOrHelpAsked(message) => {
-          println(message)
-          sys.exit(0)
-        }
-        case ParsingError(error) => {
-          System.err.println(error.message)
-          sys.exit(1)
-        }
-        case AuthError(cause) => {
-          logger.error("Failed to authenticate", cause)
-          sys.exit(1)
-        }
-      },
-      _.runWith(Sink.ignore).onComplete {
-        case Success(_) => sys.exit(0)
-        case Failure(ex) =>
-          logger.error("Failed to execute command", ex)
-          sys.exit(1)
+    val baseCreds = Either
+      .catchNonFatal(new ClioCredentials(ClioClientConfig.serviceAccountJson))
+      .valueOr { err =>
+        logger.error("Failed to read credentials", err)
+        sys.exit(1)
       }
-    )
+
+    new ClioClient(ClioWebClient(baseCreds), IoUtil(baseCreds))
+      .instanceMain(args)
+      .fold(
+        {
+          case UsageOrHelpAsked(message) => {
+            println(message)
+            sys.exit(0)
+          }
+          case ParsingError(error) => {
+            System.err.println(error.message)
+            sys.exit(1)
+          }
+        },
+        _.runWith(Sink.ignore).onComplete {
+          case Success(_) => sys.exit(0)
+          case Failure(ex) =>
+            logger.error("Failed to execute command", ex)
+            sys.exit(1)
+        }
+      )
   }
 }
 
@@ -123,8 +107,9 @@ object ClioClient extends LazyLogging {
   * @param ioUtil    utility handling all file operations,
   *                  both local and in cloud storage
   */
-class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(implicit ec: ExecutionContext)
-    extends LazyLogging {
+class ClioClient private[client] (webClient: ClioWebClient, ioUtil: IoUtil)(
+  implicit ec: ExecutionContext
+) {
   import ClioClient.{EarlyReturn, ParsingError, UsageOrHelpAsked}
 
   /**

@@ -3,7 +3,7 @@ package org.broadinstitute.clio.client.webclient
 import java.time.OffsetDateTime
 import java.util.Date
 
-import com.google.auth.oauth2.{AccessToken, OAuth2Credentials}
+import com.google.auth.oauth2.{AccessToken, GoogleCredentials}
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.concurrent.duration._
@@ -51,7 +51,7 @@ class GoogleCredentialsGeneratorSpec extends FlatSpec with Matchers {
 object GoogleCredentialsGeneratorSpec {
 
   class MockOAuth2Credentials(tokenDuration: FiniteDuration = 1.second)
-      extends OAuth2Credentials {
+      extends GoogleCredentials {
 
     override def refreshAccessToken(): AccessToken = {
       val newToken = Random.nextString(20)

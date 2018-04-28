@@ -14,6 +14,7 @@ import io.circe.syntax._
 import io.circe.Json
 import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.transfer.model._
+import org.broadinstitute.clio.util.auth.ClioCredentials
 import org.broadinstitute.clio.util.generic.{CirceEquivalentCamelCaseLexer, FieldMapper}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.DocumentStatus
@@ -26,7 +27,7 @@ object ClioWebClient {
   type QueryAux[I] = ClioIndex { type QueryInputType = I }
 
   def apply(
-    tokenGenerator: CredentialsGenerator,
+    credentials: ClioCredentials,
     clioHost: String = ClioClientConfig.ClioServer.clioServerHostName,
     clioPort: Int = ClioClientConfig.ClioServer.clioServerPort,
     useHttps: Boolean = ClioClientConfig.ClioServer.clioServerUseHttps,
@@ -50,7 +51,12 @@ object ClioWebClient {
       }
     }
 
-    new ClioWebClient(connectionFlow, requestTimeout, maxRequestRetries, tokenGenerator)
+    new ClioWebClient(
+      connectionFlow,
+      requestTimeout,
+      maxRequestRetries,
+      GoogleCredentialsGenerator(credentials)
+    )
   }
 
   case class FailedResponse(statusCode: StatusCode, entityBody: String)
