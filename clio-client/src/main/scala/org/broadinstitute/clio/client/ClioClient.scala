@@ -107,7 +107,7 @@ object ClioClient extends LazyLogging {
   * @param ioUtil    utility handling all file operations,
   *                  both local and in cloud storage
   */
-class ClioClient private[client] (webClient: ClioWebClient, ioUtil: IoUtil)(
+class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
   implicit ec: ExecutionContext
 ) {
   import ClioClient.{EarlyReturn, ParsingError, UsageOrHelpAsked}
