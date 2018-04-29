@@ -9,26 +9,25 @@ object Dependencies {
   // The version numbers of each main and test dependency.
   private val AkkaHttpCirceVersion = "1.20.1"
   private val AkkaHttpVersion = "10.1.1"
-  private val AkkaVersion = "2.5.11"
+  private val AkkaVersion = "2.5.12"
   private val AlpakkaVersion = "0.18"
   private val ApacheHttpClientVersion = "4.5.5"
   private val BetterFilesVersion = "3.4.0"
   private val CaseAppVersion = "2.0.0-M3"
   private val CirceVersion = "0.9.3"
-  private val DiffsonVersion = "2.2.6"
-  private val Elastic4sVersion = "6.2.3"
+  private val DiffsonVersion = "3.0.0"
+  private val Elastic4sVersion = "6.2.6"
   private val EnumeratumCirceVersion = "1.5.17"
   private val EnumeratumVersion = "1.5.13"
   private val FicusVersion = "1.4.3"
   private val GoogleAuthHttpVersion = "0.9.1"
-  private val GoogleCloudNioVersion = "0.43.0-alpha"
-  private val GoogleCloudStorageVersion = "1.14.0"
+  private val GoogleCloudNioVersion = "0.46.0-alpha"
+  private val GoogleCloudStorageVersion = "1.28.0"
   private val JacksonVersion = "2.9.5"
   private val JimfsVersion = "1.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
-  private val ScalaArmVersion = "2.0"
-  private val ScalaLoggingVersion = "3.8.0"
+  private val ScalaLoggingVersion = "3.9.0"
   private val ScalaTestVersion = "3.0.5"
   private val ScalamockVersion = "4.1.0"
   private val ShapelessVersion = "2.3.3"
@@ -39,7 +38,7 @@ object Dependencies {
   private val VaultJavaDriverVersion = "3.1.0"
 
   /** Version of Scala to build Clio with. */
-  val ScalaVersion = "2.12.5"
+  val ScalaVersion = "2.12.6"
 
   /**
     * Version of scalafmt to pull in via plugin.
@@ -127,7 +126,6 @@ object Dependencies {
     "com.github.pathikrit" %% "better-files" % BetterFilesVersion,
     "com.google.auth" % "google-auth-library-oauth2-http" % GoogleAuthHttpVersion,
     "com.iheart" %% "ficus" % FicusVersion,
-    "com.jsuereth" %% "scala-arm" % ScalaArmVersion,
     "com.typesafe" % "config" % TypesafeConfigVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "io.circe" %% "circe-core" % CirceVersion,
