@@ -12,7 +12,9 @@ class ClioCredentialsSpec extends FlatSpec with Matchers with MockFactory {
   it should "build user-info credentials" in {
     val mockBase = mock[GoogleCredentials]
     val mockScoped = mock[GoogleCredentials]
-    (mockBase.createScoped _).expects(ClioCredentials.userInfoScopes).returning(mockScoped)
+    (mockBase.createScoped _)
+      .expects(ClioCredentials.userInfoScopes)
+      .returning(mockScoped)
 
     new ClioCredentials(mockBase).userInfo() should be(mockScoped)
   }
