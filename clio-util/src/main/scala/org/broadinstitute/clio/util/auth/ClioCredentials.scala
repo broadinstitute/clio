@@ -7,6 +7,7 @@ import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 
 import scala.collection.JavaConverters._
 
+/** Wrapper for Google credentials, providing helpers for setting up authorization scopes. */
 class ClioCredentials(baseCredentials: GoogleCredentials) {
   import ClioCredentials._
 
@@ -16,8 +17,10 @@ class ClioCredentials(baseCredentials: GoogleCredentials) {
     )
   }
 
-  def oauth(): GoogleCredentials = baseCredentials.createScoped(oauthScopes)
+  /** Build credentials which can provide user info. */
+  def userInfo(): GoogleCredentials = baseCredentials.createScoped(userInfoScopes)
 
+  /** Build credentials which can perform cloud I/O. */
   def storage(readOnly: Boolean): GoogleCredentials = {
     val scope = if (readOnly) readOnlyStorageScope else readWriteStorageScope
     baseCredentials.createScoped(Collections.singleton(scope))
@@ -26,17 +29,17 @@ class ClioCredentials(baseCredentials: GoogleCredentials) {
 
 object ClioCredentials {
 
-  /** Scopes needed from Google to get past Clio's auth proxy. */
-  private[clio] val oauthScopes = Seq(
+  /** Scopes needed to get user info from a Google account to prove "valid user" identity. */
+  private[auth] val userInfoScopes = Seq(
     "https://www.googleapis.com/auth/userinfo.profile",
     "https://www.googleapis.com/auth/userinfo.email"
   ).asJava
 
   /** Scope needed to allow reads from, and prevent writes to, cloud storage. */
-  private[clio] val readOnlyStorageScope =
+  private[auth] val readOnlyStorageScope =
     "https://www.googleapis.com/auth/devstorage.read_only"
 
   /** Scope needed to allow reads from amd writes to cloud storage. */
-  private[clio] val readWriteStorageScope =
+  private[auth] val readWriteStorageScope =
     "https://www.googleapis.com/auth/devstorage.read_write"
 }

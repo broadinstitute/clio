@@ -139,6 +139,7 @@ object Dependencies {
     "org.scala-lang" % "scala-reflect" % ScalaVersion
   )
   private val UtilTestDependencies: Seq[ModuleID] = Seq(
+    "org.scalamock" %% "scalamock" % ScalamockVersion,
     "org.scalatest" %% "scalatest" % ScalaTestVersion
   ).map(_ % Test)
 

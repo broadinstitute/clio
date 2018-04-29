@@ -42,5 +42,5 @@ class GoogleCredentialsGenerator private[webclient] (googleCredentials: GoogleCr
 object GoogleCredentialsGenerator {
 
   def apply(baseCredentials: ClioCredentials): GoogleCredentialsGenerator =
-    new GoogleCredentialsGenerator(baseCredentials.oauth())
+    new GoogleCredentialsGenerator(baseCredentials.userInfo())
 }
