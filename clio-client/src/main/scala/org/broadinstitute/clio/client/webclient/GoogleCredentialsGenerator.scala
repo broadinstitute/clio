@@ -3,12 +3,11 @@ package org.broadinstitute.clio.client.webclient
 import java.time.Instant
 
 import akka.http.scaladsl.model.headers.{HttpCredentials, OAuth2BearerToken}
-import com.google.auth.oauth2.OAuth2Credentials
+import com.google.auth.oauth2.GoogleCredentials
+import org.broadinstitute.clio.util.auth.ClioCredentials
 
-/**
-  * Credentials generator which wraps Google-style OAuth2Credentials.
-  */
-class GoogleCredentialsGenerator(googleCredentials: OAuth2Credentials)
+/** Credentials generator which wraps Google-style OAuth2Credentials. */
+class GoogleCredentialsGenerator private[webclient] (googleCredentials: GoogleCredentials)
     extends CredentialsGenerator {
 
   override def generateCredentials(): HttpCredentials = {
@@ -38,4 +37,10 @@ class GoogleCredentialsGenerator(googleCredentials: OAuth2Credentials)
 
     OAuth2BearerToken(googleCredentials.getAccessToken.getTokenValue)
   }
+}
+
+object GoogleCredentialsGenerator {
+
+  def apply(baseCredentials: ClioCredentials): GoogleCredentialsGenerator =
+    new GoogleCredentialsGenerator(baseCredentials.userInfo())
 }
