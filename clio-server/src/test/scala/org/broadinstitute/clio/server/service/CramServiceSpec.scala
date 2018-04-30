@@ -23,7 +23,7 @@ class CramServiceSpec
   val elasticsearchIndex: ElasticsearchIndex[BackCompatibleCramIndex] =
     ElasticsearchIndex.Cram
 
-  val dummyKey = CramKey(Location.GCP, "project1", "sample1", 1, DataType.WGS)
+  val dummyKey = CramKey(Location.GCP, "project1", DataType.WGS, "sample1", 1)
 
   val dummyInput = CramQueryInput(project = Option("testProject"))
 

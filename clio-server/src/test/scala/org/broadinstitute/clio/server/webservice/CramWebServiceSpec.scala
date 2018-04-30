@@ -16,9 +16,9 @@ class CramWebServiceSpec extends IndexWebServiceSpec[BackCompatibleCramIndex] {
   val onPremKey = CramKey(
     Location.OnPrem,
     "project",
+    DataType.WGS,
     "sample_alias",
-    1,
-    DataType.WGS
+    1
   )
 
   val cloudKey: CramKey = onPremKey
@@ -38,9 +38,9 @@ class CramWebServiceSpec extends IndexWebServiceSpec[BackCompatibleCramIndex] {
     CramKey(
       Location.GCP,
       "project",
+      DataType.WGS,
       "sample",
-      1,
-      DataType.WGS
+      1
     ).asJson(CramIndex.keyEncoder)
   }
 }

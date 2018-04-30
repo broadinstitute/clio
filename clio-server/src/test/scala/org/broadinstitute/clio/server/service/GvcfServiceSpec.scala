@@ -21,7 +21,7 @@ class GvcfServiceSpec extends IndexServiceSpec[GvcfIndex.type]("GvcfService") {
 
   val elasticsearchIndex: ElasticsearchIndex[GvcfIndex.type] = ElasticsearchIndex.Gvcf
 
-  val dummyKey = GvcfKey(Location.GCP, "project1", "sample1", 1, DataType.WGS)
+  val dummyKey = GvcfKey(Location.GCP, "project1", DataType.WGS, "sample1", 1)
 
   val dummyInput = GvcfQueryInput(project = Option("testProject"))
 

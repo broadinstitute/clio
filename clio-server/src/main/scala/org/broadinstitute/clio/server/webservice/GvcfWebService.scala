@@ -21,9 +21,9 @@ class GvcfWebService(gvcfService: IndexService[GvcfIndex.type])
       GvcfKey(
         location,
         project,
+        dataType,
         sampleAlias,
-        version,
-        dataType
+        version
       )
   }
 }

@@ -6,11 +6,11 @@ import org.broadinstitute.clio.util.model.{DataType, Location}
 case class CramKey(
   location: Location,
   project: String,
+  dataType: DataType,
   sampleAlias: String,
-  version: Int,
-  dataType: DataType
+  version: Int
 ) extends IndexKey {
 
   override def getUrlSegments: Seq[String] =
-    Seq(location.entryName, project, sampleAlias, version.toString, dataType.entryName)
+    Seq(location.entryName, project, dataType.entryName, sampleAlias, version.toString)
 }

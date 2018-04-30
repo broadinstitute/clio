@@ -16,9 +16,9 @@ class GvcfWebServiceSpec extends IndexWebServiceSpec[GvcfIndex.type] {
   val onPremKey = GvcfKey(
     Location.OnPrem,
     "project",
+    DataType.WGS,
     "sample_alias",
-    1,
-    DataType.WGS
+    1
   )
 
   val cloudKey: GvcfKey = onPremKey
@@ -38,8 +38,8 @@ class GvcfWebServiceSpec extends IndexWebServiceSpec[GvcfIndex.type] {
     GvcfKey(
       Location.GCP,
       "project",
+      DataType.WGS,
       "sample",
-      1,
-      DataType.WGS
+      1
     ).asJson(GvcfIndex.keyEncoder)
 }

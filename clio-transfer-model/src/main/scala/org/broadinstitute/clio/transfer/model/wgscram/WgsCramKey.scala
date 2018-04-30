@@ -23,4 +23,4 @@ class WgsCramKey(
   override val project: String,
   override val sampleAlias: String,
   override val version: Int
-) extends CramKey(location, project, sampleAlias, version, DataType.WGS)
+) extends CramKey(location, project, DataType.WGS, sampleAlias, version)

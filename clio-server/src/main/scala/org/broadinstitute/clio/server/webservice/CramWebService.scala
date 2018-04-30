@@ -21,9 +21,9 @@ class CramWebService(cramService: IndexService[BackCompatibleCramIndex])
       CramKey(
         location,
         project,
+        dataType,
         sampleAlias,
-        version,
-        dataType
+        version
       )
   }
 }

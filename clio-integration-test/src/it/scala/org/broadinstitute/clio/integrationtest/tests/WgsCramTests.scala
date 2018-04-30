@@ -186,7 +186,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       samples.zip(1 to 3).map {
         case (sample, version) =>
-          val key = CramKey(location, project, sample, version, DataType.WGS)
+          val key = WgsCramKey(location, project, sample, version)
           val data = CramMetadata(
             cramPath = Some(
               URI.create(s"gs://path/cram${CramExtensions.CramExtension}")
@@ -232,7 +232,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       samples.zip(1 to 3).map {
         case (sample, version) =>
-          val key = CramKey(location, project, sample, version, DataType.WGS)
+          val key = WgsCramKey(location, project, sample, version)
           val data = CramMetadata(
             cramPath = Some(
               URI.create(s"gs://path/cram${CramExtensions.CramExtension}")
@@ -263,7 +263,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
   it should "handle updates to wgs-cram metadata" in {
     val project = s"testProject$randomId"
-    val key = CramKey(Location.GCP, project, s"testSample$randomId", 1, DataType.WGS)
+    val key = WgsCramKey(Location.GCP, project, s"testSample$randomId", 1)
     val cramPath = URI.create(s"gs://path/cram${CramExtensions.CramExtension}")
     val cramSize = 1000L
     val initialNotes = "Breaking news"
@@ -438,7 +438,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val alignmentMetricsDestination = rootDestination / alignmentMetricsName
     val fingerprintMetricsDestination = rootDestination / fingerprintMetricsName
 
-    val key = CramKey(Location.GCP, project, sample, version, DataType.WGS)
+    val key = WgsCramKey(Location.GCP, project, sample, version)
     val metadata = CramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -546,12 +546,11 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
   }
 
   it should "not move wgs-crams with no registered files" in {
-    val key = CramKey(
+    val key = WgsCramKey(
       Location.GCP,
       s"project$randomId",
       s"sample$randomId",
-      1,
-      DataType.WGS
+      1
     )
     runUpsertCram(key, CramMetadata()).flatMap { _ =>
       recoverToExceptionIf[Exception] {
@@ -598,7 +597,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val metrics1Path = storageDir / s"$randomId.metrics"
     val metrics2Path = storageDir / s"$randomId.metrics"
 
-    val key = CramKey(Location.GCP, project, sample, version, DataType.WGS)
+    val key = WgsCramKey(Location.GCP, project, sample, version)
     val metadata = CramMetadata(
       cramPath = Some(cramPath.uri),
       craiPath = Some(craiPath.uri),
@@ -745,7 +744,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiDestination = rootDestination / s"$prefix$craiName"
     val md5Destination = rootDestination / s"$prefix$md5Name"
 
-    val key = CramKey(Location.GCP, project, sample, version, DataType.WGS)
+    val key = WgsCramKey(Location.GCP, project, sample, version)
     val metadata = CramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -838,7 +837,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val md5Destination = rootSource / md5Name
 
-    val key = CramKey(Location.GCP, project, sample, version, DataType.WGS)
+    val key = WgsCramKey(Location.GCP, project, sample, version)
     val metadata = CramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -913,7 +912,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val cramSource = rootSource / cramName
     val craiSource = rootSource / craiName
 
-    val key = CramKey(Location.GCP, project, sample, version, DataType.WGS)
+    val key = WgsCramKey(Location.GCP, project, sample, version)
     val metadata = CramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -968,7 +967,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val craiDestination = rootDestination / craiName
     val md5Destination = rootDestination / md5Name
 
-    val key = CramKey(Location.GCP, project, sample, version, DataType.WGS)
+    val key = WgsCramKey(Location.GCP, project, sample, version)
     val metadata = CramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
@@ -1057,7 +1056,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val rootDestination = rootSource.parent / s"moved/$randomId/"
 
-    val key = CramKey(Location.GCP, project, sample, version, DataType.WGS)
+    val key = WgsCramKey(Location.GCP, project, sample, version)
     val metadata = CramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),

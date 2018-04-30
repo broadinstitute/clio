@@ -296,7 +296,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val upserts = Future.sequence {
       samples.zip(1 to 3).map {
         case (sample, version) =>
-          val key = GvcfKey(location, project, sample, version, DataType.WGS)
+          val key = GvcfKey(location, project, DataType.WGS, sample, version)
           val data = GvcfMetadata(
             gvcfPath = Some(
               URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}")
@@ -333,7 +333,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
   it should "handle updates to gvcf metadata" in {
     val project = s"testProject$randomId"
-    val key = GvcfKey(Location.GCP, project, s"testSample$randomId", 1, DataType.WGS)
+    val key = GvcfKey(Location.GCP, project, DataType.WGS, s"testSample$randomId", 1)
     val gvcfPath = URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}")
     val metadata = GvcfMetadata(
       gvcfPath = Some(gvcfPath),
@@ -482,7 +482,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
     val cloudPath = rootTestStorageDir / s"gvcf/$project/$sample/v$version/$randomId${GvcfExtensions.GvcfExtension}"
 
-    val key = GvcfKey(Location.GCP, project, sample, version, DataType.WGS)
+    val key = GvcfKey(Location.GCP, project, DataType.WGS, sample, version)
     val metadata = GvcfMetadata(
       gvcfPath = Some(cloudPath.uri),
       regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
@@ -515,9 +515,9 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val key = GvcfKey(
       Location.GCP,
       s"project$randomId",
+      dataType = DataType.WGS,
       s"sample$randomId",
-      3,
-      dataType = DataType.WGS
+      3
     )
     val firstMetadata = GvcfMetadata(
       regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
@@ -591,7 +591,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val summaryMetricsDestination = rootDestination / summaryMetricsName
     val detailMetricsDestination = rootDestination / detailMetricsName
 
-    val key = GvcfKey(Location.GCP, project, sample, version, DataType.WGS)
+    val key = GvcfKey(Location.GCP, project, DataType.WGS, sample, version)
     val metadata = GvcfMetadata(
       gvcfPath = Some(gvcfSource.uri),
       gvcfIndexPath = Some(indexSource.uri),
@@ -716,7 +716,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val summaryMetricsPath = storageDir / s"$randomId${GvcfExtensions.SummaryMetricsExtension}"
     val detailMetricsPath = storageDir / s"$randomId${GvcfExtensions.DetailMetricsExtension}"
 
-    val key = GvcfKey(Location.GCP, project, sample, version, DataType.WGS)
+    val key = GvcfKey(Location.GCP, project, DataType.WGS, sample, version)
     val metadata = GvcfMetadata(
       gvcfPath = Some(gvcfPath.uri),
       gvcfIndexPath = Some(indexPath.uri),
