@@ -33,7 +33,7 @@ object Dependencies {
   private val ShapelessVersion = "2.3.3"
   private val Slf4jVersion = "1.7.25"
   private val SwaggerUi = "3.1.5"
-  private val TestContainersScalaVersion = "0.16.0"
+  private val TestContainersScalaVersion = "0.17.0"
   private val TypesafeConfigVersion = "1.3.3"
   private val VaultJavaDriverVersion = "3.1.0"
 
