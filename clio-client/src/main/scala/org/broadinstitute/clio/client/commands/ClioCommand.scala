@@ -67,6 +67,7 @@ sealed abstract class DeliverCommand[+CI <: DeliverableIndex](override val index
   def force: Boolean
 }
 
+sealed abstract class BackCompatibleDeliverCram extends DeliverCommand(CramIndex)
 // Generic commands.
 
 @CommandName(ClioCommand.getServerHealthName)
@@ -184,7 +185,7 @@ final case class DeliverCram(
   workspacePath: URI,
   newBasename: Option[String] = None,
   force: Boolean = false
-) extends DeliverCommand(CramIndex)
+) extends BackCompatibleDeliverCram
 
 //TODO Get rid of these wgs-cram commands when they're no longer being used
 
@@ -227,7 +228,7 @@ final case class DeliverWgsCram(
   workspacePath: URI,
   newBasename: Option[String] = None,
   force: Boolean = false
-) extends DeliverCommand(WgsCramIndex)
+) extends BackCompatibleDeliverCram
 
 // uBAM commands.
 

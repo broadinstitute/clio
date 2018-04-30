@@ -4,7 +4,7 @@ import java.net.URI
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import org.broadinstitute.clio.client.commands.DeliverCram
+import org.broadinstitute.clio.client.commands.BackCompatibleDeliverCram
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, WriteOp}
 import org.broadinstitute.clio.transfer.model.wgscram.{CramExtensions, CramMetadata}
 
@@ -19,7 +19,7 @@ import scala.concurrent.ExecutionContext
   *   1. Writes the cram md5 value to file at the target path
   *   2. Records the workspace name in the metadata for the delivered cram
   */
-class DeliverCramExecutor(deliverCommand: DeliverCram)(
+class DeliverCramExecutor(deliverCommand: BackCompatibleDeliverCram)(
   implicit ec: ExecutionContext
 ) extends DeliverExecutor(deliverCommand) {
 
