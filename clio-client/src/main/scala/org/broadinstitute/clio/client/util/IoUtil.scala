@@ -6,7 +6,7 @@ import java.nio.ByteBuffer
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import better.files.File
+import better.files._
 import cats.syntax.either._
 import com.google.cloud.storage.{Blob, BlobId, BlobInfo, Storage, StorageOptions}
 import org.broadinstitute.clio.util.auth.ClioCredentials
@@ -79,7 +79,7 @@ class IoUtil(storage: Storage) {
   def writeGoogleObjectData(data: String, location: URI): Unit = {
     getBlob(location) match {
       case Some(blob) =>
-        for (channel <- resource.managed(blob.writer())) {
+        blob.writer().autoClosed { channel =>
           channel.write(ByteBuffer.wrap(data.getBytes()))
           ()
         }
