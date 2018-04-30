@@ -16,14 +16,14 @@ class GvcfWebService(gvcfService: IndexService[GvcfIndex.type])
       project <- pathPrefix(Segment)
       sampleAlias <- pathPrefix(Segment)
       version <- pathPrefix(IntNumber)
-      dataType <- pathPrefix(Segment)
+      dataType <- pathPrefix(DataType.namesToValuesMap)
     } yield
       GvcfKey(
         location,
         project,
         sampleAlias,
         version,
-        DataType.withNameInsensitive(dataType)
+        dataType
       )
   }
 }

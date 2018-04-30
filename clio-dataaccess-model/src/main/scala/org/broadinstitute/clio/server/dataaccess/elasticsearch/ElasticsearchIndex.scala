@@ -106,6 +106,8 @@ object ElasticsearchIndex extends ModelAutoDerivation {
 
   val UpsertIdElasticsearchName = "upsert_id"
 
+  val dataTypeKey = "data_type"
+
   val BookkeepingNames = Seq(
     EntityIdElasticsearchName,
     UpsertIdElasticsearchName
@@ -134,7 +136,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       indexName = "gvcf-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
-      Json.obj("data_type" -> DataType.WGS.asJson)
+      Json.obj(dataTypeKey -> DataType.WGS.asJson)
     )
 
   val Cram: ElasticsearchIndex[CramIndex.type] =
@@ -144,7 +146,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       "wgs-cram-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
-      Json.obj("data_type" -> DataType.WGS.asJson)
+      Json.obj(dataTypeKey -> DataType.WGS.asJson)
     )
 
   val Arrays: ElasticsearchIndex[ArraysIndex.type] =
