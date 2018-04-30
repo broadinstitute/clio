@@ -19,24 +19,11 @@ class GcsPersistenceDAO(gcsConfig: Persistence.GcsConfig, recoveryParallelism: I
     extends PersistenceDAO(recoveryParallelism) {
 
   private lazy val storageOptions = {
-    gcsConfig.account
-      .credentialForScopes(GcsPersistenceDAO.storageScopes)
-      .fold(
-        { err =>
-          val scopeString =
-            GcsPersistenceDAO.storageScopes.mkString("[", ", ", "]")
-          throw new RuntimeException(
-            s"Failed to get credential for GCS config '$gcsConfig', scopes $scopeString",
-            err
-          )
-        }, { credential =>
-          StorageOptions
-            .newBuilder()
-            .setProjectId(gcsConfig.projectId)
-            .setCredentials(credential)
-            .build()
-        }
-      )
+    StorageOptions
+      .newBuilder()
+      .setProjectId(gcsConfig.projectId)
+      .setCredentials(gcsConfig.creds.storage(readOnly = false))
+      .build()
   }
 
   private lazy val gcs: FileSystem =
@@ -47,14 +34,4 @@ class GcsPersistenceDAO(gcsConfig: Persistence.GcsConfig, recoveryParallelism: I
     )
 
   override lazy val rootPath: File = File(gcs.getPath("/"))
-}
-
-object GcsPersistenceDAO {
-
-  /**
-    * Authorization scopes required for writing to Clio's GCS buckets.
-    */
-  val storageScopes: Seq[String] = Seq(
-    "https://www.googleapis.com/auth/devstorage.read_write"
-  )
 }

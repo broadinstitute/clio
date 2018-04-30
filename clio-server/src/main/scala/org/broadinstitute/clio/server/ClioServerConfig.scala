@@ -1,13 +1,14 @@
 package org.broadinstitute.clio.server
 
 import better.files.File
+import cats.syntax.either._
 import com.typesafe.config.{Config, ConfigException}
 import net.ceedubs.ficus.Ficus._
 import net.ceedubs.ficus.readers.ArbitraryTypeReader._
-import org.broadinstitute.clio.util.auth.AuthUtil
+import org.broadinstitute.clio.util.auth.ClioCredentials
 import org.broadinstitute.clio.util.config.{ClioConfig, ConfigReaders}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.{Location, ServiceAccount}
+import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -25,7 +26,7 @@ object ClioServerConfig extends ConfigReaders {
       */
     sealed trait PersistenceConfig
     case class LocalConfig(rootDir: Option[File]) extends PersistenceConfig
-    case class GcsConfig(projectId: String, bucket: String, account: ServiceAccount)
+    case class GcsConfig(projectId: String, bucket: String, creds: ClioCredentials)
         extends PersistenceConfig
 
     private val persistence: Config =
@@ -44,8 +45,8 @@ object ClioServerConfig extends ConfigReaders {
             val projectId = persistence.as[String]("project-id")
             val bucket = persistence.as[String]("bucket")
             val jsonPath = persistence.as[File]("service-account-json")
-            val serviceAccount = AuthUtil.loadServiceAccountJson(jsonPath)
-            serviceAccount.fold(
+            val credentials = Either.catchNonFatal(new ClioCredentials(Some(jsonPath)))
+            credentials.fold(
               { err =>
                 throw new ConfigException.BadValue(
                   "clio.server.persistence.service-account-json",

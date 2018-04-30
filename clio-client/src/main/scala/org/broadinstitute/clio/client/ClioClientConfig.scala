@@ -1,10 +1,6 @@
 package org.broadinstitute.clio.client
 
-import java.time.{Duration, Instant}
-import java.util.Date
-
 import better.files.File
-import com.google.auth.oauth2.AccessToken
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
 import org.broadinstitute.clio.util.config.{ClioConfig, ConfigReaders}
@@ -27,17 +23,6 @@ object ClioClientConfig extends ConfigReaders {
 
   val serviceAccountJson: Option[File] =
     clientConfig.getAs[File]("service-account-json")
-
-  val accessToken: Option[AccessToken] =
-    clientConfig
-      .getAs[String]("access-token")
-      .map(
-        t =>
-          new AccessToken(
-            t,
-            Date.from(Instant.now().plus(Duration.ofMinutes(20)))
-        )
-      )
 
   object Version {
     val value: String = config.as[String]("client.version")

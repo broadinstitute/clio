@@ -2,12 +2,10 @@ package org.broadinstitute.clio.integrationtest
 
 import akka.NotUsed
 import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.model.headers.OAuth2BearerToken
 import akka.stream.alpakka.file.scaladsl.FileTailSource
 import akka.stream.scaladsl.{Sink, Source}
 import better.files.File
 import com.dimafeng.testcontainers.ForAllTestContainer
-import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.integrationtest.tests._
 
 import scala.concurrent.Await
@@ -47,14 +45,11 @@ abstract class DockerIntegrationSpec(
    * raise an IllegalStateException if they're called before the container is
    * actually started.
    */
-  override lazy val clioWebClient: ClioWebClient =
-    ClioWebClient(
-      () => OAuth2BearerToken("fake-token"),
-      container.getServiceHost(clioFullName),
-      container.getServicePort(clioFullName),
-      useHttps = false
-    )
+  override lazy val clioHostname: String = container.getServiceHost(clioFullName)
+  override lazy val clioPort: Int = container.getServicePort(clioFullName)
   override lazy val elasticsearchUri: Uri = container.getServiceUri(esFullName)
+
+  override val useHttps = false
 
   // SBT sets a local path for persisting metadata updates.
   override val rootPersistenceDir: File = File(ClioBuildInfo.persistenceDir)
