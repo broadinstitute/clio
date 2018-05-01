@@ -6,13 +6,14 @@ import java.time.format.DateTimeFormatter
 import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.Json
+import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
 import io.circe.generic.extras.Configuration.snakeCaseTransformation
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
-import org.broadinstitute.clio.util.model.UpsertId
+import org.broadinstitute.clio.util.model.{DataType, UpsertId}
 
 /**
   * An index for an Elasticsearch document.
@@ -105,6 +106,8 @@ object ElasticsearchIndex extends ModelAutoDerivation {
 
   val UpsertIdElasticsearchName = "upsert_id"
 
+  val dataTypeKey = "data_type"
+
   val BookkeepingNames = Seq(
     EntityIdElasticsearchName,
     UpsertIdElasticsearchName
@@ -132,16 +135,18 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       indexName = "gvcf-v2",
-      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
+      Json.obj(dataTypeKey -> DataType.WGS.asJson)
     )
 
-  val WgsCram: ElasticsearchIndex[WgsCramIndex.type] =
+  val Cram: ElasticsearchIndex[CramIndex.type] =
     new ElasticsearchIndex(
-      WgsCramIndex,
+      CramIndex,
       // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       "wgs-cram-v2",
-      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
+      Json.obj(dataTypeKey -> DataType.WGS.asJson)
     )
 
   val Arrays: ElasticsearchIndex[ArraysIndex.type] =

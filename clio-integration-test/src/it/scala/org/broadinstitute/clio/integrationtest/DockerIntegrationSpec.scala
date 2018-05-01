@@ -88,7 +88,11 @@ abstract class DockerIntegrationSpec(
 /** Dockerized versions of the integration tests that also run against our deployed Clios. */
 class CoreDockerBasicSpec extends DockerIntegrationSpec("Clio in Docker") with BasicTests
 class CoreDockerUbamSpec extends DockerIntegrationSpec("Clio in Docker") with UbamTests
-class CoreDockerCramSpec extends DockerIntegrationSpec("Clio in Docker") with WgsCramTests
+class CoreDockerCramSpec extends DockerIntegrationSpec("Clio in Docker") with CramTests
+
+class CoreDockerWgsCramSpec
+    extends DockerIntegrationSpec("Clio in Docker")
+    with WgsCramTests
 class CoreDockerGvcfSpec extends DockerIntegrationSpec("Clio in Docker") with GvcfTests
 
 class CoreDockerArraysSpec

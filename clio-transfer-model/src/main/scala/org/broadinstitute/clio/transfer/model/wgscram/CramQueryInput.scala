@@ -11,7 +11,7 @@ import org.broadinstitute.clio.util.model.{
   RegulatoryDesignation
 }
 
-case class WgsCramQueryInput(
+case class CramQueryInput(
   documentStatus: Option[DocumentStatus] = None,
   location: Option[Location] = None,
   project: Option[String] = None,
@@ -28,11 +28,11 @@ case class WgsCramQueryInput(
   workspaceName: Option[String] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   notes: Option[String] = None
-) extends QueryInput[WgsCramQueryInput] {
+) extends QueryInput[CramQueryInput] {
 
   def withDocumentStatus(
     documentStatus: Option[DocumentStatus]
-  ): WgsCramQueryInput =
+  ): CramQueryInput =
     this.copy(
       documentStatus = documentStatus
     )

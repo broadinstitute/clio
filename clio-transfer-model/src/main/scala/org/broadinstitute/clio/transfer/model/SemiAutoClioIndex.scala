@@ -8,9 +8,9 @@ import org.broadinstitute.clio.transfer.model.arrays.{
 }
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata, GvcfQueryInput}
 import org.broadinstitute.clio.transfer.model.wgscram.{
-  WgsCramKey,
-  WgsCramMetadata,
-  WgsCramQueryInput
+  CramKey,
+  CramMetadata,
+  CramQueryInput
 }
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata, UbamQueryInput}
 import org.broadinstitute.clio.util.generic.FieldMapper
@@ -77,16 +77,24 @@ case object UbamIndex extends BackCompatibleUbamIndex {
   override val commandName: String = "ubam"
 }
 
-case object WgsCramIndex
+// Temporary trait to remain until WgsCram fully phased out
+trait BackCompatibleCramIndex
     extends SemiAutoClioIndex[
-      WgsCramKey,
-      WgsCramMetadata,
-      WgsCramQueryInput
-    ]
-    with DeliverableIndex {
+      CramKey,
+      CramMetadata,
+      CramQueryInput
+    ] {
+  override val name: String = "Cram"
+}
+
+case object WgsCramIndex extends BackCompatibleCramIndex with DeliverableIndex {
   override val urlSegment: String = "wgscram"
-  override val name: String = "WgsCram"
   override val commandName: String = "wgs-cram"
+}
+
+case object CramIndex extends BackCompatibleCramIndex with DeliverableIndex {
+  override val urlSegment: String = "cram"
+  override val commandName: String = "cram"
 }
 
 case object ArraysIndex

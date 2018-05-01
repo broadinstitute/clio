@@ -28,13 +28,15 @@ abstract class EnvIntegrationSpec(env: String)
 /** The integration specs that run against Clio in dev. */
 class DevEnvBasicSpec extends EnvIntegrationSpec("dev") with BasicTests
 class DevEnvUbamSpec extends EnvIntegrationSpec("dev") with UbamTests
-class DevEnvCramSpec extends EnvIntegrationSpec("dev") with WgsCramTests
+class DevEnvCramSpec extends EnvIntegrationSpec("dev") with CramTests
+class DevEnvWgsCramSpec extends EnvIntegrationSpec("dev") with WgsCramTests
 class DevEnvGvcfSpec extends EnvIntegrationSpec("dev") with GvcfTests
 class DevEnvArraysSpec extends EnvIntegrationSpec("dev") with ArraysTests
 
 /** The integration specs that run against Clio in staging. */
 class StagingEnvBasicSpec extends EnvIntegrationSpec("staging") with BasicTests
 class StagingEnvUbamSpec extends EnvIntegrationSpec("staging") with UbamTests
-class StagingEnvCramSpec extends EnvIntegrationSpec("staging") with WgsCramTests
+class StagingEnvCramSpec extends EnvIntegrationSpec("staging") with CramTests
+class StagingEnvWgsCramSpec extends EnvIntegrationSpec("staging") with WgsCramTests
 class StagingEnvGvcfSpec extends EnvIntegrationSpec("staging") with GvcfTests
 class StagingEnvArraysSpec extends EnvIntegrationSpec("staging") with ArraysTests

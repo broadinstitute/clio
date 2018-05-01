@@ -4,31 +4,32 @@ import java.net.URI
 
 import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.commands.DeliverWgsCram
+import org.broadinstitute.clio.client.commands.DeliverCram
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.WriteOp
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.transfer.model.wgscram.{
-  WgsCramExtensions,
-  WgsCramKey,
-  WgsCramMetadata
+  CramExtensions,
+  CramKey,
+  CramMetadata
 }
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DataType, Location}
 import org.scalamock.scalatest.AsyncMockFactory
 
-class DeliverWgsCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
+class DeliverCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   behavior of "DeliverWgsCramExecutor"
 
-  private val theKey = WgsCramKey(
+  private val theKey = CramKey(
     location = Location.GCP,
     project = "the-project",
     sampleAlias = "the-sample",
-    version = 1
+    version = 1,
+    dataType = DataType.WGS
   )
   private val cramPath =
-    URI.create(s"gs://bucket/the-cram${WgsCramExtensions.CramExtension}")
+    URI.create(s"gs://bucket/the-cram${CramExtensions.CramExtension}")
   private val cramMd5 = Symbol("abcdefg")
   private val metadata =
-    WgsCramMetadata(cramPath = Some(cramPath), cramMd5 = Some(cramMd5))
+    CramMetadata(cramPath = Some(cramPath), cramMd5 = Some(cramMd5))
   private val workspaceName = "the-workspace"
   private val destination = URI.create("gs://the-destination/")
 
@@ -37,7 +38,7 @@ class DeliverWgsCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     (ioUtil.isGoogleObject _).expects(cramPath).returning(true)
 
     val executor =
-      new DeliverWgsCramExecutor(DeliverWgsCram(theKey, workspaceName, destination))
+      new DeliverCramExecutor(DeliverCram(theKey, workspaceName, destination))
 
     executor.buildMove(metadata, ioUtil).runWith(Sink.head).map {
       case (newMetadata, ops) =>
@@ -45,7 +46,7 @@ class DeliverWgsCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
         ops should contain(
           WriteOp(
             cramMd5.name,
-            destination.resolve(s"the-cram${WgsCramExtensions.Md5Extension}")
+            destination.resolve(s"the-cram${CramExtensions.Md5Extension}")
           )
         )
     }
@@ -58,8 +59,8 @@ class DeliverWgsCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     (ioUtil.isGoogleObject _).expects(cramPath).returning(true)
 
     val executor =
-      new DeliverWgsCramExecutor(
-        DeliverWgsCram(theKey, workspaceName, destination, Some(basename))
+      new DeliverCramExecutor(
+        DeliverCram(theKey, workspaceName, destination, Some(basename))
       )
 
     executor.buildMove(metadata, ioUtil).runWith(Sink.head).map {
@@ -68,7 +69,7 @@ class DeliverWgsCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
         ops should contain(
           WriteOp(
             cramMd5.name,
-            destination.resolve(s"$basename${WgsCramExtensions.Md5Extension}")
+            destination.resolve(s"$basename${CramExtensions.Md5Extension}")
           )
         )
     }
@@ -76,7 +77,7 @@ class DeliverWgsCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   it should "fail if no cram is registered to a document" in {
     val executor =
-      new DeliverWgsCramExecutor(DeliverWgsCram(theKey, workspaceName, destination))
+      new DeliverCramExecutor(DeliverCram(theKey, workspaceName, destination))
 
     recoverToSucceededIf[IllegalStateException] {
       executor
@@ -90,7 +91,7 @@ class DeliverWgsCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     (ioUtil.isGoogleObject _).expects(cramPath).returning(true)
 
     val executor =
-      new DeliverWgsCramExecutor(DeliverWgsCram(theKey, workspaceName, destination))
+      new DeliverCramExecutor(DeliverCram(theKey, workspaceName, destination))
 
     recoverToSucceededIf[IllegalStateException] {
       executor.buildMove(metadata.copy(cramMd5 = None), ioUtil).runWith(Sink.ignore)

@@ -1,15 +1,26 @@
 package org.broadinstitute.clio.transfer.model.wgscram
 
-import org.broadinstitute.clio.transfer.model.IndexKey
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DataType, Location}
 
-case class WgsCramKey(
-  location: Location,
-  project: String,
-  sampleAlias: String,
-  version: Int
-) extends IndexKey {
+//TODO delete when all other programs have transitioned to new cram API
+object WgsCramKey {
 
-  override def getUrlSegments: Seq[String] =
-    Seq(location.entryName, project, sampleAlias, version.toString)
+  def apply(
+    location: Location,
+    project: String,
+    sampleAlias: String,
+    version: Int
+  ): WgsCramKey = new WgsCramKey(
+    location,
+    project,
+    sampleAlias,
+    version
+  )
 }
+
+class WgsCramKey(
+  override val location: Location,
+  override val project: String,
+  override val sampleAlias: String,
+  override val version: Int
+) extends CramKey(location, project, DataType.WGS, sampleAlias, version)

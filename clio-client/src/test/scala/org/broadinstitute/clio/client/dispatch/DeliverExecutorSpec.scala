@@ -5,12 +5,12 @@ import java.net.URI
 import akka.NotUsed
 import akka.stream.scaladsl.{Sink, Source}
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.commands.DeliverWgsCram
+import org.broadinstitute.clio.client.commands.DeliverCram
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.WgsCramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramMetadata}
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.transfer.model.CramIndex
+import org.broadinstitute.clio.transfer.model.wgscram.{CramKey, CramMetadata}
+import org.broadinstitute.clio.util.model.{DataType, Location}
 import org.scalamock.scalatest.AsyncMockFactory
 
 import scala.collection.immutable
@@ -18,22 +18,23 @@ import scala.collection.immutable
 class DeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   behavior of "DeliverExecutor"
 
-  private val theKey = WgsCramKey(
+  private val theKey = CramKey(
     location = Location.GCP,
     project = "project",
     sampleAlias = "sample",
-    version = 1
+    version = 1,
+    dataType = DataType.WGS
   )
 
   private val workspaceName = "workspace"
   private val workspacePath = URI.create("gs://workspacePath/")
 
-  private val command = DeliverWgsCram(theKey, workspaceName, workspacePath)
+  private val command = DeliverCram(theKey, workspaceName, workspacePath)
 
-  type Aux = ClioWebClient.UpsertAux[WgsCramKey, WgsCramMetadata]
+  type Aux = ClioWebClient.UpsertAux[CramKey, CramMetadata]
 
   private def testDeliver(
-    metadata: WgsCramMetadata = WgsCramMetadata(),
+    metadata: CramMetadata = CramMetadata(),
     force: Boolean = false
   ) = {
     val ioUtil = mock[IoUtil]
@@ -41,8 +42,8 @@ class DeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
     // Type annotations needed for scalamockery.
     (webClient
-      .getMetadataForKey(_: Aux)(_: WgsCramKey, _: Boolean))
-      .expects(WgsCramIndex, theKey, false)
+      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
+      .expects(CramIndex, theKey, false)
       .returning(Source.single(metadata))
 
     (ioUtil.isGoogleDirectory _).expects(workspacePath).returning(true)
@@ -50,9 +51,9 @@ class DeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val executor =
       new DeliverExecutor(command.copy(force = force)) {
         override protected def buildDelivery(
-          metadata: WgsCramMetadata,
+          metadata: CramMetadata,
           moveOps: immutable.Seq[MoveExecutor.IoOp]
-        ): Source[(WgsCramMetadata, immutable.Seq[MoveExecutor.IoOp]), NotUsed] =
+        ): Source[(CramMetadata, immutable.Seq[MoveExecutor.IoOp]), NotUsed] =
           Source.single(metadata -> moveOps)
       }
     executor.checkPreconditions(ioUtil, webClient).runWith(Sink.head).map { m =>
@@ -62,7 +63,7 @@ class DeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   it should "not allow a delivery if a record has already been delivered" in {
     recoverToExceptionIf[Exception] {
-      testDeliver(WgsCramMetadata(workspaceName = Option("existing workspace")))
+      testDeliver(CramMetadata(workspaceName = Option("existing workspace")))
     }.map {
       _.getMessage should include("has already been delivered")
     }
@@ -70,7 +71,7 @@ class DeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   it should "using --force, allow a delivery if a record has already been delivered" in {
     testDeliver(
-      WgsCramMetadata(workspaceName = Option("existing workspace")),
+      CramMetadata(workspaceName = Option("existing workspace")),
       force = true
     )
   }

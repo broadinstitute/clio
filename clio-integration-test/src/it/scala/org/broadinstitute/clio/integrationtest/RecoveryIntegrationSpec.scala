@@ -14,8 +14,8 @@ import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
-import org.broadinstitute.clio.transfer.model.wgscram.{WgsCramKey, WgsCramMetadata}
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.transfer.model.wgscram.{CramKey, CramMetadata}
+import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location, UpsertId}
 import org.scalatest.OptionValues
 
 /** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
@@ -66,7 +66,8 @@ class RecoveryIntegrationSpec
       location = location,
       project = project,
       sampleAlias = sampleAlias,
-      version = i
+      version = i,
+      dataType = DataType.WGS
     )
     val metadata = GvcfMetadata(
       gvcfPath = Some(randomUri(i)),
@@ -78,17 +79,18 @@ class RecoveryIntegrationSpec
   private val updatedGvcfs = initGvcfs.map(updateDoc(_, "gvcf_path"))
 
   private val cramMapper =
-    ElasticsearchDocumentMapper[WgsCramKey, WgsCramMetadata]
+    ElasticsearchDocumentMapper[CramKey, CramMetadata]
   private val initCrams = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
-    val key = WgsCramKey(
+    val key = CramKey(
       location = location,
       project = project,
       sampleAlias = sampleAlias,
-      version = i
+      version = i,
+      dataType = DataType.WGS
     )
-    val metadata = WgsCramMetadata(
+    val metadata = CramMetadata(
       cramPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     )
@@ -124,7 +126,7 @@ class RecoveryIntegrationSpec
     Map(
       ElasticsearchIndex.Ubam -> (initUbams ++ updatedUbams),
       ElasticsearchIndex.Gvcf -> (initGvcfs ++ updatedGvcfs),
-      ElasticsearchIndex.WgsCram -> (initCrams ++ updatedCrams),
+      ElasticsearchIndex.Cram -> (initCrams ++ updatedCrams),
       ElasticsearchIndex.Arrays -> (initArrays ++ updatedArrays)
     )
   )
@@ -195,11 +197,11 @@ class RecoveryIntegrationSpec
     ),
     ("gvcf", ClioCommand.queryGvcfName, "version", updatedGvcfs, ElasticsearchIndex.Gvcf),
     (
-      "wgs-cram",
-      ClioCommand.queryWgsCramName,
+      "cram",
+      ClioCommand.queryCramName,
       "version",
       updatedCrams,
-      ElasticsearchIndex.WgsCram
+      ElasticsearchIndex.Cram
     ),
     (
       "arrays",
@@ -252,7 +254,7 @@ class RecoveryIntegrationSpec
         // Already sorted by construction. Remove null and internal values here too.
         val sortedExpected: Seq[Json] = expected
           .map(mapper)
-          .map(_.deepMerge(elasticsearchIndex.defaults))
+          .map(elasticsearchIndex.defaults.deepMerge)
 
         sortedActual should contain theSameElementsInOrderAs sortedExpected
       }

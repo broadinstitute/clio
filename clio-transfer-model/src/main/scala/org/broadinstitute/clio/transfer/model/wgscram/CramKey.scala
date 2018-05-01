@@ -1,9 +1,9 @@
-package org.broadinstitute.clio.transfer.model.gvcf
+package org.broadinstitute.clio.transfer.model.wgscram
 
 import org.broadinstitute.clio.transfer.model.IndexKey
 import org.broadinstitute.clio.util.model.{DataType, Location}
 
-case class GvcfKey(
+case class CramKey(
   location: Location,
   project: String,
   dataType: DataType,

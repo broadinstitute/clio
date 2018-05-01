@@ -118,7 +118,7 @@ class ServerService private[server] (
     val indexes = immutable.Seq(
       ElasticsearchIndex.Ubam,
       ElasticsearchIndex.Gvcf,
-      ElasticsearchIndex.WgsCram,
+      ElasticsearchIndex.Cram,
       ElasticsearchIndex.Arrays
     )
 
