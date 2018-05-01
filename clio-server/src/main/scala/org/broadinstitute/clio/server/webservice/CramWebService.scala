@@ -14,9 +14,9 @@ class CramWebService(cramService: IndexService[BackCompatibleCramIndex])
     for {
       location <- pathPrefix(Location.namesToValuesMap)
       project <- pathPrefix(Segment)
+      dataType <- pathPrefix(DataType.namesToValuesMap)
       sampleAlias <- pathPrefix(Segment)
       version <- pathPrefix(IntNumber)
-      dataType <- pathPrefix(DataType.namesToValuesMap)
     } yield
       CramKey(
         location,
