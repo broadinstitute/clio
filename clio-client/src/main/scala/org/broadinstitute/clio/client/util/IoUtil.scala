@@ -119,7 +119,7 @@ class IoUtil(storage: Storage) {
       )
       .iterateAll()
       .asScala
-      .map(b => URI.create(s"$GoogleCloudStorageScheme://${b.getBucket}/${b.getName}"))
+      .map(b => URI.create(s"$GoogleCloudPathPrefix${b.getBucket}/${b.getName}"))
       .toList
   }
 }
@@ -127,7 +127,7 @@ class IoUtil(storage: Storage) {
 object IoUtil {
 
   private val GoogleCloudStorageScheme = "gs"
-  private val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "//"
+  private val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "://"
   private val GoogleCloudPathSeparator = "/"
 
   def apply(credentials: ClioCredentials): IoUtil = {
@@ -141,7 +141,7 @@ object IoUtil {
   }
 
   def toBlobId(path: URI): BlobId = {
-    val noPrefix = path.toString.substring(GoogleCloudPathPrefix.length + 1)
+    val noPrefix = path.toString.substring(GoogleCloudPathPrefix.length)
     val firstSeparator = noPrefix.indexOf(GoogleCloudPathSeparator)
     // Get the bucket and the object name (aka path) from the gcs path.
     BlobId.of(
