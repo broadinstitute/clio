@@ -68,7 +68,10 @@ class ElasticsearchIndex[+CI <: ClioIndex](
             s.asString
           case a if a.isArray || a.isObject =>
             throw new RuntimeException(
-              s"Found '$a' for key $key in index $indexName. Arrays and objects cannot be used as ID fields"
+              s"""Found '$a' for key $key
+                 |with upsertId ${ElasticsearchIndex.getUpsertId(json)}
+                 |in index $indexName.
+                 |Arrays and objects cannot be used as ID fields""".stripMargin
             )
           case j => Some(j.toString())
         }
@@ -138,6 +141,8 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       indexName = "gvcf-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
+      // Type-widening is needed here because `asJson` tries to jsonify the narrowest type possible.
+      // This results in an empty object instead if the correct string value.
       Json.obj(dataTypeKey -> (DataType.WGS: DataType).asJson)
     )
 
@@ -148,6 +153,8 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       "wgs-cram-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
+      // Type-widening is needed here because `asJson` tries to jsonify the narrowest type possible.
+      // This results in an empty object instead if the correct string value.
       Json.obj(dataTypeKey -> (DataType.WGS: DataType).asJson)
     )
 

@@ -77,8 +77,9 @@ class RecoveryIntegrationSpec
       gvcfMapper
         .document(key, metadata)
         .mapObject(_.remove("data_type"))
-    } else
+    } else {
       gvcfMapper.document(key, metadata)
+    }
   }
 
   private val updatedGvcfs = initGvcfs.map(updateDoc(_, "gvcf_path"))
@@ -103,8 +104,9 @@ class RecoveryIntegrationSpec
       cramMapper
         .document(key, metadata)
         .mapObject(_.remove("data_type"))
-    } else
+    } else {
       cramMapper.document(key, metadata)
+    }
   }
 
   private val updatedCrams = initCrams.map(updateDoc(_, "cram_path"))
