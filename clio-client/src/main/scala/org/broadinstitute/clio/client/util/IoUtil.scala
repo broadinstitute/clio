@@ -110,7 +110,7 @@ class IoUtil(storage: Storage) {
   }
 
   def listGoogleObjects(path: URI): Seq[URI] = {
-    val blobId = requireBlob(path)
+    val blobId = IoUtil.toBlobId(path)
     storage
       .list(
         blobId.getBucket,
