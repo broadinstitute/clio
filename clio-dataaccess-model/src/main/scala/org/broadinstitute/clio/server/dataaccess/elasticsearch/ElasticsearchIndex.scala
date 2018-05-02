@@ -138,7 +138,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       indexName = "gvcf-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
-      Json.obj(dataTypeKey -> DataType.WGS.asJson)
+      Json.obj(dataTypeKey -> (DataType.WGS: DataType).asJson)
     )
 
   val Cram: ElasticsearchIndex[CramIndex.type] =
@@ -148,7 +148,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       "wgs-cram-v2",
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
-      Json.obj(dataTypeKey -> DataType.WGS.asJson)
+      Json.obj(dataTypeKey -> (DataType.WGS: DataType).asJson)
     )
 
   val Arrays: ElasticsearchIndex[ArraysIndex.type] =
