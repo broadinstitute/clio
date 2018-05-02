@@ -109,7 +109,7 @@ class IoUtil(storage: Storage) {
     getBlob(path).exists(_.exists())
   }
 
-  def listGoogleObjects(path: URI): Seq[String] = {
+  def listGoogleObjects(path: URI): Seq[URI] = {
     val blobId = IoUtil.toBlobId(path)
     storage
       .list(
@@ -119,7 +119,7 @@ class IoUtil(storage: Storage) {
       )
       .iterateAll()
       .asScala
-      .map(b => s"$GoogleCloudStorageScheme://${b.getBucket}/${b.getName}")
+      .map(b => URI.create(s"$GoogleCloudStorageScheme://${b.getBucket}/${b.getName}"))
       .toList
   }
 }

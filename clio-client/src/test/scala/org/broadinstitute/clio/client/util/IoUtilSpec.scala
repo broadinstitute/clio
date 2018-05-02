@@ -139,7 +139,7 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
   it should "list all children of objects" in {
     val source = URI.create("gs://bucket/path/data")
     val source2 = URI.create("gs://bucket/path/data2")
-    val expected = Seq(source.toString, source2.toString)
+    val expected = Seq(source, source2)
     val contents = "my data"
     val storage = createStorage
     storage.create(uriToBlobInfo(source), contents.getBytes)
