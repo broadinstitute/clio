@@ -8,10 +8,12 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import better.files._
 import cats.syntax.either._
+import com.google.cloud.storage.Storage.BlobListOption
 import com.google.cloud.storage.{Blob, BlobId, BlobInfo, Storage, StorageOptions}
 import org.broadinstitute.clio.util.auth.ClioCredentials
 
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -105,6 +107,20 @@ class IoUtil(storage: Storage) {
 
   def googleObjectExists(path: URI): Boolean = {
     getBlob(path).exists(_.exists())
+  }
+
+  def listGoogleObjects(path: URI): Seq[String] = {
+    val blobId = IoUtil.toBlobId(path)
+    storage
+      .list(
+        blobId.getBucket,
+        BlobListOption.currentDirectory(),
+        BlobListOption.prefix(blobId.getName)
+      )
+      .iterateAll()
+      .asScala
+      .map(b => s"$GoogleCloudStorageScheme://${b.getBucket}/${b.getName}")
+      .toList
   }
 }
 
