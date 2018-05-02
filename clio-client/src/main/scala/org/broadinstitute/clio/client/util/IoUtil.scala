@@ -8,10 +8,12 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import better.files._
 import cats.syntax.either._
+import com.google.cloud.storage.Storage.BlobListOption
 import com.google.cloud.storage.{Blob, BlobId, BlobInfo, Storage, StorageOptions}
 import org.broadinstitute.clio.util.auth.ClioCredentials
 
 import scala.collection.immutable
+import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -106,12 +108,26 @@ class IoUtil(storage: Storage) {
   def googleObjectExists(path: URI): Boolean = {
     getBlob(path).exists(_.exists())
   }
+
+  def listGoogleObjects(path: URI): Seq[URI] = {
+    val blobId = IoUtil.toBlobId(path)
+    storage
+      .list(
+        blobId.getBucket,
+        BlobListOption.currentDirectory(),
+        BlobListOption.prefix(blobId.getName)
+      )
+      .iterateAll()
+      .asScala
+      .map(b => URI.create(s"$GoogleCloudPathPrefix${b.getBucket}/${b.getName}"))
+      .toList
+  }
 }
 
 object IoUtil {
 
   private val GoogleCloudStorageScheme = "gs"
-  private val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "//"
+  private val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "://"
   private val GoogleCloudPathSeparator = "/"
 
   def apply(credentials: ClioCredentials): IoUtil = {
@@ -125,7 +141,7 @@ object IoUtil {
   }
 
   def toBlobId(path: URI): BlobId = {
-    val noPrefix = path.toString.substring(GoogleCloudPathPrefix.length + 1)
+    val noPrefix = path.toString.substring(GoogleCloudPathPrefix.length)
     val firstSeparator = noPrefix.indexOf(GoogleCloudPathSeparator)
     // Get the bucket and the object name (aka path) from the gcs path.
     BlobId.of(

@@ -135,4 +135,19 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
 
     storage.readAllBytes(IoUtil.toBlobId(destination)) should be(contents.getBytes)
   }
+
+  it should "list all children of objects" in {
+    val source = URI.create("gs://bucket/path/data")
+    val source2 = URI.create("gs://bucket/path/data2")
+    val expected = Seq(source, source2)
+    val contents = "my data"
+    val storage = createStorage
+    storage.create(uriToBlobInfo(source), contents.getBytes)
+    storage.create(uriToBlobInfo(source2), contents.getBytes)
+
+    val ioUtil = new IoUtil(storage)
+
+    ioUtil.listGoogleObjects(URI.create("gs://bucket/path/")) should contain theSameElementsAs expected
+
+  }
 }
