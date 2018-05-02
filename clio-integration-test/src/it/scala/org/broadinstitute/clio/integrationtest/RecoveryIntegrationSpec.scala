@@ -73,7 +73,13 @@ class RecoveryIntegrationSpec
       gvcfPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     )
-    gvcfMapper.document(key, metadata)
+    if (i < (documentCount / 2)) {
+      gvcfMapper
+        .document(key, metadata)
+        .mapObject(_.remove("data_type"))
+    } else {
+      gvcfMapper.document(key, metadata)
+    }
   }
 
   private val updatedGvcfs = initGvcfs.map(updateDoc(_, "gvcf_path"))
@@ -94,7 +100,13 @@ class RecoveryIntegrationSpec
       cramPath = Some(randomUri(i)),
       documentStatus = Some(DocumentStatus.Normal)
     )
-    cramMapper.document(key, metadata)
+    if (i < (documentCount / 2)) {
+      cramMapper
+        .document(key, metadata)
+        .mapObject(_.remove("data_type"))
+    } else {
+      cramMapper.document(key, metadata)
+    }
   }
 
   private val updatedCrams = initCrams.map(updateDoc(_, "cram_path"))
