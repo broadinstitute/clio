@@ -67,7 +67,9 @@ class ElasticsearchIndex[+CI <: ClioIndex](
           case s if s.isString =>
             s.asString
           case a if a.isArray || a.isObject =>
-            throw new RuntimeException("Arrays and objects cannot be used as ID fields")
+            throw new RuntimeException(
+              s"Found '$a' for key $key in index $indexName. Arrays and objects cannot be used as ID fields"
+            )
           case j => Some(j.toString())
         }
         .getOrElse(throw new RuntimeException(s"Could not get $key from json"))
