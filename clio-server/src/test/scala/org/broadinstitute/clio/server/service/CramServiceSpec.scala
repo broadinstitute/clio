@@ -2,15 +2,22 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 
-import com.sksamuel.elastic4s.searches.queries.{BoolQueryDefinition, QueryStringQueryDefinition}
+import com.sksamuel.elastic4s.searches.queries.{
+  BoolQueryDefinition,
+  QueryStringQueryDefinition
+}
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.CramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.{CramExtensions, CramKey, CramMetadata, CramQueryInput}
+import org.broadinstitute.clio.transfer.model.wgscram.{
+  CramExtensions,
+  CramKey,
+  CramMetadata,
+  CramQueryInput
+}
 import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location}
 
-class CramServiceSpec
-    extends IndexServiceSpec[CramIndex.type]("WgsCramService") {
+class CramServiceSpec extends IndexServiceSpec[CramIndex.type]("WgsCramService") {
 
   val elasticsearchIndex: ElasticsearchIndex[CramIndex.type] =
     ElasticsearchIndex.Cram
