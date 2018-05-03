@@ -194,32 +194,32 @@ final case class AddWgsCram(
   @Recurse key: WgsCramKey,
   metadataLocation: URI,
   force: Boolean = false
-) extends AddCommand(WgsCramIndex)
+) extends AddCommand(CramIndex)
 
 @CommandName(ClioCommand.queryWgsCramName)
 final case class QueryWgsCram(
   @Recurse queryInput: CramQueryInput,
   includeDeleted: Boolean = false
-) extends SimpleQueryCommand(WgsCramIndex)
+) extends SimpleQueryCommand(CramIndex)
 
 @CommandName(ClioCommand.rawQueryWgsCramName)
 final case class RawQueryWgsCram(
   queryInputPath: File
-) extends RawQueryCommand(WgsCramIndex)
+) extends RawQueryCommand(CramIndex)
 
 @CommandName(ClioCommand.moveWgsCramName)
 final case class MoveWgsCram(
   @Recurse key: WgsCramKey,
   destination: URI,
   newBasename: Option[String] = None
-) extends MoveCommand(WgsCramIndex)
+) extends MoveCommand(CramIndex)
 
 @CommandName(ClioCommand.deleteWgsCramName)
 final case class DeleteWgsCram(
   @Recurse key: WgsCramKey,
   note: String,
   force: Boolean = false
-) extends DeleteCommand(WgsCramIndex)
+) extends DeleteCommand(CramIndex)
 
 @CommandName(ClioCommand.deliverWgsCramName)
 final case class DeliverWgsCram(
@@ -336,12 +336,13 @@ object ClioCommand extends ClioParsers {
 
   // Names for WGS cram commands. Here for compatibility.
   //TODO Delete these when WgsCram API is no longer used.
-  val addWgsCramName: String = addPrefix + WgsCramIndex.commandName
-  val queryWgsCramName: String = simpleQueryPrefix + WgsCramIndex.commandName
-  val rawQueryWgsCramName: String = rawQueryPrefix + WgsCramIndex.commandName
-  val moveWgsCramName: String = movePrefix + WgsCramIndex.commandName
-  val deleteWgsCramName: String = deletePrefix + WgsCramIndex.commandName
-  val deliverWgsCramName: String = deliverPrefix + WgsCramIndex.commandName
+  val wgsCramPrefix = "wgs-"
+  val addWgsCramName: String = addPrefix + wgsCramPrefix + CramIndex.commandName
+  val queryWgsCramName: String = simpleQueryPrefix + wgsCramPrefix + CramIndex.commandName
+  val rawQueryWgsCramName: String = rawQueryPrefix + wgsCramPrefix + CramIndex.commandName
+  val moveWgsCramName: String = movePrefix + wgsCramPrefix + CramIndex.commandName
+  val deleteWgsCramName: String = deletePrefix + wgsCramPrefix + CramIndex.commandName
+  val deliverWgsCramName: String = deliverPrefix + wgsCramPrefix + CramIndex.commandName
 
   // Names for cram commands.
   val addCramName: String = addPrefix + CramIndex.commandName
