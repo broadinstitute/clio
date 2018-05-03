@@ -15,7 +15,7 @@ class UbamWebService(ubamService: IndexService[BackCompatibleUbamIndex])
       location <- pathPrefix(Location.namesToValuesMap)
       flowcellBarcode <- pathPrefix(Segment)
       lane <- pathPrefix(IntNumber)
-      libraryName <- pathPrefix(Segment)
+      libraryName <- path(Segment)
     } yield UbamKey(location, flowcellBarcode, lane, libraryName)
   }
 }

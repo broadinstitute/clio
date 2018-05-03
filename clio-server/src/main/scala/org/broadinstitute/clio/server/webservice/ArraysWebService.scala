@@ -14,7 +14,7 @@ class ArraysWebService(arraysService: IndexService[ArraysIndex.type])
     for {
       location <- pathPrefix(Location.namesToValuesMap)
       chipwellBarcode <- pathPrefix(Segment)
-      version <- pathPrefix(IntNumber)
+      version <- path(IntNumber)
     } yield
       ArraysKey(
         location,
