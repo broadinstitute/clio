@@ -5,16 +5,13 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import org.broadinstitute.clio.transfer.model.QueryInput
-import org.broadinstitute.clio.util.model.{
-  DocumentStatus,
-  Location,
-  RegulatoryDesignation
-}
+import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location, RegulatoryDesignation}
 
 case class CramQueryInput(
   documentStatus: Option[DocumentStatus] = None,
   location: Option[Location] = None,
   project: Option[String] = None,
+  dataType: Option[DataType] = None,
   sampleAlias: Option[String] = None,
   version: Option[Int] = None,
   pipelineVersion: Option[Symbol] = None,
