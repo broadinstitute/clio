@@ -34,6 +34,8 @@ trait CramTests { self: BaseIntegrationSpec =>
         key.location.entryName,
         "--project",
         key.project,
+        "--data-type",
+        key.dataType.entryName,
         "--sample-alias",
         key.sampleAlias,
         "--version",
@@ -45,7 +47,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     )
   }
 
-  it should "create the expected wgs-cram mapping in elasticsearch" in {
+  it should "create the expected cram mapping in elasticsearch" in {
     import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
 
@@ -68,7 +70,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     * @see http://www.scalatest.org/user_guide/sharing_tests
     */
   def testCramLocation(location: Location): Unit = {
-    it should s"handle upserts and queries for wgs-cram location $location" in {
+    it should s"handle upserts and queries for cram location $location" in {
       val key = CramKey(
         location = location,
         project = "test project",
@@ -99,7 +101,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "assign different upsertIds to different wgs-cram upserts" in {
+  it should "assign different upsertIds to different cram upserts" in {
     val upsertKey = CramKey(
       location = Location.GCP,
       project = s"project$randomId",
@@ -147,7 +149,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "assign different upsertIds to equal wgs-cram upserts" in {
+  it should "assign different upsertIds to equal cram upserts" in {
     val upsertKey = CramKey(
       location = Location.GCP,
       project = s"project$randomId",
@@ -173,7 +175,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "handle querying wgs-crams by sample and project" in {
+  it should "handle querying crams by sample and project" in {
     val location = Location.GCP
     val project = "testProject" + randomId
 
@@ -260,7 +262,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "handle updates to wgs-cram metadata" in {
+  it should "handle updates to cram metadata" in {
     val project = s"testProject$randomId"
     val key = CramKey(Location.GCP, project, DataType.WGS, s"testSample$randomId", 1)
     val cramPath = URI.create(s"gs://path/cram${CramExtensions.CramExtension}")
@@ -316,7 +318,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "show deleted wgs-cram records on queryAll, but not query" in {
+  it should "show deleted cram records on queryAll, but not query" in {
     val project = "testProject" + randomId
     val sampleAlias = "sample688." + randomId
 
@@ -460,6 +462,8 @@ trait CramTests { self: BaseIntegrationSpec =>
         Location.GCP.entryName,
         "--project",
         project,
+        "--data-type",
+        DataType.WGS.entryName,
         "--sample-alias",
         sample,
         "--version",
@@ -526,7 +530,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     changeBasename = true
   )
 
-  it should "not move wgs-crams without a destination" in {
+  it should "not move crams without a destination" in {
     recoverToExceptionIf[Exception] {
       runDecode[UpsertId](
         ClioCommand.moveCramName,
@@ -534,6 +538,8 @@ trait CramTests { self: BaseIntegrationSpec =>
         Location.GCP.entryName,
         "--project",
         randomId,
+        "--data-type",
+        DataType.WGS.entryName,
         "--sample-alias",
         randomId,
         "--version",
@@ -544,7 +550,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "not move wgs-crams with no registered files" in {
+  it should "not move crams with no registered files" in {
     val key = CramKey(
       Location.GCP,
       s"project$randomId",
@@ -560,6 +566,8 @@ trait CramTests { self: BaseIntegrationSpec =>
           key.location.entryName,
           "--project",
           key.project,
+          "--data-type",
+          DataType.WGS.entryName,
           "--sample-alias",
           key.sampleAlias,
           "--version",
@@ -627,6 +635,8 @@ trait CramTests { self: BaseIntegrationSpec =>
           Location.GCP.entryName,
           "--project",
           project,
+          "--data-type",
+          DataType.WGS.entryName,
           "--sample-alias",
           sample,
           "--version",
@@ -642,6 +652,8 @@ trait CramTests { self: BaseIntegrationSpec =>
         Location.GCP.entryName,
         "--project",
         project,
+        "--data-type",
+        DataType.WGS.entryName,
         "--sample-alias",
         sample,
         "--version",
@@ -680,11 +692,11 @@ trait CramTests { self: BaseIntegrationSpec =>
 
   it should "delete crams in GCP along with their crais, but not their metrics" in testDeleteCram()
 
-  it should "preserve existing notes when deleting wgs-crams" in testDeleteCram(
+  it should "preserve existing notes when deleting crams" in testDeleteCram(
     existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
   )
 
-  it should "not delete wgs-crams without a note" in {
+  it should "not delete crams without a note" in {
     recoverToExceptionIf[Exception] {
       runDecode[UpsertId](
         ClioCommand.deleteCramName,
@@ -692,6 +704,8 @@ trait CramTests { self: BaseIntegrationSpec =>
         Location.GCP.entryName,
         "--project",
         randomId,
+        "--data-type",
+        DataType.WGS.entryName,
         "--sample-alias",
         randomId,
         "--version",
@@ -765,6 +779,8 @@ trait CramTests { self: BaseIntegrationSpec =>
         Location.GCP.entryName,
         "--project",
         project,
+        "--data-type",
+        DataType.WGS.entryName,
         "--sample-alias",
         sample,
         "--version",
@@ -858,6 +874,8 @@ trait CramTests { self: BaseIntegrationSpec =>
         Location.GCP.entryName,
         "--project",
         project,
+        "--data-type",
+        DataType.WGS.entryName,
         "--sample-alias",
         sample,
         "--version",
@@ -989,6 +1007,8 @@ trait CramTests { self: BaseIntegrationSpec =>
         Location.GCP.entryName,
         "--project",
         project,
+        "--data-type",
+        DataType.WGS.entryName,
         "--sample-alias",
         sample,
         "--version",
@@ -1075,6 +1095,8 @@ trait CramTests { self: BaseIntegrationSpec =>
           Location.GCP.entryName,
           "--project",
           project,
+          "--data-type",
+          DataType.WGS.entryName,
           "--sample-alias",
           sample,
           "--version",
