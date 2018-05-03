@@ -796,7 +796,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       }
 
       outputs should contain only expectedMerge(
-        key,
+        key: CramKey,
         metadata.copy(
           workspaceName = Some(workspaceName),
           cramPath = Some(cramDestination.uri),
@@ -885,7 +885,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       }
 
       outputs should contain only expectedMerge(
-        key,
+        key: CramKey,
         metadata.copy(workspaceName = Some(workspaceName))
       )
     }
@@ -1018,7 +1018,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       }
 
       outputs should contain only expectedMerge(
-        key,
+        key: CramKey,
         metadata.copy(
           workspaceName = Some(workspaceName),
           cramPath = Some(cramDestination.uri),
