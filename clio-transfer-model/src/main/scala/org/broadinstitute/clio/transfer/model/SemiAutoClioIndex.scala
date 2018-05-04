@@ -77,23 +77,15 @@ case object UbamIndex extends BackCompatibleUbamIndex {
   override val commandName: String = "ubam"
 }
 
-// Temporary trait to remain until WgsCram fully phased out
-trait BackCompatibleCramIndex
+case object CramIndex
     extends SemiAutoClioIndex[
       CramKey,
       CramMetadata,
       CramQueryInput
-    ] {
-  override val name: String = "Cram"
-}
-
-case object WgsCramIndex extends BackCompatibleCramIndex with DeliverableIndex {
-  override val urlSegment: String = "wgscram"
-  override val commandName: String = "wgs-cram"
-}
-
-case object CramIndex extends BackCompatibleCramIndex with DeliverableIndex {
+    ]
+    with DeliverableIndex {
   override val urlSegment: String = "cram"
+  override val name: String = "Cram"
   override val commandName: String = "cram"
 }
 
