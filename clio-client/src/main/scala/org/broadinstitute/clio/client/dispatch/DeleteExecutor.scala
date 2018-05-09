@@ -139,7 +139,7 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
 
     val paths = metadata.pathsToDelete.to[immutable.Iterable]
     Source[URI](paths)
-      .mapAsyncUnordered(paths.size) { path =>
+      .mapAsync(paths.size) { path =>
         Future(path -> ioUtil.googleObjectExists(path))
       }
       .fold(Right(immutable.Seq.empty[URI]): Either[Seq[Throwable], immutable.Seq[URI]]) {
