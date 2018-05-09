@@ -38,8 +38,16 @@ services:
 volumes:
   esdata1:
     driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=4g,uid=100
   esdata2:
     driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=4g,uid=100
 
 networks:
   clio-network:
