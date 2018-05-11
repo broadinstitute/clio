@@ -35,6 +35,8 @@ trait ClioIndex {
 
   val keyEncoder: ObjectEncoder[KeyType]
 
+  val keyDecoder: Decoder[KeyType]
+
   val metadataDecoder: Decoder[MetadataType]
 
   val metadataEncoder: Encoder[MetadataType]
@@ -62,6 +64,7 @@ trait ClioIndex {
     implicit val mt: ClassTag[MetadataType] = metadataTag
     implicit val qit: ClassTag[QueryInputType] = queryInputTag
     implicit val ke: ObjectEncoder[KeyType] = keyEncoder
+    implicit val kd: Decoder[KeyType] = keyDecoder
     implicit val md: Decoder[MetadataType] = metadataDecoder
     implicit val me: Encoder[MetadataType] = metadataEncoder
     implicit val qie: Encoder[QueryInputType] = queryInputEncoder
