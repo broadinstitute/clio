@@ -53,12 +53,21 @@ object Docker {
       label("CLIO_VERSION", version.value)
       add(artifact, artifactTargetPath)
       expose(8080, 31757)
+
       /*
        * We need to use `entryPointShell` here to allow the environment variable to be substituted.
        * By default, using the shell form of ENTRYPOINT prevents signals from reaching the docker container.
        * Prepending `exec` fixes the problem.
        */
-      entryPointShell("exec", "java", "$JAVA_OPTS", "-jar", artifactTargetPath)
+      entryPointShell(
+        "umask",
+        "$UMASK;",
+        "exec",
+        "java",
+        "$JAVA_OPTS",
+        "-jar",
+        artifactTargetPath
+      )
     }
   }
 

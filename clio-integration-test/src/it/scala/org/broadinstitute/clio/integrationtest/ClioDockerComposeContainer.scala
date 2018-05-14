@@ -69,7 +69,8 @@ class ClioDockerComposeContainer(
       ClioDockerComposeContainer.logDirVariable -> ClioBuildInfo.logDir,
       ClioDockerComposeContainer.clioLogFileVariable -> ClioDockerComposeContainer.clioLog.toString,
       ClioDockerComposeContainer.persistenceDirVariable -> ClioBuildInfo.persistenceDir,
-      ClioDockerComposeContainer.timezoneVariable -> TimeZone.getDefault.getID
+      ClioDockerComposeContainer.timezoneVariable -> TimeZone.getDefault.getID,
+      ClioDockerComposeContainer.umask -> "0000"
     ).asJava
   )
 
@@ -85,7 +86,8 @@ class ClioDockerComposeContainer(
     val rootPersistenceDir = File(ClioBuildInfo.persistenceDir)
 
     Seq(File(ClioBuildInfo.logDir), rootPersistenceDir).foreach {
-      _.delete(swallowIOExceptions = true).createDirectories()
+      _.delete(swallowIOExceptions = true)
+        .createDirectories()
     }
 
     if (seededDocuments.nonEmpty) {
@@ -113,16 +115,19 @@ class ClioDockerComposeContainer(
                 earliest.plusDays(i.toLong / (documentCount.toLong / daySpread))
               )
 
-              val writeDir = (rootPersistenceDir / s"$dateDir/").createDirectories()
+              val writeDir = (rootPersistenceDir / s"$dateDir/")
+                .createDirectories()
               val upsertId = json.hcursor
                 .get[UpsertId](
                   ElasticsearchIndex.UpsertIdElasticsearchName
                 )
                 .fold(throw _, identity)
 
-              val _ = (writeDir / upsertId.persistenceFilename).write(
-                defaultPrinter.pretty(json)
-              )(Seq(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE))
+              val _ = (writeDir / upsertId.persistenceFilename)
+                .write(
+                  defaultPrinter.pretty(json)
+                )(Seq(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE))
+
             }
           }
       }
@@ -134,21 +139,8 @@ class ClioDockerComposeContainer(
         val _ = log.parent.createDirectories()
       }
       if (!log.exists) {
-        import java.nio.file.attribute.PosixFilePermission._
-
         val _ = log
           .createFile()
-          // Without these permissions, logback throws on startup, breaking our log monitoring.
-          .setPermissions(
-            Set(
-              OWNER_READ,
-              OWNER_WRITE,
-              GROUP_READ,
-              GROUP_WRITE,
-              OTHERS_READ,
-              OTHERS_WRITE
-            )
-          )
       }
     }
     super.starting()
@@ -234,6 +226,8 @@ object ClioDockerComposeContainer {
     * java processes, to prevent spurious failures from timezone mismatches.
     */
   val timezoneVariable = "TZ"
+
+  val umask = "UMASK"
 
   /** Log file to mount into the Clio container. */
   val clioLog: File = File(ClioBuildInfo.logDir, "clio-server", "clio-server.log")
