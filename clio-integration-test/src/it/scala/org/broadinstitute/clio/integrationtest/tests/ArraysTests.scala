@@ -5,9 +5,21 @@ import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchIndex, ElasticsearchUtil}
-import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysKey, ArraysMetadata}
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, RegulatoryDesignation, UpsertId}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
+  ElasticsearchIndex,
+  ElasticsearchUtil
+}
+import org.broadinstitute.clio.transfer.model.arrays.{
+  ArraysExtensions,
+  ArraysKey,
+  ArraysMetadata
+}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation,
+  UpsertId
+}
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
