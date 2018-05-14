@@ -5,16 +5,9 @@ import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchIndex,
-  ElasticsearchUtil
-}
-import org.broadinstitute.clio.transfer.model.arrays.{
-  ArraysExtensions,
-  ArraysKey,
-  ArraysMetadata
-}
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchIndex, ElasticsearchUtil}
+import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysKey, ArraysMetadata}
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location, RegulatoryDesignation, UpsertId}
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
@@ -355,6 +348,124 @@ trait ArraysTests { self: BaseIntegrationSpec =>
           if (resultKey == deleteKey) DocumentStatus.Deleted else DocumentStatus.Normal
         }
       }
+    }
+  }
+
+  it should "respect user-set regulatory designation for arrays" in {
+    val chipwellBarcode = s"barcode$randomId"
+    val regulatoryDesignation = RegulatoryDesignation.ClinicalDiagnostics
+    val upsertKey = ArraysKey(Location.GCP, Symbol(chipwellBarcode), 1)
+    val metadata = ArraysMetadata(
+      regulatoryDesignation = Some(regulatoryDesignation)
+    )
+
+    def query = {
+      for {
+        results <- runCollectJson(
+          ClioCommand.queryArraysName,
+          "--chipwell-barcode",
+          chipwellBarcode
+        )
+      } yield {
+        results should have length 1
+        results.head
+      }
+    }
+    for {
+      upsert <- runUpsertArrays(upsertKey, metadata)
+      queried <- query
+    } yield {
+      queried.unsafeGet[RegulatoryDesignation]("regulatory_designation") should be(
+        regulatoryDesignation
+      )
+    }
+  }
+
+  it should "not overwrite existing regulatory designation on arrays delivery" in {
+    val id = randomId
+    val chipwellBarcode = s"barcode$randomId"
+    val version = 1
+    val regulatoryDesignation = RegulatoryDesignation.ClinicalDiagnostics
+
+    val vcfContents = s"$id --- I am a dummy vcf --- $id"
+    val vcfIndexContents = s"$id --- I am a dummy vcfIndex --- $id"
+    val grnIdatContents = s"$id --- I am a dummy grn idat --- $id"
+    val redIdatContents = s"$id --- I am a dummy red idat --- $id"
+
+    val vcfName = s"$chipwellBarcode${ArraysExtensions.VcfGzExtension}"
+    val vcfIndexName = s"$chipwellBarcode${ArraysExtensions.VcfGzTbiExtension}"
+    val grnIdatName = s"grn-$id${ArraysExtensions.IdatExtension}"
+    val redIdatName = s"red-$id${ArraysExtensions.IdatExtension}"
+
+    val rootSource = rootTestStorageDir / s"arrays/$chipwellBarcode/v$version/"
+    val vcfSource = rootSource / vcfName
+    val vcfIndexSource = rootSource / vcfIndexName
+    val grnIdatSource = rootSource / grnIdatName
+    val redIdatSource = rootSource / redIdatName
+
+    val key = ArraysKey(Location.GCP, Symbol(chipwellBarcode), 1)
+    val metadata = ArraysMetadata(
+      vcfPath = Some(vcfSource.uri),
+      vcfIndexPath = Some(vcfIndexSource.uri),
+      grnIdatPath = Some(grnIdatSource.uri),
+      redIdatPath = Some(redIdatSource.uri),
+      regulatoryDesignation = Some(regulatoryDesignation),
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+
+    val workspaceName = s"$randomId-TestWorkspace-$randomId"
+
+    val _ = Seq(
+      (vcfSource, vcfContents),
+      (vcfIndexSource, vcfIndexContents),
+      (grnIdatSource, grnIdatContents),
+      (redIdatSource, redIdatContents)
+    ).map {
+      case (source, contents) => source.write(contents)
+    }
+    val result = for {
+      _ <- runUpsertArrays(key, metadata)
+      _ <- runIgnore(
+        ClioCommand.deliverArraysName,
+        "--location",
+        Location.GCP.entryName,
+        "--chipwell-barcode",
+        chipwellBarcode,
+        "--version",
+        version.toString,
+        "--workspace-name",
+        workspaceName,
+        "--workspace-path",
+        rootSource.uri.toString
+      )
+      outputs <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--workspace-name",
+        workspaceName
+      )
+    } yield {
+      Seq(vcfSource, vcfIndexSource).foreach(_ should exist)
+
+      Seq(
+        (vcfSource, vcfContents),
+        (vcfIndexSource, vcfIndexContents),
+        (grnIdatSource, grnIdatContents),
+        (redIdatSource, redIdatContents)
+      ).foreach {
+        case (destination, contents) =>
+          destination.contentAsString should be(contents)
+      }
+
+      outputs should contain only expectedMerge(
+        key,
+        metadata.copy(workspaceName = Some(workspaceName))
+      )
+    }
+
+    result.andThen {
+      case _ =>
+        val _ = Seq(vcfSource, vcfIndexSource)
+          .map(_.delete(swallowIOExceptions = true))
     }
   }
 
