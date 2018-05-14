@@ -20,7 +20,7 @@ import scala.concurrent.Future
 
 /** Tests of Clio's gvcf functionality. */
 trait GvcfTests { self: BaseIntegrationSpec =>
-  import ElasticsearchUtil.JsonOps
+  import org.broadinstitute.clio.JsonUtils.JsonOps
 
   def runUpsertGvcf(
     key: GvcfKey,
