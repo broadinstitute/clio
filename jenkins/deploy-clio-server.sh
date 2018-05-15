@@ -135,6 +135,9 @@ render_ctmpls() {
   env_map[POS_LOG_DIR]=${POS_LOG_DIR}
   env_map[DOCKER_TAG]=${docker_tag}
   env_map[CLIO_FQDN]=${clio_fqdn}
+  # Pull the most-significant digit from the clio node's ID,
+  # for building URIs to the nodes of the corresponding ES cluster.
+  env_map[CLUSTER_NUM]=$(echo ${clio_fqdn} | sed -E "s/clio([0-9]).*/\1/")
   # Location in the containers where configs will be mounted.
   env_map[CLIO_CONF_DIR]=/etc
   # Location in the Clio container where logs will be mounted.
