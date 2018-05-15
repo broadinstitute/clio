@@ -1250,11 +1250,15 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
         val storedDocument1 = patched1.headOption.getOrElse(fail)
         storedDocument1.unsafeGet[String]("chip_type") should be("patched_chip_type")
-        storedDocument1.unsafeGet[String]("sample_alias") should be("patched_sample_alias")
+        storedDocument1.unsafeGet[String]("sample_alias") should be(
+          "patched_sample_alias"
+        )
 
         val storedDocument2 = patched2.headOption.getOrElse(fail)
         storedDocument2.unsafeGet[String]("chip_type") should be("existing_chip_type")
-        storedDocument2.unsafeGet[String]("sample_alias") should be("patched_sample_alias")
+        storedDocument2.unsafeGet[String]("sample_alias") should be(
+          "patched_sample_alias"
+        )
       }
     }
     succeed
