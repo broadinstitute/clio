@@ -6,16 +6,18 @@ import better.files.File
 import cats.syntax.either._
 import io.circe.Json
 import io.circe.syntax._
-import org.broadinstitute.clio.client.commands.AmendCommand
+import org.broadinstitute.clio.client.commands.PatchCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.JsonUtils.JsonOps
 
-class AmendExecutor[CI <: ClioIndex](amendCommand: AmendCommand[CI]) extends Executor {
+class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Executor {
 
-  import amendCommand.index.implicits._
+  import patchCommand.index.implicits._
   import Executor.SourceMonadOps
+
+  private type DocumentKey = patchCommand.index.KeyType
 
   private val queryAllFile: File =
     File.newTemporaryFile().deleteOnExit().write(Json.obj().pretty(implicitly))
@@ -30,29 +32,20 @@ class AmendExecutor[CI <: ClioIndex](amendCommand: AmendCommand[CI]) extends Exe
     ioUtil: IoUtil
   ): Source[Json, NotUsed] = {
     // Read the metadata then turn into Json so that we fail fast.
-    val newMetadataSource =
-      Executor
-        .readMetadata(amendCommand.index)(amendCommand.metadataLocation, ioUtil)
-        .map(_.asJson.dropNulls)
-        .flatMap(Source.repeat)
-
-    // zip new metadatas with documents
-    newMetadataSource
+    Executor
+      .readMetadata(patchCommand.index)(patchCommand.metadataLocation, ioUtil)
+      .map(_.asJson.dropNulls)
+      .flatMap(Source.repeat)
+      // zip new metadatas with documents
       .zip(
         webClient
-          .jsonFileQuery(amendCommand.index)(queryAllFile)
+          .jsonFileQuery(patchCommand.index)(queryAllFile)
           .map(_.dropNulls)
       )
       // Munge metadata for documents
       .map {
         case (newMetadataJson, documentJson) =>
-          val oldMetadataJson = getMetadataJsonFromDocument(documentJson)
-          val indexKey = getKeyFromDocument(documentJson)
-          (
-            newMetadataJson.deepMerge(getMetadataJsonFromDocument(documentJson)),
-            oldMetadataJson,
-            indexKey
-          )
+          mungeMetadata(newMetadataJson, documentJson)
       }
       // filter out things that already have no new metadata to upsert
       .filterNot {
@@ -61,22 +54,58 @@ class AmendExecutor[CI <: ClioIndex](amendCommand: AmendCommand[CI]) extends Exe
       }
       // Upsert the stuff!
       .flatMapConcat {
-        case (mergedMetadataJson, oldMetadataJson, indexKey) =>
-          val oldMetadataKeys =
-            oldMetadataJson.asObject.map(_.keys.toSeq).getOrElse(Seq.empty)
-          val metadata = mergedMetadataJson
-            .mapObject(_.filterKeys(key => !oldMetadataKeys.contains(key)))
-            .as[amendCommand.index.MetadataType]
-            .valueOr(
-              ex =>
-                throw new IllegalArgumentException(
-                  "Could not encode new metadata json into class",
-                  ex
-              )
-            )
-          webClient.upsert(amendCommand.index)(indexKey, metadata, force = false)
-
+        case (mergedMetadataJson, oldMetadataJson, docKey) =>
+          upsertPatch(mergedMetadataJson, oldMetadataJson, docKey, webClient)
       }
+  }
+
+  /**
+    * Munge the patch metadata with the document metadata to get a new metadata json
+    * @param patchMetadataJson The new metadata to insert into the index
+    * @param documentJson The old document to insert the metadata into
+    * @return A tuple containing the munged metadata, the old metadata, and the key for this document
+    */
+  private def mungeMetadata(
+    patchMetadataJson: Json,
+    documentJson: Json
+  ): (Json, Json, DocumentKey) = {
+    val oldMetadataJson = getMetadataJsonFromDocument(documentJson)
+    val indexKey = getKeyFromDocument(documentJson)
+    (
+      patchMetadataJson.deepMerge(oldMetadataJson),
+      oldMetadataJson,
+      indexKey
+    )
+  }
+
+  /**
+    * Upsert the new metadata into the document.
+    * This method strips any existing keys out of the metadata to be upserted in order to reduce traffic.
+    * @param mergedMetadataJson The merged metadata containing patch and existing metadata
+    * @param oldMetadataJson The old, preexisting metadata
+    * @param docKey The key for this metadata
+    * @param webClient A ClioWebClient to upsert with.
+    * @return
+    */
+  private def upsertPatch(
+    mergedMetadataJson: Json,
+    oldMetadataJson: Json,
+    docKey: DocumentKey,
+    webClient: ClioWebClient
+  ): Source[Json, NotUsed] = {
+    val oldMetadataKeys =
+      oldMetadataJson.asObject.map(_.keys.toSeq).getOrElse(Seq.empty)
+    val patchMetadata = mergedMetadataJson
+      .mapObject(_.filterKeys(key => !oldMetadataKeys.contains(key)))
+      .as[patchCommand.index.MetadataType]
+      .valueOr(
+        ex =>
+          throw new IllegalArgumentException(
+            "Could not encode new metadata json into class",
+            ex
+        )
+      )
+    webClient.upsert(patchCommand.index)(docKey, patchMetadata, force = false)
   }
 
   /**
@@ -84,18 +113,18 @@ class AmendExecutor[CI <: ClioIndex](amendCommand: AmendCommand[CI]) extends Exe
     * @param json document of both key and metadata fields
     * @return An IndexKey that identifies the document
     */
-  private def getKeyFromDocument(json: Json): amendCommand.index.KeyType = {
+  private def getKeyFromDocument(json: Json): DocumentKey = {
     val keyJson =
       json.mapObject(
-        _.filterKeys(Executor.getJsonKeyFieldNames(amendCommand.index).contains)
+        _.filterKeys(Executor.getJsonKeyFieldNames(patchCommand.index).contains)
       )
 
     keyJson
-      .as[amendCommand.index.KeyType]
+      .as[DocumentKey]
       .valueOr(
         ex =>
           throw new IllegalArgumentException(
-            s"Could not create ${amendCommand.index.keyTag} from ${json.pretty(implicitly)}",
+            s"Could not create ${patchCommand.index.keyTag} from ${json.pretty(implicitly)}",
             ex
         )
       )
@@ -109,7 +138,7 @@ class AmendExecutor[CI <: ClioIndex](amendCommand: AmendCommand[CI]) extends Exe
   private def getMetadataJsonFromDocument(json: Json): Json = {
     json.mapObject(
       _.filterKeys(
-        key => !Executor.getJsonKeyFieldNames(amendCommand.index).contains(key)
+        key => !Executor.getJsonKeyFieldNames(patchCommand.index).contains(key)
       )
     )
   }

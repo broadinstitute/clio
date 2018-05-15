@@ -67,7 +67,7 @@ sealed abstract class DeliverCommand[+CI <: DeliverableIndex](override val index
   def force: Boolean
 }
 
-sealed abstract class AmendCommand[CI <: ClioIndex](val index: CI) extends ClioCommand {
+sealed abstract class PatchCommand[CI <: ClioIndex](val index: CI) extends ClioCommand {
   def metadataLocation: URI
 }
 
@@ -148,10 +148,10 @@ final case class DeleteGvcf(
   force: Boolean = false
 ) extends DeleteCommand(GvcfIndex)
 
-@CommandName(ClioCommand.amendGvcfName)
-final case class AmendGvcf(
+@CommandName(ClioCommand.patchGvcfName)
+final case class PatchGvcf(
   metadataLocation: URI
-) extends AmendCommand(GvcfIndex)
+) extends PatchCommand(GvcfIndex)
 
 // cram commands.
 
@@ -196,10 +196,10 @@ final case class DeliverCram(
   force: Boolean = false
 ) extends BackCompatibleDeliverCram
 
-@CommandName(ClioCommand.amendCramName)
-final case class AmendCram(
+@CommandName(ClioCommand.patchCramName)
+final case class PatchCram(
   metadataLocation: URI
-) extends AmendCommand(CramIndex)
+) extends PatchCommand(CramIndex)
 
 //TODO Get rid of these wgs-cram commands when they're no longer being used
 
@@ -278,10 +278,10 @@ final case class DeleteUbam(
   force: Boolean = false
 ) extends DeleteCommand(UbamIndex)
 
-@CommandName(ClioCommand.amendUbamName)
-final case class AmendUbam(
+@CommandName(ClioCommand.patchUbamName)
+final case class PatchUbam(
   metadataLocation: URI,
-) extends AmendCommand(UbamIndex)
+) extends PatchCommand(UbamIndex)
 
 // ARRAYS commands.
 
@@ -326,10 +326,10 @@ final case class DeliverArrays(
   force: Boolean = false
 ) extends DeliverCommand(ArraysIndex)
 
-@CommandName(ClioCommand.amendArraysName)
-final case class AmendArrays(
+@CommandName(ClioCommand.patchArraysName)
+final case class PatchArrays(
   metadataLocation: URI
-) extends AmendCommand(ArraysIndex)
+) extends PatchCommand(ArraysIndex)
 
 object ClioCommand extends ClioParsers {
 
@@ -343,7 +343,7 @@ object ClioCommand extends ClioParsers {
   val movePrefix = "move-"
   val deletePrefix = "delete-"
   val deliverPrefix = "deliver-"
-  val amendPrefix = "amend-"
+  val patchPrefix = "patch-"
 
   // Names for WGS uBAM commands.
   val addWgsUbamName: String = addPrefix + WgsUbamIndex.commandName
@@ -358,7 +358,7 @@ object ClioCommand extends ClioParsers {
   val rawQueryGvcfName: String = rawQueryPrefix + GvcfIndex.commandName
   val moveGvcfName: String = movePrefix + GvcfIndex.commandName
   val deleteGvcfName: String = deletePrefix + GvcfIndex.commandName
-  val amendGvcfName: String = amendPrefix + GvcfIndex.commandName
+  val patchGvcfName: String = patchPrefix + GvcfIndex.commandName
 
   // Names for WGS cram commands. Here for compatibility.
   //TODO Delete these when WgsCram API is no longer used.
@@ -377,7 +377,7 @@ object ClioCommand extends ClioParsers {
   val moveCramName: String = movePrefix + CramIndex.commandName
   val deleteCramName: String = deletePrefix + CramIndex.commandName
   val deliverCramName: String = deliverPrefix + CramIndex.commandName
-  val amendCramName: String = amendPrefix + CramIndex.commandName
+  val patchCramName: String = patchPrefix + CramIndex.commandName
 
   // Names for uBAM commands.
   val addUbamName: String = addPrefix + UbamIndex.commandName
@@ -385,7 +385,7 @@ object ClioCommand extends ClioParsers {
   val rawQueryUbamName: String = rawQueryPrefix + UbamIndex.commandName
   val moveUbamName: String = movePrefix + UbamIndex.commandName
   val deleteUbamName: String = deletePrefix + UbamIndex.commandName
-  val amendUbamName: String = amendPrefix + UbamIndex.commandName
+  val patchUbamName: String = patchPrefix + UbamIndex.commandName
 
   // Names for Arrays commands.
   val addArraysName: String = addPrefix + ArraysIndex.commandName
@@ -394,7 +394,7 @@ object ClioCommand extends ClioParsers {
   val moveArraysName: String = movePrefix + ArraysIndex.commandName
   val deleteArraysName: String = deletePrefix + ArraysIndex.commandName
   val deliverArraysName: String = deliverPrefix + ArraysIndex.commandName
-  val amendArraysName: String = amendPrefix + ArraysIndex.commandName
+  val patchArraysName: String = patchPrefix + ArraysIndex.commandName
 
   /** The caseapp parser to use for all Clio sub-commands. */
   val parser: CommandParser[ClioCommand] =

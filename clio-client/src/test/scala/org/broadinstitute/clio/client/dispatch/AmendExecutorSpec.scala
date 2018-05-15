@@ -6,7 +6,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import better.files.File
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.commands.AmendArrays
+import org.broadinstitute.clio.client.commands.PatchArrays
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.client.webclient.ClioWebClient.{QueryAux, UpsertAux}
@@ -22,8 +22,8 @@ import org.scalamock.scalatest.AsyncMockFactory
 
 import scala.collection.immutable
 
-class AmendExecutorSpec extends BaseClientSpec with AsyncMockFactory {
-  behavior of "AmendExecutor"
+class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
+  behavior of "PatchExecutor"
 
   private val documentsInClio = 0 until 2000
   private val alreadyHasMetadata = 500
@@ -40,7 +40,7 @@ class AmendExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   private val zipped = keys.zip(metadatas)
 
-  val newMetadata = ArraysMetadata(sampleAlias = Some("amended_sample_alias"))
+  val newMetadata = ArraysMetadata(sampleAlias = Some("patched_sample_alias"))
 
   private def getMockIoUtil(): IoUtil = {
     val ioUtil = mock[IoUtil]
@@ -86,7 +86,7 @@ class AmendExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     }
   }
 
-  it should "not amend documents that already have metadata defined" in {
+  it should "not patch documents that already have metadata defined" in {
     val webClient = mock[ClioWebClient]
 
     val documentsWithMetadata = zipped.take(alreadyHasMetadata).map { km =>
@@ -98,25 +98,25 @@ class AmendExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     setupQueryReturn(webClient, documentsWithMetadata ++ documentsWithoutMetadata)
     setupUpserts(webClient, documentsWithoutMetadata.map(km => (km._1, newMetadata)))
 
-    val executor = new AmendExecutor(AmendArrays(loc))
+    val executor = new PatchExecutor(PatchArrays(loc))
     executor.execute(webClient, getMockIoUtil()).runWith(Sink.seq).map { _ =>
       succeed
     }
   }
 
-  it should "amend documents that don't have metadata defined" in {
+  it should "patch documents that don't have metadata defined" in {
     val webClient = mock[ClioWebClient]
 
     setupQueryReturn(webClient, zipped)
     setupUpserts(webClient, keys.map(k => (k, newMetadata)))
 
-    val executor = new AmendExecutor(AmendArrays(loc))
+    val executor = new PatchExecutor(PatchArrays(loc))
     executor.execute(webClient, getMockIoUtil()).runWith(Sink.seq).map { _ =>
       succeed
     }
   }
 
-  it should "amend documents that have partial metadata" in {
+  it should "patch documents that have partial metadata" in {
     val twoMetadata = newMetadata.copy(chipType = Some("a_chip_type"))
     val ioUtil = mock[IoUtil]
     (ioUtil.readFileData _)
@@ -133,7 +133,7 @@ class AmendExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     setupQueryReturn(webClient, returnedByQuery)
     setupUpserts(webClient, keys.map(k => (k, newMetadata)))
 
-    val executor = new AmendExecutor(AmendArrays(loc))
+    val executor = new PatchExecutor(PatchArrays(loc))
     executor.execute(webClient, ioUtil).runWith(Sink.seq).map { _ =>
       succeed
     }
@@ -149,7 +149,7 @@ class AmendExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
     setupQueryReturn(webClient, zipped)
 
-    val executor = new AmendExecutor(AmendArrays(loc))
+    val executor = new PatchExecutor(PatchArrays(loc))
     executor.execute(webClient, ioUtil).runWith(Sink.seq).map { _ =>
       succeed
     }
@@ -166,7 +166,7 @@ class AmendExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
       setupQueryReturn(webClient, zipped)
 
-      val executor = new AmendExecutor(AmendArrays(loc))
+      val executor = new PatchExecutor(PatchArrays(loc))
       executor.execute(webClient, ioUtil).runWith(Sink.seq)
     }
   }
