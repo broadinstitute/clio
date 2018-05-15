@@ -1196,72 +1196,70 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
   it should "patch documents with new metadata" in {
 
-    File.usingTemporaryFile() { metadataFile =>
-      metadataFile
-        .write(
-          ArraysMetadata(
-            sampleAlias = Some("patched_sample_alias"),
-            chipType = Some("patched_chip_type")
-          ).asJson.pretty(implicitly)
-        )
-
-      val upsertKey1 = ArraysKey(
-        location = Location.GCP,
-        chipwellBarcode = Symbol(s"barcode$randomId"),
-        version = 1
-      )
-      val upsertKey2 = ArraysKey(
-        location = Location.GCP,
-        chipwellBarcode = Symbol(s"barcode$randomId"),
-        version = 2
+    val metadataFile = File
+      .newTemporaryFile()
+      .write(
+        ArraysMetadata(
+          sampleAlias = Some("patched_sample_alias"),
+          chipType = Some("patched_chip_type")
+        ).asJson.pretty(implicitly)
       )
 
-      for {
-        _ <- runUpsertArrays(
-          upsertKey1,
-          ArraysMetadata()
-        )
-        _ <- runUpsertArrays(
-          upsertKey2,
-          ArraysMetadata(
-            chipType = Some("existing_chip_type")
-          )
-        )
-        _ <- runIgnore(
-          ClioCommand.patchArraysName,
-          "--metadata-location",
-          metadataFile.toString()
-        )
-        patched1 <- runCollectJson(
-          ClioCommand.queryArraysName,
-          "--chipwell-barcode",
-          upsertKey1.chipwellBarcode.name,
-          "--version",
-          upsertKey1.version.toString
-        )
-        patched2 <- runCollectJson(
-          ClioCommand.queryArraysName,
-          "--chipwell-barcode",
-          upsertKey2.chipwellBarcode.name,
-          "--version",
-          upsertKey2.version.toString
-        )
-      } yield {
+    val upsertKey1 = ArraysKey(
+      location = Location.GCP,
+      chipwellBarcode = Symbol(s"barcode$randomId"),
+      version = 1
+    )
+    val upsertKey2 = ArraysKey(
+      location = Location.GCP,
+      chipwellBarcode = Symbol(s"barcode$randomId"),
+      version = 2
+    )
 
-        val storedDocument1 = patched1.headOption.getOrElse(fail)
-        storedDocument1.unsafeGet[String]("chip_type") should be("patched_chip_type")
-        storedDocument1.unsafeGet[String]("sample_alias") should be(
-          "patched_sample_alias"
+    for {
+      _ <- runUpsertArrays(
+        upsertKey1,
+        ArraysMetadata()
+      )
+      _ <- runUpsertArrays(
+        upsertKey2,
+        ArraysMetadata(
+          chipType = Some("existing_chip_type")
         )
+      )
+      _ <- runIgnore(
+        ClioCommand.patchArraysName,
+        "--metadata-location",
+        metadataFile.toString()
+      )
+      patched1 <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--chipwell-barcode",
+        upsertKey1.chipwellBarcode.name,
+        "--version",
+        upsertKey1.version.toString
+      )
+      patched2 <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--chipwell-barcode",
+        upsertKey2.chipwellBarcode.name,
+        "--version",
+        upsertKey2.version.toString
+      )
+    } yield {
 
-        val storedDocument2 = patched2.headOption.getOrElse(fail)
-        storedDocument2.unsafeGet[String]("chip_type") should be("existing_chip_type")
-        storedDocument2.unsafeGet[String]("sample_alias") should be(
-          "patched_sample_alias"
-        )
-      }
+      val storedDocument1 = patched1.headOption.getOrElse(fail)
+      storedDocument1.unsafeGet[String]("chip_type") should be("patched_chip_type")
+      storedDocument1.unsafeGet[String]("sample_alias") should be(
+        "patched_sample_alias"
+      )
+
+      val storedDocument2 = patched2.headOption.getOrElse(fail)
+      storedDocument2.unsafeGet[String]("chip_type") should be("existing_chip_type")
+      storedDocument2.unsafeGet[String]("sample_alias") should be(
+        "patched_sample_alias"
+      )
     }
-    succeed
   }
 
 }
