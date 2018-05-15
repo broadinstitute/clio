@@ -13,8 +13,7 @@ import org.broadinstitute.clio.JsonUtils.JsonOps
 class AmendExecutor[CI <: ClioIndex](amendCommand: AmendCommand[CI]) extends Executor {
 
   import amendCommand.index.implicits._
-  import Executor.SourceMonadOps
-  import Executor.readMetadata
+  import Executor.{SourceMonadOps, readMetadata}
 
   private val queryIndexInput: amendCommand.index.QueryInputType = amendCommand.queryInput
 

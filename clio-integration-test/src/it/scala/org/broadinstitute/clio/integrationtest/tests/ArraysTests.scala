@@ -1126,11 +1126,11 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       )
     } yield {
 
-      val storedDocument1 = amended1.head
+      val storedDocument1 = amended1.headOption.getOrElse(fail)
       storedDocument1.unsafeGet[String]("chip_type") should be("amended_chip_type")
       storedDocument1.unsafeGet[String]("sample_alias") should be("amended_sample_alias")
 
-      val storedDocument2 = amended2.head
+      val storedDocument2 = amended2.headOption.getOrElse(fail)
       storedDocument2.unsafeGet[String]("chip_type") should be("existing_chip_type")
       storedDocument2.unsafeGet[String]("sample_alias") should be("amended_sample_alias")
     }
