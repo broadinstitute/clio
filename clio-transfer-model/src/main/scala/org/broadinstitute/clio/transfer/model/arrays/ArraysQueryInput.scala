@@ -4,7 +4,11 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import org.broadinstitute.clio.transfer.model.QueryInput
-import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
+import org.broadinstitute.clio.util.model.{
+  DocumentStatus,
+  Location,
+  RegulatoryDesignation
+}
 
 /* The Key and Metadata fields that can be queried.
  */
@@ -23,6 +27,7 @@ case class ArraysQueryInput(
   notes: Option[String] = None,
   pipelineVersion: Option[Symbol] = None,
   project: Option[String] = None,
+  regulatoryDesignation: Option[RegulatoryDesignation] = None,
   sampleAlias: Option[String] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
   workflowStartDate: Option[OffsetDateTime] = None,

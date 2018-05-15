@@ -4,7 +4,7 @@ import java.net.URI
 import java.time.OffsetDateTime
 
 import org.broadinstitute.clio.transfer.model.{DeliverableMetadata, Metadata}
-import org.broadinstitute.clio.util.model.DocumentStatus
+import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
 /* Declare Metadata fields in lexicographic order.  Metadata is the
  * set difference of the QueryOutput and Key fields.
@@ -28,6 +28,7 @@ case class ArraysMetadata(
   pipelineVersion: Option[Symbol] = None,
   project: Option[String] = None,
   redIdatPath: Option[URI] = None,
+  regulatoryDesignation: Option[RegulatoryDesignation] = None,
   researchProjectId: Option[String] = None,
   sampleAlias: Option[String] = None,
   variantCallingDetailMetricsPath: Option[URI] = None,
