@@ -1198,7 +1198,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val metadataFile: File = File
       .newTemporaryFile()
-      .overwrite(
+      .write(
         ArraysMetadata(
           sampleAlias = Some("amended_sample_alias"),
           chipType = Some("amended_chip_type")
@@ -1217,46 +1217,46 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       version = 2
     )
 
-      for {
-        _ <- runUpsertArrays(
-          upsertKey1,
-          ArraysMetadata()
+    for {
+      _ <- runUpsertArrays(
+        upsertKey1,
+        ArraysMetadata()
+      )
+      _ <- runUpsertArrays(
+        upsertKey2,
+        ArraysMetadata(
+          chipType = Some("existing_chip_type")
         )
-        _ <- runUpsertArrays(
-          upsertKey2,
-          ArraysMetadata(
-            chipType = Some("existing_chip_type")
-          )
-        )
-        _ <- runIgnore(
-          ClioCommand.amendArraysName,
-          "--metadata-location",
-          metadataFile.path.toAbsolutePath.toString
-        )
-        amended1 <- runCollectJson(
-          ClioCommand.queryArraysName,
-          "--chipwell-barcode",
-          upsertKey1.chipwellBarcode.name,
-          "--version",
-          upsertKey1.version.toString
-        )
-        amended2 <- runCollectJson(
-          ClioCommand.queryArraysName,
-          "--chipwell-barcode",
-          upsertKey2.chipwellBarcode.name,
-          "--version",
-          upsertKey2.version.toString
-        )
-      } yield {
+      )
+      _ <- runIgnore(
+        ClioCommand.amendArraysName,
+        "--metadata-location",
+        metadataFile.path.toAbsolutePath.toString
+      )
+      amended1 <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--chipwell-barcode",
+        upsertKey1.chipwellBarcode.name,
+        "--version",
+        upsertKey1.version.toString
+      )
+      amended2 <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--chipwell-barcode",
+        upsertKey2.chipwellBarcode.name,
+        "--version",
+        upsertKey2.version.toString
+      )
+    } yield {
 
-        val storedDocument1 = amended1.headOption.getOrElse(fail)
-        storedDocument1.unsafeGet[String]("chip_type") should be("amended_chip_type")
-        storedDocument1.unsafeGet[String]("sample_alias") should be("amended_sample_alias")
+      val storedDocument1 = amended1.headOption.getOrElse(fail)
+      storedDocument1.unsafeGet[String]("chip_type") should be("amended_chip_type")
+      storedDocument1.unsafeGet[String]("sample_alias") should be("amended_sample_alias")
 
-        val storedDocument2 = amended2.headOption.getOrElse(fail)
-        storedDocument2.unsafeGet[String]("chip_type") should be("existing_chip_type")
-        storedDocument2.unsafeGet[String]("sample_alias") should be("amended_sample_alias")
-      }
+      val storedDocument2 = amended2.headOption.getOrElse(fail)
+      storedDocument2.unsafeGet[String]("chip_type") should be("existing_chip_type")
+      storedDocument2.unsafeGet[String]("sample_alias") should be("amended_sample_alias")
     }
   }
+
 }
