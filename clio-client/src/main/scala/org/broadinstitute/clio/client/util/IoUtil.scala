@@ -10,6 +10,8 @@ import better.files._
 import cats.syntax.either._
 import com.google.cloud.storage.Storage.BlobListOption
 import com.google.cloud.storage.{Blob, BlobId, BlobInfo, Storage, StorageOptions}
+import io.circe.parser.parse
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.auth.ClioCredentials
 
 import scala.collection.immutable
@@ -39,6 +41,32 @@ class IoUtil(storage: Storage) {
 
   def readFileData(location: URI): String =
     File(location.getPath).contentAsString
+
+  /**
+    * Build a stream which, when pulled, will read JSON from a URI and decode it
+    * into the metadata type associated with `index`.
+    */
+  def readMetadata[CI <: ClioIndex](index: ClioIndex)(
+    location: URI
+  ): Source[index.MetadataType, NotUsed] = {
+    import index.implicits._
+    Source
+      .single(location)
+      .map(readFile)
+      .map {
+        parse(_).valueOr { err =>
+          throw new IllegalArgumentException(
+            s"Could not parse contents of $location as JSON.",
+            err
+          )
+        }
+      }
+      .map {
+        _.as[index.MetadataType].valueOr { err =>
+          throw new IllegalArgumentException(s"Invalid metadata given at $location.", err)
+        }
+      }
+  }
 
   /**
     * Build a stream which, when pulled, will delete all of the

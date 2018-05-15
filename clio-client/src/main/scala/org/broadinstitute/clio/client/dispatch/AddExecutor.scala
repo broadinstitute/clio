@@ -21,10 +21,7 @@ class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI]) extends Executor 
     import Executor.SourceMonadOps
 
     for {
-      metadata <- Executor.readMetadata(addCommand.index)(
-        addCommand.metadataLocation,
-        ioUtil
-      )
+      metadata <- ioUtil.readMetadata(addCommand.index)(addCommand.metadataLocation)
       upsertId <- webClient.upsert(addCommand.index)(
         addCommand.key,
         metadata,

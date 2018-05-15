@@ -10,7 +10,7 @@ import org.broadinstitute.clio.client.commands.PatchArrays
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.client.webclient.ClioWebClient.{QueryAux, UpsertAux}
-import org.broadinstitute.clio.transfer.model.ArraysIndex
+import org.broadinstitute.clio.transfer.model.{ArraysIndex, GvcfIndex}
 import org.broadinstitute.clio.transfer.model.arrays.{
   ArraysKey,
   ArraysMetadata,
@@ -44,9 +44,10 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   private def getMockIoUtil(): IoUtil = {
     val ioUtil = mock[IoUtil]
-    (ioUtil.readFileData _)
-      .expects(loc)
-      .returning(newMetadata.asJson.pretty(defaultPrinter))
+    (ioUtil
+      .readMetadata(_: ArraysIndex.type)(_: URI))
+      .expects(*, loc)
+      .returning(Source.single(newMetadata))
     ioUtil
   }
 
@@ -119,9 +120,10 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   it should "patch documents that have partial metadata" in {
     val twoMetadata = newMetadata.copy(chipType = Some("a_chip_type"))
     val ioUtil = mock[IoUtil]
-    (ioUtil.readFileData _)
-      .expects(loc)
-      .returning(twoMetadata.asJson.pretty(defaultPrinter))
+    (ioUtil
+      .readMetadata(_: ArraysIndex.type)(_: URI))
+      .expects(*, loc)
+      .returning(Source.single(twoMetadata))
 
     val webClient = mock[ClioWebClient]
 
@@ -141,9 +143,10 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   it should "not upsert anything if nothing needs to be updated" in {
     val ioUtil = mock[IoUtil]
-    (ioUtil.readFileData _)
-      .expects(loc)
-      .returning(ArraysMetadata().asJson.pretty(defaultPrinter))
+    (ioUtil
+      .readMetadata(_: ArraysIndex.type)(_: URI))
+      .expects(*, loc)
+      .returning(Source.single(ArraysMetadata()))
 
     val webClient = mock[ClioWebClient]
 
@@ -156,11 +159,12 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   }
 
   it should "throw an exception if the wrong type of metadata is given" in {
-    recoverToSucceededIf[IllegalArgumentException] {
+    recoverToSucceededIf[ClassCastException] {
       val ioUtil = mock[IoUtil]
-      (ioUtil.readFileData _)
-        .expects(loc)
-        .returning(GvcfMetadata(contamination = Some(0.5F)).asJson.pretty(defaultPrinter))
+      (ioUtil
+        .readMetadata(_: GvcfIndex.type)(_: URI))
+        .expects(*, loc)
+        .returning(Source.single(GvcfMetadata(contamination = Some(0.5F))))
 
       val webClient = mock[ClioWebClient]
 

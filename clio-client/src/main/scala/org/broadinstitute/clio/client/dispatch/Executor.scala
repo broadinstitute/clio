@@ -1,13 +1,9 @@
 package org.broadinstitute.clio.client.dispatch
 
-import java.net.URI
-
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Json
-import io.circe.parser.parse
-import cats.syntax.either._
 import io.circe.generic.extras.Configuration
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -47,33 +43,6 @@ object Executor {
       * Enables using pattern-matching in the LHS of `for` syntax.
       */
     def withFilter(p: A => Boolean): Source[A, M] = source.filter(p)
-  }
-
-  /**
-    * Build a stream which, when pulled, will read JSON from a URI and decode it
-    * into the metadata type associated with `index`.
-    */
-  def readMetadata[CI <: ClioIndex](index: ClioIndex)(
-    location: URI,
-    ioUtil: IoUtil
-  ): Source[index.MetadataType, NotUsed] = {
-    import index.implicits._
-    Source
-      .single(location)
-      .map(ioUtil.readFile)
-      .map {
-        parse(_).valueOr { err =>
-          throw new IllegalArgumentException(
-            s"Could not parse contents of $location as JSON.",
-            err
-          )
-        }
-      }
-      .map {
-        _.as[index.MetadataType].valueOr { err =>
-          throw new IllegalArgumentException(s"Invalid metadata given at $location.", err)
-        }
-      }
   }
 
   def getJsonKeyFieldNames[CI <: ClioIndex](

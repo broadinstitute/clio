@@ -32,8 +32,8 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
     ioUtil: IoUtil
   ): Source[Json, NotUsed] = {
     // Read the metadata then turn into Json so that we fail fast.
-    Executor
-      .readMetadata(patchCommand.index)(patchCommand.metadataLocation, ioUtil)
+    ioUtil
+      .readMetadata(patchCommand.index)(patchCommand.metadataLocation)
       .map(_.asJson.dropNulls)
       .flatMap(Source.repeat)
       // zip new metadatas with documents
