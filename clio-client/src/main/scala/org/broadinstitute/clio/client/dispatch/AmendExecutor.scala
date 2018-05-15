@@ -2,7 +2,9 @@ package org.broadinstitute.clio.client.dispatch
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import io.circe.{DecodingFailure, Json}
+import better.files.File
+import cats.syntax.either._
+import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.AmendCommand
 import org.broadinstitute.clio.client.util.IoUtil
@@ -13,9 +15,10 @@ import org.broadinstitute.clio.JsonUtils.JsonOps
 class AmendExecutor[CI <: ClioIndex](amendCommand: AmendCommand[CI]) extends Executor {
 
   import amendCommand.index.implicits._
-  import Executor.{SourceMonadOps, readMetadata}
+  import Executor.SourceMonadOps
 
-  private val queryIndexInput: amendCommand.index.QueryInputType = amendCommand.queryInput
+  private val queryAllFile: File =
+    File.newTemporaryFile().deleteOnExit().write(Json.obj().pretty(implicitly))
 
   /**
     * Build a stream which, when pulled, will communicate with the clio-server
@@ -28,7 +31,8 @@ class AmendExecutor[CI <: ClioIndex](amendCommand: AmendCommand[CI]) extends Exe
   ): Source[Json, NotUsed] = {
     // Read the metadata then turn into Json so that we fail fast.
     val newMetadataSource =
-      readMetadata(amendCommand.index)(amendCommand.metadataLocation, ioUtil)
+      Executor
+        .readMetadata(amendCommand.index)(amendCommand.metadataLocation, ioUtil)
         .map(_.asJson.dropNulls)
         .flatMap(Source.repeat)
 
@@ -36,54 +40,78 @@ class AmendExecutor[CI <: ClioIndex](amendCommand: AmendCommand[CI]) extends Exe
     newMetadataSource
       .zip(
         webClient
-          .simpleQuery(amendCommand.index)(queryIndexInput, includeDeleted = false)
+          .jsonFileQuery(amendCommand.index)(queryAllFile)
           .map(_.dropNulls)
       )
-      // Munge metadata for documents that have partial data
-      .map { tup =>
-        val (newMetadataJson, documentJson) = tup
-        val existingKeys =
-          documentJson.asObject.map(_.keys.toSeq).getOrElse(Seq.empty)
-        val newMetadataMinusExisting =
-          newMetadataJson.mapObject(_.filterKeys(key => !existingKeys.contains(key)))
-        (newMetadataMinusExisting, documentJson)
+      // Munge metadata for documents
+      .map {
+        case (newMetadataJson, documentJson) =>
+          val oldMetadataJson = getMetadataJsonFromDocument(documentJson)
+          val indexKey = getKeyFromDocument(documentJson)
+          (
+            newMetadataJson.deepMerge(getMetadataJsonFromDocument(documentJson)),
+            oldMetadataJson,
+            indexKey
+          )
       }
       // filter out things that already have no new metadata to upsert
-      .filter { tup =>
-        val (newMetadataJson, _) = tup
-        newMetadataJson.asObject.exists(obj => !obj.isEmpty)
+      .filterNot {
+        case (mergedJson, oldMetadataJson, _) =>
+          mergedJson.equals(oldMetadataJson)
       }
       // Upsert the stuff!
-      .flatMapConcat { tup =>
-        val (newMetadataJson, documentJson) = tup
-        val key = getKeyFromDocument(documentJson)
-        val metadata = newMetadataJson
-          .as[amendCommand.index.MetadataType]
-          .fold(
-            ex =>
-              throw new RuntimeException(
-                "Could not encode new metadata json into class",
-                ex.getCause
-            ),
-            identity
-          )
-        webClient.upsert(amendCommand.index)(key, metadata, force = false)
+      .flatMapConcat {
+        case (mergedMetadataJson, oldMetadataJson, indexKey) =>
+          val oldMetadataKeys =
+            oldMetadataJson.asObject.map(_.keys.toSeq).getOrElse(Seq.empty)
+          val metadata = mergedMetadataJson
+            .mapObject(_.filterKeys(key => !oldMetadataKeys.contains(key)))
+            .as[amendCommand.index.MetadataType]
+            .valueOr(
+              ex =>
+                throw new IllegalArgumentException(
+                  "Could not encode new metadata json into class",
+                  ex
+              )
+            )
+          webClient.upsert(amendCommand.index)(indexKey, metadata, force = false)
 
       }
   }
 
+  /**
+    * Get a IndexKey from a json document returned from Elasticsearch
+    * @param json document of both key and metadata fields
+    * @return An IndexKey that identifies the document
+    */
   private def getKeyFromDocument(json: Json): amendCommand.index.KeyType = {
     val keyJson =
-      json.mapObject(_.filterKeys(amendCommand.index.keyFieldNames.contains))
+      json.mapObject(
+        _.filterKeys(Executor.getJsonKeyFieldNames(amendCommand.index).contains)
+      )
 
-    val key: amendCommand.index.KeyType = keyJson.as[amendCommand.index.KeyType] match {
-      case Left(ex: DecodingFailure) =>
-        throw new RuntimeException(
-          s"Could not create ${amendCommand.index.keyTag} from ${json.pretty(implicitly)}",
-          ex.getCause
+    keyJson
+      .as[amendCommand.index.KeyType]
+      .valueOr(
+        ex =>
+          throw new IllegalArgumentException(
+            s"Could not create ${amendCommand.index.keyTag} from ${json.pretty(implicitly)}",
+            ex
         )
-      case Right(k) => k
-    }
-    key
+      )
   }
+
+  /**
+    * Get the metadata fields only from a json document returned from Elasticseach
+    * @param json document of both key and metadata fields
+    * @return a json with only the metadata fields
+    */
+  private def getMetadataJsonFromDocument(json: Json): Json = {
+    json.mapObject(
+      _.filterKeys(
+        key => !Executor.getJsonKeyFieldNames(amendCommand.index).contains(key)
+      )
+    )
+  }
+
 }

@@ -13,7 +13,6 @@ import org.broadinstitute.clio.transfer.model.ClioIndex
   * it to the clio-server, optionally overwriting existing fields.
   */
 class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI]) extends Executor {
-  import Executor.readMetadata
 
   override def execute(
     webClient: ClioWebClient,
@@ -22,7 +21,10 @@ class AddExecutor[CI <: ClioIndex](addCommand: AddCommand[CI]) extends Executor 
     import Executor.SourceMonadOps
 
     for {
-      metadata <- readMetadata(addCommand.index)(addCommand.metadataLocation, ioUtil)
+      metadata <- Executor.readMetadata(addCommand.index)(
+        addCommand.metadataLocation,
+        ioUtil
+      )
       upsertId <- webClient.upsert(addCommand.index)(
         addCommand.key,
         metadata,

@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import java.net.URI
 
 import akka.stream.scaladsl.{Sink, Source}
+import better.files.File
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.AmendArrays
@@ -41,18 +42,25 @@ class AmendExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   val newMetadata = ArraysMetadata(sampleAlias = Some("amended_sample_alias"))
 
+  private def getMockIoUtil(): IoUtil = {
+    val ioUtil = mock[IoUtil]
+    (ioUtil.readFileData _)
+      .expects(loc)
+      .returning(newMetadata.asJson.pretty(defaultPrinter))
+    ioUtil
+  }
+
   private def setupQueryReturn(
     webClient: ClioWebClient,
     documents: immutable.Iterable[(ArraysKey, ArraysMetadata)]
   ): Unit = {
     val _ = (
       webClient
-        .simpleQuery(_: QueryAux[ArraysQueryInput])(
-          _: ArraysQueryInput,
-          _: Boolean
+        .jsonFileQuery(_: QueryAux[ArraysQueryInput])(
+          _: File
         )
       )
-      .expects(ArraysIndex, *, *)
+      .expects(ArraysIndex, *)
       .returning(Source(documents.map { km =>
         km._1.asJson.deepMerge(km._2.asJson)
       }))
@@ -79,12 +87,8 @@ class AmendExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   }
 
   it should "not amend documents that already have metadata defined" in {
-    val ioUtil = mock[IoUtil]
-    (ioUtil.readFileData _)
-      .expects(loc)
-      .returning(newMetadata.asJson.pretty(defaultPrinter))
-
     val webClient = mock[ClioWebClient]
+
     val documentsWithMetadata = zipped.take(alreadyHasMetadata).map { km =>
       val (key, metadata) = km
       (key, metadata.copy(sampleAlias = newMetadata.sampleAlias))
@@ -95,24 +99,19 @@ class AmendExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     setupUpserts(webClient, documentsWithoutMetadata.map(km => (km._1, newMetadata)))
 
     val executor = new AmendExecutor(AmendArrays(loc))
-    executor.execute(webClient, ioUtil).runWith(Sink.seq).map { _ =>
+    executor.execute(webClient, getMockIoUtil()).runWith(Sink.seq).map { _ =>
       succeed
     }
   }
 
   it should "amend documents that don't have metadata defined" in {
-    val ioUtil = mock[IoUtil]
-    (ioUtil.readFileData _)
-      .expects(loc)
-      .returning(newMetadata.asJson.pretty(defaultPrinter))
-
     val webClient = mock[ClioWebClient]
 
     setupQueryReturn(webClient, zipped)
     setupUpserts(webClient, keys.map(k => (k, newMetadata)))
 
     val executor = new AmendExecutor(AmendArrays(loc))
-    executor.execute(webClient, ioUtil).runWith(Sink.seq).map { _ =>
+    executor.execute(webClient, getMockIoUtil()).runWith(Sink.seq).map { _ =>
       succeed
     }
   }

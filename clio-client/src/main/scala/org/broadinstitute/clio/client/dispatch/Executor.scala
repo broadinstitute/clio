@@ -8,6 +8,7 @@ import com.typesafe.scalalogging.LazyLogging
 import io.circe.Json
 import io.circe.parser.parse
 import cats.syntax.either._
+import io.circe.generic.extras.Configuration
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.ClioIndex
@@ -73,6 +74,12 @@ object Executor {
           throw new IllegalArgumentException(s"Invalid metadata given at $location.", err)
         }
       }
+  }
+
+  def getJsonKeyFieldNames[CI <: ClioIndex](
+    index: ClioIndex
+  )(implicit jsonConfig: Configuration): Seq[String] = {
+    index.keyMapper.fields.keys.map(jsonConfig.transformMemberNames).toSeq
   }
 
 }

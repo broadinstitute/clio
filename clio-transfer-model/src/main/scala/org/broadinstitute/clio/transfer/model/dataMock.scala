@@ -9,7 +9,6 @@ import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
 
 case class ModelMockIndex(
   name: String = "mock",
@@ -23,7 +22,6 @@ case class ModelMockIndex(
   override type QueryInputType = ModelMockQueryInput
 
   override val keyTag: ClassTag[KeyType] = implicitly[ClassTag[KeyType]]
-  override val keyTypeTag: TypeTag[KeyType] = implicitly[TypeTag[KeyType]]
   override val metadataTag: ClassTag[MetadataType] = implicitly[ClassTag[MetadataType]]
   override val queryInputTag: ClassTag[QueryInputType] =
     implicitly[ClassTag[QueryInputType]]
@@ -41,7 +39,6 @@ case class ModelMockIndex(
     implicitly[FieldMapper[MetadataType]]
   override val queryInputMapper: FieldMapper[ModelMockQueryInput] =
     implicitly[FieldMapper[QueryInputType]]
-  override val keyFieldNames: Seq[String] = Seq("mock_key_long", "mock_key_string")
 }
 
 case class ModelMockKey(mockKeyLong: Long, mockKeyString: String) extends IndexKey {

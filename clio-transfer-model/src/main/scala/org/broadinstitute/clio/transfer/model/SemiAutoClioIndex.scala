@@ -17,7 +17,6 @@ import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation._
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe._
 
 /**
   * Convenience class for building [[ClioIndex]] instances
@@ -30,7 +29,6 @@ sealed abstract class SemiAutoClioIndex[
 ](
   implicit
   override val keyTag: ClassTag[KT],
-  override val keyTypeTag: TypeTag[KT],
   override val metadataTag: ClassTag[MT],
   override val queryInputTag: ClassTag[QI],
   override val keyEncoder: ObjectEncoder[KT],
@@ -48,10 +46,6 @@ sealed abstract class SemiAutoClioIndex[
   override type MetadataType = MT
   override type QueryInputType = QI
 
-  override val keyFieldNames: Seq[String] = keyTypeTag.tpe.members.collect {
-    case m: MethodSymbol if m.isCaseAccessor =>
-      jsonConfig.transformMemberNames(m.name.decodedName.toString)
-  }.toSeq
 }
 
 case object GvcfIndex

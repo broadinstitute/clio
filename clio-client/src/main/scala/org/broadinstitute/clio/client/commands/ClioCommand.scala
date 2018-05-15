@@ -69,7 +69,6 @@ sealed abstract class DeliverCommand[+CI <: DeliverableIndex](override val index
 
 sealed abstract class AmendCommand[CI <: ClioIndex](val index: CI) extends ClioCommand {
   def metadataLocation: URI
-  def queryInput: index.QueryInputType
 }
 
 sealed abstract class BackCompatibleDeliverCram extends DeliverCommand(CramIndex)
@@ -152,9 +151,7 @@ final case class DeleteGvcf(
 @CommandName(ClioCommand.amendGvcfName)
 final case class AmendGvcf(
   metadataLocation: URI
-) extends AmendCommand(GvcfIndex) {
-  override def queryInput: GvcfQueryInput = GvcfQueryInput()
-}
+) extends AmendCommand(GvcfIndex)
 
 // cram commands.
 
@@ -202,9 +199,7 @@ final case class DeliverCram(
 @CommandName(ClioCommand.amendCramName)
 final case class AmendCram(
   metadataLocation: URI
-) extends AmendCommand(CramIndex) {
-  override def queryInput: CramQueryInput = CramQueryInput()
-}
+) extends AmendCommand(CramIndex)
 
 //TODO Get rid of these wgs-cram commands when they're no longer being used
 
@@ -286,9 +281,7 @@ final case class DeleteUbam(
 @CommandName(ClioCommand.amendUbamName)
 final case class AmendUbam(
   metadataLocation: URI,
-) extends AmendCommand(UbamIndex) {
-  override def queryInput: UbamQueryInput = UbamQueryInput()
-}
+) extends AmendCommand(UbamIndex)
 
 // ARRAYS commands.
 
@@ -336,9 +329,7 @@ final case class DeliverArrays(
 @CommandName(ClioCommand.amendArraysName)
 final case class AmendArrays(
   metadataLocation: URI
-) extends AmendCommand(ArraysIndex) {
-  override def queryInput: ArraysQueryInput = ArraysQueryInput()
-}
+) extends AmendCommand(ArraysIndex)
 
 object ClioCommand extends ClioParsers {
 

@@ -4,7 +4,6 @@ import io.circe.{Decoder, Encoder, ObjectEncoder}
 import org.broadinstitute.clio.util.generic.FieldMapper
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe._
 
 /**
   * This models an index in our database. An index is a table (schema) within our database.
@@ -22,11 +21,7 @@ trait ClioIndex {
 
   val commandName: String
 
-  val keyFieldNames: Seq[String]
-
   type KeyType <: IndexKey
-
-  val keyTypeTag: TypeTag[KeyType]
 
   type MetadataType <: Metadata[MetadataType]
 
@@ -66,7 +61,6 @@ trait ClioIndex {
     */
   object implicits {
     implicit val kt: ClassTag[KeyType] = keyTag
-    implicit val ktt: TypeTag[KeyType] = keyTypeTag
     implicit val mt: ClassTag[MetadataType] = metadataTag
     implicit val qit: ClassTag[QueryInputType] = queryInputTag
     implicit val ke: ObjectEncoder[KeyType] = keyEncoder
