@@ -29,7 +29,7 @@ class IoUtil(storage: Storage) {
   def isGoogleDirectory(location: URI): Boolean =
     isGoogleObject(location) && location.getPath.endsWith("/")
 
-  def readMetadata(location: URI): String = {
+  def readFile(location: URI): String = {
     if (isGoogleObject(location)) {
       readGoogleObjectData(location)
     } else {

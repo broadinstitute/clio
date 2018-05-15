@@ -29,7 +29,7 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
 
     File.temporaryFile() { f =>
       new IoUtil(createStorage)
-        .readMetadata(f.write(contents).uri) should be(contents)
+        .readFile(f.write(contents).uri) should be(contents)
     }
   }
 
@@ -90,7 +90,7 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
     val storage = createStorage
     storage.create(uriToBlobInfo(location), contents.getBytes)
 
-    new IoUtil(storage).readMetadata(location) should be(contents)
+    new IoUtil(storage).readFile(location) should be(contents)
   }
 
   it should "write google object data" in {

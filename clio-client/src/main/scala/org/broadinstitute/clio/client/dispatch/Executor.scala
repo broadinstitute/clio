@@ -60,7 +60,7 @@ object Executor {
     import index.implicits._
     Source
       .single(location)
-      .map(ioUtil.readFileData)
+      .map(ioUtil.readFile)
       .map {
         parse(_).valueOr { err =>
           throw new IllegalArgumentException(
