@@ -2,27 +2,43 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.stream.scaladsl.{Sink, Source}
-import better.files.File
+import akka.NotUsed
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
+import akka.stream.scaladsl.{Flow, Sink, Source}
+import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.PatchArrays
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.client.webclient.ClioWebClient.{QueryAux, UpsertAux}
-import org.broadinstitute.clio.transfer.model.{ArraysIndex, GvcfIndex}
-import org.broadinstitute.clio.transfer.model.arrays.{
-  ArraysKey,
-  ArraysMetadata,
-  ArraysQueryInput
-}
+import org.broadinstitute.clio.client.webclient.{ClioWebClient, CredentialsGenerator}
+import org.broadinstitute.clio.client.webclient.ClioWebClient.UpsertAux
+import org.broadinstitute.clio.transfer.model.{ArraysIndex, ClioIndex, GvcfIndex}
+import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 import org.scalamock.scalatest.AsyncMockFactory
 
 import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
 
 class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   behavior of "PatchExecutor"
+
+  // This is to get around issues with ScalaMock not being able to mock package-private methods
+  abstract class MockableClioWebClient(
+    connectionFlow: Flow[HttpRequest, HttpResponse, _],
+    requestTimeout: FiniteDuration,
+    maxRequestRetries: Int,
+    tokenGenerator: CredentialsGenerator
+  ) extends ClioWebClient(
+        connectionFlow,
+        requestTimeout,
+        maxRequestRetries,
+        tokenGenerator
+      ) {
+    override def query(
+      clioIndex: ClioIndex
+    )(input: Json, raw: Boolean): Source[Json, NotUsed] = ???
+  }
 
   private val documentsInClio = 0 until 2000
   private val alreadyHasMetadata = 500
@@ -56,11 +72,12 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   ): Unit = {
     val _ = (
       webClient
-        .jsonFileQuery(_: QueryAux[ArraysQueryInput])(
-          _: File
+        .query(_: ClioIndex)(
+          _: Json,
+          _: Boolean
         )
       )
-      .expects(ArraysIndex, *)
+      .expects(ArraysIndex, Json.obj(), true)
       .returning(Source(documents.map { km =>
         km._1.asJson.deepMerge(km._2.asJson)
       }))
@@ -87,7 +104,7 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   }
 
   it should "not patch documents that already have metadata defined" in {
-    val webClient = mock[ClioWebClient]
+    val webClient = mock[MockableClioWebClient]
 
     val documentsWithMetadata = zipped.take(alreadyHasMetadata).map { km =>
       val (key, metadata) = km
@@ -105,7 +122,7 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   }
 
   it should "patch documents that don't have metadata defined" in {
-    val webClient = mock[ClioWebClient]
+    val webClient = mock[MockableClioWebClient]
 
     setupQueryReturn(webClient, zipped)
     setupUpserts(webClient, keys.map(k => (k, newMetadata)))
@@ -124,7 +141,7 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       .expects(*, loc)
       .returning(Source.single(twoMetadata))
 
-    val webClient = mock[ClioWebClient]
+    val webClient = mock[MockableClioWebClient]
 
     val returnedByQuery = zipped.map { km =>
       val (key, metadata) = km
@@ -147,7 +164,7 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       .expects(*, loc)
       .returning(Source.single(ArraysMetadata()))
 
-    val webClient = mock[ClioWebClient]
+    val webClient = mock[MockableClioWebClient]
 
     setupQueryReturn(webClient, zipped)
 
@@ -167,7 +184,7 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
           Source.failed(new IllegalArgumentException(s"Invalid metadata given at $loc."))
         )
 
-      val webClient = mock[ClioWebClient]
+      val webClient = mock[MockableClioWebClient]
 
       setupQueryReturn(webClient, zipped)
 
