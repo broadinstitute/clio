@@ -45,6 +45,7 @@ sealed abstract class SemiAutoClioIndex[
   override type KeyType = KT
   override type MetadataType = MT
   override type QueryInputType = QI
+
 }
 
 case object GvcfIndex

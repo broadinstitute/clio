@@ -19,7 +19,7 @@ import scala.concurrent.Future
 
 /** Tests of Clio's cram functionality. */
 trait CramTests { self: BaseIntegrationSpec =>
-  import ElasticsearchUtil.JsonOps
+  import org.broadinstitute.clio.JsonUtils.JsonOps
 
   def runUpsertCram(
     key: CramKey,

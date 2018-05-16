@@ -20,7 +20,7 @@ import scala.concurrent.Future
 //TODO This should be deleted once we're using the new Cram API in all places
 /** Tests of Clio's wgs-cram functionality. */
 trait WgsCramTests { self: BaseIntegrationSpec =>
-  import ElasticsearchUtil.JsonOps
+  import org.broadinstitute.clio.JsonUtils.JsonOps
 
   def runUpsertCram(
     key: CramKey,

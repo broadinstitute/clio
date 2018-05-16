@@ -4,7 +4,7 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
+import org.broadinstitute.clio.JsonUtils.JsonOps
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{

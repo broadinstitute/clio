@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import better.files.File
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 import io.circe.syntax._
@@ -25,7 +26,7 @@ import org.scalatest.Assertion
 import scala.concurrent.Future
 
 trait ArraysTests { self: BaseIntegrationSpec =>
-  import ElasticsearchUtil.JsonOps
+  import org.broadinstitute.clio.JsonUtils.JsonOps
 
   def runUpsertArrays(
     key: ArraysKey,
@@ -1192,4 +1193,73 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       storedDocument1.unsafeGet[String]("notes") should be("I'm a note")
     }
   }
+
+  it should "patch documents with new metadata" in {
+
+    val metadataFile = File
+      .newTemporaryFile()
+      .write(
+        ArraysMetadata(
+          sampleAlias = Some("patched_sample_alias"),
+          chipType = Some("patched_chip_type")
+        ).asJson.pretty(implicitly)
+      )
+
+    val upsertKey1 = ArraysKey(
+      location = Location.GCP,
+      chipwellBarcode = Symbol(s"barcode$randomId"),
+      version = 1
+    )
+    val upsertKey2 = ArraysKey(
+      location = Location.GCP,
+      chipwellBarcode = Symbol(s"barcode$randomId"),
+      version = 2
+    )
+
+    for {
+      _ <- runUpsertArrays(
+        upsertKey1,
+        ArraysMetadata()
+      )
+      _ <- runUpsertArrays(
+        upsertKey2,
+        ArraysMetadata(
+          chipType = Some("existing_chip_type")
+        )
+      )
+      _ <- runIgnore(
+        ClioCommand.patchArraysName,
+        "--metadata-location",
+        metadataFile.toString()
+      )
+      patched1 <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--chipwell-barcode",
+        upsertKey1.chipwellBarcode.name,
+        "--version",
+        upsertKey1.version.toString
+      )
+      patched2 <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--chipwell-barcode",
+        upsertKey2.chipwellBarcode.name,
+        "--version",
+        upsertKey2.version.toString
+      )
+    } yield {
+
+      val storedDocument1 = patched1.headOption.getOrElse(fail)
+      storedDocument1.unsafeGet[String]("chip_type") should be("patched_chip_type")
+      storedDocument1.unsafeGet[String]("sample_alias") should be(
+        "patched_sample_alias"
+      )
+
+      val storedDocument2 = patched2.headOption.getOrElse(fail)
+      storedDocument2.unsafeGet[String]("chip_type") should be("existing_chip_type")
+      storedDocument2.unsafeGet[String]("sample_alias") should be(
+        "patched_sample_alias"
+      )
+    }
+  }
+
 }

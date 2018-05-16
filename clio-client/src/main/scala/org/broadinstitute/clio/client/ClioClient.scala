@@ -258,6 +258,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
         case addCommand: AddCommand[_]       => new AddExecutor(addCommand)
         case moveCommand: MoveCommand[_]     => new MoveExecutor(moveCommand)
         case deleteCommand: DeleteCommand[_] => new DeleteExecutor(deleteCommand)
+        case patchCommand: PatchCommand[_]   => new PatchExecutor(patchCommand)
         case retrieveAndPrint: RetrieveAndPrintCommand =>
           new RetrieveAndPrintExecutor(retrieveAndPrint, Predef.print)
       }

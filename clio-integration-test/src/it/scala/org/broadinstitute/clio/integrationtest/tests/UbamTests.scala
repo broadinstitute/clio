@@ -19,7 +19,7 @@ import scala.concurrent.Future
 
 /** Tests of Clio's ubam functionality. */
 trait UbamTests { self: BaseIntegrationSpec =>
-  import ElasticsearchUtil.JsonOps
+  import org.broadinstitute.clio.JsonUtils.JsonOps
 
   def runUpsertUbam(
     key: UbamKey,

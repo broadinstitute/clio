@@ -7,13 +7,17 @@ import akka.stream.scaladsl.Sink
 import better.files.File
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
+import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
+import org.broadinstitute.clio.transfer.model.{CramIndex, UbamIndex}
+import org.broadinstitute.clio.transfer.model.ubam.UbamMetadata
+import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.AsyncTestSuite
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
 
-class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
+class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactory {
   behavior of "IoUtil"
 
   private def uriToBlobInfo(uri: URI) = {
@@ -24,12 +28,12 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
     LocalStorageHelper.getOptions.getService
   }
 
-  it should "read a metadata file from file location" in {
+  it should "read a file from file location" in {
     val contents = "I'm a file!"
 
     File.temporaryFile() { f =>
       new IoUtil(createStorage)
-        .readMetadata(f.write(contents).uri) should be(contents)
+        .readFile(f.write(contents).uri) should be(contents)
     }
   }
 
@@ -90,7 +94,7 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
     val storage = createStorage
     storage.create(uriToBlobInfo(location), contents.getBytes)
 
-    new IoUtil(storage).readMetadata(location) should be(contents)
+    new IoUtil(storage).readFile(location) should be(contents)
   }
 
   it should "write google object data" in {
@@ -149,5 +153,39 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite {
 
     ioUtil.listGoogleObjects(URI.create("gs://bucket/path/")) should contain theSameElementsAs expected
 
+  }
+
+  it should "parse a metadata json" in {
+    val metadata = UbamMetadata(ubamSize = Some(10l), ubamMd5 = Some(Symbol("md5")))
+    val metadataFile =
+      File.newTemporaryFile().deleteOnExit().write(metadata.asJson.pretty(implicitly))
+    new IoUtil(createStorage)
+      .readMetadata(UbamIndex)(metadataFile.uri)
+      .map { readMetadata =>
+        readMetadata should be(metadata)
+
+      }
+      .runWith(Sink.head)
+  }
+
+  it should "fail to decode incorrect metadata types" in {
+    val metadata = UbamMetadata(ubamSize = Some(10l), ubamMd5 = Some(Symbol("md5")))
+    val metadataFile =
+      File.newTemporaryFile().deleteOnExit().write(metadata.asJson.pretty(implicitly))
+    recoverToSucceededIf[IllegalArgumentException] {
+      new IoUtil(createStorage)
+        .readMetadata(CramIndex)(metadataFile.uri)
+        .runWith(Sink.head)
+    }
+  }
+
+  it should "fail to parse invalid json" in {
+    val metadataFile = File.newTemporaryFile().deleteOnExit().write("{not valid JSON'")
+
+    recoverToSucceededIf[IllegalArgumentException] {
+      new IoUtil(createStorage)
+        .readMetadata(CramIndex)(metadataFile.uri)
+        .runWith(Sink.ignore)
+    }
   }
 }

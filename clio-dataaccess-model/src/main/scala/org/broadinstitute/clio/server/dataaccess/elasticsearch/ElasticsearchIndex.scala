@@ -7,7 +7,7 @@ import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.Json
 import io.circe.syntax._
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
+import org.broadinstitute.clio.JsonUtils.JsonOps
 import io.circe.generic.extras.Configuration.snakeCaseTransformation
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model._
@@ -105,7 +105,7 @@ class ElasticsearchIndex[+CI <: ClioIndex](
 }
 
 object ElasticsearchIndex extends ModelAutoDerivation {
-  import ElasticsearchUtil.JsonOps
+  import org.broadinstitute.clio.JsonUtils.JsonOps
 
   val EntityIdElasticsearchName = "entity_id"
 

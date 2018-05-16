@@ -19,8 +19,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
 }
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, UpsertId}
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.JsonOps
-
+import org.broadinstitute.clio.JsonUtils.JsonOps
 import scala.concurrent.Future
 
 class PersistenceDAOSpec

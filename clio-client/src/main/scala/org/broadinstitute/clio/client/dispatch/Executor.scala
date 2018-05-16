@@ -4,8 +4,10 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.typesafe.scalalogging.LazyLogging
 import io.circe.Json
+import io.circe.generic.extras.Configuration
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 
 trait Executor extends LazyLogging with ModelAutoDerivation {
@@ -42,4 +44,11 @@ object Executor {
       */
     def withFilter(p: A => Boolean): Source[A, M] = source.filter(p)
   }
+
+  def getJsonKeyFieldNames[CI <: ClioIndex](
+    index: ClioIndex
+  )(implicit jsonConfig: Configuration): Seq[String] = {
+    index.keyMapper.fields.keys.map(jsonConfig.transformMemberNames).toSeq
+  }
+
 }

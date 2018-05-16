@@ -9,7 +9,7 @@ class ElasticsearchDocumentMapperSpec
     extends FlatSpec
     with Matchers
     with ModelAutoDerivation {
-  import ElasticsearchUtil.JsonOps
+  import org.broadinstitute.clio.JsonUtils.JsonOps
 
   behavior of "ElasticsearchDocumentMapper"
 

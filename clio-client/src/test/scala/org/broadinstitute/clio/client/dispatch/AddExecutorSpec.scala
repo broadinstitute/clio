@@ -10,7 +10,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.AddWgsUbam
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
+import org.broadinstitute.clio.transfer.model.{ArraysIndex, WgsUbamIndex}
 import org.broadinstitute.clio.transfer.model.arrays.ArraysMetadata
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
@@ -40,9 +40,10 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   def upsertTest(force: Boolean): Unit = {
     it should s"read and upsert metadata with force=$force" in {
       val ioUtil = mock[IoUtil]
-      (ioUtil.readFileData _)
-        .expects(loc)
-        .returning(metadata.asJson.pretty(defaultPrinter))
+      (ioUtil
+        .readMetadata(_: WgsUbamIndex.type)(_: URI))
+        .expects(*, loc)
+        .returning(Source.single(metadata))
 
       val webClient = mock[ClioWebClient]
       // Type annotations needed for scalamockery.
@@ -64,24 +65,13 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   it should "fail if the given metadata can't be read from disk" in {
     val ioUtil = mock[IoUtil]
-    (ioUtil.readFileData _)
-      .expects(loc)
-      .throwing(new IOException("I BROKE"))
+    (ioUtil
+      .readMetadata(_: WgsUbamIndex.type)(_: URI))
+      .expects(*, loc)
+      .returning(Source.failed(new IOException("I BROKE")))
 
-    val executor = new AddExecutor(AddWgsUbam(theKey, loc, false))
     recoverToSucceededIf[IOException] {
-      executor.execute(stub[ClioWebClient], ioUtil).runWith(Sink.ignore)
-    }
-  }
-
-  it should "fail if the metadata read from disk can't be parsed as JSON" in {
-    val ioUtil = mock[IoUtil]
-    (ioUtil.readFileData _)
-      .expects(loc)
-      .returning("Definitely not JSON")
-
-    val executor = new AddExecutor(AddWgsUbam(theKey, loc, false))
-    recoverToSucceededIf[IllegalArgumentException] {
+      val executor = new AddExecutor(AddWgsUbam(theKey, loc, false))
       executor.execute(stub[ClioWebClient], ioUtil).runWith(Sink.ignore)
     }
   }
@@ -90,21 +80,23 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val otherMetadata = ArraysMetadata(chipType = Some("the-type"))
 
     val ioUtil = mock[IoUtil]
-    (ioUtil.readFileData _)
-      .expects(loc)
-      .returning(otherMetadata.asJson.pretty(defaultPrinter))
+    (ioUtil
+      .readMetadata(_: ArraysIndex.type)(_: URI))
+      .expects(*, loc)
+      .returning(Source.single(otherMetadata))
 
     val executor = new AddExecutor(AddWgsUbam(theKey, loc, false))
-    recoverToSucceededIf[IllegalArgumentException] {
+    recoverToSucceededIf[NullPointerException] {
       executor.execute(stub[ClioWebClient], ioUtil).runWith(Sink.ignore)
     }
   }
 
   it should "fail if the upsert to the server fails" in {
     val ioUtil = mock[IoUtil]
-    (ioUtil.readFileData _)
-      .expects(loc)
-      .returning(metadata.asJson.pretty(defaultPrinter))
+    (ioUtil
+      .readMetadata(_: WgsUbamIndex.type)(_: URI))
+      .expects(*, loc)
+      .returning(Source.single(metadata))
 
     val webClient = mock[ClioWebClient]
     (webClient
