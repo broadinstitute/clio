@@ -254,7 +254,7 @@ class ClioWebClient(
       }
   }
 
-  private[webclient] def query(clioIndex: ClioIndex)(
+  def query(clioIndex: ClioIndex)(
     input: Json,
     raw: Boolean = false
   ): Source[Json, NotUsed] = {

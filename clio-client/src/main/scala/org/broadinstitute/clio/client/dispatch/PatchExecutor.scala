@@ -2,7 +2,6 @@ package org.broadinstitute.clio.client.dispatch
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import better.files.File
 import cats.syntax.either._
 import io.circe.Json
 import io.circe.syntax._
@@ -19,8 +18,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
 
   private type DocumentKey = patchCommand.index.KeyType
 
-  private lazy val queryAllFile: File =
-    File.newTemporaryFile().deleteOnExit().write(Json.obj().pretty(defaultPrinter))
+  private lazy val queryAllJson: Json = Json.obj()
 
   /**
     * Build a stream which, when pulled, will communicate with the clio-server
@@ -39,7 +37,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
       // zip new metadatas with documents
       .zip(
         webClient
-          .jsonFileQuery(patchCommand.index)(queryAllFile)
+          .query(patchCommand.index)(queryAllJson, raw = true)
           .map(_.dropNulls)
       )
       // Merge metadata for documents
