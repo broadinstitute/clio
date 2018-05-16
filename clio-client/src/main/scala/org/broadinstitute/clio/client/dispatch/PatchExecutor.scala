@@ -19,7 +19,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
 
   private type DocumentKey = patchCommand.index.KeyType
 
-  private val queryAllFile: File =
+  private lazy val queryAllFile: File =
     File.newTemporaryFile().deleteOnExit().write(Json.obj().pretty(implicitly))
 
   /**
@@ -42,10 +42,10 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
           .jsonFileQuery(patchCommand.index)(queryAllFile)
           .map(_.dropNulls)
       )
-      // Munge metadata for documents
+      // Merge metadata for documents
       .map {
         case (newMetadataJson, documentJson) =>
-          mungeMetadata(newMetadataJson, documentJson)
+          mergeMetadata(newMetadataJson, documentJson)
       }
       // filter out things that already have no new metadata to upsert
       .filterNot {
@@ -65,7 +65,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
     * @param documentJson The old document to insert the metadata into
     * @return A tuple containing the munged metadata, the old metadata, and the key for this document
     */
-  private def mungeMetadata(
+  private def mergeMetadata(
     patchMetadataJson: Json,
     documentJson: Json
   ): (Json, Json, DocumentKey) = {
@@ -80,7 +80,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
 
   /**
     * Upsert the new metadata into the document.
-    * This method strips any existing keys out of the metadata to be upserted in order to reduce traffic.
+    * This method strips any existing fields out of the metadata to be upserted in order to reduce network traffic.
     * @param mergedMetadataJson The merged metadata containing patch and existing metadata
     * @param oldMetadataJson The old, preexisting metadata
     * @param docKey The key for this metadata
