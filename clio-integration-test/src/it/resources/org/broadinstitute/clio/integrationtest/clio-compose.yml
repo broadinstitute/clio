@@ -12,6 +12,7 @@ services:
         -Dclio.server.elasticsearch.http-hosts.0.hostname=${ELASTICSEARCH_HOST}
         -Dlogback.configurationFile=/app/clio-logback.xml
         -Dclio.server.persistence.root-dir=/persistence
+      UMASK: ${UMASK}
     volumes:
       - ${CONF_DIR}/clio-logback.xml:/app/clio-logback.xml
       - ${CLIO_LOG_FILE}:/logs/clio.log
