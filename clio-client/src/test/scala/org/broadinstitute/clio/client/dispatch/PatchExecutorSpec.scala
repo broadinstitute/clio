@@ -2,15 +2,13 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.NotUsed
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse}
-import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.stream.scaladsl.{Sink, Source}
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.PatchArrays
 import org.broadinstitute.clio.client.util.IoUtil
-import org.broadinstitute.clio.client.webclient.{ClioWebClient, CredentialsGenerator}
+import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.client.webclient.ClioWebClient.UpsertAux
 import org.broadinstitute.clio.transfer.model.{ArraysIndex, ClioIndex, GvcfIndex}
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
@@ -18,7 +16,6 @@ import org.broadinstitute.clio.util.model.{Location, UpsertId}
 import org.scalamock.scalatest.AsyncMockFactory
 
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
 
 class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   behavior of "PatchExecutor"
