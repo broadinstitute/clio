@@ -16,7 +16,6 @@ import org.broadinstitute.clio.transfer.model.arrays.{
   ArraysMetadata,
   ArraysQueryInput
 }
-import org.broadinstitute.clio.transfer.model.gvcf.GvcfMetadata
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 import org.scalamock.scalatest.AsyncMockFactory
 
@@ -159,19 +158,21 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   }
 
   it should "throw an exception if the wrong type of metadata is given" in {
-    recoverToSucceededIf[ClassCastException] {
+    recoverToSucceededIf[IllegalArgumentException] {
       val ioUtil = mock[IoUtil]
       (ioUtil
         .readMetadata(_: GvcfIndex.type)(_: URI))
         .expects(*, loc)
-        .returning(Source.single(GvcfMetadata(contamination = Some(0.5F))))
+        .returning(
+          Source.failed(new IllegalArgumentException(s"Invalid metadata given at $loc."))
+        )
 
       val webClient = mock[ClioWebClient]
 
       setupQueryReturn(webClient, zipped)
 
       val executor = new PatchExecutor(PatchArrays(loc))
-      executor.execute(webClient, ioUtil).runWith(Sink.seq)
+      executor.execute(webClient, ioUtil).runWith(Sink.ignore)
     }
   }
 }

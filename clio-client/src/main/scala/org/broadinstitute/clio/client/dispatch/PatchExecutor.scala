@@ -20,7 +20,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
   private type DocumentKey = patchCommand.index.KeyType
 
   private lazy val queryAllFile: File =
-    File.newTemporaryFile().deleteOnExit().write(Json.obj().pretty(implicitly))
+    File.newTemporaryFile().deleteOnExit().write(Json.obj().pretty(defaultPrinter))
 
   /**
     * Build a stream which, when pulled, will communicate with the clio-server
@@ -124,7 +124,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
       .valueOr(
         ex =>
           throw new IllegalArgumentException(
-            s"Could not create ${patchCommand.index.keyTag} from ${json.pretty(implicitly)}",
+            s"Could not create ${patchCommand.index.keyTag} from ${json.pretty(defaultPrinter)}",
             ex
         )
       )

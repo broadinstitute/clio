@@ -86,7 +86,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       .returning(Source.single(otherMetadata))
 
     val executor = new AddExecutor(AddWgsUbam(theKey, loc, false))
-    recoverToSucceededIf[Exception] {
+    recoverToSucceededIf[NullPointerException] {
       executor.execute(stub[ClioWebClient], ioUtil).runWith(Sink.ignore)
     }
   }
