@@ -390,7 +390,7 @@ object ClioCommand extends ClioParsers {
   // Names for Arrays commands.
   val addArraysName: String = addPrefix + ArraysIndex.commandName
   val queryArraysName: String = simpleQueryPrefix + ArraysIndex.commandName
-  val rawQueryArraysName: String = simpleQueryPrefix + ArraysIndex.commandName
+  val rawQueryArraysName: String = rawQueryPrefix + ArraysIndex.commandName
   val moveArraysName: String = movePrefix + ArraysIndex.commandName
   val deleteArraysName: String = deletePrefix + ArraysIndex.commandName
   val deliverArraysName: String = deliverPrefix + ArraysIndex.commandName
