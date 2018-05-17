@@ -30,6 +30,7 @@ class PersistenceDAOSpec
   implicit val index: ElasticsearchIndex[ModelMockIndex] = new ElasticsearchIndex(
     ModelMockIndex(),
     "mock",
+    Seq("mock_key_long", "mock_key_string"),
     ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
   )
 
