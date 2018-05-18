@@ -223,7 +223,7 @@ class ClioWebClient(
         DocumentStatus.Normal
       )
     }
-    val keyFields = FieldMapper[K].fields.keySet
+    val keyFields = FieldMapper[K].keys
       .map(_.toSnakeCase(CirceEquivalentCamelCaseLexer))
 
     query(clioIndex)(keyJson)

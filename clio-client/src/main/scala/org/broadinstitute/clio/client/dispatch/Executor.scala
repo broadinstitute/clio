@@ -48,7 +48,7 @@ object Executor {
   def getJsonKeyFieldNames[CI <: ClioIndex](
     index: ClioIndex
   )(implicit jsonConfig: Configuration): Seq[String] = {
-    index.keyMapper.fields.keys.map(jsonConfig.transformMemberNames).toSeq
+    index.keyMapper.keys.map(jsonConfig.transformMemberNames)
   }
 
 }

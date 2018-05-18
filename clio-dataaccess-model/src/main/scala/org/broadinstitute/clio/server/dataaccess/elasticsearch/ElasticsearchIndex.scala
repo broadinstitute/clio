@@ -8,10 +8,8 @@ import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.JsonUtils.JsonOps
-import io.circe.generic.extras.Configuration.snakeCaseTransformation
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DataType, UpsertId}
 
@@ -53,6 +51,9 @@ class ElasticsearchIndex[+CI <: ClioIndex](
     s"$rootDir$dir/"
   }
 
+  private val keyFields = fieldMapper.mapFields[clioIndex.KeyType]
+  private val metadataFields = fieldMapper.mapFields[clioIndex.MetadataType]
+
   /**
     * The ID of a json record in elasticsearch. By default, each record's ID consists
     * of the concatenated values of the Key fields.
@@ -78,10 +79,7 @@ class ElasticsearchIndex[+CI <: ClioIndex](
         .getOrElse(throw new RuntimeException(s"Could not get $key from json"))
     }
 
-    FieldMapper[clioIndex.KeyType].fields.keys
-      .map(snakeCaseTransformation)
-      .map(getAsString)
-      .mkString(".")
+    keyFields.map(field => getAsString(field.name)).mkString(".")
   }
 
   /**
@@ -94,14 +92,13 @@ class ElasticsearchIndex[+CI <: ClioIndex](
 
   /** The fields for the index. */
   def fields: Seq[FieldDefinition] =
-    (FieldMapper[clioIndex.KeyType].fields ++ FieldMapper[clioIndex.MetadataType].fields).toSeq.sortBy {
-      case (name, _) => name
-    }.map({
-      case (name, value) =>
-        fieldMapper.stringToDefinition(value)(
-          ElasticsearchUtil.toElasticsearchName(name)
-        )
-    }) ++ ElasticsearchIndex.BookkeepingNames.map(keywordField)
+    Seq
+      .concat(
+        keyFields,
+        metadataFields,
+        ElasticsearchIndex.BookkeepingNames.map(keywordField)
+      )
+      .sortBy(_.name)
 }
 
 object ElasticsearchIndex extends ModelAutoDerivation {
