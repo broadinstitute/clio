@@ -16,9 +16,9 @@ class FieldMapperSpec extends FlatSpec with Matchers {
       "fieldC" -> typeOf[Boolean]
     )
     val fieldMapper = FieldMapper[TestClass]
-    fieldMapper.fields.keys should contain theSameElementsAs expected.keys
+    fieldMapper.keys should contain theSameElementsAs expected.keys
     for (key <- expected.keys) {
-      assert(fieldMapper.fields(key) =:= expected(key))
+      assert(fieldMapper(key) =:= expected(key))
     }
   }
 }

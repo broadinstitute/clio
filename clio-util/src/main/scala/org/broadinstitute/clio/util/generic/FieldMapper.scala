@@ -15,7 +15,14 @@ import scala.reflect.runtime.universe.{Type, TypeTag, typeTag}
   * @tparam A The type to retrieve fields.
   */
 sealed trait FieldMapper[A] {
-  def fields: Map[String, Type]
+  def fields: List[(String, Type)]
+
+  final def keys: List[String] = fields.map(_._1)
+
+  final def apply(field: String): Type =
+    fields
+      .find(_._1 == field)
+      .fold(throw new NoSuchElementException(s"Unknown field name: $field"))(_._2)
 }
 
 /**
@@ -49,17 +56,17 @@ object FieldMapper {
     * @return Mapper instance with the passed fields.
     */
   private def createMapper[A](
-    mapperFields: Map[String, Type]
+    mapperFields: List[(String, Type)]
   ): FieldMapper[A] = {
     new FieldMapper[A] {
-      override val fields: Map[String, Type] = mapperFields
+      override val fields: List[(String, Type)] = mapperFields
     }
   }
 
   /**
     * A mapper for HNil, returning no fields.
     */
-  implicit val hnilMapper: FieldMapper[HNil] = createMapper(Map.empty)
+  implicit val hnilMapper: FieldMapper[HNil] = createMapper(List.empty)
 
   /**
     * Returns a FieldMapper for any HList made up of a (headNameAndOptionType :: (more tail elements) :: HNil).
@@ -83,7 +90,7 @@ object FieldMapper {
     witness: Witness.Aux[K],
     tailMapper: FieldMapper[T]
   ): FieldMapper[FieldType[K, H] :: T] = {
-    createMapper(Map(witness.value.name -> typeTag[H].tpe) ++ tailMapper.fields)
+    createMapper((witness.value.name -> typeTag[H].tpe) :: tailMapper.fields)
   }
 
   /**
