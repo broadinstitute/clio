@@ -14,7 +14,7 @@ class CaseClassMapperWithTypesSpec extends FlatSpec with Matchers {
       Map("fieldA" -> typeOf[Option[String]], "fieldB" -> typeOf[Int])
     val mapper = new CaseClassMapperWithTypes[TestClass]
     for (key <- expected.keys) {
-      assert(mapper(key) =:= expected(key))
+      assert(mapper.typeOf(key) =:= expected(key))
     }
   }
 

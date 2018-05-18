@@ -14,5 +14,5 @@ import scala.reflect.runtime.universe.Type
 class CaseClassMapperWithTypes[T: ClassTag](implicit mapper: FieldMapper[T])
     extends CaseClassMapper[T] {
 
-  final def apply(field: String): Type = mapper(field)
+  final def typeOf(field: String): Type = mapper.typeOf(field)
 }

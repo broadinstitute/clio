@@ -8,6 +8,7 @@ import com.sksamuel.elastic4s.mappings.FieldDefinition
 import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import enumeratum.EnumEntry
 import enumeratum.values.{IntEnum, IntEnumEntry}
+import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.model.UpsertId
 
 import scala.collection.immutable
@@ -20,6 +21,12 @@ private[dataaccess] sealed abstract class ElasticsearchFieldMapper(
   def stringToDefinition(fieldType: Type): String => FieldDefinition
 
   def valueToQuery(fieldName: String, fieldType: Type): Any => QueryDefinition
+
+  final def mapFields[T](implicit fieldMapper: FieldMapper[T]): Seq[FieldDefinition] =
+    fieldMapper.fields.map {
+      case (name, tpe) =>
+        stringToDefinition(tpe)(ElasticsearchUtil.toElasticsearchName(name))
+    }
 
   protected def is[A: TypeTag](tpe: Type): Boolean = {
     /*

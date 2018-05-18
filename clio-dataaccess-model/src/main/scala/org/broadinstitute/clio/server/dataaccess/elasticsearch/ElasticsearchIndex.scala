@@ -10,7 +10,6 @@ import io.circe.syntax._
 import org.broadinstitute.clio.JsonUtils.JsonOps
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model._
-import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DataType, UpsertId}
 
@@ -52,14 +51,8 @@ class ElasticsearchIndex[+CI <: ClioIndex](
     s"$rootDir$dir/"
   }
 
-  private val keyFields = FieldMapper[clioIndex.KeyType].fields.map {
-    case (k, v) =>
-      fieldMapper.stringToDefinition(v)(ElasticsearchUtil.toElasticsearchName(k))
-  }
-  private val metadataFields = FieldMapper[clioIndex.MetadataType].fields.map {
-    case (k, v) =>
-      fieldMapper.stringToDefinition(v)(ElasticsearchUtil.toElasticsearchName(k))
-  }
+  private val keyFields = fieldMapper.mapFields[clioIndex.KeyType]
+  private val metadataFields = fieldMapper.mapFields[clioIndex.MetadataType]
 
   /**
     * The ID of a json record in elasticsearch. By default, each record's ID consists

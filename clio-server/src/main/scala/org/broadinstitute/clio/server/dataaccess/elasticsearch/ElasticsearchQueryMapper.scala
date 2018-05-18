@@ -39,7 +39,7 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
       case (name, value) =>
         index.fieldMapper.valueToQuery(
           ElasticsearchUtil.toElasticsearchName(name),
-          inputMapper(name)
+          inputMapper.typeOf(name)
         )(value)
     }
     val queryDefinition = boolQuery must queries

@@ -19,7 +19,7 @@ sealed trait FieldMapper[A] {
 
   final def keys: List[String] = fields.map(_._1)
 
-  final def apply(field: String): Type =
+  final def typeOf(field: String): Type =
     fields
       .find(_._1 == field)
       .fold(throw new NoSuchElementException(s"Unknown field name: $field"))(_._2)
