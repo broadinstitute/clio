@@ -8,7 +8,6 @@ import com.sksamuel.elastic4s.http.ElasticDsl.keywordField
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.JsonUtils.JsonOps
-import io.circe.generic.extras.Configuration.snakeCaseTransformation
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.generic.FieldMapper
@@ -24,10 +23,23 @@ import org.broadinstitute.clio.util.model.{DataType, UpsertId}
 class ElasticsearchIndex[+CI <: ClioIndex](
   val clioIndex: CI,
   final val indexName: String,
+  final val orderedKeyFields: Seq[String],
   private[elasticsearch] val fieldMapper: ElasticsearchFieldMapper,
   private[elasticsearch] val defaultFields: Json = Json.obj()
 ) extends ModelAutoDerivation {
   import clioIndex.implicits._
+
+  private val keyFields = FieldMapper[clioIndex.KeyType].fields.map {
+    case (k, v) => ElasticsearchUtil.toElasticsearchName(k) -> v
+  }
+  private val metadataFields = FieldMapper[clioIndex.MetadataType].fields.map {
+    case (k, v) => ElasticsearchUtil.toElasticsearchName(k) -> v
+  }
+
+  assert(
+    orderedKeyFields.toSet.equals(keyFields.keySet),
+    s"Ordered key-fields $orderedKeyFields for index $indexName don't match fields from FieldMapper ${keyFields.keySet}"
+  )
 
   /**
     * The root directory to use when persisting updates of this index to storage.
@@ -78,10 +90,7 @@ class ElasticsearchIndex[+CI <: ClioIndex](
         .getOrElse(throw new RuntimeException(s"Could not get $key from json"))
     }
 
-    FieldMapper[clioIndex.KeyType].fields.keys
-      .map(snakeCaseTransformation)
-      .map(getAsString)
-      .mkString(".")
+    orderedKeyFields.map(getAsString).mkString(".")
   }
 
   /**
@@ -93,15 +102,15 @@ class ElasticsearchIndex[+CI <: ClioIndex](
   final val defaults: Json = defaultFields.dropNulls
 
   /** The fields for the index. */
-  def fields: Seq[FieldDefinition] =
-    (FieldMapper[clioIndex.KeyType].fields ++ FieldMapper[clioIndex.MetadataType].fields).toSeq.sortBy {
-      case (name, _) => name
-    }.map({
-      case (name, value) =>
-        fieldMapper.stringToDefinition(value)(
-          ElasticsearchUtil.toElasticsearchName(name)
-        )
-    }) ++ ElasticsearchIndex.BookkeepingNames.map(keywordField)
+  lazy val fields: Seq[FieldDefinition] =
+    Seq
+      .concat(
+        (keyFields ++ metadataFields).map {
+          case (name, value) => fieldMapper.stringToDefinition(value)(name)
+        }.toSeq,
+        ElasticsearchIndex.BookkeepingNames.map(keywordField)
+      )
+      .sortBy(_.name)
 }
 
 object ElasticsearchIndex extends ModelAutoDerivation {
@@ -131,6 +140,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // We need to keep this name consistent with GCS, so we cannot easily change it.
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       "wgs-ubam",
+      Seq("location", "flowcell_barcode", "lane", "library_name"),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 
@@ -140,6 +150,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       indexName = "gvcf-v2",
+      Seq("location", "project", "data_type", "sample_alias", "version"),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
       // Type-widening is needed here because `asJson` tries to jsonify the narrowest type possible.
       // This results in an empty object instead if the correct string value.
@@ -152,6 +163,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // Despite being decoupled from "v1", we append -v2 to keep ES indices consistent with GCS.
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       "wgs-cram-v2",
+      Seq("location", "project", "data_type", "sample_alias", "version"),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
       // Type-widening is needed here because `asJson` tries to jsonify the narrowest type possible.
       // This results in an empty object instead if the correct string value.
@@ -164,6 +176,7 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       // We need to keep this name consistent with GCS, so we cannot easily change it.
       // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
       "arrays",
+      Seq("location", "chipwell_barcode", "version"),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
 }

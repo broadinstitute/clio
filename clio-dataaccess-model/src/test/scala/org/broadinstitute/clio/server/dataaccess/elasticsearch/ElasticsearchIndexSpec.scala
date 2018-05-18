@@ -12,6 +12,7 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
     new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex(),
       "mock",
+      Seq("mock_key_long", "mock_key_string"),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
   )
@@ -19,6 +20,7 @@ class ElasticsearchIndexSpec extends FlatSpec with Matchers with ModelAutoDeriva
     new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex(),
       "mock-v2",
+      Seq("mock_key_long", "mock_key_string"),
       ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
     )
   )

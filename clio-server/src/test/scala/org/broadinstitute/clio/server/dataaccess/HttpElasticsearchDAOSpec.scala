@@ -42,12 +42,14 @@ class HttpElasticsearchDAOSpec
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex(),
         "test_index_update_type",
+        Seq("mock_key_long", "mock_key_string"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex(commandName = "command_name"),
         "test_index_update_type",
+        Seq("mock_key_long", "mock_key_string"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
@@ -67,12 +69,14 @@ class HttpElasticsearchDAOSpec
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex(),
         "test_index_fail_recreate",
+        Seq("mock_key_long", "mock_key_string"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex(commandName = "command_name"),
         "test_index_fail_recreate",
+        Seq("mock_key_long", "mock_key_string"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
 
@@ -94,12 +98,14 @@ class HttpElasticsearchDAOSpec
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex(),
         "test_index_fail_change_types",
+        Seq("mock_key_long", "mock_key_string"),
         ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
       )
     val indexVersion2: ElasticsearchIndex[_] =
       new ElasticsearchIndex[ModelMockIndex](
         ModelMockIndex(),
         "test_index_fail_change_types",
+        Seq("mock_key_long", "mock_key_string"),
         ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords
       )
     for {
@@ -126,6 +132,7 @@ class HttpElasticsearchDAOSpec
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex(),
       "docs-" + UUID.randomUUID(),
+      Seq("mock_key_long", "mock_key_string"),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
@@ -155,6 +162,7 @@ class HttpElasticsearchDAOSpec
     val index = new ElasticsearchIndex[ModelMockIndex](
       ModelMockIndex(),
       "docs-" + UUID.randomUUID(),
+      Seq("mock_key_long", "mock_key_string"),
       ElasticsearchFieldMapper.NumericBooleanDateAndKeywordFields
     )
 
