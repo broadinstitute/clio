@@ -27,14 +27,15 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
   ): Source[(ArraysMetadata, immutable.Seq[IoOp]), NotUsed] = {
     (deliveredMetadata.grnIdatPath, deliveredMetadata.redIdatPath) match {
       case (Some(grn), Some(red)) => {
+        val idatDestination = deliverCommand.destination.resolve("/idat/")
         val movedGrnIdat = Metadata.findNewPathForMove(
           grn,
-          deliverCommand.destination,
+          idatDestination,
           ArraysExtensions.IdatExtension
         )
         val movedRedIdat = Metadata.findNewPathForMove(
           red,
-          deliverCommand.destination,
+          idatDestination,
           ArraysExtensions.IdatExtension
         )
         val idatCopies = immutable
