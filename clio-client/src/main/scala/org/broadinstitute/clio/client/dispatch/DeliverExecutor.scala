@@ -33,21 +33,20 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
     webClient: ClioWebClient
   ): Source[moveCommand.index.MetadataType, NotUsed] = {
     val baseStream = super.checkPreconditions(ioUtil, webClient)
+    val newWorkspace = deliverCommand.workspaceName
+
     baseStream.flatMapConcat { metadata =>
-      val workspaceName = metadata.workspaceName
-      if (deliverCommand.force || workspaceName.isEmpty || workspaceName.contains(
-            deliverCommand.workspaceName
-          )) {
-        Source.single(metadata)
-      } else {
-        Source.failed(
-          new UnsupportedOperationException(
-            s"Cannot deliver ${deliverCommand.index.name} to workspace '${deliverCommand.workspaceName}' " +
-              s"because it has already been delivered to workspace '${workspaceName.get}'. Use --force " +
-              "if you want to override this restriction."
+      metadata.workspaceName
+        .filterNot(n => deliverCommand.force || n == newWorkspace)
+        .fold(Source.single(metadata)) { existingWorkspace =>
+          Source.failed(
+            new UnsupportedOperationException(
+              s"Cannot deliver $prettyKey to workspace '$newWorkspace'" +
+                s" because it has already been delivered to workspace '$existingWorkspace'." +
+                " Use --force if you want to override this restriction."
+            )
           )
-        )
-      }
+        }
     }
   }
 

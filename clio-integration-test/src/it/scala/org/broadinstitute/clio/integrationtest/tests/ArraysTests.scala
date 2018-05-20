@@ -413,8 +413,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val rootSource = rootTestStorageDir / s"arrays/$chipwellBarcode/v$version/"
     val vcfSource = rootSource / vcfName
     val vcfIndexSource = rootSource / vcfIndexName
-    val grnIdatSource = rootSource / grnIdatName
-    val redIdatSource = rootSource / redIdatName
+    val grnIdatSource = rootSource / "idats" / grnIdatName
+    val redIdatSource = rootSource / "idats" / redIdatName
 
     val key = ArraysKey(Location.GCP, Symbol(chipwellBarcode), 1)
     val metadata = ArraysMetadata(
@@ -820,8 +820,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val vcfDestination = rootDestination / s"$prefix$vcfName"
     val vcfIndexDestination = rootDestination / s"$prefix$vcfIndexName"
     val gtcDestination = rootDestination / s"$prefix$gtcName"
-    val grnIdatDestination = rootDestination / grnIdatName
-    val redIdatDestination = rootDestination / redIdatName
+    val grnIdatDestination = rootDestination / "idats" / grnIdatName
+    val redIdatDestination = rootDestination / "idats" / redIdatName
 
     val key = ArraysKey(Location.GCP, Symbol(barcode), version)
     val metadata = ArraysMetadata(
@@ -938,8 +938,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val rootSource = rootTestStorageDir / s"arrays/$barcode/v$version/"
     val vcfSource = rootSource / vcfName
     val vcfIndexSource = rootSource / vcfIndexName
-    val grnIdatSource = rootSource / grnIdatName
-    val redIdatSource = rootSource / redIdatName
+    val grnIdatSource = rootSource / "idats" / grnIdatName
+    val redIdatSource = rootSource / "idats" / redIdatName
 
     val key = ArraysKey(Location.GCP, Symbol(barcode), version)
     val metadata = ArraysMetadata(

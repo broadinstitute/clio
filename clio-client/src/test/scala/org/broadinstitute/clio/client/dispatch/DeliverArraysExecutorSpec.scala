@@ -49,10 +49,18 @@ class DeliverArraysExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     executor.buildMove(metadata, ioUtil).runWith(Sink.head).map {
       case (newMetadata, ops) =>
         val movedGrn = metadata.grnIdatPath.map(
-          Metadata.findNewPathForMove(_, destination, ArraysExtensions.IdatExtension)
+          Metadata.buildFilePath(
+            _,
+            destination.resolve(DeliverArraysExecutor.IdatsDir),
+            ArraysExtensions.IdatExtension
+          )
         )
         val movedRed = metadata.redIdatPath.map(
-          Metadata.findNewPathForMove(_, destination, ArraysExtensions.IdatExtension)
+          Metadata.buildFilePath(
+            _,
+            destination.resolve(DeliverArraysExecutor.IdatsDir),
+            ArraysExtensions.IdatExtension
+          )
         )
 
         val grnMove = metadata.grnIdatPath.zip(movedGrn).map {
