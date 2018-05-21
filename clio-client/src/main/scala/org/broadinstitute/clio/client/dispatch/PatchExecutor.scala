@@ -53,10 +53,12 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
           mergedJson.equals(oldMetadataJson)
       }
       // Upsert the stuff!
-      .flatMapMerge(parallelism, {
-        case (mergedMetadataJson, oldMetadataJson, docKey) =>
-          upsertPatch(mergedMetadataJson, oldMetadataJson, docKey, webClient)
-      })
+      .flatMapMerge(
+        parallelism, {
+          case (mergedMetadataJson, oldMetadataJson, docKey) =>
+            upsertPatch(mergedMetadataJson, oldMetadataJson, docKey, webClient)
+        }
+      )
   }
 
   /**
@@ -105,6 +107,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
             ex
         )
       )
+    logger.info(s"Upserting patch metadata for document with key: $docKey")
     webClient.upsert(patchCommand.index)(docKey, patchMetadata, force = false)
   }
 
