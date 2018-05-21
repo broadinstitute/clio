@@ -48,7 +48,7 @@ trait Metadata[M <: Metadata[M]] { self: M =>
 
     mapMove {
       case (pathOpt, ext) =>
-        pathOpt.map(Metadata.findNewPathForMove(_, destination, ext, newBasename))
+        pathOpt.map(Metadata.buildFilePath(_, destination, ext, newBasename))
     }
   }
 
@@ -106,13 +106,12 @@ object Metadata {
     * extension. Rather than make dangerous guesses, we require that the code calling
     * the move operation provide the file extension to retain during the move operation.
     */
-  def findNewPathForMove(
+  def buildFilePath(
     source: URI,
     destination: URI,
     extension: String,
     newBasename: Option[String] = None
   ): URI = {
-    // TODO: Rewrite this using a Path-based API.
     val srcName = new File(source.getPath).getName
     val srcBase = srcName.take(srcName.toLowerCase.lastIndexOf(extension))
     destination.resolve(s"${newBasename.getOrElse(srcBase)}$extension")
