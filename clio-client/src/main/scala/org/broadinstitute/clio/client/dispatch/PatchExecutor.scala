@@ -20,6 +20,10 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
 
   private lazy val queryAllJson: Json = Json.obj()
 
+  /**
+    * How wide to spread the computation when upserting documents.
+    * This choice is pretty arbitrary, but 32 seems to work in prod.
+    */
   private lazy val parallelism = 32
 
   /**
