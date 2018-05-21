@@ -21,6 +21,12 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
   private lazy val queryAllJson: Json = Json.obj()
 
   /**
+    * How wide to spread the computation when upserting documents.
+    * This choice is pretty arbitrary, but 32 seems to work in prod.
+    */
+  private lazy val parallelism = 32
+
+  /**
     * Build a stream which, when pulled, will communicate with the clio-server
     * to update its records about some metadata, potentially performing IO
     * operations in the process.
@@ -51,10 +57,12 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
           mergedJson.equals(oldMetadataJson)
       }
       // Upsert the stuff!
-      .flatMapConcat {
-        case (mergedMetadataJson, oldMetadataJson, docKey) =>
-          upsertPatch(mergedMetadataJson, oldMetadataJson, docKey, webClient)
-      }
+      .flatMapMerge(
+        parallelism, {
+          case (mergedMetadataJson, oldMetadataJson, docKey) =>
+            upsertPatch(mergedMetadataJson, oldMetadataJson, docKey, webClient)
+        }
+      )
   }
 
   /**
@@ -103,6 +111,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
             ex
         )
       )
+    logger.info(s"Upserting patch metadata for document with key: $docKey")
     webClient.upsert(patchCommand.index)(docKey, patchMetadata, force = false)
   }
 
