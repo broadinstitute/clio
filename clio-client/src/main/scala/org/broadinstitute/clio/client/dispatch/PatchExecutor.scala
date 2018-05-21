@@ -20,6 +20,8 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
 
   private lazy val queryAllJson: Json = Json.obj()
 
+  private lazy val parallelism = 32
+
   /**
     * Build a stream which, when pulled, will communicate with the clio-server
     * to update its records about some metadata, potentially performing IO
@@ -51,10 +53,10 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
           mergedJson.equals(oldMetadataJson)
       }
       // Upsert the stuff!
-      .flatMapConcat {
+      .flatMapMerge(parallelism, {
         case (mergedMetadataJson, oldMetadataJson, docKey) =>
           upsertPatch(mergedMetadataJson, oldMetadataJson, docKey, webClient)
-      }
+      })
   }
 
   /**
