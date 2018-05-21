@@ -4,6 +4,7 @@ import better.files.File
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 import io.circe.syntax._
+import java.net.URI
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -1262,4 +1263,33 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "write dict, fasta, fasta.fai paths" in {
+    val upsertKey = ArraysKey(
+      location = Location.GCP,
+      chipwellBarcode = Symbol(s"barcode$randomId"),
+      version = 1
+    )
+    val referencesDirs = "hg19/v0/Homo_sapiens_assembly19"
+    val refDictPath = rootPathForReferencesBucket / s"$referencesDirs${ArraysExtensions.DictExtension}"
+    val refFastaPath = rootPathForReferencesBucket / s"$referencesDirs${ArraysExtensions.FastaExtension}"
+    val refFastaIndexPath = rootPathForReferencesBucket / s"$referencesDirs${ArraysExtensions.FastaFaiExtension}"
+    for {
+      upsertId <- runUpsertArrays(
+        upsertKey,
+        ArraysMetadata(
+          refDictPath = Some(refDictPath.uri),
+          refFastaPath = Some(refFastaPath.uri),
+          refFastaIndexPath = Some(refFastaIndexPath.uri)
+        ),
+        force = false
+      )
+    } yield {
+      val storedDocument = getJsonFrom(upsertId)(ElasticsearchIndex.Arrays)
+      storedDocument.unsafeGet[URI]("ref_dict_path") should be(refDictPath.uri)
+      storedDocument.unsafeGet[URI]("ref_fasta_path") should be(refFastaPath.uri)
+      storedDocument.unsafeGet[URI]("ref_fasta_index_path") should be(
+        refFastaIndexPath.uri
+      )
+    }
+  }
 }

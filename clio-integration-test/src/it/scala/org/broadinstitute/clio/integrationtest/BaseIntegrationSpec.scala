@@ -144,6 +144,21 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   }
 
   /**
+    * The path to the root of the references bucket.
+    */
+  def rootPathForReferencesBucket: File = {
+    val gcs: FileSystem = CloudStorageFileSystem.forBucket(
+      s"broad-references",
+      CloudStorageConfiguration.DEFAULT,
+      StorageOptions
+        .newBuilder()
+        .build()
+    )
+
+    File(gcs.getPath("/"))
+  }
+
+  /**
     * Path to the cloud directory to which all GCP test data
     * should be written.
     */
