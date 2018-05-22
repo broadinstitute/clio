@@ -32,7 +32,13 @@ class DeliverArraysExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     grnIdatPath =
       Some(URI.create(s"gs://bucket/the-grn${ArraysExtensions.IdatExtension}")),
     redIdatPath =
-      Some(URI.create(s"gs://bucket/the-red${ArraysExtensions.IdatExtension}"))
+      Some(URI.create(s"gs://bucket/the-red${ArraysExtensions.IdatExtension}")),
+    refFastaPath =
+      Some(URI.create(s"gs://bucket/the-ref${ArraysExtensions.FastaExtension}")),
+    refFastaIndexPath =
+      Some(URI.create(s"gs://bucket/the-ref${ArraysExtensions.FastaFaiExtension}")),
+    refDictPath =
+      Some(URI.create(s"gs://bucket/the-ref${ArraysExtensions.DictExtension}"))
   )
   private val workspaceName = "the-workspace"
   private val destination = URI.create("gs://the-destination/")
