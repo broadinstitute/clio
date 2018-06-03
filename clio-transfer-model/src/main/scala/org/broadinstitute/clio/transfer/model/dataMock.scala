@@ -3,6 +3,7 @@ package org.broadinstitute.clio.transfer.model
 import java.net.URI
 import java.time.OffsetDateTime
 
+import cats.Show
 import io.circe.{Decoder, Encoder, ObjectEncoder}
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
@@ -39,6 +40,8 @@ case class ModelMockIndex(
     implicitly[FieldMapper[MetadataType]]
   override val queryInputMapper: FieldMapper[ModelMockQueryInput] =
     implicitly[FieldMapper[QueryInputType]]
+
+  override val showKey: Show[ModelMockKey] = _.toString
 }
 
 case class ModelMockKey(mockKeyLong: Long, mockKeyString: String) extends IndexKey {

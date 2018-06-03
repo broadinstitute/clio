@@ -6,12 +6,12 @@ import java.net.URI
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import cats.syntax.either._
+import cats.syntax.show._
 import io.circe.Json
 import org.broadinstitute.clio.client.commands.MoveCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{ClioIndex, Metadata}
-import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -32,7 +32,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
   import moveCommand.index.implicits._
 
   private[dispatch] val name: String = moveCommand.index.name
-  private[dispatch] val prettyKey = ClassUtil.formatFields(moveCommand.key)
+  private[dispatch] val prettyKey = moveCommand.key.show
   private val destination: URI = moveCommand.destination
 
   override def execute(
@@ -75,6 +75,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
             )
         }
     } yield {
+      logger.info(s"Successfully moved record for $prettyKey to $destination.")
       upsertId
     }
   }
