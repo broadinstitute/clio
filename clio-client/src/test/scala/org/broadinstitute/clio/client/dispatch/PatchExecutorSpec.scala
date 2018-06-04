@@ -1,16 +1,18 @@
 package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
+import java.time.OffsetDateTime
 
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.Json
+import io.circe.literal._
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.PatchArrays
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.client.webclient.ClioWebClient.UpsertAux
-import org.broadinstitute.clio.transfer.model.{ArraysIndex, ClioIndex, GvcfIndex}
+import org.broadinstitute.clio.transfer.model.{ArraysIndex, ClioIndex}
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
 import org.scalamock.scalatest.AsyncMockFactory
@@ -19,6 +21,8 @@ import scala.collection.immutable
 
 class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   behavior of "PatchExecutor"
+
+  import org.broadinstitute.clio.JsonUtils.JsonOps
 
   private val documentsInClio = 0 until 2000
   private val alreadyHasMetadata = 500
@@ -57,7 +61,7 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
           _: Boolean
         )
       )
-      .expects(ArraysIndex, Json.obj(), true)
+      .expects(ArraysIndex, *, true)
       .returning(Source(documents.map { km =>
         km._1.asJson.deepMerge(km._2.asJson)
       }))
@@ -72,13 +76,13 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       val (theKey, metadata) = km
       (
         webClient
-          .upsert(_: UpsertAux[ArraysKey, ArraysMetadata])(
+          .upsertJson(_: UpsertAux[ArraysKey, _])(
             _: ArraysKey,
-            _: ArraysMetadata,
+            _: Json,
             _: Boolean
           )
         )
-        .expects(ArraysIndex, theKey, metadata, false)
+        .expects(ArraysIndex, theKey, metadata.asJson.dropNulls, false)
         .returning(Source.single(UpsertId.nextId().asJson))
     }
   }
@@ -96,8 +100,8 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     setupUpserts(webClient, documentsWithoutMetadata.map(km => (km._1, newMetadata)))
 
     val executor = new PatchExecutor(PatchArrays(loc))
-    executor.execute(webClient, getMockIoUtil()).runWith(Sink.seq).map { _ =>
-      succeed
+    executor.execute(webClient, getMockIoUtil()).runWith(Sink.head).map { numPatched =>
+      numPatched should be(Json.fromInt(zipped.size - alreadyHasMetadata))
     }
   }
 
@@ -108,8 +112,8 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     setupUpserts(webClient, keys.map(k => (k, newMetadata)))
 
     val executor = new PatchExecutor(PatchArrays(loc))
-    executor.execute(webClient, getMockIoUtil()).runWith(Sink.seq).map { _ =>
-      succeed
+    executor.execute(webClient, getMockIoUtil()).runWith(Sink.head).map { numPatched =>
+      numPatched should be(Json.fromInt(zipped.size))
     }
   }
 
@@ -132,8 +136,8 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     setupUpserts(webClient, keys.map(k => (k, newMetadata)))
 
     val executor = new PatchExecutor(PatchArrays(loc))
-    executor.execute(webClient, ioUtil).runWith(Sink.seq).map { _ =>
-      succeed
+    executor.execute(webClient, ioUtil).runWith(Sink.head).map { numPatched =>
+      numPatched should be(Json.fromInt(zipped.size))
     }
   }
 
@@ -149,27 +153,39 @@ class PatchExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     setupQueryReturn(webClient, zipped)
 
     val executor = new PatchExecutor(PatchArrays(loc))
-    executor.execute(webClient, ioUtil).runWith(Sink.seq).map { _ =>
-      succeed
+    executor.execute(webClient, ioUtil).runWith(Sink.head).map { numPatched =>
+      numPatched should be(Json.fromInt(0))
     }
   }
 
-  it should "throw an exception if the wrong type of metadata is given" in {
-    recoverToSucceededIf[IllegalArgumentException] {
-      val ioUtil = mock[IoUtil]
-      (ioUtil
-        .readMetadata(_: GvcfIndex.type)(_: URI))
-        .expects(*, loc)
-        .returning(
-          Source.failed(new IllegalArgumentException(s"Invalid metadata given at $loc."))
-        )
+  Seq(
+    (
+      "build queries matching unpatched documents",
+      ArraysMetadata(
+        chipType = Some("chip-type"),
+        workflowStartDate = Some(OffsetDateTime.now())
+      ),
+      json"""[{"bool": {"must_not": {"exists": {"field": "chip_type"}}}},
+              {"bool": {"must_not": {"exists": {"field": "workflow_start_date"}}}}]"""
+    ),
+    ("build an unsatisfiable query when patching nothing", ArraysMetadata(), json"[]")
+  ).foreach {
+    case (description, metadata, shoulds) =>
+      it should behave like buildQueryTest(description, metadata, shoulds)
+  }
 
-      val webClient = mock[ClioWebClient]
+  def buildQueryTest(
+    description: String,
+    metadata: ArraysMetadata,
+    expectedShoulds: Json
+  ): Unit = {
+    it should description in {
+      val query = PatchExecutor.buildQueryForUnpatched(metadata.asJson.dropNulls)
 
-      setupQueryReturn(webClient, zipped)
+      val fullExpected =
+        json"""{ "query": { "bool": { "should": $expectedShoulds, "minimum_should_match": 1 } } }"""
 
-      val executor = new PatchExecutor(PatchArrays(loc))
-      executor.execute(webClient, ioUtil).runWith(Sink.ignore)
+      query should be(fullExpected)
     }
   }
 }

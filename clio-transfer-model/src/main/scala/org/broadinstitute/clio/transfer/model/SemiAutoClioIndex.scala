@@ -1,6 +1,8 @@
 package org.broadinstitute.clio.transfer.model
 
-import io.circe.{Decoder, Encoder, ObjectEncoder}
+import cats.Show
+import io.circe.{Decoder, Encoder, ObjectEncoder, Printer}
+import io.circe.syntax._
 import org.broadinstitute.clio.transfer.model.arrays.{
   ArraysKey,
   ArraysMetadata,
@@ -46,6 +48,8 @@ sealed abstract class SemiAutoClioIndex[
   override type MetadataType = MT
   override type QueryInputType = QI
 
+  override val showKey: Show[KT] =
+    _.asJson.pretty(Printer.noSpaces.copy(colonRight = " ", objectCommaRight = " "))
 }
 
 case object GvcfIndex

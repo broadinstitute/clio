@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import io.circe.Json
+import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -21,7 +22,17 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
       case GetServerHealth  => webClient.getClioServerHealth
       case GetServerVersion => webClient.getClioServerVersion
       case query: RawQueryCommand[_] =>
-        webClient.jsonFileQuery(query.index)(query.queryInputPath)
+        parse(query.queryInputPath.contentAsString)
+          .fold(
+            e =>
+              Source.failed(
+                new IllegalArgumentException(
+                  s"Input file at ${query.queryInputPath} must contain valid JSON.",
+                  e
+                )
+            ),
+            webClient.query(query.index)(_, raw = true)
+          )
       case query: SimpleQueryCommand[_] =>
         webClient.simpleQuery(query.index)(query.queryInput, query.includeDeleted)
     }

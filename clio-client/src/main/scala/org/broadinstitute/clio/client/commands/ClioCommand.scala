@@ -69,6 +69,7 @@ sealed abstract class DeliverCommand[+CI <: DeliverableIndex](override val index
 
 sealed abstract class PatchCommand[CI <: ClioIndex](val index: CI) extends ClioCommand {
   def metadataLocation: URI
+  def maxParallelUpserts: Int
 }
 
 sealed abstract class BackCompatibleDeliverCram extends DeliverCommand(CramIndex)
@@ -150,7 +151,8 @@ final case class DeleteGvcf(
 
 @CommandName(ClioCommand.patchGvcfName)
 final case class PatchGvcf(
-  metadataLocation: URI
+  metadataLocation: URI,
+  maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(GvcfIndex)
 
 // cram commands.
@@ -198,7 +200,8 @@ final case class DeliverCram(
 
 @CommandName(ClioCommand.patchCramName)
 final case class PatchCram(
-  metadataLocation: URI
+  metadataLocation: URI,
+  maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(CramIndex)
 
 //TODO Get rid of these wgs-cram commands when they're no longer being used
@@ -281,6 +284,7 @@ final case class DeleteUbam(
 @CommandName(ClioCommand.patchUbamName)
 final case class PatchUbam(
   metadataLocation: URI,
+  maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(UbamIndex)
 
 // ARRAYS commands.
@@ -328,7 +332,8 @@ final case class DeliverArrays(
 
 @CommandName(ClioCommand.patchArraysName)
 final case class PatchArrays(
-  metadataLocation: URI
+  metadataLocation: URI,
+  maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(ArraysIndex)
 
 object ClioCommand extends ClioParsers {
@@ -395,6 +400,15 @@ object ClioCommand extends ClioParsers {
   val deleteArraysName: String = deletePrefix + ArraysIndex.commandName
   val deliverArraysName: String = deliverPrefix + ArraysIndex.commandName
   val patchArraysName: String = patchPrefix + ArraysIndex.commandName
+
+  /**
+    * Default parallelism for patch commands.
+    *
+    * This choice is pretty arbitrary. 32 worked in prod at one
+    * point but overloaded the server on the next attempt, so we
+    * dropped it down to 16.
+    */
+  val defaultPatchParallelism = 16
 
   /** The caseapp parser to use for all Clio sub-commands. */
   val parser: CommandParser[ClioCommand] =

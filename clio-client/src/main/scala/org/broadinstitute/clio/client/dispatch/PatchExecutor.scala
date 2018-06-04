@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import cats.syntax.either._
+import cats.syntax.show._
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.PatchCommand
@@ -18,14 +19,6 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
 
   private type DocumentKey = patchCommand.index.KeyType
 
-  private lazy val queryAllJson: Json = Json.obj()
-
-  /**
-    * How wide to spread the computation when upserting documents.
-    * This choice is pretty arbitrary, but 32 seems to work in prod.
-    */
-  private lazy val parallelism = 32
-
   /**
     * Build a stream which, when pulled, will communicate with the clio-server
     * to update its records about some metadata, potentially performing IO
@@ -35,84 +28,71 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
     webClient: ClioWebClient,
     ioUtil: IoUtil
   ): Source[Json, NotUsed] = {
-    // Read the metadata then turn into Json so that we fail fast.
-    ioUtil
-      .readMetadata(patchCommand.index)(patchCommand.metadataLocation)
-      .map(_.asJson.dropNulls)
-      .flatMap(Source.repeat)
-      // zip new metadatas with documents
-      .zip(
-        webClient
-          .query(patchCommand.index)(queryAllJson, raw = true)
-          .map(_.dropNulls)
-      )
-      // Merge metadata for documents
-      .map {
-        case (newMetadataJson, documentJson) =>
-          mergeMetadata(newMetadataJson, documentJson)
-      }
-      // filter out things that already have no new metadata to upsert
-      .filterNot {
-        case (mergedJson, oldMetadataJson, _) =>
-          mergedJson.equals(oldMetadataJson)
-      }
-      // Upsert the stuff!
+
+    val docsToUpsert = for {
+      // Read the metadata then turn into Json so that we fail fast.
+      newMetadataJson <- ioUtil
+        .readMetadata(patchCommand.index)(patchCommand.metadataLocation)
+        .map(_.asJson.dropNulls)
+
+      /*
+       * Build a query that will pull all documents with any of the
+       * fields-to-patch not set.
+       */
+      queryJson = PatchExecutor.buildQueryForUnpatched(newMetadataJson)
+      documentJson <- webClient
+        .query(patchCommand.index)(queryJson, raw = true)
+        .map(_.dropNulls)
+      toUpsert <- mergeMetadata(newMetadataJson, documentJson)
+        .fold(Source.empty[(DocumentKey, Json)])(Source.single)
+    } yield {
+      toUpsert
+    }
+
+    // Upsert the stuff!
+    docsToUpsert
       .flatMapMerge(
-        parallelism, {
-          case (mergedMetadataJson, oldMetadataJson, docKey) =>
-            upsertPatch(mergedMetadataJson, oldMetadataJson, docKey, webClient)
+        patchCommand.maxParallelUpserts, {
+          case (docKey, patchMetadata) =>
+            logger.debug(
+              s"Upserting patch metadata for document with key: ${docKey.show}"
+            )
+            webClient.upsertJson(patchCommand.index)(docKey, patchMetadata, force = false)
         }
       )
+      .fold(0) { (count, _) =>
+        count + 1
+      }
+      .map { count =>
+        logger.info(s"Patched $count documents.")
+        count.asJson
+      }
   }
 
   /**
-    * Munge the patch metadata with the document metadata to get a new metadata json
+    * Merge the patch metadata with the document metadata to get a new metadata json.
+    *
+    * Filter out any fields unchanged by the merge to avoid upserting redundant data,
+    * and return nothing if all fields were already set.
+    *
     * @param patchMetadataJson The new metadata to insert into the index
     * @param documentJson The old document to insert the metadata into
-    * @return A tuple containing the munged metadata, the old metadata, and the key for this document
+    *
+    * @return An optional pair of key to new-metadata-to-upsert for that key
     */
   private def mergeMetadata(
     patchMetadataJson: Json,
     documentJson: Json
-  ): (Json, Json, DocumentKey) = {
+  ): Option[(DocumentKey, Json)] = {
     val oldMetadataJson = getMetadataJsonFromDocument(documentJson)
     val indexKey = getKeyFromDocument(documentJson)
-    (
-      patchMetadataJson.deepMerge(oldMetadataJson),
-      oldMetadataJson,
-      indexKey
-    )
-  }
 
-  /**
-    * Upsert the new metadata into the document.
-    * This method strips any existing fields out of the metadata to be upserted in order to reduce network traffic.
-    * @param mergedMetadataJson The merged metadata containing patch and existing metadata
-    * @param oldMetadataJson The old, preexisting metadata
-    * @param docKey The key for this metadata
-    * @param webClient A ClioWebClient to upsert with.
-    * @return
-    */
-  private def upsertPatch(
-    mergedMetadataJson: Json,
-    oldMetadataJson: Json,
-    docKey: DocumentKey,
-    webClient: ClioWebClient
-  ): Source[Json, NotUsed] = {
-    val oldMetadataKeys =
-      oldMetadataJson.asObject.map(_.keys.toSeq).getOrElse(Seq.empty)
-    val patchMetadata = mergedMetadataJson
-      .mapObject(_.filterKeys(key => !oldMetadataKeys.contains(key)))
-      .as[patchCommand.index.MetadataType]
-      .valueOr(
-        ex =>
-          throw new IllegalArgumentException(
-            "Could not encode new metadata json into class",
-            ex
-        )
-      )
-    logger.info(s"Upserting patch metadata for document with key: $docKey")
-    webClient.upsert(patchCommand.index)(docKey, patchMetadata, force = false)
+    // deepMerge keeps values from the RHS when there's a conflict.
+    val patchedJson = patchMetadataJson.deepMerge(oldMetadataJson)
+    Some(patchedJson).filterNot(_.equals(oldMetadataJson)).map { patched =>
+      val oldKeys = oldMetadataJson.asObject.fold(Seq.empty[String])(_.keys.toSeq)
+      indexKey -> patched.mapObject(_.filterKeys(!oldKeys.contains(_)))
+    }
   }
 
   /**
@@ -131,7 +111,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
       .valueOr(
         ex =>
           throw new IllegalArgumentException(
-            s"Could not create ${patchCommand.index.keyTag} from ${json.pretty(defaultPrinter)}",
+            s"Could not extract a ${patchCommand.index.name} key from ${json.pretty(defaultPrinter)}",
             ex
         )
       )
@@ -149,5 +129,29 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
       )
     )
   }
+}
 
+object PatchExecutor {
+
+  /**
+    * Given a JSON object containing metadata fields which should be "patched" into
+    * Clio documents, build a JSON object containing an Elasticsearch query which
+    * will return only documents with at least one unset value amongst the fields-to-patch.
+    *
+    * Used to avoid pulling documents from Clio that are guaranteed to not be re-
+    * upserted, since patching doesn't overwrite existing values.
+    */
+  private[dispatch] def buildQueryForUnpatched(patchJson: Json): Json = {
+    import io.circe.literal._
+
+    val mustNots = patchJson.withObject { obj =>
+      Json.fromValues {
+        obj.keys.map { key =>
+          json"""{ "bool": { "must_not": { "exists": { "field": $key } } } }"""
+        }
+      }
+    }
+
+    json"""{ "query": { "bool": { "should": $mustNots, "minimum_should_match": 1 } } }"""
+  }
 }

@@ -7,7 +7,6 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.util.ByteString
-import better.files.File
 import io.circe.{Encoder, Json}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
@@ -177,46 +176,6 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
     }
   }
 
-  it should "submit arbitrary JSON as a raw query from a JSON input file" in {
-    val index = ModelMockIndex()
-
-    val jsonInput = Map("this" -> "is valid json").asJson
-    val expectedSegments =
-      Seq(
-        ApiConstants.apiString,
-        "v1",
-        index.urlSegment,
-        ApiConstants.rawQueryString
-      )
-
-    val flow = Flow[HttpRequest].map { req =>
-      req.uri.path.toString should be(expectedSegments.mkString("/", "/", ""))
-      req.entity should be(
-        HttpEntity(
-          ContentTypes.`application/json`,
-          jsonInput.pretty(defaultPrinter)
-        )
-      )
-      jsonResponse(jsonInput)
-    }
-
-    val generator = mock[CredentialsGenerator]
-    (generator.generateCredentials _).expects().returning(OAuth2BearerToken("fake"))
-
-    val client = new ClioWebClient(flow, timeout, 0, generator)
-
-    File
-      .temporaryFile()
-      .map { tempFile =>
-        tempFile.writeText(jsonInput.pretty(defaultPrinter))
-        client
-          .jsonFileQuery(index)(tempFile)
-          .runWith(Sink.head)
-          .map(_ => succeed)
-      }
-      .get
-  }
-
   Seq(true, false).foreach { b =>
     it should behave like upsertTest(b)
     it should behave like queryTest(b)
@@ -379,26 +338,5 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
     recoverToSucceededIf[IllegalStateException] {
       client.getMetadataForKey(index)(key, false).runWith(Sink.head)
     }
-  }
-
-  it should "raise an error if a raw query input file contains invalid JSON" in {
-    val index = ModelMockIndex()
-
-    // If the request reaches flow, we're doing it wrong
-    val flow = Flow[HttpRequest].map(_ => fail)
-
-    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
-
-    File
-      .temporaryFile()
-      .map { tempFile =>
-        tempFile.writeText("{\"invalid json))")
-        recoverToSucceededIf[IllegalArgumentException] {
-          client
-            .jsonFileQuery(index)(tempFile)
-            .runWith(Sink.head)
-        }
-      }
-      .get
   }
 }

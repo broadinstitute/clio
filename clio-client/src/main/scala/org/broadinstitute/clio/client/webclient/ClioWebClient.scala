@@ -4,8 +4,6 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
-import better.files.File
-import io.circe.parser._
 import akka.stream.scaladsl.{Flow, JsonFraming, Source}
 import akka.util.ByteString
 import com.typesafe.scalalogging.StrictLogging
@@ -23,9 +21,26 @@ import scala.concurrent.duration.FiniteDuration
 
 object ClioWebClient {
 
+  /**
+    * Type alias for a [[ClioIndex]] which extracts its type members for `Key`
+    * and `Metadata` into type-parameter position.
+    *
+    * Useful for situations where dependent types confuse the compiler / macros.
+    */
   type UpsertAux[K, M] = ClioIndex { type KeyType = K; type MetadataType = M }
+
+  /**
+    * Type alias for a [[ClioIndex]] which extracts its type member for `QueryInput`
+    * into type-parameter position.
+    *
+    * Useful for situations where dependent types confuse the compiler / macros.
+    */
   type QueryAux[I] = ClioIndex { type QueryInputType = I }
 
+  /**
+    * Build a [[ClioWebClient]] which will use the given credentials, along with
+    * any overrides for settings managing connection / retry logic.
+    */
   def apply(
     credentials: ClioCredentials,
     clioHost: String = ClioClientConfig.ClioServer.clioServerHostName,
@@ -59,12 +74,21 @@ object ClioWebClient {
     )
   }
 
+  /** Custom exception for wrapping error responses from the Clio server. */
   case class FailedResponse(statusCode: StatusCode, entityBody: String)
       extends RuntimeException(
         s"Got an error from the Clio server. Status code: $statusCode. Entity: $entityBody"
       )
 }
 
+/**
+  * A client for sending HTTP requests to a remote Clio server.
+  *
+  * Handles building requests (with auth credentials for endpoints that need it)
+  * and parsing JSON responses. Retries requests that fail on connection errors
+  * in case of a spurious network flap, and terminates requests that fail to
+  * produce a timely response.
+  */
 class ClioWebClient(
   connectionFlow: Flow[HttpRequest, HttpResponse, _],
   requestTimeout: FiniteDuration,
@@ -74,6 +98,13 @@ class ClioWebClient(
 
   import ApiConstants._
 
+  /**
+    * Reusable stream component for parsing JSON elements from the byte stream of
+    * a response from the Clio server.
+    *
+    * Relies on an upstream stage to chunk the flow of bytes such that each element
+    * passing through this stage is parse-able as a single JSON element.
+    */
   private val parserFlow = {
     val parser = new JawnParser
     Flow.fromFunction[ByteString, Json] { bytes =>
@@ -81,7 +112,19 @@ class ClioWebClient(
     }
   }
 
-  def dispatchRequest(
+  /**
+    * Send an HTTP request to the Clio server, optionally adding auth credentials.
+    *
+    * Retries the request on connection failures. Times out the request if
+    * the first byte of the response fails to arrive within a timeout, or if a pull
+    * on the open response stream fails to produce a next element within the same
+    * timeout.
+    *
+    * For responses with a successful status code, return the entity bytes of the
+    * response as a stream. For responses with an error status code, return a failed
+    * stream of a single element containing the plaintext content of the response body.
+    */
+  private[clio] def dispatchRequest(
     request: HttpRequest,
     includeAuth: Boolean,
   ): Source[ByteString, NotUsed] = {
@@ -135,25 +178,46 @@ class ClioWebClient(
     }
   }
 
+  /** Get the version reported by the Clio server. */
   def getClioServerVersion: Source[Json, NotUsed] =
     dispatchRequest(HttpRequest(uri = s"/$versionString"), includeAuth = false)
       .via(parserFlow)
 
+  /** Get the health reported by the Clio server. */
   def getClioServerHealth: Source[Json, NotUsed] =
     dispatchRequest(HttpRequest(uri = s"/$healthString"), includeAuth = false)
       .via(parserFlow)
 
+  /**
+    * Send new metadata to the Clio server for a document key.
+    *
+    * By default, the server will refuse to let the new metadata overwrite any
+    * existing fields. Set `force` to `true` to disable this behavior.
+    */
   def upsert[K <: IndexKey, M](clioIndex: ClioWebClient.UpsertAux[K, M])(
     key: K,
     metadata: M,
     force: Boolean = false
   ): Source[Json, NotUsed] = {
-
     import clioIndex.implicits._
+    upsertJson(clioIndex)(key, metadata.asJson, force)
+  }
 
+  /**
+    * Send arbitrary JSON to the Clio server as metadata for a document key.
+    *
+    * The server will validate that the JSON parses to valid metadata for the
+    * key's type. By default, the server will refuse to let the new metadata
+    * overwrite any existing fields. Set `force` to `true` to disable this behavior.
+    */
+  def upsertJson[K <: IndexKey](clioIndex: ClioWebClient.UpsertAux[K, _])(
+    key: K,
+    metadata: Json,
+    force: Boolean = false
+  ): Source[Json, NotUsed] = {
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      metadata.asJson.pretty(ModelAutoDerivation.defaultPrinter)
+      metadata.pretty(ModelAutoDerivation.defaultPrinter)
     )
     /*
      * The `/` method on Uri.Path performs a raw URI encoding on the
@@ -174,6 +238,14 @@ class ClioWebClient(
     ).via(parserFlow)
   }
 
+  /**
+    * Query an index backed by the Clio server using Clio's hand-rolled "simple" query DSL.
+    *
+    * For the most part, "simple" queries are transformed into ES queries by
+    * taking each key-value pair and rewriting it into a "must" clause matching
+    * documents with exactly the given value for that key. Minimal support exists
+    * for querying ranges on date fields.
+    */
   def simpleQuery[I](clioIndex: ClioWebClient.QueryAux[I])(
     input: I,
     includeDeleted: Boolean
@@ -191,22 +263,13 @@ class ClioWebClient(
     }
   }
 
-  def jsonFileQuery[CI <: ClioIndex](clioIndex: CI)(
-    input: File
-  ): Source[Json, NotUsed] = {
-    parse(input.contentAsString)
-      .fold(
-        e =>
-          Source.failed(
-            new IllegalArgumentException(
-              s"Input file at ${input.path.toString} must contain valid Json.",
-              e
-            )
-        ),
-        query(clioIndex)(_, raw = true)
-      )
-  }
-
+  /**
+    * Query the Clio server for metadata associated with a document key.
+    *
+    * Returns either an empty stream or a stream of a single element,
+    * depending on whether or not any metadata has been posted into Clio
+    * for the key.
+    */
   def getMetadataForKey[K, M](clioIndex: ClioWebClient.UpsertAux[K, M])(
     input: K,
     includeDeleted: Boolean
@@ -245,15 +308,16 @@ class ClioWebClient(
         }
       }
       .flatMapConcat {
-        _.fold(
-          Source.failed,
-          // Writing the 'Some' case as just 'Source.single' runs afoul of Scala's
-          // restriction on dependently-typed function values.
-          _.fold(Source.empty[M])(Source.single)
-        )
+        _.fold(Source.failed, _.fold(Source.empty[M])(Source.single))
       }
   }
 
+  /**
+    * Query an index backed by the Clio server.
+    *
+    * The query could be a JSON-ified "simple" query, or it could
+    * be an arbitrary "raw" query using Elasticsearch's syntax.
+    */
   def query(clioIndex: ClioIndex)(
     input: Json,
     raw: Boolean = false

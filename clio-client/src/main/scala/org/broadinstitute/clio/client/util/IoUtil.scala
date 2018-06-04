@@ -10,6 +10,7 @@ import better.files._
 import cats.syntax.either._
 import com.google.cloud.storage.Storage.BlobListOption
 import com.google.cloud.storage.{Blob, BlobId, BlobInfo, Storage, StorageOptions}
+import com.typesafe.scalalogging.StrictLogging
 import io.circe.parser.parse
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.auth.ClioCredentials
@@ -21,7 +22,7 @@ import scala.concurrent.{ExecutionContext, Future}
 /**
   * Clio-client component handling all file IO operations.
   */
-class IoUtil(storage: Storage) {
+class IoUtil(storage: Storage) extends StrictLogging {
 
   import IoUtil._
 
@@ -107,6 +108,7 @@ class IoUtil(storage: Storage) {
   }
 
   def writeGoogleObjectData(data: String, location: URI): Unit = {
+    logger.info(s"Writing to '$location'...")
     getBlob(location) match {
       case Some(blob) =>
         blob.writer().autoClosed { channel =>
@@ -121,11 +123,13 @@ class IoUtil(storage: Storage) {
   }
 
   def copyGoogleObject(from: URI, to: URI): Unit = {
+    logger.info(s"Copying '$from' to '$to'...")
     requireBlob(from).copyTo(toBlobId(to)).getResult
     ()
   }
 
   def deleteGoogleObject(path: URI): Unit = {
+    logger.info(s"Deleting '$path'...")
     if (!storage.delete(toBlobId(path))) {
       throw new IllegalArgumentException(
         s"Cannot delete '$path' because it does not exist."

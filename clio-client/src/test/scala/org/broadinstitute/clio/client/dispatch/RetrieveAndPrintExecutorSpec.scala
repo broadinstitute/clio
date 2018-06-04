@@ -2,7 +2,9 @@ package org.broadinstitute.clio.client.dispatch
 
 import akka.stream.scaladsl.{Sink, Source}
 import better.files.File
+import io.circe.Json
 import io.circe.jawn.JawnParser
+import io.circe.literal._
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.{
@@ -110,7 +112,7 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
   }
 
   it should "retrieve and print raw query results" in {
-    val rawQuery = "{\"key\":\"valid json\"}"
+    val rawQuery = json"""{ "key" : "valid json" }"""
     val keys = immutable.Seq.tabulate(10) { i =>
       UbamKey(
         flowcellBarcode = "abcd",
@@ -120,19 +122,16 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
       )
     }
 
+    val webClient = mock[ClioWebClient]
+    (webClient
+      .query(_: WgsUbamIndex.type)(_: Json, _: Boolean))
+      .expects(WgsUbamIndex, rawQuery, true)
+      .returning(Source(keys.map(_.asJson)))
+
     File
       .temporaryFile()
       .map { tempFile =>
-        tempFile.write(rawQuery)
-        val webClient = mock[ClioWebClient]
-        (
-          webClient
-            .jsonFileQuery(_: WgsUbamIndex.type)(
-              _: File
-            )
-          )
-          .expects(WgsUbamIndex, tempFile)
-          .returning(Source(keys.map(_.asJson)))
+        tempFile.write(rawQuery.noSpaces)
         val stdout = mutable.StringBuilder.newBuilder
         val executor = new RetrieveAndPrintExecutor(RawQueryWgsUbam(tempFile), { s =>
           stdout.append(s)

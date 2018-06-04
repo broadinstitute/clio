@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.transfer.model
 
+import cats.Show
 import io.circe.{Decoder, Encoder, ObjectEncoder}
 import org.broadinstitute.clio.util.generic.FieldMapper
 
@@ -51,6 +52,8 @@ trait ClioIndex {
 
   val queryInputMapper: FieldMapper[QueryInputType]
 
+  val showKey: Show[KeyType]
+
   /**
     * Container for all index parameters that are typically
     * used as implicit arguments.
@@ -72,5 +75,6 @@ trait ClioIndex {
     implicit val qim: FieldMapper[QueryInputType] = queryInputMapper
     implicit val km: FieldMapper[KeyType] = keyMapper
     implicit val mm: FieldMapper[MetadataType] = metadataMapper
+    implicit val ks: Show[KeyType] = showKey
   }
 }

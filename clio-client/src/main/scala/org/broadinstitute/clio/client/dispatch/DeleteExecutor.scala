@@ -4,12 +4,12 @@ import java.net.URI
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
+import cats.syntax.show._
 import io.circe.Json
 import org.broadinstitute.clio.client.commands.DeleteCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.ClioIndex
-import org.broadinstitute.clio.util.ClassUtil
 import org.broadinstitute.clio.util.model.Location
 
 import scala.collection.immutable
@@ -23,7 +23,9 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
   implicit ec: ExecutionContext
 ) extends Executor {
 
-  private val prettyKey = ClassUtil.formatFields(deleteCommand.key)
+  import deleteCommand.index.implicits._
+
+  private val prettyKey = deleteCommand.key.show
   val name: String = deleteCommand.index.name
 
   override def execute(
@@ -60,6 +62,7 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
             )
         }
     } yield {
+      logger.info(s"Successfully deleted record and files for $prettyKey.")
       upsertId
     }
   }
