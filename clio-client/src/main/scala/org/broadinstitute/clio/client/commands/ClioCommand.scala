@@ -69,7 +69,7 @@ sealed abstract class DeliverCommand[+CI <: DeliverableIndex](override val index
 
 sealed abstract class PatchCommand[CI <: ClioIndex](val index: CI) extends ClioCommand {
   def metadataLocation: URI
-  def parallelism: Int
+  def maxParallelUpserts: Int
 }
 
 sealed abstract class BackCompatibleDeliverCram extends DeliverCommand(CramIndex)
@@ -152,7 +152,7 @@ final case class DeleteGvcf(
 @CommandName(ClioCommand.patchGvcfName)
 final case class PatchGvcf(
   metadataLocation: URI,
-  parallelism: Int = ClioCommand.defaultPatchParallelism
+  maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(GvcfIndex)
 
 // cram commands.
@@ -201,7 +201,7 @@ final case class DeliverCram(
 @CommandName(ClioCommand.patchCramName)
 final case class PatchCram(
   metadataLocation: URI,
-  parallelism: Int = ClioCommand.defaultPatchParallelism
+  maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(CramIndex)
 
 //TODO Get rid of these wgs-cram commands when they're no longer being used
@@ -284,7 +284,7 @@ final case class DeleteUbam(
 @CommandName(ClioCommand.patchUbamName)
 final case class PatchUbam(
   metadataLocation: URI,
-  parallelism: Int = ClioCommand.defaultPatchParallelism
+  maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(UbamIndex)
 
 // ARRAYS commands.
@@ -333,7 +333,7 @@ final case class DeliverArrays(
 @CommandName(ClioCommand.patchArraysName)
 final case class PatchArrays(
   metadataLocation: URI,
-  parallelism: Int = ClioCommand.defaultPatchParallelism
+  maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(ArraysIndex)
 
 object ClioCommand extends ClioParsers {

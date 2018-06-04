@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import cats.syntax.either._
+import cats.syntax.show._
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.PatchCommand
@@ -42,19 +43,21 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
       documentJson <- webClient
         .query(patchCommand.index)(queryJson, raw = true)
         .map(_.dropNulls)
-
-      (mergedJson, oldMetadataJson, docKey) = mergeMetadata(newMetadataJson, documentJson)
-      if !mergedJson.equals(oldMetadataJson)
+      toUpsert <- mergeMetadata(newMetadataJson, documentJson)
+        .fold(Source.empty[(DocumentKey, Json)])(Source.single)
     } yield {
-      (mergedJson, oldMetadataJson, docKey)
+      toUpsert
     }
 
     // Upsert the stuff!
     docsToUpsert
       .flatMapMerge(
-        patchCommand.parallelism, {
-          case (mergedMetadataJson, oldMetadataJson, docKey) =>
-            upsertPatch(mergedMetadataJson, oldMetadataJson, docKey, webClient)
+        patchCommand.maxParallelUpserts, {
+          case (docKey, patchMetadata) =>
+            logger.debug(
+              s"Upserting patch metadata for document with key: ${docKey.show}"
+            )
+            webClient.upsertJson(patchCommand.index)(docKey, patchMetadata, force = false)
         }
       )
       .fold(0) { (count, _) =>
@@ -67,45 +70,29 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
   }
 
   /**
-    * Munge the patch metadata with the document metadata to get a new metadata json
+    * Merge the patch metadata with the document metadata to get a new metadata json.
+    *
+    * Filter out any fields unchanged by the merge to avoid upserting redundant data,
+    * and return nothing if all fields were already set.
+    *
     * @param patchMetadataJson The new metadata to insert into the index
     * @param documentJson The old document to insert the metadata into
-    * @return A tuple containing the munged metadata, the old metadata, and the key for this document
+    *
+    * @return An optional pair of key to new-metadata-to-upsert for that key
     */
   private def mergeMetadata(
     patchMetadataJson: Json,
     documentJson: Json
-  ): (Json, Json, DocumentKey) = {
+  ): Option[(DocumentKey, Json)] = {
     val oldMetadataJson = getMetadataJsonFromDocument(documentJson)
     val indexKey = getKeyFromDocument(documentJson)
-    (
-      patchMetadataJson.deepMerge(oldMetadataJson),
-      oldMetadataJson,
-      indexKey
-    )
-  }
 
-  /**
-    * Upsert the new metadata into the document.
-    * This method strips any existing fields out of the metadata to be upserted in order to reduce network traffic.
-    * @param mergedMetadataJson The merged metadata containing patch and existing metadata
-    * @param oldMetadataJson The old, preexisting metadata
-    * @param docKey The key for this metadata
-    * @param webClient A ClioWebClient to upsert with.
-    * @return
-    */
-  private def upsertPatch(
-    mergedMetadataJson: Json,
-    oldMetadataJson: Json,
-    docKey: DocumentKey,
-    webClient: ClioWebClient
-  ): Source[Json, NotUsed] = {
-    val oldMetadataKeys =
-      oldMetadataJson.asObject.map(_.keys.toSeq).getOrElse(Seq.empty)
-    val patchMetadata = mergedMetadataJson
-      .mapObject(_.filterKeys(key => !oldMetadataKeys.contains(key)))
-    logger.debug(s"Upserting patch metadata for document with key: $docKey")
-    webClient.upsertJson(patchCommand.index)(docKey, patchMetadata, force = false)
+    // deepMerge keeps values from the RHS when there's a conflict.
+    val patchedJson = patchMetadataJson.deepMerge(oldMetadataJson)
+    Some(patchedJson).filterNot(_.equals(oldMetadataJson)).map { patched =>
+      val oldKeys = oldMetadataJson.asObject.fold(Seq.empty[String])(_.keys.toSeq)
+      indexKey -> patched.mapObject(_.filterKeys(!oldKeys.contains(_)))
+    }
   }
 
   /**
@@ -124,7 +111,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
       .valueOr(
         ex =>
           throw new IllegalArgumentException(
-            s"Could not create ${patchCommand.index.keyTag} from ${json.pretty(defaultPrinter)}",
+            s"Could not extract a ${patchCommand.index.name} key from ${json.pretty(defaultPrinter)}",
             ex
         )
       )
