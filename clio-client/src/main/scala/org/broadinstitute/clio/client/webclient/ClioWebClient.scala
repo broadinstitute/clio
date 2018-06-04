@@ -189,7 +189,7 @@ class ClioWebClient(
       .via(parserFlow)
 
   /**
-    * POST new metadata to the Clio server for a document key.
+    * Send new metadata to the Clio server for a document key.
     *
     * By default, the server will refuse to let the new metadata overwrite any
     * existing fields. Set `force` to `true` to disable this behavior.
@@ -204,7 +204,7 @@ class ClioWebClient(
   }
 
   /**
-    * POST arbitrary JSON to the Clio server as metadata for a document key.
+    * Send arbitrary JSON to the Clio server as metadata for a document key.
     *
     * The server will validate that the JSON parses to valid metadata for the
     * key's type. By default, the server will refuse to let the new metadata
@@ -239,7 +239,7 @@ class ClioWebClient(
   }
 
   /**
-    * POST a "simple" query to an index backed by the Clio server.
+    * Query an index backed by the Clio server using Clio's hand-rolled "simple" query DSL.
     *
     * For the most part, "simple" queries are transformed into ES queries by
     * taking each key-value pair and rewriting it into a "must" clause matching
@@ -313,7 +313,7 @@ class ClioWebClient(
   }
 
   /**
-    * POST a query to an index backed by the Clio server.
+    * Query an index backed by the Clio server.
     *
     * The query could be a JSON-ified "simple" query, or it could
     * be an arbitrary "raw" query using Elasticsearch's syntax.
