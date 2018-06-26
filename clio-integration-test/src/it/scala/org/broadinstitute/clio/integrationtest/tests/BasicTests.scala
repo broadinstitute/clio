@@ -4,7 +4,7 @@ import akka.http.scaladsl.model.{HttpMethods, HttpRequest, StatusCodes}
 import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.integrationtest.{BaseIntegrationSpec, ClioBuildInfo}
+import org.broadinstitute.clio.integrationtest.{BaseIntegrationSpec, TestkitBuildInfo}
 import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model.ApiConstants
 
@@ -26,7 +26,7 @@ trait BasicTests { self: BaseIntegrationSpec =>
 
   it should s"report the server version of this test at /$versionString" in {
     runDecode[VersionInfo](ClioCommand.getServerVersionName)
-      .map(_ should be(VersionInfo(ClioBuildInfo.version)))
+      .map(_ should be(VersionInfo(TestkitBuildInfo.version)))
   }
 
   it should "reject requests to invalid routes" in {

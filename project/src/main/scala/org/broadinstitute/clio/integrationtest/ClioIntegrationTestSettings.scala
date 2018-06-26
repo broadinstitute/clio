@@ -12,14 +12,9 @@ import sbtbuildinfo.{BuildInfoKey, BuildInfoKeys, BuildInfoPlugin}
   */
 object ClioIntegrationTestSettings extends BuildInfoKeys {
 
-  /** Directory to which all container logs will be sent during Dockerized integration tests. */
-  lazy val logTarget: Initialize[File] = Def.setting {
-    target.value / "integration-test" / "logs"
-  }
-
-  /** Directory to which Clio will write metadata updates during Dockerized integration tests. */
-  lazy val persistenceTarget: Initialize[File] = Def.setting {
-    target.value / "integration-test" / "persistence"
+  /** Directory to which all temp files will be sent during Dockerized integration tests. */
+  lazy val tmpTarget: Initialize[File] = Def.setting {
+    target.value / "integration-test"
   }
 
   /**
@@ -80,22 +75,27 @@ object ClioIntegrationTestSettings extends BuildInfoKeys {
       Seq(propertiesFile)
     }
 
-  /** Variables to inject into integration-test code using sbt-buildinfo. */
-  lazy val itBuildInfoKeys: Initialize[Seq[BuildInfoKey]] = Def.setting {
-    val confDir = (classDirectory in IntegrationTest).value / "org" / "broadinstitute" / "clio" / "integrationtest"
-
+  /** Variables to inject into integration-testkit code using sbt-buildinfo. */
+  lazy val itKitBuildInfoKeys: Initialize[Seq[BuildInfoKey]] = Def.setting {
     Seq[BuildInfoKey](
       version,
       BuildInfoKey.constant(
         ("elasticsearchVersion", Dependencies.ElasticsearchVersion)
-      ),
-      BuildInfoKey.constant(("logDir", logTarget.value.getAbsolutePath)),
-      BuildInfoKey.constant(("confDir", confDir.getAbsolutePath)),
-      BuildInfoKey.constant(
-        ("persistenceDir", persistenceTarget.value.getAbsolutePath)
       )
     )
   }
+
+  /** Variables to inject into integration-test code using sbt-buildinfo. */
+  lazy val itBuildInfoKeys: Initialize[Seq[BuildInfoKey]] = Def.setting {
+    Seq[BuildInfoKey](BuildInfoKey.constant(("tmpDir", tmpTarget.value.getAbsolutePath)))
+  }
+
+  /** Settings to add to the integration testkit. */
+  lazy val testkitSettings: Seq[Setting[_]] = Seq(
+    buildInfoKeys := itKitBuildInfoKeys.value,
+    buildInfoPackage := s"${organization.value}.clio.integrationtest",
+    buildInfoObject := "TestkitBuildInfo"
+  )
 
   /** Settings to add to the project */
   lazy val settings: Seq[Setting[_]] = {
@@ -121,7 +121,7 @@ object ClioIntegrationTestSettings extends BuildInfoKeys {
          */
         buildInfoKeys := itBuildInfoKeys.value,
         buildInfoPackage := s"${organization.value}.clio.integrationtest",
-        buildInfoObject := "ClioBuildInfo"
+        buildInfoObject := "IntegrationBuildInfo"
       )
     )
 
