@@ -33,7 +33,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
 
   private[dispatch] val name: String = moveCommand.index.name
   private[dispatch] val prettyKey = moveCommand.key.show
-  private val destination: URI = moveCommand.destination
+  protected val destination: URI = moveCommand.destination
 
   override def execute(
     webClient: ClioWebClient,

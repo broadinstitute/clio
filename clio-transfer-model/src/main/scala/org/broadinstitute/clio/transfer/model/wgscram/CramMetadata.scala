@@ -76,7 +76,6 @@ case class CramMetadata(
       )
     )
 
-  // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
   ): CramMetadata = {
@@ -87,7 +86,39 @@ case class CramMetadata(
       // want to fixup files with just '.crai' when possible.
       craiPath = movedCram.map(
         cramUri => URI.create(s"$cramUri${CramExtensions.CraiExtensionAddition}")
-      )
+      ),
+      analysisFilesTxtPath =
+        pathMapper(analysisFilesTxtPath, CramExtensions.AnalysisFilesTxtExtension),
+      preAdapterSummaryMetricsPath = pathMapper(
+        preAdapterSummaryMetricsPath,
+        CramExtensions.PreAdapterSummaryMetricsExtension
+      ),
+      preAdapterDetailMetricsPath = pathMapper(
+        preAdapterDetailMetricsPath,
+        CramExtensions.PreAdapterDetailMetricsExtension
+      ),
+      alignmentSummaryMetricsPath = pathMapper(
+        alignmentSummaryMetricsPath,
+        CramExtensions.AlignmentSummaryMetricsExtension
+      ),
+      // Note preBqsrDepth Metrics no longer created by workflow
+      preBqsrSelfSmPath =
+        pathMapper(preBqsrSelfSmPath, CramExtensions.PreBqsrSelfSMExtension),
+      cramValidationReportPath = pathMapper(
+        cramValidationReportPath,
+        CramExtensions.CramValidationReportExtension
+      ),
+      crosscheckPath = pathMapper(crosscheckPath, CramExtensions.CrossCheckExtension),
+      fingerprintingSummaryMetricsPath = pathMapper(
+        fingerprintingSummaryMetricsPath,
+        CramExtensions.FingerprintingSummaryMetricsExtension
+      ),
+      fingerprintingDetailMetricsPath = pathMapper(
+        fingerprintingDetailMetricsPath,
+        CramExtensions.FingerprintingDetailMetricsExtension
+      ),
+      fingerprintVcfPath =
+        pathMapper(fingerprintVcfPath, CramExtensions.FingerprintVcfExtension)
     )
   }
 

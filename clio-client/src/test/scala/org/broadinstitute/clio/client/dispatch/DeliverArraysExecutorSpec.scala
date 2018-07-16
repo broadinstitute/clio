@@ -30,9 +30,9 @@ class DeliverArraysExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       Some(URI.create(s"gs://bucket/the-vcf${ArraysExtensions.VcfGzTbiExtension}")),
     gtcPath = Some(URI.create(s"gs://bucket/the-gct${ArraysExtensions.GtcExtension}")),
     grnIdatPath =
-      Some(URI.create(s"gs://bucket/the-grn${ArraysExtensions.IdatExtension}")),
+      Some(URI.create(s"gs://bucket/the-grn${ArraysExtensions.GrnIdatExtension}")),
     redIdatPath =
-      Some(URI.create(s"gs://bucket/the-red${ArraysExtensions.IdatExtension}")),
+      Some(URI.create(s"gs://bucket/the-red${ArraysExtensions.RedIdatExtension}")),
     refFastaPath =
       Some(URI.create(s"gs://bucket/the-ref${ArraysExtensions.FastaExtension}")),
     refFastaIndexPath =
@@ -68,7 +68,6 @@ class DeliverArraysExecutorSpec extends BaseClientSpec with AsyncMockFactory {
             ArraysExtensions.IdatExtension
           )
         )
-
         val grnMove = metadata.grnIdatPath.zip(movedGrn).map {
           case (src, dest) => CopyOp(src, dest)
         }

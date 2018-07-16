@@ -66,6 +66,34 @@ case class ArraysMetadata(
   override def mapMove(
     pathMapper: (Option[URI], String) => Option[URI]
   ): ArraysMetadata = this.copy(
+    fingerprintingDetailMetricsPath = pathMapper(
+      fingerprintingDetailMetricsPath,
+      ArraysExtensions.FingerprintingDetailMetricsExtension
+    ),
+    fingerprintingSummaryMetricsPath = pathMapper(
+      fingerprintingSummaryMetricsPath,
+      ArraysExtensions.FingerprintingSummaryMetricsExtension
+    ),
+    genotypeConcordanceContingencyMetricsPath = pathMapper(
+      genotypeConcordanceContingencyMetricsPath,
+      ArraysExtensions.GenotypeConcordanceContingencyMetricsExtension
+    ),
+    genotypeConcordanceDetailMetricsPath = pathMapper(
+      genotypeConcordanceDetailMetricsPath,
+      ArraysExtensions.GenotypeConcordanceDetailMetricsExtension
+    ),
+    genotypeConcordanceSummaryMetricsPath = pathMapper(
+      genotypeConcordanceSummaryMetricsPath,
+      ArraysExtensions.GenotypeConcordanceSummaryMetricsExtension
+    ),
+    variantCallingDetailMetricsPath = pathMapper(
+      variantCallingDetailMetricsPath,
+      ArraysExtensions.VariantCallingDetailMetricsExtension
+    ),
+    variantCallingSummaryMetricsPath = pathMapper(
+      variantCallingSummaryMetricsPath,
+      ArraysExtensions.VariantCallingSummaryMetricsExtension
+    ),
     gtcPath = pathMapper(gtcPath, ArraysExtensions.GtcExtension),
     vcfPath = pathMapper(vcfPath, ArraysExtensions.VcfGzExtension),
     vcfIndexPath = pathMapper(vcfIndexPath, ArraysExtensions.VcfGzTbiExtension)

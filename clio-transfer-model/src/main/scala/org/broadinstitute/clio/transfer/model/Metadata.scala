@@ -113,7 +113,7 @@ object Metadata {
     newBasename: Option[String] = None
   ): URI = {
     val srcName = new File(source.getPath).getName
-    val srcBase = srcName.take(srcName.toLowerCase.lastIndexOf(extension))
+    val srcBase = srcName.take(srcName.lastIndexOf(extension))
     destination.resolve(s"${newBasename.getOrElse(srcBase)}$extension")
   }
 
