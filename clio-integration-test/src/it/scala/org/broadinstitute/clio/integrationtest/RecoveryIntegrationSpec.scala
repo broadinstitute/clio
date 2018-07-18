@@ -1,8 +1,10 @@
 package org.broadinstitute.clio.integrationtest
 
 import java.net.URI
+import java.time.OffsetDateTime
 
 import akka.http.scaladsl.model.StatusCodes
+import akka.stream.alpakka.file.scaladsl.FileTailSource
 import akka.stream.scaladsl.Sink
 import better.files.File
 import io.circe.Json
@@ -15,16 +17,16 @@ import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
 import org.broadinstitute.clio.transfer.model.wgscram.{CramKey, CramMetadata}
+import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location, UpsertId}
 import org.scalatest.OptionValues
 
-/** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
-class RecoveryIntegrationSpec
-    extends DockerIntegrationSpec("Clio in recovery", "Recovering metadata")
-    with OptionValues {
+import scala.concurrent.duration._
 
-  private val documentCount = 10000
-  private val location = Location.GCP
+/** Tests for recovering documents on startup. Can only run reproducibly in Docker. */
+class RecoveryIntegrationSpec extends DockerIntegrationSpec with OptionValues {
+
+  import RecoveryIntegrationSpec._
 
   private def randomUri(i: Int): URI = URI.create(s"gs://the-bucket/$i/$randomId")
 
@@ -37,9 +39,7 @@ class RecoveryIntegrationSpec
     json.deepMerge(Json.fromFields(updates))
   }
 
-  private val ubamMapper =
-    ElasticsearchDocumentMapper[UbamKey, UbamMetadata]
-  private val initUbams = Seq.tabulate(documentCount) { i =>
+  private lazy val initUbams = Seq.tabulate(documentCount) { i =>
     val flowcellBarcode = s"flowcell$randomId"
     val libraryName = s"library$randomId"
     val key = UbamKey(
@@ -54,12 +54,9 @@ class RecoveryIntegrationSpec
     )
     ubamMapper.document(key, metadata)
   }
+  private lazy val updatedUbams = initUbams.map(updateDoc(_, "ubam_path"))
 
-  private val updatedUbams = initUbams.map(updateDoc(_, "ubam_path"))
-
-  private val gvcfMapper =
-    ElasticsearchDocumentMapper[GvcfKey, GvcfMetadata]
-  private val initGvcfs = Seq.tabulate(documentCount) { i =>
+  private lazy val initGvcfs = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
     val key = GvcfKey(
@@ -81,12 +78,9 @@ class RecoveryIntegrationSpec
       gvcfMapper.document(key, metadata)
     }
   }
+  private lazy val updatedGvcfs = initGvcfs.map(updateDoc(_, "gvcf_path"))
 
-  private val updatedGvcfs = initGvcfs.map(updateDoc(_, "gvcf_path"))
-
-  private val cramMapper =
-    ElasticsearchDocumentMapper[CramKey, CramMetadata]
-  private val initCrams = Seq.tabulate(documentCount) { i =>
+  private lazy val initCrams = Seq.tabulate(documentCount) { i =>
     val project = s"project$randomId"
     val sampleAlias = s"sample$randomId"
     val key = CramKey(
@@ -108,12 +102,9 @@ class RecoveryIntegrationSpec
       cramMapper.document(key, metadata)
     }
   }
+  private lazy val updatedCrams = initCrams.map(updateDoc(_, "cram_path"))
 
-  private val updatedCrams = initCrams.map(updateDoc(_, "cram_path"))
-
-  private val arraysMapper =
-    ElasticsearchDocumentMapper[ArraysKey, ArraysMetadata]
-  private val initArrays = Seq.tabulate(documentCount) { i =>
+  private lazy val initArrays = Seq.tabulate(documentCount) { i =>
     val key = ArraysKey(
       location = location,
       chipwellBarcode = Symbol(s"barcocde$randomId"),
@@ -125,26 +116,70 @@ class RecoveryIntegrationSpec
     )
     arraysMapper.document(key, metadata)
   }
+  private lazy val updatedArrays = initArrays.map(updateDoc(_, "vcf_path"))
 
-  private val updatedArrays = initArrays.map(updateDoc(_, "vcf_path"))
-
-  override val container = new ClioDockerComposeContainer(
-    File(getClass.getResource(DockerIntegrationSpec.composeFilename)),
-    DockerIntegrationSpec.elasticsearchServiceName,
-    Map(
-      clioFullName -> DockerIntegrationSpec.clioServicePort,
-      esFullName -> DockerIntegrationSpec.elasticsearchServicePort
-    ),
-    Map(
-      ElasticsearchIndex.Ubam -> (initUbams ++ updatedUbams),
-      ElasticsearchIndex.Gvcf -> (initGvcfs ++ updatedGvcfs),
-      ElasticsearchIndex.Cram -> (initCrams ++ updatedCrams),
-      ElasticsearchIndex.Arrays -> (initArrays ++ updatedArrays)
-    )
+  lazy val preSeededDocuments: Map[ElasticsearchIndex[_], Seq[Json]] = Map(
+    ElasticsearchIndex.Ubam -> (initUbams ++ updatedUbams),
+    ElasticsearchIndex.Gvcf -> (initGvcfs ++ updatedGvcfs),
+    ElasticsearchIndex.Cram -> (initCrams ++ updatedCrams),
+    ElasticsearchIndex.Arrays -> (initArrays ++ updatedArrays)
   )
 
-  private lazy val recoveryDoneFuture = clioLogLines
-    .takeWhile(!_.contains(DockerIntegrationSpec.clioReadyMessage))
+  lazy val seedPathsToContents: Map[String, String] =
+    if (preSeededDocuments.nonEmpty) {
+      /*
+       * Simulate spreading pre-seeded documents over time.
+       *
+       * NOTE: The spread calculation is meant to work around a problem with case-sensitivity
+       * when running this test on OS X. Our `UpsertId`s are case-sensitive, but HFS / APFS are
+       * case-insensitive by default. This can cause naming collisions when generating a ton of
+       * IDs at once (like in these tests). By spreading documents into bins of 26, we try to
+       * avoid the possibility of two IDs differing only in the case of the last byte being dropped
+       * into the same day-directory.
+       */
+      val daySpread = (preSeededDocuments.map(_._2.size).max / 26).toLong
+      val today: OffsetDateTime = OffsetDateTime.now()
+      val earliest: OffsetDateTime = today.minusDays(daySpread)
+
+      preSeededDocuments.flatMap {
+        case (index, documents) =>
+          val documentCount = documents.length
+
+          logger.info(
+            s"Seeding $documentCount documents into storage for ${index.indexName}"
+          )
+          documents.zipWithIndex.map {
+            case (json, i) =>
+              val dateDir = index.persistenceDirForDatetime(
+                earliest.plusDays(i.toLong / (documentCount.toLong / daySpread))
+              )
+
+              val upsertId = json.hcursor
+                .get[UpsertId](
+                  ElasticsearchIndex.UpsertIdElasticsearchName
+                )
+                .fold(throw _, identity)
+
+              s"$dateDir/${upsertId.persistenceFilename}" -> defaultPrinter.pretty(json)
+          }
+      }
+    } else {
+      Map.empty
+    }
+
+  override val container: ClioDockerComposeContainer =
+    ClioDockerComposeContainer.waitForRecoveryLog(
+      File(IntegrationBuildInfo.tmpDir),
+      seedPathsToContents
+    )
+
+  private lazy val recoveryDoneFuture = FileTailSource
+    .lines(
+      path = container.clioLog.path,
+      maxLineSize = 1048576,
+      pollingInterval = 250.millis
+    )
+    .takeWhile(!_.contains(ClioDockerComposeContainer.ServerReadyLog))
     .runWith(Sink.ignore)
 
   it should "accept health checks before recovery is complete" in {
@@ -154,7 +189,7 @@ class RecoveryIntegrationSpec
 
   it should "accept version checks before recovery is complete" in {
     runDecode[VersionInfo](ClioCommand.getServerVersionName)
-      .map(_.version should be(ClioBuildInfo.version))
+      .map(_.version should be(TestkitBuildInfo.version))
   }
 
   it should "reject upserts before recovery is complete" in {
@@ -272,4 +307,21 @@ class RecoveryIntegrationSpec
       }
     }
   }
+}
+
+object RecoveryIntegrationSpec extends ModelAutoDerivation {
+  private val documentCount = 10000
+  private val location = Location.GCP
+
+  private val ubamMapper =
+    ElasticsearchDocumentMapper[UbamKey, UbamMetadata]
+
+  private val gvcfMapper =
+    ElasticsearchDocumentMapper[GvcfKey, GvcfMetadata]
+
+  private val cramMapper =
+    ElasticsearchDocumentMapper[CramKey, CramMetadata]
+
+  private val arraysMapper =
+    ElasticsearchDocumentMapper[ArraysKey, ArraysMetadata]
 }

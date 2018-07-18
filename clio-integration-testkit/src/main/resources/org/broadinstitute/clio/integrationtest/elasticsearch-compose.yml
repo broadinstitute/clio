@@ -10,7 +10,7 @@ services:
       xpack.security.enabled: 'false'
       path.logs: /usr/share/elasticsearch/logs
     volumes:
-      - ${CONF_DIR}/elasticsearch-log4j2.properties:/usr/share/elasticsearch/config/log4j2.properties
+      - ${LOG_DIR}/elasticsearch-log4j2.properties:/usr/share/elasticsearch/config/log4j2.properties
     ulimits:
       memlock:
         soft: -1

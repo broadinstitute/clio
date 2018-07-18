@@ -1,3 +1,4 @@
+import org.broadinstitute.clio.integrationtest.ClioIntegrationTestSettings
 import org.broadinstitute.clio.sbt._
 
 // ## sbt settings
@@ -55,6 +56,7 @@ lazy val clio = project
     `clio-dataaccess-model`,
     `clio-server`,
     `clio-client`,
+    `clio-integration-testkit`,
     `clio-integration-test`
   )
   .disablePlugins(AssemblyPlugin)
@@ -141,13 +143,29 @@ lazy val `clio-client` = project
   )
 
 /**
+  * Utilities for spinning up a self-contained Clio cluster for integration testing.
+  */
+lazy val `clio-integration-testkit` = project
+  .enablePlugins(ArtifactoryPublishingPlugin, BuildInfoPlugin)
+  .disablePlugins(AssemblyPlugin)
+  .settings(commonSettings)
+  .settings(ClioIntegrationTestSettings.testkitSettings)
+  .settings(libraryDependencies ++= Dependencies.IntegrationTestkitDependencies)
+  .settings(
+    // Set the classpath of this project to be the packaged jar, to test that all
+    // of the code for extracting Docker configs from the artifact works properly.
+    exportJars := true
+  )
+
+/**
   * Integration tests for the clio-server and the clio-client.
   */
 lazy val `clio-integration-test` = project
   .dependsOn(
-    `clio-client`,
-    `clio-dataaccess-model`,
-    `clio-util` % "it->compile,test"
+    `clio-client` % IntegrationTest,
+    `clio-dataaccess-model` % IntegrationTest,
+    `clio-integration-testkit` % IntegrationTest,
+    `clio-util` % s"${IntegrationTest.name}->${Compile.name},${Test.name}"
   )
   .enablePlugins(ClioIntegrationTestPlugin)
   .disablePlugins(AssemblyPlugin)

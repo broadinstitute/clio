@@ -7,23 +7,24 @@ import sbt._
   */
 object Dependencies {
   // The version numbers of each main and test dependency.
-  private val AkkaHttpCirceVersion = "1.20.1"
-  private val AkkaHttpVersion = "10.1.1"
-  private val AkkaVersion = "2.5.12"
-  private val AlpakkaVersion = "0.18"
-  private val ApacheHttpClientVersion = "4.5.5"
-  private val BetterFilesVersion = "3.4.0"
+  private val AkkaHttpCirceVersion = "1.21.0"
+  private val AkkaHttpVersion = "10.1.3"
+  private val AkkaVersion = "2.5.14"
+  private val AlpakkaVersion = "0.20"
+  private val ApacheHttpClientVersion = "4.5.6"
+  private val BetterFilesVersion = "3.5.0"
   private val CaseAppVersion = "2.0.0-M3"
   private val CirceVersion = "0.9.3"
+  private val CommonsIoVersion = "2.6"
   private val DiffsonVersion = "3.0.0"
-  private val Elastic4sVersion = "6.2.6"
+  private val Elastic4sVersion = "6.2.10"
   private val EnumeratumCirceVersion = "1.5.17"
   private val EnumeratumVersion = "1.5.13"
   private val FicusVersion = "1.4.3"
-  private val GoogleAuthHttpVersion = "0.9.1"
-  private val GoogleCloudNioVersion = "0.46.0-alpha"
-  private val GoogleCloudStorageVersion = "1.28.0"
-  private val JacksonVersion = "2.9.5"
+  private val GoogleAuthHttpVersion = "0.10.0"
+  private val GoogleCloudNioVersion = "0.54.0-alpha"
+  private val GoogleCloudStorageVersion = "1.36.0"
+  private val JacksonVersion = "2.9.6"
   private val JimfsVersion = "1.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
@@ -33,7 +34,7 @@ object Dependencies {
   private val ShapelessVersion = "2.3.3"
   private val Slf4jVersion = "1.7.25"
   private val SwaggerUi = "3.1.5"
-  private val TestContainersScalaVersion = "0.16.0"
+  private val TestContainersScalaVersion = "0.19.0"
   private val TypesafeConfigVersion = "1.3.3"
   private val VaultJavaDriverVersion = "3.1.0"
 
@@ -168,6 +169,12 @@ object Dependencies {
 
   val DataaccessModelDependencies: Seq[ModuleID] =
     DataaccessModelMainDependencies ++ DataaccessModelTestDependencies
+
+  val IntegrationTestkitDependencies: Seq[ModuleID] = Seq(
+    "com.dimafeng" %% "testcontainers-scala" % TestContainersScalaVersion,
+    "com.github.pathikrit" %% "better-files" % BetterFilesVersion,
+    "commons-io" % "commons-io" % CommonsIoVersion
+  )
 
   val IntegrationTestDependencies: Seq[ModuleID] = Seq(
     "ch.qos.logback" % "logback-classic" % LogbackClassicVersion,

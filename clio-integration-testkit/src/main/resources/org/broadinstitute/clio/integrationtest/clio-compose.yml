@@ -9,11 +9,11 @@ services:
         -Xmx128m -Xms128m
         -Duser.timezone=${TZ}
         -Dclio.server.persistence.recovery-parallelism=4
-        -Dclio.server.elasticsearch.http-hosts.0.hostname=${ELASTICSEARCH_HOST}
+        -Dclio.server.elasticsearch.http-hosts.0.hostname=elasticsearch1
         -Dlogback.configurationFile=/app/clio-logback.xml
         -Dclio.server.persistence.root-dir=/persistence
       UMASK: ${UMASK}
     volumes:
-      - ${CONF_DIR}/clio-logback.xml:/app/clio-logback.xml
+      - ${LOG_DIR}/clio-logback.xml:/app/clio-logback.xml
       - ${CLIO_LOG_FILE}:/logs/clio.log
       - ${LOCAL_PERSISTENCE_DIR}:/persistence

@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.dataaccess
 
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import org.scalatest.Suite
-import org.testcontainers.containers.wait.Wait
+import org.testcontainers.containers.wait.strategy.Wait
 
 /**
   * Elasticsearch Test Container
@@ -20,7 +20,7 @@ trait ElasticsearchContainer extends ForAllTestContainer { self: Suite =>
 
   override val container: GenericContainer = {
     GenericContainer(
-      imageName = TestContainers.DockerImages.elasticsearch,
+      dockerImage = TestContainers.DockerImages.elasticsearch,
       exposedPorts = Seq(9200),
       env = Map(
         "transport.host" -> "127.0.0.1",
