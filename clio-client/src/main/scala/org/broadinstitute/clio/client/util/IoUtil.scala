@@ -8,12 +8,15 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import better.files._
 import cats.syntax.either._
+import com.google.api.gax.retrying.RetrySettings
+import com.google.cloud.http.HttpTransportOptions
 import com.google.cloud.storage.Storage.BlobListOption
 import com.google.cloud.storage.{Blob, BlobId, BlobInfo, Storage, StorageOptions}
 import com.typesafe.scalalogging.StrictLogging
 import io.circe.parser.parse
 import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.auth.ClioCredentials
+import org.threeten.bp.Duration
 
 import scala.collection.immutable
 import scala.collection.JavaConverters._
@@ -167,6 +170,26 @@ object IoUtil {
       StorageOptions
         .newBuilder()
         .setCredentials(credentials.storage(readOnly = false))
+        // These settings are extremely generous timeouts and retries to make google cloud operations less error prone
+        // Pulled from Picard and GATK
+        .setTransportOptions(
+          HttpTransportOptions.newBuilder
+            .setConnectTimeout(120000)
+            .setReadTimeout(120000)
+            .build
+        )
+        .setRetrySettings(
+          RetrySettings.newBuilder
+            .setMaxAttempts(15)
+            .setMaxRetryDelay(Duration.ofMillis(256000))
+            .setTotalTimeout(Duration.ofMillis(4000000))
+            .setInitialRetryDelay(Duration.ofMillis(1000))
+            .setRetryDelayMultiplier(2.0)
+            .setInitialRpcTimeout(Duration.ofMillis(180000))
+            .setRpcTimeoutMultiplier(1.0)
+            .setMaxRpcTimeout(Duration.ofMillis(180000))
+            .build
+        )
         .build()
         .getService
     )
