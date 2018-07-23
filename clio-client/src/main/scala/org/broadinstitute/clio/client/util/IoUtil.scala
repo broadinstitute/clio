@@ -181,13 +181,13 @@ object IoUtil {
         .setRetrySettings(
           RetrySettings.newBuilder
             .setMaxAttempts(15)
-            .setMaxRetryDelay(Duration.ofMillis(256000L))
-            .setTotalTimeout(Duration.ofMillis(4000000L))
-            .setInitialRetryDelay(Duration.ofMillis(1000L))
+            .setMaxRetryDelay(Duration.ofMillis(256000))
+            .setTotalTimeout(Duration.ofMillis(4000000))
+            .setInitialRetryDelay(Duration.ofMillis(1000))
             .setRetryDelayMultiplier(2.0)
-            .setInitialRpcTimeout(Duration.ofMillis(180000L))
+            .setInitialRpcTimeout(Duration.ofMillis(180000))
             .setRpcTimeoutMultiplier(1.0)
-            .setMaxRpcTimeout(Duration.ofMillis(180000L))
+            .setMaxRpcTimeout(Duration.ofMillis(180000))
             .build
         )
         .build()
