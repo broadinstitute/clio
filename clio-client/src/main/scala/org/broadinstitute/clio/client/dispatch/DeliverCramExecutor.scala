@@ -5,7 +5,8 @@ import java.net.URI
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import org.broadinstitute.clio.client.commands.BackCompatibleDeliverCram
-import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, WriteOp}
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, MoveOp, WriteOp}
+import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.transfer.model.wgscram.{CramExtensions, CramMetadata}
 
 import scala.collection.immutable
@@ -24,23 +25,49 @@ class DeliverCramExecutor(deliverCommand: BackCompatibleDeliverCram)(
 ) extends DeliverExecutor(deliverCommand) {
 
   override protected def buildDelivery(
-    deliveredMetaData: CramMetadata,
-    moveOps: immutable.Seq[IoOp]
+    deliveredMetadata: CramMetadata
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
-    (deliveredMetaData.cramMd5, deliveredMetaData.cramPath) match {
-      case (Some(cramMd5), Some(cramPath)) => {
-
+    (deliveredMetadata.cramMd5, deliveredMetadata.cramPath, deliveredMetadata.craiPath) match {
+      case (Some(md5), Some(cram), Some(crai)) => {
+        val cramMove = Metadata.buildFilePath(
+          cram,
+          deliverCommand.destination,
+          CramExtensions.CramExtension,
+          moveCommand.newBasename
+        )
+        val craiMove = Metadata.buildFilePath(
+          crai,
+          deliverCommand.destination,
+          CramExtensions.CraiExtension,
+          moveCommand.newBasename
+        )
         val cloudMd5Path =
-          URI.create(s"$cramPath${CramExtensions.Md5ExtensionAddition}")
+          URI.create(s"$cramMove${CramExtensions.Md5ExtensionAddition}")
+
+        val moves = immutable
+          .Seq(
+            MoveOp(cram, cramMove),
+            MoveOp(crai, craiMove)
+          )
+          .filterNot { op =>
+            op.src.equals(op.dest)
+          }
+
+        val newMetadata = deliveredMetadata.copy(
+          cramPath = Some(cramMove),
+          craiPath = Some(craiMove),
+          cramMd5 = Some(md5)
+        )
 
         Source.single(
-          deliveredMetaData -> (moveOps :+ WriteOp(cramMd5.name, cloudMd5Path))
+          newMetadata -> (moves :+ WriteOp(md5.name, cloudMd5Path))
         )
+
       }
       case _ =>
         Source.failed(
           new IllegalStateException(
-            s"Cram record with key ${deliverCommand.key} is missing either its cram path or cram md5"
+            s"Cram record with key ${deliverCommand.key} is missing either its cram path, crai path or cram md5"
           )
         )
     }

@@ -1,12 +1,9 @@
 package org.broadinstitute.clio.client.dispatch
 
-import java.net.URI
-
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import org.broadinstitute.clio.client.commands.DeliverArrays
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, IoOp, MoveOp}
-import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysMetadata}
 
@@ -25,24 +22,57 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
     extends DeliverExecutor(deliverCommand) {
 
   override protected[dispatch] def buildDelivery(
-    deliveredMetadata: ArraysMetadata,
-    moveOps: immutable.Seq[IoOp]
+    deliveredMetadata: ArraysMetadata
   ): Source[(ArraysMetadata, immutable.Seq[IoOp]), NotUsed] = {
-    (deliveredMetadata.grnIdatPath, deliveredMetadata.redIdatPath) match {
-      case (Some(grn), Some(red)) => {
+    (
+      deliveredMetadata.vcfPath,
+      deliveredMetadata.vcfIndexPath,
+      deliveredMetadata.gtcPath,
+      deliveredMetadata.grnIdatPath,
+      deliveredMetadata.redIdatPath
+    ) match {
+      case (Some(vcf), Some(index), Some(gtc), Some(grn), Some(red)) => {
+        val vcfMove = Metadata.buildFilePath(
+          vcf,
+          deliverCommand.destination,
+          ArraysExtensions.VcfGzExtension,
+          moveCommand.newBasename
+        )
+        val vcfIndexMove = Metadata.buildFilePath(
+          index,
+          deliverCommand.destination,
+          ArraysExtensions.VcfGzTbiExtension,
+          moveCommand.newBasename
+        )
+        val gtcMove = Metadata.buildFilePath(
+          gtc,
+          deliverCommand.destination,
+          ArraysExtensions.GtcExtension,
+          moveCommand.newBasename
+        )
+        val moves = immutable
+          .Seq(
+            MoveOp(vcf, vcfMove),
+            MoveOp(index, vcfIndexMove),
+            MoveOp(gtc, gtcMove)
+          )
+          .filterNot { op =>
+            op.src.equals(op.dest)
+          }
+
         val idatDestination =
           deliverCommand.destination.resolve(DeliverArraysExecutor.IdatsDir)
 
         val grnCopy = Metadata.buildFilePath(
           grn,
           idatDestination,
-          ArraysExtensions.IdatExtension
+          ArraysExtensions.GrnIdatExtension
         )
 
         val redCopy = Metadata.buildFilePath(
           red,
           idatDestination,
-          ArraysExtensions.IdatExtension
+          ArraysExtensions.RedIdatExtension
         )
 
         val idatCopies = immutable
@@ -56,107 +86,20 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
 
         val newMetadata = deliveredMetadata.copy(
           grnIdatPath = Some(grnCopy),
-          redIdatPath = Some(redCopy)
+          redIdatPath = Some(redCopy),
+          vcfPath = Some(vcfMove),
+          vcfIndexPath = Some(vcfIndexMove),
+          gtcPath = Some(gtcMove)
         )
 
-        Source.single(newMetadata -> (moveOps ++ idatCopies))
+        Source.single(newMetadata -> (moves ++ idatCopies))
       }
-      case (Some(_), None) =>
-        Source.failed(
-          new IllegalStateException(
-            s"Arrays record with key ${deliverCommand.key} is missing its red idat path"
-          )
-        )
-      case (None, Some(_)) =>
-        Source.failed(
-          new IllegalStateException(
-            s"Arrays record with key ${deliverCommand.key} is missing its grn idat path"
-          )
-        )
       case _ =>
         Source.failed(
           new IllegalStateException(
-            s"Arrays record with key ${deliverCommand.key} is missing both its idat paths"
+            s"Arrays record with key ${deliverCommand.key} is missing idats, vcf, index or gtc paths"
           )
         )
-    }
-  }
-
-  override protected[dispatch] def buildMove(
-    metadata: moveCommand.index.MetadataType,
-    ioUtil: IoUtil
-  ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
-
-    val baseStream = buildDeliveryMove(metadata, ioUtil)
-      .orElse(Source.single(metadata -> immutable.Seq.empty))
-
-    baseStream.flatMapConcat {
-      case (movedMetadata, moveOps) =>
-        buildDelivery(
-          movedMetadata.withWorkspaceName(deliverCommand.workspaceName),
-          moveOps
-        )
-    }
-  }
-
-  private[dispatch] def buildDeliveryMove(
-    metadata: moveCommand.index.MetadataType,
-    ioUtil: IoUtil
-  ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
-
-    val pathsForDelivery = Set("vcfPath", "vcfIndexPath", "gtcPath")
-    val preMovePaths = Metadata.extractPaths(metadata) filterKeys pathsForDelivery
-
-    if (preMovePaths.isEmpty) {
-      Source.failed(
-        new IllegalStateException(
-          s"Nothing to move; no files registered to the $name for $prettyKey"
-        )
-      )
-    } else {
-      val movedMetadata = metadata.moveInto(destination, moveCommand.newBasename)
-      val postMovePaths = Metadata.extractPaths(movedMetadata)
-
-      val opsToPerform = preMovePaths.flatMap {
-        case (fieldName, path) => {
-          /*
-           * Assumptions:
-           *   1. If the field exists pre-move, it will still exist post-move
-           *   2. If the field is a URI pre-move, it will still be a URI post-move
-           */
-          Some(MoveOp(path, postMovePaths(fieldName)))
-            .filterNot(op => op.src.equals(op.dest))
-        }
-      }
-
-      Source(opsToPerform)
-        .fold(Seq.empty[URI]) {
-          case (acc, op) =>
-            if (ioUtil.isGoogleObject(op.src)) {
-              acc
-            } else {
-              acc :+ op.src
-            }
-        }
-        .flatMapConcat { nonCloudPaths =>
-          if (nonCloudPaths.isEmpty) {
-            if (opsToPerform.isEmpty) {
-              logger.info(
-                s"Nothing to move; all files already exist at $destination and no other metadata changes need applied."
-              )
-              Source.empty
-            } else {
-              Source.single(movedMetadata -> opsToPerform.to[immutable.Seq])
-            }
-          } else {
-            Source.failed(
-              new IllegalStateException(
-                s"""Inconsistent state detected, non-cloud paths registered to the $name for $prettyKey:
-                   |${nonCloudPaths.mkString(",")}""".stripMargin
-              )
-            )
-          }
-        }
     }
   }
 }

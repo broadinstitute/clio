@@ -24,8 +24,7 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
 ) extends MoveExecutor(deliverCommand) {
 
   protected def buildDelivery(
-    metadata: moveCommand.index.MetadataType,
-    moveOps: immutable.Seq[IoOp]
+    metadata: moveCommand.index.MetadataType
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed]
 
   override def checkPreconditions(
@@ -55,15 +54,11 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
     ioUtil: IoUtil
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
 
-    val baseStream = super
-      .buildMove(metadata, ioUtil)
-      .orElse(Source.single(metadata -> immutable.Seq.empty))
-
+    val baseStream = Source.single(metadata -> immutable.Seq.empty)
     baseStream.flatMapConcat {
-      case (movedMetadata, moveOps) =>
+      case (movedMetadata, _) =>
         buildDelivery(
-          movedMetadata.withWorkspaceName(deliverCommand.workspaceName),
-          moveOps
+          movedMetadata.withWorkspaceName(deliverCommand.workspaceName)
         )
     }
   }

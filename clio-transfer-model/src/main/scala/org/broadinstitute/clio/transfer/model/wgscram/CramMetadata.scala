@@ -87,6 +87,7 @@ case class CramMetadata(
       craiPath = movedCram.map(
         cramUri => URI.create(s"$cramUri${CramExtensions.CraiExtensionAddition}")
       ),
+      logPath = pathMapper(logPath, "/"),
       analysisFilesTxtPath =
         pathMapper(analysisFilesTxtPath, CramExtensions.AnalysisFilesTxtExtension),
       preAdapterSummaryMetricsPath = pathMapper(
@@ -101,14 +102,28 @@ case class CramMetadata(
         alignmentSummaryMetricsPath,
         CramExtensions.AlignmentSummaryMetricsExtension
       ),
-      // Note preBqsrDepth Metrics no longer created by workflow
+      bamValidationReportPath = pathMapper(
+        bamValidationReportPath,
+        CramExtensions.BamValidationReportExtension
+      ),
+      preBqsrDepthSmPath =
+        pathMapper(preBqsrDepthSmPath, CramExtensions.PreBqsrDepthSMExtension),
       preBqsrSelfSmPath =
         pathMapper(preBqsrSelfSmPath, CramExtensions.PreBqsrSelfSMExtension),
+      preBqsrLogPath = pathMapper(preBqsrLogPath, "/"),
       cramValidationReportPath = pathMapper(
         cramValidationReportPath,
         CramExtensions.CramValidationReportExtension
       ),
       crosscheckPath = pathMapper(crosscheckPath, CramExtensions.CrossCheckExtension),
+      duplicateMetricsPath = pathMapper(
+        duplicateMetricsPath,
+        CramExtensions.DuplicateMetricsExtension
+      ),
+      fingerprintPath =
+        pathMapper(fingerprintPath, CramExtensions.FingerprintVcfExtension),
+      fingerprintVcfPath =
+        pathMapper(fingerprintVcfPath, CramExtensions.FingerprintVcfExtension),
       fingerprintingSummaryMetricsPath = pathMapper(
         fingerprintingSummaryMetricsPath,
         CramExtensions.FingerprintingSummaryMetricsExtension
@@ -117,8 +132,52 @@ case class CramMetadata(
         fingerprintingDetailMetricsPath,
         CramExtensions.FingerprintingDetailMetricsExtension
       ),
-      fingerprintVcfPath =
-        pathMapper(fingerprintVcfPath, CramExtensions.FingerprintVcfExtension)
+      gcBiasPdfPath = pathMapper(gcBiasPdfPath, CramExtensions.GcBiasPdfExtension),
+      gcBiasSummaryMetricsPath =
+        pathMapper(gcBiasPdfPath, CramExtensions.GcBiasSummaryMetricsExtension),
+      gcBiasDetailMetricsPath =
+        pathMapper(gcBiasPdfPath, CramExtensions.GcBiasDetailMetricsExtension),
+      insertSizeHistogramPath = pathMapper(
+        insertSizeHistogramPath,
+        CramExtensions.InsertSizeHistogramPdfExtension
+      ),
+      insertSizeMetricsPath =
+        pathMapper(insertSizeMetricsPath, CramExtensions.InsertSizeMetricsExtension),
+      qualityDistributionPdfPath = pathMapper(
+        qualityDistributionPdfPath,
+        CramExtensions.QualityDistributionPdfExtension
+      ),
+      qualityDistributionMetricsPath = pathMapper(
+        qualityDistributionMetricsPath,
+        CramExtensions.QualityDistributionMetricsExtension
+      ),
+      rawWgsMetricsPath =
+        pathMapper(rawWgsMetricsPath, CramExtensions.RawWgsMetricsExtension),
+      readgroupAlignmentSummaryMetricsPath = pathMapper(
+        readgroupAlignmentSummaryMetricsPath,
+        CramExtensions.ReadGroupAlignmentMetricsExtension
+      ),
+      readgroupGcBiasPdfPath =
+        pathMapper(readgroupGcBiasPdfPath, CramExtensions.ReadGroupGcBiasPdfExtension),
+      readgroupGcBiasSummaryMetricsPath = pathMapper(
+        readgroupGcBiasSummaryMetricsPath,
+        CramExtensions.ReadGroupGcBiasSummaryMetricsExtension
+      ),
+      readgroupGcBiasDetailMetricsPath = pathMapper(
+        readgroupGcBiasDetailMetricsPath,
+        CramExtensions.ReadGroupGcBiasDetailMetricsExtension
+      ),
+      recalDataPath = pathMapper(recalDataPath, CramExtensions.RecalDataExtension),
+      baitBiasSummaryMetricsPath = pathMapper(
+        baitBiasSummaryMetricsPath,
+        CramExtensions.BaitBiasSummaryMetricsExtension
+      ),
+      baitBiasDetailMetricsPath = pathMapper(
+        baitBiasDetailMetricsPath,
+        CramExtensions.BaitBiasDetailMetricsExension
+      ),
+      wgsMetricsPath = pathMapper(wgsMetricsPath, CramExtensions.WgsMetricsExension)
+//      readgroupLevelMetricsFiles = pathMapper(readgroupLevelMetricsFiles)
     )
   }
 

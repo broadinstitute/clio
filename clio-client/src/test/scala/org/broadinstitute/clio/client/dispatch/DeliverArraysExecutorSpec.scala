@@ -5,7 +5,7 @@ import java.net.URI
 import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeliverArrays
-import org.broadinstitute.clio.client.dispatch.MoveExecutor.CopyOp
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, MoveOp}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.transfer.model.arrays.{
@@ -68,18 +68,52 @@ class DeliverArraysExecutorSpec extends BaseClientSpec with AsyncMockFactory {
             ArraysExtensions.IdatExtension
           )
         )
+        val movedVcf = metadata.vcfPath.map(
+          Metadata.buildFilePath(
+            _,
+            destination,
+            ArraysExtensions.VcfGzExtension
+          )
+        )
+        val movedVcfIndex = metadata.vcfIndexPath.map(
+          Metadata.buildFilePath(
+            _,
+            destination,
+            ArraysExtensions.VcfGzTbiExtension
+          )
+        )
+        val movedGtc = metadata.gtcPath.map(
+          Metadata.buildFilePath(
+            _,
+            destination,
+            ArraysExtensions.GtcExtension
+          )
+        )
         val grnMove = metadata.grnIdatPath.zip(movedGrn).map {
           case (src, dest) => CopyOp(src, dest)
         }
         val redMove = metadata.redIdatPath.zip(movedRed).map {
           case (src, dest) => CopyOp(src, dest)
         }
+        val vcfMove = metadata.vcfPath.zip(movedVcf).map {
+          case (src, dest) => MoveOp(src, dest)
+        }
+        val vcfIndexMove = metadata.vcfIndexPath.zip(movedVcfIndex).map {
+          case (src, dest) => MoveOp(src, dest)
+        }
+        val gtcMove = metadata.gtcPath.zip(movedGtc).map {
+          case (src, dest) => MoveOp(src, dest)
+        }
 
         newMetadata.workspaceName should be(Some(workspaceName))
         newMetadata.grnIdatPath should be(movedGrn)
         newMetadata.redIdatPath should be(movedRed)
+        newMetadata.vcfPath should be(movedVcf)
+        newMetadata.vcfIndexPath should be(movedVcfIndex)
+        newMetadata.gtcPath should be(movedGtc)
 
-        ops should contain allElementsOf Seq.concat(grnMove, redMove)
+        ops should contain allElementsOf Seq
+          .concat(grnMove, redMove, vcfMove, vcfIndexMove, gtcMove)
     }
   }
 

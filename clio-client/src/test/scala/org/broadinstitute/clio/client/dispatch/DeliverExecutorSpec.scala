@@ -51,10 +51,9 @@ class DeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val executor =
       new DeliverExecutor(command.copy(force = force)) {
         override protected def buildDelivery(
-          metadata: CramMetadata,
-          moveOps: immutable.Seq[MoveExecutor.IoOp]
+          metadata: CramMetadata
         ): Source[(CramMetadata, immutable.Seq[MoveExecutor.IoOp]), NotUsed] =
-          Source.single(metadata -> moveOps)
+          Source.single(metadata -> immutable.Seq.empty)
       }
     executor.checkPreconditions(ioUtil, webClient).runWith(Sink.head).map { m =>
       m should be(metadata)

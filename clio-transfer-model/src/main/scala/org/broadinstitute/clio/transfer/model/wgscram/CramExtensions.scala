@@ -40,9 +40,47 @@ object CramExtensions extends FileExtensions {
 
   val PreAdapterDetailMetricsExtension = ".pre_adapter_detail_metrics"
 
+  val BamValidationReportExtension = ".bam.validation_report"
+
   val CramValidationReportExtension = ".cram.validation_report"
 
   val PreBqsrSelfSMExtension = ".preBqsr.selfSM"
 
+  val PreBqsrDepthSMExtension = ".preBqsr.depthSM"
+
   val CrossCheckExtension = ".crosscheck"
+
+  val DuplicateMetricsExtension = ".duplicate_metrics"
+
+  val GcBiasPdfExtension = "gc_bias.pdf"
+
+  val GcBiasSummaryMetricsExtension = ".gc_bias.summary_metrics"
+
+  val GcBiasDetailMetricsExtension = ".gc_bias.detail_metrics"
+
+  val InsertSizeHistogramPdfExtension = ".insert_size_histogram.pdf"
+
+  val InsertSizeMetricsExtension = ".insert_size_metrics"
+
+  val QualityDistributionPdfExtension = ".quality_distribution_pdf"
+
+  val QualityDistributionMetricsExtension = ".quality_distribution_metrics"
+
+  val RawWgsMetricsExtension = ".raw_wgs_metrics"
+
+  val ReadGroupAlignmentMetricsExtension = ".alignment_summary_metrics"
+
+  val ReadGroupGcBiasPdfExtension = ".gc_bias_pdf"
+
+  val ReadGroupGcBiasSummaryMetricsExtension = ".gc_bias_summary_metrics"
+
+  val ReadGroupGcBiasDetailMetricsExtension = ".gc_bias_detail_metrics"
+
+  val RecalDataExtension = ".recal_data.csv"
+
+  val BaitBiasSummaryMetricsExtension = ".bait_bias_summary_metrics"
+
+  val BaitBiasDetailMetricsExension = ".bait_bias_detail_metrics"
+
+  val WgsMetricsExension = ".wgs_metrics"
 }

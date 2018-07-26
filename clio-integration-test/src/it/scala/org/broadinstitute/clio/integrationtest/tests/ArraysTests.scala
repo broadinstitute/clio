@@ -403,17 +403,20 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val vcfContents = s"$id --- I am a dummy vcf --- $id"
     val vcfIndexContents = s"$id --- I am a dummy vcfIndex --- $id"
+    val gtcContents = s"$id --- I am a dummy gtc --- $id"
     val grnIdatContents = s"$id --- I am a dummy grn idat --- $id"
     val redIdatContents = s"$id --- I am a dummy red idat --- $id"
 
     val vcfName = s"$chipwellBarcode${ArraysExtensions.VcfGzExtension}"
     val vcfIndexName = s"$chipwellBarcode${ArraysExtensions.VcfGzTbiExtension}"
-    val grnIdatName = s"grn-$id${ArraysExtensions.IdatExtension}"
-    val redIdatName = s"red-$id${ArraysExtensions.IdatExtension}"
+    val gtcName = s"$chipwellBarcode${ArraysExtensions.GtcExtension}"
+    val grnIdatName = s"grn-$id${ArraysExtensions.GrnIdatExtension}"
+    val redIdatName = s"red-$id${ArraysExtensions.RedIdatExtension}"
 
     val rootSource = rootTestStorageDir / s"arrays/$chipwellBarcode/v$version/"
     val vcfSource = rootSource / vcfName
     val vcfIndexSource = rootSource / vcfIndexName
+    val gtcSource = rootSource / gtcName
     val grnIdatSource = rootSource / "idats" / grnIdatName
     val redIdatSource = rootSource / "idats" / redIdatName
 
@@ -421,6 +424,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val metadata = ArraysMetadata(
       vcfPath = Some(vcfSource.uri),
       vcfIndexPath = Some(vcfIndexSource.uri),
+      gtcPath = Some(gtcSource.uri),
       grnIdatPath = Some(grnIdatSource.uri),
       redIdatPath = Some(redIdatSource.uri),
       regulatoryDesignation = Some(regulatoryDesignation),
@@ -432,6 +436,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val _ = Seq(
       (vcfSource, vcfContents),
       (vcfIndexSource, vcfIndexContents),
+      (gtcSource, gtcContents),
       (grnIdatSource, grnIdatContents),
       (redIdatSource, redIdatContents)
     ).map {
@@ -458,11 +463,12 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         workspaceName
       )
     } yield {
-      Seq(vcfSource, vcfIndexSource).foreach(_ should exist)
+      Seq(vcfSource, vcfIndexSource, gtcSource).foreach(_ should exist)
 
       Seq(
         (vcfSource, vcfContents),
         (vcfIndexSource, vcfIndexContents),
+        (gtcSource, gtcContents),
         (grnIdatSource, grnIdatContents),
         (redIdatSource, redIdatContents)
       ).foreach {
@@ -859,7 +865,13 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     force = true
   )
 
-  it should "move files and record the workspace name when delivering" in {
+  it should "move files and record the workspace name when delivering" in testDeliver()
+
+  it should "support changing the vcf, vcfIndex, and gtc basename on deliver" in testDeliver(
+    changeBasename = true
+  )
+
+  def testDeliver(changeBasename: Boolean = false): Future[Assertion] = {
     val id = randomId
     val barcode = s"barcode$id"
     val version = 3
@@ -869,12 +881,14 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val gtcContents = s"$id --- I am a dummy gtc --- $id"
     val grnIdatContents = s"$id --- I am a dummy grn idat --- $id"
     val redIdatContents = s"$id --- I am a dummy red idat --- $id"
+    val variantCallingSummaryMetricsContents =
+      s"$id --- I am dummy variant_calling_summary_metrics --- $id"
 
     val vcfName = s"$barcode${ArraysExtensions.VcfGzExtension}"
     val vcfIndexName = s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
     val gtcName = s"$barcode${ArraysExtensions.GtcExtension}"
-    val grnIdatName = s"grn-$barcode${ArraysExtensions.IdatExtension}"
-    val redIdatName = s"red-$barcode${ArraysExtensions.IdatExtension}"
+    val grnIdatName = s"grn-$barcode${ArraysExtensions.GrnIdatExtension}"
+    val redIdatName = s"red-$barcode${ArraysExtensions.RedIdatExtension}"
 
     val rootSource = rootTestStorageDir / s"arrays/$barcode/v$version/"
     val vcfSource = rootSource / vcfName
@@ -882,15 +896,17 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val gtcSource = rootSource / gtcName
     val grnIdatSource = rootSource / grnIdatName
     val redIdatSource = rootSource / redIdatName
+    val variantCallingSummaryMetricsSource = rootSource / s"$barcode${ArraysExtensions.VariantCallingSummaryMetricsExtension}"
 
-    val prefix = "new_basename_"
-    val newBasename = s"$prefix$barcode"
+    val endBasename = if (changeBasename) randomId else barcode
+
     val rootDestination = rootSource.parent / s"moved/$id/"
-    val vcfDestination = rootDestination / s"$prefix$vcfName"
-    val vcfIndexDestination = rootDestination / s"$prefix$vcfIndexName"
-    val gtcDestination = rootDestination / s"$prefix$gtcName"
+    val vcfDestination = rootDestination / s"$endBasename${ArraysExtensions.VcfGzExtension}"
+    val vcfIndexDestination = rootDestination / s"$endBasename${ArraysExtensions.VcfGzTbiExtension}"
+    val gtcDestination = rootDestination / s"$endBasename${ArraysExtensions.GtcExtension}"
     val grnIdatDestination = rootDestination / "idats" / grnIdatName
     val redIdatDestination = rootDestination / "idats" / redIdatName
+    val variantCallingSummaryMetricsDestination = rootDestination / s"$endBasename${ArraysExtensions.VariantCallingSummaryMetricsExtension}"
 
     val key = ArraysKey(Location.GCP, Symbol(barcode), version)
     val metadata = ArraysMetadata(
@@ -899,6 +915,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       gtcPath = Some(gtcSource.uri),
       grnIdatPath = Some(grnIdatSource.uri),
       redIdatPath = Some(redIdatSource.uri),
+      variantCallingSummaryMetricsPath = Some(variantCallingSummaryMetricsSource.uri),
       documentStatus = Some(DocumentStatus.Normal)
     )
 
@@ -909,14 +926,14 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       (vcfIndexSource, vcfIndexContents),
       (gtcSource, gtcContents),
       (grnIdatSource, grnIdatContents),
-      (redIdatSource, redIdatContents)
+      (redIdatSource, redIdatContents),
+      (variantCallingSummaryMetricsSource, variantCallingSummaryMetricsContents)
     ).map {
       case (source, contents) => source.write(contents)
     }
-    val result = for {
-      _ <- runUpsertArrays(key, metadata)
-      _ <- runIgnore(
-        ClioCommand.deliverArraysName,
+
+    val args = Seq.concat(
+      Seq(
         "--location",
         Location.GCP.entryName,
         "--chipwell-barcode",
@@ -926,10 +943,18 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         "--workspace-name",
         workspaceName,
         "--workspace-path",
-        rootDestination.uri.toString,
-        "--new-basename",
-        newBasename
-      )
+        rootDestination.uri.toString
+      ),
+      if (changeBasename) {
+        Seq("--new-basename", endBasename)
+      } else {
+        Seq.empty
+      }
+    )
+
+    val result = for {
+      _ <- runUpsertArrays(key, metadata)
+      _ <- runIgnore(ClioCommand.deliverArraysName, args: _*)
       outputs <- runCollectJson(
         ClioCommand.queryArraysName,
         "--workspace-name",
@@ -945,8 +970,13 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         grnIdatSource,
         redIdatSource,
         grnIdatDestination,
-        redIdatDestination
+        redIdatDestination,
+        variantCallingSummaryMetricsSource // Note - we do not move metrics during delivery.  Source should exist
       ).foreach(_ should exist)
+
+      Seq(
+        variantCallingSummaryMetricsDestination
+      ).foreach(_ shouldNot exist) // Note - we do not move metrics during delivery.  Destination should NOT exist
 
       Seq(
         (vcfDestination, vcfContents),
@@ -996,17 +1026,20 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val vcfContents = s"$id --- I am a dummy vcf --- $id"
     val vcfIndexContents = s"$id --- I am a dummy vcfIndex --- $id"
+    val gtcContents = s"$id --- I am a dummy gtc --- $id"
     val grnIdatContents = s"$id --- I am a dummy grn idat --- $id"
     val redIdatContents = s"$id --- I am a dummy red idat --- $id"
 
     val vcfName = s"$barcode${ArraysExtensions.VcfGzExtension}"
     val vcfIndexName = s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
-    val grnIdatName = s"grn-$id${ArraysExtensions.IdatExtension}"
-    val redIdatName = s"red-$id${ArraysExtensions.IdatExtension}"
+    val gtcName = s"$barcode${ArraysExtensions.GtcExtension}"
+    val grnIdatName = s"grn-$id${ArraysExtensions.GrnIdatExtension}"
+    val redIdatName = s"red-$id${ArraysExtensions.RedIdatExtension}"
 
     val rootSource = rootTestStorageDir / s"arrays/$barcode/v$version/"
     val vcfSource = rootSource / vcfName
     val vcfIndexSource = rootSource / vcfIndexName
+    val gtcSource = rootSource / gtcName
     val grnIdatSource = rootSource / "idats" / grnIdatName
     val redIdatSource = rootSource / "idats" / redIdatName
 
@@ -1014,6 +1047,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val metadata = ArraysMetadata(
       vcfPath = Some(vcfSource.uri),
       vcfIndexPath = Some(vcfIndexSource.uri),
+      gtcPath = Some(gtcSource.uri),
       grnIdatPath = Some(grnIdatSource.uri),
       redIdatPath = Some(redIdatSource.uri),
       documentStatus = Some(DocumentStatus.Normal)
@@ -1024,6 +1058,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val _ = Seq(
       (vcfSource, vcfContents),
       (vcfIndexSource, vcfIndexContents),
+      (gtcSource, gtcContents),
       (grnIdatSource, grnIdatContents),
       (redIdatSource, redIdatContents)
     ).map {
@@ -1050,11 +1085,12 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         workspaceName
       )
     } yield {
-      Seq(vcfSource, vcfIndexSource).foreach(_ should exist)
+      Seq(vcfSource, vcfIndexSource, gtcSource).foreach(_ should exist)
 
       Seq(
         (vcfSource, vcfContents),
         (vcfIndexSource, vcfIndexContents),
+        (gtcSource, gtcContents),
         (grnIdatSource, grnIdatContents),
         (redIdatSource, redIdatContents)
       ).foreach {
@@ -1082,12 +1118,14 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val vcfName = s"$barcode${ArraysExtensions.VcfGzExtension}"
     val vcfIndexName = s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
+    val gtcName = s"$barcode${ArraysExtensions.GtcExtension}"
     val grnIdatName = s"grn-$id${ArraysExtensions.IdatExtension}"
     val redIdatName = s"red-$id${ArraysExtensions.IdatExtension}"
 
     val rootSource = rootTestStorageDir / s"arrays/$barcode/v$version/"
     val vcfSource = rootSource / vcfName
     val vcfIndexSource = rootSource / vcfIndexName
+    val gtcSource = rootSource / gtcName
     val grnIdatSource = rootSource / grnIdatName
     val redIdatSource = rootSource / redIdatName
 
@@ -1096,9 +1134,10 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val key = ArraysKey(Location.GCP, Symbol(barcode), version)
     val metadata = ArraysMetadata(
       vcfPath = Some(vcfSource.uri),
+      vcfIndexPath = Some(vcfIndexSource.uri),
+      gtcPath = Some(gtcSource.uri),
       grnIdatPath = Some(grnIdatSource.uri),
-      redIdatPath = Some(redIdatSource.uri),
-      vcfIndexPath = Some(vcfIndexSource.uri)
+      redIdatPath = Some(redIdatSource.uri)
     )
 
     val workspaceName = s"$id-TestWorkspace-$id"
@@ -1137,6 +1176,68 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "fail delivery if gtc file is missing" in {
+    val id = randomId
+    val barcode = s"barcode$id"
+    val version = 3
+
+    val vcfName = s"$barcode${ArraysExtensions.VcfGzExtension}"
+    val vcfIndexName = s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
+    val grnIdatName = s"grn-$id${ArraysExtensions.IdatExtension}"
+    val redIdatName = s"red-$id${ArraysExtensions.IdatExtension}"
+
+    val rootSource = rootTestStorageDir / s"arrays/$barcode/v$version/"
+    val vcfSource = rootSource / vcfName
+    val vcfIndexSource = rootSource / vcfIndexName
+    val grnIdatSource = rootSource / grnIdatName
+    val redIdatSource = rootSource / redIdatName
+
+    val rootDestination = rootSource.parent / s"moved/$randomId/"
+
+    val key = ArraysKey(Location.GCP, Symbol(barcode), version)
+    val metadata = ArraysMetadata(
+      vcfPath = Some(vcfSource.uri),
+      vcfIndexPath = Some(vcfIndexSource.uri),
+      grnIdatPath = Some(grnIdatSource.uri),
+      redIdatPath = Some(redIdatSource.uri)
+    )
+
+    val workspaceName = s"$randomId-TestWorkspace-$randomId"
+
+    recoverToExceptionIf[Exception] {
+      for {
+        _ <- runUpsertArrays(key, metadata)
+        // Should fail because the idat files aren't set.
+        deliverResponse <- runDecode[UpsertId](
+          ClioCommand.deliverArraysName,
+          "--location",
+          Location.GCP.entryName,
+          "--chipwell-barcode",
+          barcode,
+          "--version",
+          version.toString,
+          "--workspace-name",
+          workspaceName,
+          "--workspace-path",
+          rootDestination.uri.toString
+        )
+      } yield {
+        deliverResponse
+      }
+    }.flatMap { _ =>
+      for {
+        outputs <- runCollectJson(
+          ClioCommand.queryArraysName,
+          "--workspace-name",
+          workspaceName
+        )
+      } yield {
+        // The CLP shouldn't have tried to upsert the workspace name.
+        outputs shouldBe empty
+      }
+    }
+  }
+
   it should "fail delivery if idat files are missing" in {
     val id = randomId
     val barcode = s"barcode$id"
@@ -1144,17 +1245,20 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val vcfName = s"$barcode${ArraysExtensions.VcfGzExtension}"
     val vcfIndexName = s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
+    val gtcName = s"$barcode${ArraysExtensions.GtcExtension}"
 
     val rootSource = rootTestStorageDir / s"arrays/$barcode/v$version/"
     val vcfSource = rootSource / vcfName
     val vcfIndexSource = rootSource / vcfIndexName
+    val gtcSource = rootSource / gtcName
 
     val rootDestination = rootSource.parent / s"moved/$randomId/"
 
     val key = ArraysKey(Location.GCP, Symbol(barcode), version)
     val metadata = ArraysMetadata(
       vcfPath = Some(vcfSource.uri),
-      vcfIndexPath = Some(vcfIndexSource.uri)
+      vcfIndexPath = Some(vcfIndexSource.uri),
+      gtcPath = Some(gtcSource.uri)
     )
 
     val workspaceName = s"$randomId-TestWorkspace-$randomId"
