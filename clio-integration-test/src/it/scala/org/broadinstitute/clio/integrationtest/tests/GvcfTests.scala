@@ -151,6 +151,138 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     )
   }
 
+  it should "handle raw queries that limit the number of returned documents" in {
+    val sampleAlias = s"someAlias $randomId"
+    val key = GvcfKey(
+      location = Location.GCP,
+      project = "test project",
+      sampleAlias = sampleAlias,
+      version = 2,
+      dataType = DataType.WGS
+    )
+    val gvcfPath = Some(URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"))
+    val metadata = GvcfMetadata(
+      gvcfPath = gvcfPath,
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+    def setup(): Future[Unit] =
+      for {
+        _ <- runUpsertGvcf(key, metadata)
+        _ <- runUpsertGvcf(
+          key.copy(project = "a different test project"),
+          metadata.copy(notes = Some("this is a different note"))
+        )
+      } yield ()
+    val expected = Map("gvcf_path" -> gvcfPath).asJson
+    val rawJsonQuery =
+      s"""{
+         |  "_source": "gvcf_path",
+         |  "query": {
+         |    "bool": {
+         |      "must": [
+         |        {
+         |          "query_string": {
+         |            "default_field": "sample_alias.exact",
+         |            "query": "\\"$sampleAlias\\""
+         |          }
+         |        }
+         |      ]
+         |    }
+         |  },
+         |  "size": 1
+         |}
+      """.stripMargin
+    rawQueryTest(
+      rawJsonQuery,
+      setup(),
+      _ should be(Seq(expected))
+    )
+  }
+
+  it should "handle raw queries that specify a sort order" in {
+    val sampleAlias = s"someAlias $randomId"
+    val key = GvcfKey(
+      location = Location.GCP,
+      project = "test project",
+      sampleAlias = sampleAlias,
+      version = 2,
+      dataType = DataType.WGS
+    )
+    val gvcfPath = Some(URI.create(s"gs://path/gvcf${GvcfExtensions.GvcfExtension}"))
+    val metadata = GvcfMetadata(
+      gvcfPath = gvcfPath,
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+    def setup(): Future[Unit] =
+      for {
+        _ <- runUpsertGvcf(key, metadata)
+        _ <- runUpsertGvcf(
+          key.copy(project = "a different test project"),
+          metadata.copy(notes = Some("this is a different note"))
+        )
+      } yield ()
+
+    val ascendingQuery =
+      s"""{
+         |  "_source": "project",
+         |  "query": {
+         |    "bool": {
+         |      "must": [
+         |        {
+         |          "query_string": {
+         |            "default_field": "sample_alias.exact",
+         |            "query": "\\"$sampleAlias\\""
+         |          }
+         |        }
+         |      ]
+         |    }
+         |  },
+         |  "sort": ["project.exact"]
+         |}
+      """.stripMargin
+
+    val descendingQuery =
+      s"""{
+         |  "_source": "project",
+         |  "query": {
+         |    "bool": {
+         |      "must": [
+         |        {
+         |          "query_string": {
+         |            "default_field": "sample_alias.exact",
+         |            "query": "\\"$sampleAlias\\""
+         |          }
+         |        }
+         |      ]
+         |    }
+         |  },
+         |  "sort": [{"project.exact": "desc"}]
+         |}
+      """.stripMargin
+
+    rawQueryTest(
+      ascendingQuery,
+      setup(),
+      _ should be(
+        Seq(
+          Json.obj("project" -> "a different test project".asJson),
+          Json.obj("project" -> "test project".asJson)
+        )
+      )
+    ).flatMap { _ =>
+      rawQueryTest(
+        descendingQuery,
+        Future.unit,
+        _ should be(
+          Seq(
+            Json.obj("project" -> "test project".asJson),
+            Json.obj("project" -> "a different test project".asJson)
+          )
+        )
+      )
+    }
+  }
+
   it should "fail when submitting a bogus raw query that is valid json" in {
     val rawJsonQuery =
       s"""{
