@@ -6,7 +6,6 @@ import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeliverCram
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.WriteOp
-import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.transfer.model.wgscram.{
   CramExtensions,
   CramKey,
@@ -27,20 +26,23 @@ class DeliverCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   )
   private val cramPath =
     URI.create(s"gs://bucket/the-cram${CramExtensions.CramExtension}")
+  private val craiPath =
+    URI.create(s"gs://bucket/the-cram${CramExtensions.CraiExtension}")
   private val cramMd5 = Symbol("abcdefg")
   private val metadata =
-    CramMetadata(cramPath = Some(cramPath), cramMd5 = Some(cramMd5))
+    CramMetadata(
+      cramPath = Some(cramPath),
+      craiPath = Some(craiPath),
+      cramMd5 = Some(cramMd5)
+    )
   private val workspaceName = "the-workspace"
   private val destination = URI.create("gs://the-destination/")
 
   it should "add an IO op to write the cram md5, and add workspace name" in {
-    val ioUtil = mock[IoUtil]
-    (ioUtil.isGoogleObject _).expects(cramPath).returning(true)
-
     val executor =
       new DeliverCramExecutor(DeliverCram(theKey, workspaceName, destination))
 
-    executor.buildMove(metadata, ioUtil).runWith(Sink.head).map {
+    executor.buildMove(metadata).runWith(Sink.head).map {
       case (newMetadata, ops) =>
         newMetadata.workspaceName should be(Some(workspaceName))
         ops should contain(
@@ -55,15 +57,12 @@ class DeliverCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   it should "use the new basename for the md5 file, if given" in {
     val basename = "the-new-basename"
 
-    val ioUtil = mock[IoUtil]
-    (ioUtil.isGoogleObject _).expects(cramPath).returning(true)
-
     val executor =
       new DeliverCramExecutor(
         DeliverCram(theKey, workspaceName, destination, Some(basename))
       )
 
-    executor.buildMove(metadata, ioUtil).runWith(Sink.head).map {
+    executor.buildMove(metadata).runWith(Sink.head).map {
       case (newMetadata, ops) =>
         newMetadata.workspaceName should be(Some(workspaceName))
         ops should contain(
@@ -81,20 +80,17 @@ class DeliverCramExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
     recoverToSucceededIf[IllegalStateException] {
       executor
-        .buildMove(metadata.copy(cramPath = None), stub[IoUtil])
+        .buildMove(metadata.copy(cramPath = None))
         .runWith(Sink.ignore)
     }
   }
 
   it should "fail if no cram md5 is registered to a document" in {
-    val ioUtil = mock[IoUtil]
-    (ioUtil.isGoogleObject _).expects(cramPath).returning(true)
-
     val executor =
       new DeliverCramExecutor(DeliverCram(theKey, workspaceName, destination))
 
     recoverToSucceededIf[IllegalStateException] {
-      executor.buildMove(metadata.copy(cramMd5 = None), ioUtil).runWith(Sink.ignore)
+      executor.buildMove(metadata.copy(cramMd5 = None)).runWith(Sink.ignore)
     }
   }
 }

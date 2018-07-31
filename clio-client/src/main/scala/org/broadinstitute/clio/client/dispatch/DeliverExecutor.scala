@@ -50,8 +50,7 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
   }
 
   override protected[dispatch] def buildMove(
-    metadata: moveCommand.index.MetadataType,
-    ioUtil: IoUtil
+    metadata: moveCommand.index.MetadataType
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
 
     val baseStream = Source.single(metadata -> immutable.Seq.empty)

@@ -43,7 +43,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
 
     for {
       existingMetadata <- checkPreconditions(ioUtil, webClient)
-      (movedMetadata, opsToPerform) <- buildMove(existingMetadata, ioUtil)
+      (movedMetadata, opsToPerform) <- buildMove(existingMetadata)
       if movedMetadata != existingMetadata
       _ <- runPreUpsertOps(opsToPerform, ioUtil).mapError {
         case ex =>
@@ -141,8 +141,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     * more IO operations.
     */
   protected[dispatch] def buildMove(
-    metadata: moveCommand.index.MetadataType,
-    ioUtil: IoUtil
+    metadata: moveCommand.index.MetadataType
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
 
     val preMovePaths = Metadata.extractPaths(metadata)
@@ -168,35 +167,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
             .filterNot(op => op.src.equals(op.dest))
         }
       }
-
-      Source(opsToPerform)
-        .fold(Seq.empty[URI]) {
-          case (acc, op) =>
-            if (ioUtil.isGoogleObject(op.src)) {
-              acc
-            } else {
-              acc :+ op.src
-            }
-        }
-        .flatMapConcat { nonCloudPaths =>
-          if (nonCloudPaths.isEmpty) {
-            if (opsToPerform.isEmpty) {
-              logger.info(
-                s"Nothing to move; all files already exist at $destination and no other metadata changes need applied."
-              )
-              Source.empty
-            } else {
-              Source.single(movedMetadata -> opsToPerform.to[immutable.Seq])
-            }
-          } else {
-            Source.failed(
-              new IllegalStateException(
-                s"""Inconsistent state detected, non-cloud paths registered to the $name for $prettyKey:
-                   |${nonCloudPaths.mkString(",")}""".stripMargin
-              )
-            )
-          }
-        }
+      Source.single(movedMetadata -> opsToPerform.to[immutable.Seq])
     }
   }
 }

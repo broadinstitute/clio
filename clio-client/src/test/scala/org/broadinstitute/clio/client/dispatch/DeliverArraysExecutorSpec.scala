@@ -6,7 +6,6 @@ import akka.stream.scaladsl.Sink
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeliverArrays
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, MoveOp}
-import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.transfer.model.Metadata
 import org.broadinstitute.clio.transfer.model.arrays.{
   ArraysExtensions,
@@ -44,15 +43,10 @@ class DeliverArraysExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   private val destination = URI.create("gs://the-destination/")
 
   it should "add IO ops to copy the idats, and add workspace name" in {
-    val ioUtil = mock[IoUtil]
-    Seq.concat(metadata.vcfPath, metadata.vcfIndexPath, metadata.gtcPath).foreach { uri =>
-      (ioUtil.isGoogleObject _).expects(uri).returning(true)
-    }
-
     val executor =
       new DeliverArraysExecutor(DeliverArrays(theKey, workspaceName, destination))
 
-    executor.buildMove(metadata, ioUtil).runWith(Sink.head).map {
+    executor.buildMove(metadata).runWith(Sink.head).map {
       case (newMetadata, ops) =>
         val movedGrn = metadata.grnIdatPath.map(
           Metadata.buildFilePath(
@@ -118,30 +112,22 @@ class DeliverArraysExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   }
 
   it should "fail if no red idat is registered to a document" in {
-    val ioUtil = mock[IoUtil]
-    Seq.concat(metadata.vcfPath, metadata.vcfIndexPath, metadata.gtcPath).foreach { uri =>
-      (ioUtil.isGoogleObject _).expects(uri).returning(true)
-    }
 
     val executor =
       new DeliverArraysExecutor(DeliverArrays(theKey, workspaceName, destination))
 
     recoverToSucceededIf[IllegalStateException] {
-      executor.buildMove(metadata.copy(grnIdatPath = None), ioUtil).runWith(Sink.ignore)
+      executor.buildMove(metadata.copy(grnIdatPath = None)).runWith(Sink.ignore)
     }
   }
 
   it should "fail if no green idat is registered to a document" in {
-    val ioUtil = mock[IoUtil]
-    Seq.concat(metadata.vcfPath, metadata.vcfIndexPath, metadata.gtcPath).foreach { uri =>
-      (ioUtil.isGoogleObject _).expects(uri).returning(true)
-    }
 
     val executor =
       new DeliverArraysExecutor(DeliverArrays(theKey, workspaceName, destination))
 
     recoverToSucceededIf[IllegalStateException] {
-      executor.buildMove(metadata.copy(redIdatPath = None), ioUtil).runWith(Sink.ignore)
+      executor.buildMove(metadata.copy(redIdatPath = None)).runWith(Sink.ignore)
     }
   }
 }
