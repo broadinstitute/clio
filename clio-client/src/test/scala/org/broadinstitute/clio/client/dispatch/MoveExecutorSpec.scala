@@ -107,8 +107,6 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
       paths.foreach {
         case (uri, ext) =>
-          (ioUtil.isGoogleObject _).expects(uri).returning(true)
-
           val expectedDest =
             Metadata.buildFilePath(uri, destination, ext, newBasename)
           (ioUtil.copyGoogleObject _).expects(uri, expectedDest).returning(())
@@ -221,7 +219,6 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     )
     metadata.craiPath.zip(movedCrai).foreach {
       case (src, dest) =>
-        (ioUtil.isGoogleObject _).expects(src).returning(true)
         (ioUtil.copyGoogleObject _).expects(src, dest).returning(())
         (ioUtil
           .deleteCloudObjects(_: immutable.Iterable[URI])(_: ExecutionContext))
@@ -264,33 +261,6 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     }
   }
 
-  it should "fail if on-prem paths are registered to a cloud document" in {
-    val ioUtil = mock[IoUtil]
-    val webClient = mock[ClioWebClient]
-
-    (webClient
-      .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
-      .expects(CramIndex, theKey, false)
-      .returning(Source.single(metadata))
-
-    val paths = Seq.concat(metadata.cramPath, metadata.craiPath)
-
-    (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
-    paths.foreach { uri =>
-      (ioUtil.isGoogleObject _).expects(uri).returning(false)
-    }
-
-    val executor = new MoveExecutor(MoveCram(theKey, destination))
-    recoverToExceptionIf[IllegalStateException] {
-      executor.execute(webClient, ioUtil).runWith(Sink.ignore)
-    }.map { ex =>
-      paths.foreach { uri =>
-        ex.getMessage should include(uri.toString)
-      }
-      succeed
-    }
-  }
-
   it should "fail if pre-upsert IO operations fail" in {
     val ioUtil = mock[IoUtil]
     val webClient = mock[ClioWebClient]
@@ -307,8 +277,6 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
     paths.foreach {
       case (uri, ext) =>
-        (ioUtil.isGoogleObject _).expects(uri).returning(true)
-
         val expectedDest =
           Metadata.buildFilePath(uri, destination, ext)
         (ioUtil.copyGoogleObject _)
@@ -338,8 +306,6 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
     paths.foreach {
       case (uri, ext) =>
-        (ioUtil.isGoogleObject _).expects(uri).returning(true)
-
         val expectedDest =
           Metadata.buildFilePath(uri, destination, ext)
         (ioUtil.copyGoogleObject _).expects(uri, expectedDest).returning(())
@@ -372,8 +338,6 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
     paths.foreach {
       case (uri, ext) =>
-        (ioUtil.isGoogleObject _).expects(uri).returning(true)
-
         val expectedDest =
           Metadata.buildFilePath(uri, destination, ext)
         (ioUtil.copyGoogleObject _).expects(uri, expectedDest).returning(())
