@@ -14,7 +14,6 @@ import com.typesafe.scalalogging.StrictLogging
 import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import org.apache.http.HttpHost
-import org.broadinstitute.clio.JsonUtils
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
@@ -31,7 +30,6 @@ class HttpElasticsearchDAO private[dataaccess] (
     with StrictLogging {
 
   import ElasticsearchUtil.HttpClientOps
-  import JsonUtils.JsonOps
   import com.sksamuel.elastic4s.circe._
 
   implicit val ec: ExecutionContext = system.dispatcher
@@ -69,7 +67,9 @@ class HttpElasticsearchDAO private[dataaccess] (
 
     val responsePublisher = httpClient.publisher(
       searchDefinition,
-      requestBody.unsafeGet[Long](HttpElasticsearchDAO.ElasticsearchSizeField)
+      requestBody.hcursor
+        .get[Long](HttpElasticsearchDAO.ElasticsearchSizeField)
+        .getOrElse(Long.MaxValue)
     )
 
     Source
@@ -197,7 +197,6 @@ object HttpElasticsearchDAO extends StrictLogging {
   private val ElasticsearchSizeField = "size"
 
   private val DefaultSearchParams = Json.obj(
-    ElasticsearchSizeField -> 1024.asJson,
     "sort" -> Json.arr("_doc".asJson)
   )
 }
