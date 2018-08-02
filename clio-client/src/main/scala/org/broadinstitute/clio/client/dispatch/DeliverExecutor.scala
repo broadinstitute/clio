@@ -52,13 +52,6 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
   override protected[dispatch] def buildMove(
     metadata: moveCommand.index.MetadataType
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
-
-    val baseStream = Source.single(metadata -> immutable.Seq.empty)
-    baseStream.flatMapConcat {
-      case (movedMetadata, _) =>
-        buildDelivery(
-          movedMetadata.withWorkspaceName(deliverCommand.workspaceName)
-        )
-    }
+    buildDelivery(metadata.withWorkspaceName(deliverCommand.workspaceName))
   }
 }

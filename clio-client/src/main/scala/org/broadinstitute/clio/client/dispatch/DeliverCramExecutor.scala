@@ -25,9 +25,13 @@ class DeliverCramExecutor(deliverCommand: BackCompatibleDeliverCram)(
 ) extends DeliverExecutor(deliverCommand) {
 
   override protected def buildDelivery(
-    deliveredMetadata: CramMetadata
+    existingingMetadata: CramMetadata
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
-    (deliveredMetadata.cramMd5, deliveredMetadata.cramPath, deliveredMetadata.craiPath) match {
+    (
+      existingingMetadata.cramMd5,
+      existingingMetadata.cramPath,
+      existingingMetadata.craiPath
+    ) match {
       case (Some(md5), Some(cram), Some(crai)) => {
         val cramMove = Metadata.buildFilePath(
           cram,
@@ -53,7 +57,7 @@ class DeliverCramExecutor(deliverCommand: BackCompatibleDeliverCram)(
             op.src.equals(op.dest)
           }
 
-        val newMetadata = deliveredMetadata.copy(
+        val newMetadata = existingingMetadata.copy(
           cramPath = Some(cramMove),
           craiPath = Some(craiMove),
           cramMd5 = Some(md5)

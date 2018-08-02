@@ -22,14 +22,14 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
     extends DeliverExecutor(deliverCommand) {
 
   override protected[dispatch] def buildDelivery(
-    deliveredMetadata: ArraysMetadata
+    existingMetadata: ArraysMetadata
   ): Source[(ArraysMetadata, immutable.Seq[IoOp]), NotUsed] = {
     (
-      deliveredMetadata.vcfPath,
-      deliveredMetadata.vcfIndexPath,
-      deliveredMetadata.gtcPath,
-      deliveredMetadata.grnIdatPath,
-      deliveredMetadata.redIdatPath
+      existingMetadata.vcfPath,
+      existingMetadata.vcfIndexPath,
+      existingMetadata.gtcPath,
+      existingMetadata.grnIdatPath,
+      existingMetadata.redIdatPath
     ) match {
       case (Some(vcf), Some(index), Some(gtc), Some(grn), Some(red)) => {
         val vcfMove = Metadata.buildFilePath(
@@ -84,7 +84,7 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
             op.src.equals(op.dest)
           }
 
-        val newMetadata = deliveredMetadata.copy(
+        val newMetadata = existingMetadata.copy(
           grnIdatPath = Some(grnCopy),
           redIdatPath = Some(redCopy),
           vcfPath = Some(vcfMove),
