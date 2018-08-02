@@ -58,29 +58,27 @@ class HttpElasticsearchDAO private[dataaccess] (
   override def rawQuery(json: JsonObject)(
     implicit index: ElasticsearchIndex[_]
   ): Source[Json, NotUsed] = {
-    val requestBody =
-      json
-        .add(
-          HttpElasticsearchDAO.DocumentScrollSizeName,
-          HttpElasticsearchDAO.DocumentScrollSize.asJson
-        )
-        .add(
-          HttpElasticsearchDAO.DocumentScrollSortName,
-          HttpElasticsearchDAO.DocumentScrollSort.asJson
-        )
-        .asJson
-        .pretty(ModelAutoDerivation.defaultPrinter)
-    val searchDefinition = searchWithType(index.indexName / index.indexType)
-      .scroll(HttpElasticsearchDAO.DocumentScrollKeepAlive)
-      .source(requestBody)
+    val requestBody = HttpElasticsearchDAO.DefaultSearchParams
+      .deepMerge(json.asJson)
 
-    val responsePublisher = httpClient.publisher(searchDefinition)
+    val searchDefinition = searchWithType(index.indexName / index.indexType)
+      .scroll(HttpElasticsearchDAO.ElasticsearchScrollKeepAlive)
+      .source(requestBody.pretty(ModelAutoDerivation.defaultPrinter))
+
+    val responsePublisher = httpClient.publisher(
+      searchDefinition,
+      requestBody.hcursor
+        .get[Long](HttpElasticsearchDAO.ElasticsearchSizeField)
+        .getOrElse(Long.MaxValue)
+    )
+
     Source
       .fromPublisher(responsePublisher)
       .map(_.to[Json])
       .alsoTo(
-        Sink
-          .foreach(json => logger.debug(json.pretty(ModelAutoDerivation.defaultPrinter)))
+        Sink.foreach { json =>
+          logger.debug(json.pretty(ModelAutoDerivation.defaultPrinter))
+        }
       )
   }
 
@@ -195,9 +193,10 @@ object HttpElasticsearchDAO extends StrictLogging {
     )
   }
 
-  private val DocumentScrollKeepAlive = "1m"
-  private val DocumentScrollSizeName = "size"
-  private val DocumentScrollSize = 1024
-  private val DocumentScrollSortName = "sort"
-  private val DocumentScrollSort = Seq("_doc")
+  private val ElasticsearchScrollKeepAlive = "1m"
+  private val ElasticsearchSizeField = "size"
+
+  private val DefaultSearchParams = Json.obj(
+    "sort" -> Json.arr("_doc".asJson)
+  )
 }
