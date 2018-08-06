@@ -53,9 +53,6 @@ class DeliverCramExecutor(deliverCommand: BackCompatibleDeliverCram)(
             MoveOp(cram, cramMove),
             MoveOp(crai, craiMove)
           )
-          .filterNot { op =>
-            op.src.equals(op.dest)
-          }
 
         val newMetadata = existingingMetadata.copy(
           cramPath = Some(cramMove),

@@ -1,5 +1,6 @@
 package org.broadinstitute.clio.transfer.model.wgscram
 
+import java.io.File
 import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -87,7 +88,7 @@ case class CramMetadata(
       craiPath = movedCram.map(
         cramUri => URI.create(s"$cramUri${CramExtensions.CraiExtensionAddition}")
       ),
-      logPath = pathMapper(logPath, "/"),
+      logPath = pathMapper(logPath, "logs/"),
       analysisFilesTxtPath =
         pathMapper(analysisFilesTxtPath, CramExtensions.AnalysisFilesTxtExtension),
       preAdapterSummaryMetricsPath = pathMapper(
@@ -176,8 +177,13 @@ case class CramMetadata(
         baitBiasDetailMetricsPath,
         CramExtensions.BaitBiasDetailMetricsExension
       ),
-      wgsMetricsPath = pathMapper(wgsMetricsPath, CramExtensions.WgsMetricsExension)
-//      readgroupLevelMetricsFiles = pathMapper(readgroupLevelMetricsFiles)
+      wgsMetricsPath = pathMapper(wgsMetricsPath, CramExtensions.WgsMetricsExension),
+      readgroupLevelMetricsFiles = readgroupLevelMetricsFiles.map { paths =>
+        paths.flatMap { path =>
+          val name = new File(path).getName
+          pathMapper(Option(path), name)
+        }
+      }
     )
   }
 

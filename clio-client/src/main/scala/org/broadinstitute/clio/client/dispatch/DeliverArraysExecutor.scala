@@ -56,9 +56,6 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
             MoveOp(index, vcfIndexMove),
             MoveOp(gtc, gtcMove)
           )
-          .filterNot { op =>
-            op.src.equals(op.dest)
-          }
 
         val idatDestination =
           deliverCommand.destination.resolve(DeliverArraysExecutor.IdatsDir)
@@ -80,9 +77,6 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
             CopyOp(grn, grnCopy),
             CopyOp(red, redCopy)
           )
-          .filterNot { op =>
-            op.src.equals(op.dest)
-          }
 
         val newMetadata = existingMetadata.copy(
           grnIdatPath = Some(grnCopy),

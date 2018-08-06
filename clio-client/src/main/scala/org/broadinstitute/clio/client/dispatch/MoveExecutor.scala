@@ -44,8 +44,9 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     for {
       existingMetadata <- checkPreconditions(ioUtil, webClient)
       (movedMetadata, opsToPerform) <- buildMove(existingMetadata)
+      filteredOpsToPerform = filterOutUnneededTransfers(opsToPerform)
       if movedMetadata != existingMetadata
-      _ <- runPreUpsertOps(opsToPerform, ioUtil).mapError {
+      _ <- runPreUpsertOps(filteredOpsToPerform, ioUtil).mapError {
         case ex =>
           new RuntimeException(
             s"""Errors encountered while copying files for $prettyKey.
@@ -65,7 +66,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
             )
         }
       _ <- ioUtil
-        .deleteCloudObjects(opsToPerform.collect { case MoveOp(src, _) => src })
+        .deleteCloudObjects(filteredOpsToPerform.collect { case MoveOp(src, _) => src })
         .mapError {
           case ex =>
             new RuntimeException(
@@ -155,19 +156,21 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     } else {
       val movedMetadata = metadata.moveInto(destination, moveCommand.newBasename)
       val postMovePaths = Metadata.extractPaths(movedMetadata)
-
       val opsToPerform = preMovePaths.flatMap {
-        case (fieldName, path) => {
-          /*
-           * Assumptions:
-           *   1. If the field exists pre-move, it will still exist post-move
-           *   2. If the field is a URI pre-move, it will still be a URI post-move
-           */
+        case (fieldName, path) =>
           Some(MoveOp(path, postMovePaths(fieldName)))
-            .filterNot(op => op.src.equals(op.dest))
-        }
       }
       Source.single(movedMetadata -> opsToPerform.to[immutable.Seq])
+    }
+  }
+
+  protected[dispatch] def filterOutUnneededTransfers(
+    ioOps: immutable.Seq[IoOp]
+  ): immutable.Seq[IoOp] = {
+    ioOps.filterNot {
+      case moveOp: MoveOp => moveOp.src.equals(moveOp.dest)
+      case copyOp: CopyOp => copyOp.src.equals(copyOp.dest)
+      case _: WriteOp     => false
     }
   }
 }
