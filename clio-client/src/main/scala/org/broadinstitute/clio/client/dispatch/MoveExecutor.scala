@@ -168,8 +168,8 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     ioOps: immutable.Seq[IoOp]
   ): immutable.Seq[IoOp] = {
     ioOps.filterNot {
-      case moveOp: MoveOp => moveOp.src.equals(moveOp.dest)
-      case copyOp: CopyOp => copyOp.src.equals(copyOp.dest)
+      case MoveOp(src, dest) => src.equals(dest)
+      case CopyOp(src, dest) => src.equals(dest)
       case _: WriteOp     => false
     }
   }
