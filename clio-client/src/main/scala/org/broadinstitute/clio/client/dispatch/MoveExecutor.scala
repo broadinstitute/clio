@@ -11,7 +11,7 @@ import io.circe.Json
 import org.broadinstitute.clio.client.commands.MoveCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{ClioIndex, Metadata}
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -144,23 +144,16 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
   protected[dispatch] def buildMove(
     metadata: moveCommand.index.MetadataType
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
-
-    val preMovePaths = Metadata.extractPaths(metadata)
-
-    if (preMovePaths.isEmpty) {
+    val (moved, ops) =
+      moveCommand.metadataMover.moveInto(metadata, destination, moveCommand.newBasename)
+    if (ops.isEmpty) {
       Source.failed(
         new IllegalStateException(
           s"Nothing to move; no files registered to the $name for $prettyKey"
         )
       )
     } else {
-      val movedMetadata = metadata.moveInto(destination, moveCommand.newBasename)
-      val postMovePaths = Metadata.extractPaths(movedMetadata)
-      val opsToPerform = preMovePaths.flatMap {
-        case (fieldName, path) =>
-          Some(MoveOp(path, postMovePaths(fieldName)))
-      }
-      Source.single(movedMetadata -> opsToPerform.to[immutable.Seq])
+      Source.single(moved -> ops)
     }
   }
 

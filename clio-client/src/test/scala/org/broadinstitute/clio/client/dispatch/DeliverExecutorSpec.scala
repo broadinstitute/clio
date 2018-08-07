@@ -2,7 +2,6 @@ package org.broadinstitute.clio.client.dispatch
 
 import java.net.URI
 
-import akka.NotUsed
 import akka.stream.scaladsl.{Sink, Source}
 import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.DeliverCram
@@ -12,8 +11,6 @@ import org.broadinstitute.clio.transfer.model.CramIndex
 import org.broadinstitute.clio.transfer.model.wgscram.{CramKey, CramMetadata}
 import org.broadinstitute.clio.util.model.{DataType, Location}
 import org.scalamock.scalatest.AsyncMockFactory
-
-import scala.collection.immutable
 
 class DeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   behavior of "DeliverExecutor"
@@ -48,13 +45,7 @@ class DeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
     (ioUtil.isGoogleDirectory _).expects(workspacePath).returning(true)
 
-    val executor =
-      new DeliverExecutor(command.copy(force = force)) {
-        override protected def buildDelivery(
-          metadata: CramMetadata
-        ): Source[(CramMetadata, immutable.Seq[MoveExecutor.IoOp]), NotUsed] =
-          Source.single(metadata -> immutable.Seq.empty)
-      }
+    val executor = new DeliverExecutor(command.copy(force = force))
     executor.checkPreconditions(ioUtil, webClient).runWith(Sink.head).map { m =>
       m should be(metadata)
     }

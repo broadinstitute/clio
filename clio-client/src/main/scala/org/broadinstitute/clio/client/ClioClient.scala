@@ -252,13 +252,11 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
       _ <- checkRemainingArgs(args.remaining)
     } yield {
       val executor = command match {
-        case deliverCommand: BackCompatibleDeliverCram =>
-          new DeliverCramExecutor(deliverCommand)
-        case deliverCommand: DeliverArrays   => new DeliverArraysExecutor(deliverCommand)
-        case addCommand: AddCommand[_]       => new AddExecutor(addCommand)
-        case moveCommand: MoveCommand[_]     => new MoveExecutor(moveCommand)
-        case deleteCommand: DeleteCommand[_] => new DeleteExecutor(deleteCommand)
-        case patchCommand: PatchCommand[_]   => new PatchExecutor(patchCommand)
+        case deliverCommand: DeliverCommand[_] => new DeliverExecutor(deliverCommand)
+        case addCommand: AddCommand[_]         => new AddExecutor(addCommand)
+        case moveCommand: MoveCommand[_]       => new MoveExecutor(moveCommand)
+        case deleteCommand: DeleteCommand[_]   => new DeleteExecutor(deleteCommand)
+        case patchCommand: PatchCommand[_]     => new PatchExecutor(patchCommand)
         case retrieveAndPrint: RetrieveAndPrintCommand =>
           new RetrieveAndPrintExecutor(retrieveAndPrint, Predef.print)
       }

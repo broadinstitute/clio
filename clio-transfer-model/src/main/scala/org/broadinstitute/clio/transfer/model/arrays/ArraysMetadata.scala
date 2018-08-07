@@ -55,50 +55,6 @@ case class ArraysMetadata(
       vcfIndexPath,
     )
 
-  /**
-    * In most cases, the fields included here represent the data
-    * to be delivered, but Arrays is a special case, where we need to
-    * copy rather than move two delivery files (redIdat and grnIdat)
-    *
-    * @param pathMapper of files from source to destination URI
-    * @return new metadata
-    */
-  override def mapMove(constantBaseNameMapper: Option[URI] => Option[URI])(
-    renamingMapper: (Option[URI], String) => Option[URI]
-  ): ArraysMetadata = this.copy(
-    fingerprintingDetailMetricsPath = renamingMapper(
-      fingerprintingDetailMetricsPath,
-      ArraysExtensions.FingerprintingDetailMetricsExtension
-    ),
-    fingerprintingSummaryMetricsPath = renamingMapper(
-      fingerprintingSummaryMetricsPath,
-      ArraysExtensions.FingerprintingSummaryMetricsExtension
-    ),
-    genotypeConcordanceContingencyMetricsPath = renamingMapper(
-      genotypeConcordanceContingencyMetricsPath,
-      ArraysExtensions.GenotypeConcordanceContingencyMetricsExtension
-    ),
-    genotypeConcordanceDetailMetricsPath = renamingMapper(
-      genotypeConcordanceDetailMetricsPath,
-      ArraysExtensions.GenotypeConcordanceDetailMetricsExtension
-    ),
-    genotypeConcordanceSummaryMetricsPath = renamingMapper(
-      genotypeConcordanceSummaryMetricsPath,
-      ArraysExtensions.GenotypeConcordanceSummaryMetricsExtension
-    ),
-    variantCallingDetailMetricsPath = renamingMapper(
-      variantCallingDetailMetricsPath,
-      ArraysExtensions.VariantCallingDetailMetricsExtension
-    ),
-    variantCallingSummaryMetricsPath = renamingMapper(
-      variantCallingSummaryMetricsPath,
-      ArraysExtensions.VariantCallingSummaryMetricsExtension
-    ),
-    gtcPath = renamingMapper(gtcPath, ArraysExtensions.GtcExtension),
-    vcfPath = renamingMapper(vcfPath, ArraysExtensions.VcfGzExtension),
-    vcfIndexPath = renamingMapper(vcfIndexPath, ArraysExtensions.VcfGzTbiExtension)
-  )
-
   override def markDeleted(deletionNote: String): ArraysMetadata =
     this.copy(
       documentStatus = Some(DocumentStatus.Deleted),

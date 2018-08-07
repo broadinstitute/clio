@@ -7,6 +7,7 @@ import org.broadinstitute.clio.transfer.model._
 import caseapp.{CommandName, Recurse}
 import caseapp.core.help.CommandsHelp
 import caseapp.core.commandparser.CommandParser
+import org.broadinstitute.clio.client.metadata._
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfQueryInput}
 import org.broadinstitute.clio.transfer.model.wgscram.{
   CramKey,
@@ -49,6 +50,8 @@ sealed abstract class MoveCommand[+CI <: ClioIndex](val index: CI) extends ClioC
   def key: index.KeyType
   def destination: URI
   def newBasename: Option[String]
+
+  def metadataMover: MetadataMover[index.MetadataType]
 }
 
 sealed abstract class DeleteCommand[CI <: ClioIndex](val index: CI) extends ClioCommand {
@@ -72,7 +75,9 @@ sealed abstract class PatchCommand[CI <: ClioIndex](val index: CI) extends ClioC
   def maxParallelUpserts: Int
 }
 
-sealed abstract class BackCompatibleDeliverCram extends DeliverCommand(CramIndex)
+sealed abstract class BackCompatibleDeliverCram extends DeliverCommand(CramIndex) {
+  override val metadataMover = new CramDeliverer
+}
 // Generic commands.
 
 @CommandName(ClioCommand.getServerHealthName)
@@ -106,7 +111,9 @@ final case class MoveWgsUbam(
   @Recurse key: UbamKey,
   destination: URI,
   newBasename: Option[String] = None
-) extends MoveCommand(WgsUbamIndex)
+) extends MoveCommand(WgsUbamIndex) {
+  override val metadataMover = new UbamMover
+}
 
 @CommandName(ClioCommand.deleteWgsUbamName)
 final case class DeleteWgsUbam(
@@ -140,7 +147,9 @@ final case class MoveGvcf(
   @Recurse key: GvcfKey,
   destination: URI,
   newBasename: Option[String] = None
-) extends MoveCommand(GvcfIndex)
+) extends MoveCommand(GvcfIndex) {
+  override val metadataMover = new GvcfMover
+}
 
 @CommandName(ClioCommand.deleteGvcfName)
 final case class DeleteGvcf(
@@ -180,7 +189,9 @@ final case class MoveCram(
   @Recurse key: CramKey,
   destination: URI,
   newBasename: Option[String] = None
-) extends MoveCommand(CramIndex)
+) extends MoveCommand(CramIndex) {
+  override val metadataMover = new CramMover
+}
 
 @CommandName(ClioCommand.deleteCramName)
 final case class DeleteCram(
@@ -229,7 +240,9 @@ final case class MoveWgsCram(
   @Recurse key: WgsCramKey,
   destination: URI,
   newBasename: Option[String] = None
-) extends MoveCommand(CramIndex)
+) extends MoveCommand(CramIndex) {
+  override val metadataMover = new CramMover
+}
 
 @CommandName(ClioCommand.deleteWgsCramName)
 final case class DeleteWgsCram(
@@ -272,7 +285,9 @@ final case class MoveUbam(
   @Recurse key: UbamKey,
   destination: URI,
   newBasename: Option[String] = None
-) extends MoveCommand(UbamIndex)
+) extends MoveCommand(UbamIndex) {
+  override val metadataMover = new UbamMover
+}
 
 @CommandName(ClioCommand.deleteUbamName)
 final case class DeleteUbam(
@@ -312,7 +327,9 @@ final case class MoveArrays(
   @Recurse key: ArraysKey,
   destination: URI,
   newBasename: Option[String] = None
-) extends MoveCommand(ArraysIndex)
+) extends MoveCommand(ArraysIndex) {
+  override val metadataMover = new ArrayMover
+}
 
 @CommandName(ClioCommand.deleteArraysName)
 final case class DeleteArrays(
@@ -328,7 +345,9 @@ final case class DeliverArrays(
   workspacePath: URI,
   newBasename: Option[String] = None,
   force: Boolean = false
-) extends DeliverCommand(ArraysIndex)
+) extends DeliverCommand(ArraysIndex) {
+  override val metadataMover = new ArrayDeliverer
+}
 
 @CommandName(ClioCommand.patchArraysName)
 final case class PatchArrays(
