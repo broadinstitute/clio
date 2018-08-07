@@ -48,6 +48,8 @@ object CramExtensions extends FileExtensions {
 
   val PreBqsrDepthSMExtension = ".preBqsr.depthSM"
 
+  val PreBqsrLogExtension = ".preBqsr.log"
+
   val CrossCheckExtension = ".crosscheck"
 
   val DuplicateMetricsExtension = ".duplicate_metrics"

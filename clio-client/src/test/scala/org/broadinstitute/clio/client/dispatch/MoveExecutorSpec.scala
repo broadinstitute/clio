@@ -108,7 +108,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       paths.foreach {
         case (uri, ext) =>
           val expectedDest =
-            Metadata.buildFilePath(uri, destination, ext, newBasename)
+            Metadata.buildFilePath(uri, destination, newBasename.map(_ + ext))
           (ioUtil.copyGoogleObject _).expects(uri, expectedDest).returning(())
       }
       (ioUtil
@@ -203,9 +203,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val ioUtil = mock[IoUtil]
     val webClient = mock[ClioWebClient]
 
-    val movedCram = metadata.cramPath.map(
-      Metadata.buildFilePath(_, destination, CramExtensions.CramExtension)
-    )
+    val movedCram = metadata.cramPath.map(Metadata.buildFilePath(_, destination))
 
     (webClient
       .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
@@ -214,9 +212,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
 
-    val movedCrai = metadata.craiPath.map(
-      Metadata.buildFilePath(_, destination, CramExtensions.CraiExtension)
-    )
+    val movedCrai = metadata.craiPath.map(Metadata.buildFilePath(_, destination))
     metadata.craiPath.zip(movedCrai).foreach {
       case (src, dest) =>
         (ioUtil.copyGoogleObject _).expects(src, dest).returning(())
@@ -241,12 +237,8 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     val ioUtil = mock[IoUtil]
     val webClient = mock[ClioWebClient]
 
-    val movedCram = metadata.cramPath.map(
-      Metadata.buildFilePath(_, destination, CramExtensions.CramExtension)
-    )
-    val movedCrai = metadata.craiPath.map(
-      Metadata.buildFilePath(_, destination, CramExtensions.CraiExtension)
-    )
+    val movedCram = metadata.cramPath.map(Metadata.buildFilePath(_, destination))
+    val movedCrai = metadata.craiPath.map(Metadata.buildFilePath(_, destination))
 
     (webClient
       .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
@@ -272,16 +264,14 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
     val paths = Seq
       .concat(metadata.cramPath, metadata.craiPath)
-      .zip(Seq(CramExtensions.CramExtension, CramExtensions.CraiExtension))
 
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
-    paths.foreach {
-      case (uri, ext) =>
-        val expectedDest =
-          Metadata.buildFilePath(uri, destination, ext)
-        (ioUtil.copyGoogleObject _)
-          .expects(uri, expectedDest)
-          .throwing(new IOException(uri.toString))
+    paths.foreach { uri =>
+      val expectedDest =
+        Metadata.buildFilePath(uri, destination)
+      (ioUtil.copyGoogleObject _)
+        .expects(uri, expectedDest)
+        .throwing(new IOException(uri.toString))
     }
 
     val executor = new MoveExecutor(MoveCram(theKey, destination))
@@ -301,14 +291,12 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
     val paths = Seq
       .concat(metadata.cramPath, metadata.craiPath)
-      .zip(Seq(CramExtensions.CramExtension, CramExtensions.CraiExtension))
 
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
-    paths.foreach {
-      case (uri, ext) =>
-        val expectedDest =
-          Metadata.buildFilePath(uri, destination, ext)
-        (ioUtil.copyGoogleObject _).expects(uri, expectedDest).returning(())
+    paths.foreach { uri =>
+      val expectedDest =
+        Metadata.buildFilePath(uri, destination)
+      (ioUtil.copyGoogleObject _).expects(uri, expectedDest).returning(())
     }
 
     (webClient
@@ -333,14 +321,12 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
     val paths = Seq
       .concat(metadata.cramPath, metadata.craiPath)
-      .zip(Seq(CramExtensions.CramExtension, CramExtensions.CraiExtension))
 
     (ioUtil.isGoogleDirectory _).expects(destination).returning(true)
-    paths.foreach {
-      case (uri, ext) =>
-        val expectedDest =
-          Metadata.buildFilePath(uri, destination, ext)
-        (ioUtil.copyGoogleObject _).expects(uri, expectedDest).returning(())
+    paths.foreach { uri =>
+      val expectedDest =
+        Metadata.buildFilePath(uri, destination)
+      (ioUtil.copyGoogleObject _).expects(uri, expectedDest).returning(())
     }
     (ioUtil
       .deleteCloudObjects(_: immutable.Iterable[URI])(_: ExecutionContext))
