@@ -17,15 +17,11 @@ import scala.concurrent.ExecutionContext
   * Delivery executors can extend this class to add custom IO operations which
   * should be performed when moving files into a FireCloud workspace.
   */
-abstract class DeliverExecutor[CI <: DeliverableIndex](
+class DeliverExecutor[CI <: DeliverableIndex](
   protected val deliverCommand: DeliverCommand[CI]
 )(
   implicit ec: ExecutionContext
 ) extends MoveExecutor(deliverCommand) {
-
-  protected def buildDelivery(
-    metadata: moveCommand.index.MetadataType
-  ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed]
 
   override def checkPreconditions(
     ioUtil: IoUtil,
@@ -52,14 +48,9 @@ abstract class DeliverExecutor[CI <: DeliverableIndex](
   override protected[dispatch] def buildMove(
     metadata: moveCommand.index.MetadataType
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
-    val baseStream = buildDelivery(
-      metadata.withWorkspaceName(deliverCommand.workspaceName)
-    )
-    baseStream.flatMapConcat {
-      case (deliveredMetadata, ioOps) =>
-        val filteredIoOps = filterOutUnneededTransfers(ioOps)
-        Source.single(deliveredMetadata -> filteredIoOps)
+    super.buildMove(metadata).map {
+      case (m, ops) =>
+        (m.withWorkspaceName(deliverCommand.workspaceName), ops)
     }
-
   }
 }
