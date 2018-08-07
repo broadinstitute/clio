@@ -180,7 +180,7 @@ case class CramMetadata(
       wgsMetricsPath = pathMapper(wgsMetricsPath, CramExtensions.WgsMetricsExension),
       readgroupLevelMetricsFiles = readgroupLevelMetricsFiles.map { paths =>
         paths.flatMap { path =>
-          val name = new File(path).getName
+          val name = new File(path.getPath).getName
           pathMapper(Option(path), name)
         }
       }
