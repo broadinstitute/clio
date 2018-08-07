@@ -170,7 +170,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     ioOps.filterNot {
       case MoveOp(src, dest) => src.equals(dest)
       case CopyOp(src, dest) => src.equals(dest)
-      case _: WriteOp     => false
+      case _: WriteOp        => false
     }
   }
 }

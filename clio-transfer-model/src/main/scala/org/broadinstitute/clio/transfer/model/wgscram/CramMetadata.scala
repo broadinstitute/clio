@@ -1,6 +1,5 @@
 package org.broadinstitute.clio.transfer.model.wgscram
 
-import java.io.File
 import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -77,10 +76,10 @@ case class CramMetadata(
       )
     )
 
-  override def mapMove(
-    pathMapper: (Option[URI], String) => Option[URI]
+  override def mapMove(constantBaseNameMapper: Option[URI] => Option[URI])(
+    renamingMapper: (Option[URI], String) => Option[URI]
   ): CramMetadata = {
-    val movedCram = pathMapper(cramPath, CramExtensions.CramExtension)
+    val movedCram = renamingMapper(cramPath, CramExtensions.CramExtension)
     this.copy(
       cramPath = movedCram,
       // DSDEGP-1715: We've settled on '.cram.crai' as the extension and
@@ -88,100 +87,101 @@ case class CramMetadata(
       craiPath = movedCram.map(
         cramUri => URI.create(s"$cramUri${CramExtensions.CraiExtensionAddition}")
       ),
-      logPath = pathMapper(logPath, "logs/"),
+      logPath = constantBaseNameMapper(logPath),
       analysisFilesTxtPath =
-        pathMapper(analysisFilesTxtPath, CramExtensions.AnalysisFilesTxtExtension),
-      preAdapterSummaryMetricsPath = pathMapper(
+        renamingMapper(analysisFilesTxtPath, CramExtensions.AnalysisFilesTxtExtension),
+      preAdapterSummaryMetricsPath = renamingMapper(
         preAdapterSummaryMetricsPath,
         CramExtensions.PreAdapterSummaryMetricsExtension
       ),
-      preAdapterDetailMetricsPath = pathMapper(
+      preAdapterDetailMetricsPath = renamingMapper(
         preAdapterDetailMetricsPath,
         CramExtensions.PreAdapterDetailMetricsExtension
       ),
-      alignmentSummaryMetricsPath = pathMapper(
+      alignmentSummaryMetricsPath = renamingMapper(
         alignmentSummaryMetricsPath,
         CramExtensions.AlignmentSummaryMetricsExtension
       ),
-      bamValidationReportPath = pathMapper(
+      bamValidationReportPath = renamingMapper(
         bamValidationReportPath,
         CramExtensions.BamValidationReportExtension
       ),
       preBqsrDepthSmPath =
-        pathMapper(preBqsrDepthSmPath, CramExtensions.PreBqsrDepthSMExtension),
+        renamingMapper(preBqsrDepthSmPath, CramExtensions.PreBqsrDepthSMExtension),
       preBqsrSelfSmPath =
-        pathMapper(preBqsrSelfSmPath, CramExtensions.PreBqsrSelfSMExtension),
-      preBqsrLogPath = pathMapper(preBqsrLogPath, "/"),
-      cramValidationReportPath = pathMapper(
+        renamingMapper(preBqsrSelfSmPath, CramExtensions.PreBqsrSelfSMExtension),
+      preBqsrLogPath = renamingMapper(preBqsrLogPath, CramExtensions.PreBqsrLogExtension),
+      cramValidationReportPath = renamingMapper(
         cramValidationReportPath,
         CramExtensions.CramValidationReportExtension
       ),
-      crosscheckPath = pathMapper(crosscheckPath, CramExtensions.CrossCheckExtension),
-      duplicateMetricsPath = pathMapper(
+      crosscheckPath = renamingMapper(crosscheckPath, CramExtensions.CrossCheckExtension),
+      duplicateMetricsPath = renamingMapper(
         duplicateMetricsPath,
         CramExtensions.DuplicateMetricsExtension
       ),
       fingerprintPath =
-        pathMapper(fingerprintPath, CramExtensions.FingerprintVcfExtension),
+        renamingMapper(fingerprintPath, CramExtensions.FingerprintVcfExtension),
       fingerprintVcfPath =
-        pathMapper(fingerprintVcfPath, CramExtensions.FingerprintVcfExtension),
-      fingerprintingSummaryMetricsPath = pathMapper(
+        renamingMapper(fingerprintVcfPath, CramExtensions.FingerprintVcfExtension),
+      fingerprintingSummaryMetricsPath = renamingMapper(
         fingerprintingSummaryMetricsPath,
         CramExtensions.FingerprintingSummaryMetricsExtension
       ),
-      fingerprintingDetailMetricsPath = pathMapper(
+      fingerprintingDetailMetricsPath = renamingMapper(
         fingerprintingDetailMetricsPath,
         CramExtensions.FingerprintingDetailMetricsExtension
       ),
-      gcBiasPdfPath = pathMapper(gcBiasPdfPath, CramExtensions.GcBiasPdfExtension),
+      gcBiasPdfPath = renamingMapper(gcBiasPdfPath, CramExtensions.GcBiasPdfExtension),
       gcBiasSummaryMetricsPath =
-        pathMapper(gcBiasPdfPath, CramExtensions.GcBiasSummaryMetricsExtension),
+        renamingMapper(gcBiasPdfPath, CramExtensions.GcBiasSummaryMetricsExtension),
       gcBiasDetailMetricsPath =
-        pathMapper(gcBiasPdfPath, CramExtensions.GcBiasDetailMetricsExtension),
-      insertSizeHistogramPath = pathMapper(
+        renamingMapper(gcBiasPdfPath, CramExtensions.GcBiasDetailMetricsExtension),
+      insertSizeHistogramPath = renamingMapper(
         insertSizeHistogramPath,
         CramExtensions.InsertSizeHistogramPdfExtension
       ),
       insertSizeMetricsPath =
-        pathMapper(insertSizeMetricsPath, CramExtensions.InsertSizeMetricsExtension),
-      qualityDistributionPdfPath = pathMapper(
+        renamingMapper(insertSizeMetricsPath, CramExtensions.InsertSizeMetricsExtension),
+      qualityDistributionPdfPath = renamingMapper(
         qualityDistributionPdfPath,
         CramExtensions.QualityDistributionPdfExtension
       ),
-      qualityDistributionMetricsPath = pathMapper(
+      qualityDistributionMetricsPath = renamingMapper(
         qualityDistributionMetricsPath,
         CramExtensions.QualityDistributionMetricsExtension
       ),
       rawWgsMetricsPath =
-        pathMapper(rawWgsMetricsPath, CramExtensions.RawWgsMetricsExtension),
-      readgroupAlignmentSummaryMetricsPath = pathMapper(
+        renamingMapper(rawWgsMetricsPath, CramExtensions.RawWgsMetricsExtension),
+      readgroupAlignmentSummaryMetricsPath = renamingMapper(
         readgroupAlignmentSummaryMetricsPath,
         CramExtensions.ReadGroupAlignmentMetricsExtension
       ),
-      readgroupGcBiasPdfPath =
-        pathMapper(readgroupGcBiasPdfPath, CramExtensions.ReadGroupGcBiasPdfExtension),
-      readgroupGcBiasSummaryMetricsPath = pathMapper(
+      readgroupGcBiasPdfPath = renamingMapper(
+        readgroupGcBiasPdfPath,
+        CramExtensions.ReadGroupGcBiasPdfExtension
+      ),
+      readgroupGcBiasSummaryMetricsPath = renamingMapper(
         readgroupGcBiasSummaryMetricsPath,
         CramExtensions.ReadGroupGcBiasSummaryMetricsExtension
       ),
-      readgroupGcBiasDetailMetricsPath = pathMapper(
+      readgroupGcBiasDetailMetricsPath = renamingMapper(
         readgroupGcBiasDetailMetricsPath,
         CramExtensions.ReadGroupGcBiasDetailMetricsExtension
       ),
-      recalDataPath = pathMapper(recalDataPath, CramExtensions.RecalDataExtension),
-      baitBiasSummaryMetricsPath = pathMapper(
+      recalDataPath = renamingMapper(recalDataPath, CramExtensions.RecalDataExtension),
+      baitBiasSummaryMetricsPath = renamingMapper(
         baitBiasSummaryMetricsPath,
         CramExtensions.BaitBiasSummaryMetricsExtension
       ),
-      baitBiasDetailMetricsPath = pathMapper(
+      baitBiasDetailMetricsPath = renamingMapper(
         baitBiasDetailMetricsPath,
         CramExtensions.BaitBiasDetailMetricsExension
       ),
-      wgsMetricsPath = pathMapper(wgsMetricsPath, CramExtensions.WgsMetricsExension),
+      wgsMetricsPath = renamingMapper(wgsMetricsPath, CramExtensions.WgsMetricsExension),
       readgroupLevelMetricsFiles = readgroupLevelMetricsFiles.map { paths =>
         paths.flatMap { path =>
-          val name = new File(path).getName
-          pathMapper(Option(path), name)
+          constantBaseNameMapper(Option(path))
         }
       }
     )

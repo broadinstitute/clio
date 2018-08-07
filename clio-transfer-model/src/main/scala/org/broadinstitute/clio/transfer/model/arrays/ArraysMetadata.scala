@@ -63,40 +63,40 @@ case class ArraysMetadata(
     * @param pathMapper of files from source to destination URI
     * @return new metadata
     */
-  override def mapMove(
-    pathMapper: (Option[URI], String) => Option[URI]
+  override def mapMove(constantBaseNameMapper: Option[URI] => Option[URI])(
+    renamingMapper: (Option[URI], String) => Option[URI]
   ): ArraysMetadata = this.copy(
-    fingerprintingDetailMetricsPath = pathMapper(
+    fingerprintingDetailMetricsPath = renamingMapper(
       fingerprintingDetailMetricsPath,
       ArraysExtensions.FingerprintingDetailMetricsExtension
     ),
-    fingerprintingSummaryMetricsPath = pathMapper(
+    fingerprintingSummaryMetricsPath = renamingMapper(
       fingerprintingSummaryMetricsPath,
       ArraysExtensions.FingerprintingSummaryMetricsExtension
     ),
-    genotypeConcordanceContingencyMetricsPath = pathMapper(
+    genotypeConcordanceContingencyMetricsPath = renamingMapper(
       genotypeConcordanceContingencyMetricsPath,
       ArraysExtensions.GenotypeConcordanceContingencyMetricsExtension
     ),
-    genotypeConcordanceDetailMetricsPath = pathMapper(
+    genotypeConcordanceDetailMetricsPath = renamingMapper(
       genotypeConcordanceDetailMetricsPath,
       ArraysExtensions.GenotypeConcordanceDetailMetricsExtension
     ),
-    genotypeConcordanceSummaryMetricsPath = pathMapper(
+    genotypeConcordanceSummaryMetricsPath = renamingMapper(
       genotypeConcordanceSummaryMetricsPath,
       ArraysExtensions.GenotypeConcordanceSummaryMetricsExtension
     ),
-    variantCallingDetailMetricsPath = pathMapper(
+    variantCallingDetailMetricsPath = renamingMapper(
       variantCallingDetailMetricsPath,
       ArraysExtensions.VariantCallingDetailMetricsExtension
     ),
-    variantCallingSummaryMetricsPath = pathMapper(
+    variantCallingSummaryMetricsPath = renamingMapper(
       variantCallingSummaryMetricsPath,
       ArraysExtensions.VariantCallingSummaryMetricsExtension
     ),
-    gtcPath = pathMapper(gtcPath, ArraysExtensions.GtcExtension),
-    vcfPath = pathMapper(vcfPath, ArraysExtensions.VcfGzExtension),
-    vcfIndexPath = pathMapper(vcfIndexPath, ArraysExtensions.VcfGzTbiExtension)
+    gtcPath = renamingMapper(gtcPath, ArraysExtensions.GtcExtension),
+    vcfPath = renamingMapper(vcfPath, ArraysExtensions.VcfGzExtension),
+    vcfIndexPath = renamingMapper(vcfIndexPath, ArraysExtensions.VcfGzTbiExtension)
   )
 
   override def markDeleted(deletionNote: String): ArraysMetadata =

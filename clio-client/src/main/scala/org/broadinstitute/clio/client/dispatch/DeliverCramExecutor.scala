@@ -36,14 +36,12 @@ class DeliverCramExecutor(deliverCommand: BackCompatibleDeliverCram)(
         val cramMove = Metadata.buildFilePath(
           cram,
           deliverCommand.destination,
-          CramExtensions.CramExtension,
-          moveCommand.newBasename
+          moveCommand.newBasename.map(_ + CramExtensions.CramExtension)
         )
         val craiMove = Metadata.buildFilePath(
           crai,
           deliverCommand.destination,
-          CramExtensions.CraiExtension,
-          moveCommand.newBasename
+          moveCommand.newBasename.map(_ + CramExtensions.CraiExtension)
         )
         val cloudMd5Path =
           URI.create(s"$cramMove${CramExtensions.Md5ExtensionAddition}")

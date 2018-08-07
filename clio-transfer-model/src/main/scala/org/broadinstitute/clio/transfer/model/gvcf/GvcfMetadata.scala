@@ -24,18 +24,18 @@ case class GvcfMetadata(
   override def pathsToDelete: Seq[URI] =
     Seq.concat(gvcfPath, gvcfIndexPath)
 
-  override def mapMove(
-    pathMapper: (Option[URI], String) => Option[URI]
+  override def mapMove(constantBaseNameMapper: Option[URI] => Option[URI])(
+    renamingMapper: (Option[URI], String) => Option[URI]
   ): GvcfMetadata = {
     this.copy(
-      gvcfPath = pathMapper(gvcfPath, GvcfExtensions.GvcfExtension),
-      gvcfIndexPath = pathMapper(gvcfIndexPath, GvcfExtensions.IndexExtension),
-      gvcfSummaryMetricsPath = pathMapper(
+      gvcfPath = renamingMapper(gvcfPath, GvcfExtensions.GvcfExtension),
+      gvcfIndexPath = renamingMapper(gvcfIndexPath, GvcfExtensions.IndexExtension),
+      gvcfSummaryMetricsPath = renamingMapper(
         gvcfSummaryMetricsPath,
         GvcfExtensions.SummaryMetricsExtension
       ),
       gvcfDetailMetricsPath =
-        pathMapper(gvcfDetailMetricsPath, GvcfExtensions.DetailMetricsExtension)
+        renamingMapper(gvcfDetailMetricsPath, GvcfExtensions.DetailMetricsExtension)
     )
   }
 

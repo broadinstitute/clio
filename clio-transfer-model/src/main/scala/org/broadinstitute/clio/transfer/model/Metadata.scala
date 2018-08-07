@@ -46,9 +46,9 @@ trait Metadata[M <: Metadata[M]] { self: M =>
       )
     }
 
-    mapMove {
+    mapMove(_.map(Metadata.buildFilePath(_, destination))) {
       case (pathOpt, ext) =>
-        pathOpt.map(Metadata.buildFilePath(_, destination, ext, newBasename))
+        pathOpt.map(Metadata.buildFilePath(_, destination, newBasename.map(_ + ext)))
     }
   }
 
@@ -66,10 +66,12 @@ trait Metadata[M <: Metadata[M]] { self: M =>
   /**
     * Return a copy of this with files transformed by applying `pathMapper`.
     *
-    * @param pathMapper of files from source to destination URI
+    * @param renamingMapper of files from source to destination URI
     * @return new metadata
     */
-  protected def mapMove(pathMapper: (Option[URI], String) => Option[URI]): M
+  protected def mapMove(constantBaseNameMapper: Option[URI] => Option[URI])(
+    renamingMapper: (Option[URI], String) => Option[URI]
+  ): M
 
   /**
     * Return a copy of this object's notes with the given note appended.
@@ -109,13 +111,9 @@ object Metadata {
   def buildFilePath(
     source: URI,
     destination: URI,
-    extension: String,
-    newBasename: Option[String] = None
-  ): URI = {
-    val srcName = new File(source.getPath).getName
-    val srcBase = srcName.take(srcName.lastIndexOf(extension))
-    destination.resolve(s"${newBasename.getOrElse(srcBase)}$extension")
-  }
+    replacementName: Option[String] = None
+  ): URI =
+    destination.resolve(replacementName.getOrElse(new File(source.getPath).getName))
 
   /**
     * Given one of our `Metadata` classes, extract out all fields that

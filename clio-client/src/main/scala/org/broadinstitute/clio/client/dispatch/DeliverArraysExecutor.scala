@@ -35,20 +35,17 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
         val vcfMove = Metadata.buildFilePath(
           vcf,
           deliverCommand.destination,
-          ArraysExtensions.VcfGzExtension,
-          moveCommand.newBasename
+          moveCommand.newBasename.map(_ + ArraysExtensions.VcfGzExtension)
         )
         val vcfIndexMove = Metadata.buildFilePath(
           index,
           deliverCommand.destination,
-          ArraysExtensions.VcfGzTbiExtension,
-          moveCommand.newBasename
+          moveCommand.newBasename.map(_ + ArraysExtensions.VcfGzTbiExtension)
         )
         val gtcMove = Metadata.buildFilePath(
           gtc,
           deliverCommand.destination,
-          ArraysExtensions.GtcExtension,
-          moveCommand.newBasename
+          moveCommand.newBasename.map(_ + ArraysExtensions.GtcExtension)
         )
         val moves = immutable
           .Seq(
@@ -60,17 +57,8 @@ class DeliverArraysExecutor(deliverCommand: DeliverArrays)(implicit ec: Executio
         val idatDestination =
           deliverCommand.destination.resolve(DeliverArraysExecutor.IdatsDir)
 
-        val grnCopy = Metadata.buildFilePath(
-          grn,
-          idatDestination,
-          ArraysExtensions.GrnIdatExtension
-        )
-
-        val redCopy = Metadata.buildFilePath(
-          red,
-          idatDestination,
-          ArraysExtensions.RedIdatExtension
-        )
+        val grnCopy = Metadata.buildFilePath(grn, idatDestination)
+        val redCopy = Metadata.buildFilePath(red, idatDestination)
 
         val idatCopies = immutable
           .Seq(
