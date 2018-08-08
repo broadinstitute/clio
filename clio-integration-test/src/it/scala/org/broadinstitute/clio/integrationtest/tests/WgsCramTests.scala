@@ -8,15 +8,13 @@ import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
-  ElasticsearchIndex,
-  ElasticsearchUtil
-}
+import org.broadinstitute.clio.server.dataaccess.elasticsearch.{ElasticsearchIndex, ElasticsearchUtil}
 import org.broadinstitute.clio.transfer.model.wgscram._
 import org.broadinstitute.clio.util.model._
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
+import scala.util.Random
 
 //TODO This should be deleted once we're using the new Cram API in all places
 /** Tests of Clio's wgs-cram functionality. */
@@ -421,88 +419,100 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
 
     val project = s"project$randomId"
     val sample = s"sample$randomId"
+    val flowcellBarcode = Random.alphanumeric.take(9).mkString
+    val lane = Random.nextInt(7) + 1
+    val libraryName = Random.alphanumeric.take(30).mkString
+    val readgroup = s"$flowcellBarcode.$lane.$libraryName"
     val version = 3
 
     val cramName = s"$sample${CramExtensions.CramExtension}"
     val craiName =
       s"${if (oldStyleCrai) sample else cramName}"
 
-    val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
-    val (cramSource, cramContents) =
-      createMockFile(rootSource, sample, CramExtensions.CramExtension)
-    val (craiSource, craiContents) =
-      createMockFile(rootSource, craiName, CramExtensions.CraiExtensionAddition)
-    val (analysisFilesSource, analysisFilesContents) =
-      createMockFile(rootSource, sample, CramExtensions.AnalysisFilesTxtExtension)
-    val (alignmentSummaryMetricsSource, alignmentSummaryMetricsContents) =
-      createMockFile(rootSource, sample, CramExtensions.AlignmentSummaryMetricsExtension)
-    val (bamValidationReportSource, bamValidationReportContents) =
-      createMockFile(rootSource, sample, CramExtensions.BamValidationReportExtension)
-    val (cramValidationReportSource, cramValidationReportContents) =
-      createMockFile(rootSource, sample, CramExtensions.CramValidationReportExtension)
-    val (crosscheckSource, crosscheckContents) =
-      createMockFile(rootSource, sample, CramExtensions.CrossCheckExtension)
-    val (duplicateMetricsSource, duplicateMetricsContents) =
-      createMockFile(rootSource, sample, CramExtensions.DuplicateMetricsExtension)
-    val (fingerprintVcfSource, fingerprintVcfContents) =
-      createMockFile(rootSource, sample, CramExtensions.FingerprintVcfExtension)
-    val (fingerprintSummaryMetricsSource, fingerprintingSummaryMetricsContents) =
+    val rootSrc = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+    val (cramSrc, cramContents) =
+      createMockFile(rootSrc, sample, CramExtensions.CramExtension)
+    val (craiSrc, craiContents) =
+      createMockFile(rootSrc, craiName, CramExtensions.CraiExtensionAddition)
+    val (analysisFilesSrc, analysisFilesContents) =
+      createMockFile(rootSrc, sample, CramExtensions.AnalysisFilesTxtExtension)
+    val (alignmentSummaryMetricsSrc, alignmentSummaryMetricsContents) =
+      createMockFile(rootSrc, sample, CramExtensions.AlignmentSummaryMetricsExtension)
+    val (bamValidationReportSrc, bamValidationReportContents) =
+      createMockFile(rootSrc, sample, CramExtensions.BamValidationReportExtension)
+    val (cramValidationReportSrc, cramValidationReportContents) =
+      createMockFile(rootSrc, sample, CramExtensions.CramValidationReportExtension)
+    val (crosscheckSrc, crosscheckContents) =
+      createMockFile(rootSrc, sample, CramExtensions.CrossCheckExtension)
+    val (duplicateMetricsSrc, duplicateMetricsContents) =
+      createMockFile(rootSrc, sample, CramExtensions.DuplicateMetricsExtension)
+    val (fingerprintVcfSrc, fingerprintVcfContents) =
+      createMockFile(rootSrc, sample, CramExtensions.FingerprintVcfExtension)
+    val (fingerprintSummaryMetricsSrc, fingerprintingSummaryMetricsContents) =
       createMockFile(
-        rootSource,
+        rootSrc,
         sample,
         CramExtensions.FingerprintingSummaryMetricsExtension
       )
-    val (fingerprintDetailMetricsSource, fingerprintingDetailMetricsContents) =
+    val (fingerprintDetailMetricsSrc, fingerprintingDetailMetricsContents) =
       createMockFile(
-        rootSource,
+        rootSrc,
         sample,
         CramExtensions.FingerprintingDetailMetricsExtension
       )
-    val (preAdapterSummaryMetricsSource, preAdapterSummaryMetricsContents) =
-      createMockFile(rootSource, sample, CramExtensions.PreAdapterSummaryMetricsExtension)
-    val (preAdapterDetailMetricsSource, preAdapterDetailMetricsContents) =
-      createMockFile(rootSource, sample, CramExtensions.PreAdapterDetailMetricsExtension)
-    val (preBqsrSelfSmSource, preBqsrSelfSmContents) =
-      createMockFile(rootSource, sample, CramExtensions.PreBqsrSelfSMExtension)
-    val (preBqsrDepthSmSource, preBqsrDepthSmContents) =
-      createMockFile(rootSource, sample, CramExtensions.PreBqsrDepthSMExtension)
+    val (preAdapterSummaryMetricsSrc, preAdapterSummaryMetricsContents) =
+      createMockFile(rootSrc, sample, CramExtensions.PreAdapterSummaryMetricsExtension)
+    val (preAdapterDetailMetricsSrc, preAdapterDetailMetricsContents) =
+      createMockFile(rootSrc, sample, CramExtensions.PreAdapterDetailMetricsExtension)
+    val (preBqsrSelfSmSrc, preBqsrSelfSmContents) =
+      createMockFile(rootSrc, sample, CramExtensions.PreBqsrSelfSMExtension)
+    val (preBqsrDepthSmSrc, preBqsrDepthSmContents) =
+      createMockFile(rootSrc, sample, CramExtensions.PreBqsrDepthSMExtension)
+    val (insertSizeMetricsSrc, insertSizeMetricsContents) =
+      createMockFile(rootSrc, readgroup, ".insert_size_metrics")
+    val (insertSizeHistogramSrc, insertSizeHistogramContents) =
+      createMockFile(rootSrc, readgroup, ".insert_size_histogram.pdf")
 
     val endBasename = if (changeBasename) randomId else sample
 
-    val rootDestination = rootSource.parent / s"moved/$randomId/"
-    val cramDestination = rootDestination / s"$endBasename${CramExtensions.CramExtension}"
-    val craiDestination = rootDestination / s"$endBasename${CramExtensions.CraiExtension}"
-    val analysisFilesDestination = rootDestination / s"$endBasename${CramExtensions.AnalysisFilesTxtExtension}"
-    val alignmentSummaryMetricsDestination = rootDestination / s"$endBasename${CramExtensions.AlignmentSummaryMetricsExtension}"
-    val bamValidationReportDestination = rootDestination / s"$endBasename${CramExtensions.BamValidationReportExtension}"
-    val cramValidationReportDestination = rootDestination / s"$endBasename${CramExtensions.CramValidationReportExtension}"
-    val crosscheckDestination = rootDestination / s"$endBasename${CramExtensions.CrossCheckExtension}"
-    val duplicateMetricsDestination = rootDestination / s"$endBasename${CramExtensions.DuplicateMetricsExtension}"
-    val fingerprintVcfDestination = rootDestination / s"$endBasename${CramExtensions.FingerprintVcfExtension}"
-    val fingerprintSummaryMetricsDestination = rootDestination / s"$endBasename${CramExtensions.FingerprintingSummaryMetricsExtension}"
-    val fingerprintDetailMetricsDestination = rootDestination / s"$endBasename${CramExtensions.FingerprintingDetailMetricsExtension}"
-    val preAdapterSummaryMetricsDestination = rootDestination / s"$endBasename${CramExtensions.PreAdapterSummaryMetricsExtension}"
-    val preAdapterDetailMetricsDestination = rootDestination / s"$endBasename${CramExtensions.PreAdapterDetailMetricsExtension}"
-    val preBqsrSelfSmDestination = rootDestination / s"$endBasename${CramExtensions.PreBqsrSelfSMExtension}"
-    val preBqsrDepthSmDestination = rootDestination / s"$endBasename${CramExtensions.PreBqsrDepthSMExtension}"
+    val rootDest = rootSrc.parent / s"moved/$randomId/"
+    val cramDest = rootDest / s"$endBasename${CramExtensions.CramExtension}"
+    val craiDest = rootDest / s"$endBasename${CramExtensions.CraiExtension}"
+    val analysisFilesDest = rootDest / s"$endBasename${CramExtensions.AnalysisFilesTxtExtension}"
+    val alignmentSummaryMetricsDest = rootDest / s"$endBasename${CramExtensions.AlignmentSummaryMetricsExtension}"
+    val bamValidationReportDest = rootDest / s"$endBasename${CramExtensions.BamValidationReportExtension}"
+    val cramValidationReportDest = rootDest / s"$endBasename${CramExtensions.CramValidationReportExtension}"
+    val crosscheckDest = rootDest / s"$endBasename${CramExtensions.CrossCheckExtension}"
+    val duplicateMetricsDest = rootDest / s"$endBasename${CramExtensions.DuplicateMetricsExtension}"
+    val fingerprintVcfDest = rootDest / s"$endBasename${CramExtensions.FingerprintVcfExtension}"
+    val fingerprintSummaryMetricsDest = rootDest / s"$endBasename${CramExtensions.FingerprintingSummaryMetricsExtension}"
+    val fingerprintDetailMetricsDest = rootDest / s"$endBasename${CramExtensions.FingerprintingDetailMetricsExtension}"
+    val preAdapterSummaryMetricsDest = rootDest / s"$endBasename${CramExtensions.PreAdapterSummaryMetricsExtension}"
+    val preAdapterDetailMetricsDest = rootDest / s"$endBasename${CramExtensions.PreAdapterDetailMetricsExtension}"
+    val preBqsrSelfSmDest = rootDest / s"$endBasename${CramExtensions.PreBqsrSelfSMExtension}"
+    val preBqsrDepthSmDest = rootDest / s"$endBasename${CramExtensions.PreBqsrDepthSMExtension}"
+    val insertSizeMetricsDest = rootDest / insertSizeMetricsSrc.name
+    val insertSizeHistogramDest = rootDest / insertSizeHistogramSrc.name
 
     val key = CramKey(Location.GCP, project, DataType.WGS, sample, version)
     val metadata = CramMetadata(
-      cramPath = Some(cramSource.uri),
-      craiPath = Some(craiSource.uri),
-      analysisFilesTxtPath = Some(analysisFilesSource.uri),
-      alignmentSummaryMetricsPath = Some(alignmentSummaryMetricsSource.uri),
-      bamValidationReportPath = Some(bamValidationReportSource.uri),
-      cramValidationReportPath = Some(cramValidationReportSource.uri),
-      crosscheckPath = Some(crosscheckSource.uri),
-      duplicateMetricsPath = Some(duplicateMetricsSource.uri),
-      fingerprintVcfPath = Some(fingerprintVcfSource.uri),
-      fingerprintingSummaryMetricsPath = Some(fingerprintSummaryMetricsSource.uri),
-      fingerprintingDetailMetricsPath = Some(fingerprintDetailMetricsSource.uri),
-      preAdapterSummaryMetricsPath = Some(preAdapterSummaryMetricsSource.uri),
-      preAdapterDetailMetricsPath = Some(preAdapterDetailMetricsSource.uri),
-      preBqsrSelfSmPath = Some(preBqsrSelfSmSource.uri),
-      preBqsrDepthSmPath = Some(preBqsrDepthSmSource.uri)
+      cramPath = Some(cramSrc.uri),
+      craiPath = Some(craiSrc.uri),
+      analysisFilesTxtPath = Some(analysisFilesSrc.uri),
+      alignmentSummaryMetricsPath = Some(alignmentSummaryMetricsSrc.uri),
+      bamValidationReportPath = Some(bamValidationReportSrc.uri),
+      cramValidationReportPath = Some(cramValidationReportSrc.uri),
+      crosscheckPath = Some(crosscheckSrc.uri),
+      duplicateMetricsPath = Some(duplicateMetricsSrc.uri),
+      fingerprintVcfPath = Some(fingerprintVcfSrc.uri),
+      fingerprintingSummaryMetricsPath = Some(fingerprintSummaryMetricsSrc.uri),
+      fingerprintingDetailMetricsPath = Some(fingerprintDetailMetricsSrc.uri),
+      preAdapterSummaryMetricsPath = Some(preAdapterSummaryMetricsSrc.uri),
+      preAdapterDetailMetricsPath = Some(preAdapterDetailMetricsSrc.uri),
+      preBqsrSelfSmPath = Some(preBqsrSelfSmSrc.uri),
+      preBqsrDepthSmPath = Some(preBqsrDepthSmSrc.uri),
+      readgroupLevelMetricsFiles =
+        Some(List(insertSizeMetricsSrc.uri, insertSizeHistogramSrc.uri))
     )
 
     val args = Seq.concat(
@@ -516,7 +526,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         "--version",
         version.toString,
         "--destination",
-        rootDestination.uri.toString
+        rootDest.uri.toString
       ),
       if (changeBasename) {
         Seq("--new-basename", endBasename)
@@ -530,60 +540,66 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       _ <- runIgnore(ClioCommand.moveWgsCramName, args: _*)
     } yield {
       Seq(
-        cramSource,
-        craiSource,
-        analysisFilesSource,
-        alignmentSummaryMetricsSource,
-        bamValidationReportSource,
-        cramValidationReportSource,
-        crosscheckSource,
-        duplicateMetricsSource,
-        fingerprintVcfSource,
-        fingerprintSummaryMetricsSource,
-        fingerprintDetailMetricsSource,
-        preAdapterSummaryMetricsSource,
-        preAdapterDetailMetricsSource,
-        preBqsrSelfSmSource,
-        preBqsrDepthSmSource
+        cramSrc,
+        craiSrc,
+        analysisFilesSrc,
+        alignmentSummaryMetricsSrc,
+        bamValidationReportSrc,
+        cramValidationReportSrc,
+        crosscheckSrc,
+        duplicateMetricsSrc,
+        fingerprintVcfSrc,
+        fingerprintSummaryMetricsSrc,
+        fingerprintDetailMetricsSrc,
+        preAdapterSummaryMetricsSrc,
+        preAdapterDetailMetricsSrc,
+        preBqsrSelfSmSrc,
+        preBqsrDepthSmSrc,
+        insertSizeMetricsSrc,
+        insertSizeHistogramSrc
       ).foreach(_ shouldNot exist)
 
       Seq(
-        cramDestination,
-        craiDestination,
-        analysisFilesDestination,
-        alignmentSummaryMetricsDestination,
-        bamValidationReportDestination,
-        cramValidationReportDestination,
-        crosscheckDestination,
-        duplicateMetricsDestination,
-        fingerprintVcfDestination,
-        fingerprintSummaryMetricsDestination,
-        fingerprintDetailMetricsDestination,
-        preAdapterSummaryMetricsDestination,
-        preAdapterDetailMetricsDestination,
-        preBqsrSelfSmDestination,
-        preBqsrDepthSmDestination
+        cramDest,
+        craiDest,
+        analysisFilesDest,
+        alignmentSummaryMetricsDest,
+        bamValidationReportDest,
+        cramValidationReportDest,
+        crosscheckDest,
+        duplicateMetricsDest,
+        fingerprintVcfDest,
+        fingerprintSummaryMetricsDest,
+        fingerprintDetailMetricsDest,
+        preAdapterSummaryMetricsDest,
+        preAdapterDetailMetricsDest,
+        preBqsrSelfSmDest,
+        preBqsrDepthSmDest,
+        insertSizeMetricsDest,
+        insertSizeHistogramDest
       ).foreach(_ should exist)
 
       Seq(
-        (cramDestination, cramContents),
-        (craiDestination, craiContents),
-        (analysisFilesDestination, analysisFilesContents),
-        (alignmentSummaryMetricsDestination, alignmentSummaryMetricsContents),
-        (bamValidationReportDestination, bamValidationReportContents),
-        (cramValidationReportDestination, cramValidationReportContents),
-        (crosscheckDestination, crosscheckContents),
-        (duplicateMetricsDestination, duplicateMetricsContents),
-        (fingerprintVcfDestination, fingerprintVcfContents),
-        (fingerprintSummaryMetricsDestination, fingerprintingSummaryMetricsContents),
-        (fingerprintDetailMetricsDestination, fingerprintingDetailMetricsContents),
-        (preAdapterSummaryMetricsDestination, preAdapterSummaryMetricsContents),
-        (preAdapterDetailMetricsDestination, preAdapterDetailMetricsContents),
-        (preBqsrSelfSmDestination, preBqsrSelfSmContents),
-        (preBqsrDepthSmDestination, preBqsrDepthSmContents)
+        (cramDest, cramContents),
+        (craiDest, craiContents),
+        (analysisFilesDest, analysisFilesContents),
+        (alignmentSummaryMetricsDest, alignmentSummaryMetricsContents),
+        (bamValidationReportDest, bamValidationReportContents),
+        (cramValidationReportDest, cramValidationReportContents),
+        (crosscheckDest, crosscheckContents),
+        (duplicateMetricsDest, duplicateMetricsContents),
+        (fingerprintVcfDest, fingerprintVcfContents),
+        (fingerprintSummaryMetricsDest, fingerprintingSummaryMetricsContents),
+        (fingerprintDetailMetricsDest, fingerprintingDetailMetricsContents),
+        (preAdapterSummaryMetricsDest, preAdapterSummaryMetricsContents),
+        (preAdapterDetailMetricsDest, preAdapterDetailMetricsContents),
+        (preBqsrSelfSmDest, preBqsrSelfSmContents),
+        (preBqsrDepthSmDest, preBqsrDepthSmContents),
+        (insertSizeMetricsDest, insertSizeMetricsContents),
+        (insertSizeHistogramDest, insertSizeHistogramContents)
       ).foreach {
-        case (destination, contents) =>
-          destination.contentAsString should be(contents)
+        case (dest, contents) =>
+          dest.contentAsString should be(contents)
       }
       succeed
     }
@@ -591,36 +607,40 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     result.andThen {
       case _ => {
         val _ = Seq(
-          cramSource,
-          cramDestination,
-          craiSource,
-          craiDestination,
-          analysisFilesSource,
-          analysisFilesDestination,
-          alignmentSummaryMetricsSource,
-          alignmentSummaryMetricsDestination,
-          bamValidationReportSource,
-          bamValidationReportDestination,
-          cramValidationReportSource,
-          cramValidationReportDestination,
-          crosscheckSource,
-          crosscheckDestination,
-          duplicateMetricsSource,
-          duplicateMetricsDestination,
-          fingerprintVcfSource,
-          fingerprintVcfDestination,
-          fingerprintSummaryMetricsSource,
-          fingerprintSummaryMetricsDestination,
-          fingerprintDetailMetricsSource,
-          fingerprintDetailMetricsDestination,
-          preAdapterSummaryMetricsSource,
-          preAdapterSummaryMetricsDestination,
-          preAdapterDetailMetricsSource,
-          preAdapterDetailMetricsDestination,
-          preBqsrSelfSmSource,
-          preBqsrSelfSmDestination,
-          preBqsrDepthSmSource,
-          preBqsrDepthSmDestination
+          cramSrc,
+          cramDest,
+          craiSrc,
+          craiDest,
+          analysisFilesSrc,
+          analysisFilesDest,
+          alignmentSummaryMetricsSrc,
+          alignmentSummaryMetricsDest,
+          bamValidationReportSrc,
+          bamValidationReportDest,
+          cramValidationReportSrc,
+          cramValidationReportDest,
+          crosscheckSrc,
+          crosscheckDest,
+          duplicateMetricsSrc,
+          duplicateMetricsDest,
+          fingerprintVcfSrc,
+          fingerprintVcfDest,
+          fingerprintSummaryMetricsSrc,
+          fingerprintSummaryMetricsDest,
+          fingerprintDetailMetricsSrc,
+          fingerprintDetailMetricsDest,
+          preAdapterSummaryMetricsSrc,
+          preAdapterSummaryMetricsDest,
+          preAdapterDetailMetricsSrc,
+          preAdapterDetailMetricsDest,
+          preBqsrSelfSmSrc,
+          preBqsrSelfSmDest,
+          preBqsrDepthSmSrc,
+          preBqsrDepthSmDest,
+          insertSizeMetricsSrc,
+          insertSizeMetricsDest,
+          insertSizeHistogramSrc,
+          insertSizeHistogramDest
         ).map(_.delete(swallowIOExceptions = true))
       }
     }
