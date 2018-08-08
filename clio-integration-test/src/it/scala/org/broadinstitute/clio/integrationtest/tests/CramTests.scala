@@ -472,6 +472,10 @@ trait CramTests { self: BaseIntegrationSpec =>
       createMockFile(rootSrc, sample, CramExtensions.PreBqsrSelfSMExtension)
     val (preBqsrDepthSmSrc, preBqsrDepthSmContents) =
       createMockFile(rootSrc, sample, CramExtensions.PreBqsrDepthSMExtension)
+    val (insertSizeMetricsSrc, insertSizeMetricsContents) =
+      createMockFile(rootSrc, readgroup, ".insert_size_metrics")
+    val (insertSizeHistogramSrc, insertSizeHistogramContents) =
+      createMockFile(rootSrc, readgroup, ".insert_size_histogram.pdf")
 
     val endBasename = if (changeBasename) randomId else sample
 
@@ -491,6 +495,8 @@ trait CramTests { self: BaseIntegrationSpec =>
     val preAdapterDetailMetricsDest = rootDest / s"$endBasename${CramExtensions.PreAdapterDetailMetricsExtension}"
     val preBqsrSelfSmDest = rootDest / s"$endBasename${CramExtensions.PreBqsrSelfSMExtension}"
     val preBqsrDepthSmDest = rootDest / s"$endBasename${CramExtensions.PreBqsrDepthSMExtension}"
+    val insertSizeMetricsDest = rootDest / insertSizeMetricsSrc.name
+    val insertSizeHistogramDest = rootDest / insertSizeHistogramSrc.name
 
     val key = CramKey(Location.GCP, project, DataType.WGS, sample, version)
     val metadata = CramMetadata(
@@ -508,7 +514,9 @@ trait CramTests { self: BaseIntegrationSpec =>
       preAdapterSummaryMetricsPath = Some(preAdapterSummaryMetricsSrc.uri),
       preAdapterDetailMetricsPath = Some(preAdapterDetailMetricsSrc.uri),
       preBqsrSelfSmPath = Some(preBqsrSelfSmSrc.uri),
-      preBqsrDepthSmPath = Some(preBqsrDepthSmSrc.uri)
+      preBqsrDepthSmPath = Some(preBqsrDepthSmSrc.uri),
+      readgroupLevelMetricsFiles =
+        Some(List(insertSizeMetricsSrc.uri, insertSizeHistogramSrc.uri))
     )
 
     val args = Seq.concat(
@@ -552,7 +560,9 @@ trait CramTests { self: BaseIntegrationSpec =>
         preAdapterSummaryMetricsSrc,
         preAdapterDetailMetricsSrc,
         preBqsrSelfSmSrc,
-        preBqsrDepthSmSrc
+        preBqsrDepthSmSrc,
+        insertSizeMetricsSrc,
+        insertSizeHistogramSrc
       ).foreach(_ shouldNot exist)
 
       Seq(
@@ -570,7 +580,9 @@ trait CramTests { self: BaseIntegrationSpec =>
         preAdapterSummaryMetricsDest,
         preAdapterDetailMetricsDest,
         preBqsrSelfSmDest,
-        preBqsrDepthSmDest
+        preBqsrDepthSmDest,
+        insertSizeMetricsDest,
+        insertSizeHistogramDest
       ).foreach(_ should exist)
 
       Seq(
@@ -588,7 +600,9 @@ trait CramTests { self: BaseIntegrationSpec =>
         (preAdapterSummaryMetricsDest, preAdapterSummaryMetricsContents),
         (preAdapterDetailMetricsDest, preAdapterDetailMetricsContents),
         (preBqsrSelfSmDest, preBqsrSelfSmContents),
-        (preBqsrDepthSmDest, preBqsrDepthSmContents)
+        (preBqsrDepthSmDest, preBqsrDepthSmContents),
+        (insertSizeMetricsDest, insertSizeMetricsContents),
+        (insertSizeHistogramDest, insertSizeHistogramContents)
       ).foreach {
         case (dest, contents) =>
           dest.contentAsString should be(contents)
@@ -628,7 +642,11 @@ trait CramTests { self: BaseIntegrationSpec =>
           preBqsrSelfSmSrc,
           preBqsrSelfSmDest,
           preBqsrDepthSmSrc,
-          preBqsrDepthSmDest
+          preBqsrDepthSmDest,
+          insertSizeMetricsSrc,
+          insertSizeMetricsDest,
+          insertSizeHistogramSrc,
+          insertSizeHistogramDest
         ).map(_.delete(swallowIOExceptions = true))
       }
     }
