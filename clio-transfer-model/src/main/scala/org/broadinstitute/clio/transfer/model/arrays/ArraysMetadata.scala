@@ -55,22 +55,6 @@ case class ArraysMetadata(
       vcfIndexPath,
     )
 
-  /**
-    * In most cases, the fields included here represent the data
-    * to be delivered, but Arrays is a special case, where we need to
-    * copy rather than move two delivery files (redIdat and grnIdat)
-    *
-    * @param pathMapper of files from source to destination URI
-    * @return new metadata
-    */
-  override def mapMove(
-    pathMapper: (Option[URI], String) => Option[URI]
-  ): ArraysMetadata = this.copy(
-    gtcPath = pathMapper(gtcPath, ArraysExtensions.GtcExtension),
-    vcfPath = pathMapper(vcfPath, ArraysExtensions.VcfGzExtension),
-    vcfIndexPath = pathMapper(vcfIndexPath, ArraysExtensions.VcfGzTbiExtension)
-  )
-
   override def markDeleted(deletionNote: String): ArraysMetadata =
     this.copy(
       documentStatus = Some(DocumentStatus.Deleted),

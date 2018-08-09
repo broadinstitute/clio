@@ -11,7 +11,7 @@ import io.circe.Json
 import org.broadinstitute.clio.client.commands.MoveCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{ClioIndex, Metadata}
+import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.model.Location
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -33,7 +33,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
 
   private[dispatch] val name: String = moveCommand.index.name
   private[dispatch] val prettyKey = moveCommand.key.show
-  private val destination: URI = moveCommand.destination
+  protected val destination: URI = moveCommand.destination
 
   override def execute(
     webClient: ClioWebClient,
@@ -43,9 +43,10 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
 
     for {
       existingMetadata <- checkPreconditions(ioUtil, webClient)
-      (movedMetadata, opsToPerform) <- buildMove(existingMetadata, ioUtil)
+      (movedMetadata, opsToPerform) <- buildMove(existingMetadata)
+      filteredOpsToPerform = filterOutUnneededTransfers(opsToPerform)
       if movedMetadata != existingMetadata
-      _ <- runPreUpsertOps(opsToPerform, ioUtil).mapError {
+      _ <- runPreUpsertOps(filteredOpsToPerform, ioUtil).mapError {
         case ex =>
           new RuntimeException(
             s"""Errors encountered while copying files for $prettyKey.
@@ -65,7 +66,7 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
             )
         }
       _ <- ioUtil
-        .deleteCloudObjects(opsToPerform.collect { case MoveOp(src, _) => src })
+        .deleteCloudObjects(filteredOpsToPerform.collect { case MoveOp(src, _) => src })
         .mapError {
           case ex =>
             new RuntimeException(
@@ -141,62 +142,28 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     * more IO operations.
     */
   protected[dispatch] def buildMove(
-    metadata: moveCommand.index.MetadataType,
-    ioUtil: IoUtil
+    metadata: moveCommand.index.MetadataType
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
-
-    val preMovePaths = Metadata.extractPaths(metadata)
-
-    if (preMovePaths.isEmpty) {
+    val (moved, ops) =
+      moveCommand.metadataMover.moveInto(metadata, destination, moveCommand.newBasename)
+    if (ops.isEmpty) {
       Source.failed(
         new IllegalStateException(
           s"Nothing to move; no files registered to the $name for $prettyKey"
         )
       )
     } else {
-      val movedMetadata = metadata.moveInto(destination, moveCommand.newBasename)
-      val postMovePaths = Metadata.extractPaths(movedMetadata)
+      Source.single(moved -> ops)
+    }
+  }
 
-      val opsToPerform = preMovePaths.flatMap {
-        case (fieldName, path) => {
-          /*
-           * Assumptions:
-           *   1. If the field exists pre-move, it will still exist post-move
-           *   2. If the field is a URI pre-move, it will still be a URI post-move
-           */
-          Some(MoveOp(path, postMovePaths(fieldName)))
-            .filterNot(op => op.src.equals(op.dest))
-        }
-      }
-
-      Source(opsToPerform)
-        .fold(Seq.empty[URI]) {
-          case (acc, op) =>
-            if (ioUtil.isGoogleObject(op.src)) {
-              acc
-            } else {
-              acc :+ op.src
-            }
-        }
-        .flatMapConcat { nonCloudPaths =>
-          if (nonCloudPaths.isEmpty) {
-            if (opsToPerform.isEmpty) {
-              logger.info(
-                s"Nothing to move; all files already exist at $destination and no other metadata changes need applied."
-              )
-              Source.empty
-            } else {
-              Source.single(movedMetadata -> opsToPerform.to[immutable.Seq])
-            }
-          } else {
-            Source.failed(
-              new IllegalStateException(
-                s"""Inconsistent state detected, non-cloud paths registered to the $name for $prettyKey:
-                   |${nonCloudPaths.mkString(",")}""".stripMargin
-              )
-            )
-          }
-        }
+  protected[dispatch] def filterOutUnneededTransfers(
+    ioOps: immutable.Seq[IoOp]
+  ): immutable.Seq[IoOp] = {
+    ioOps.filterNot {
+      case MoveOp(src, dest) => src.equals(dest)
+      case CopyOp(src, dest) => src.equals(dest)
+      case _: WriteOp        => false
     }
   }
 }

@@ -24,21 +24,6 @@ case class GvcfMetadata(
   override def pathsToDelete: Seq[URI] =
     Seq.concat(gvcfPath, gvcfIndexPath)
 
-  override def mapMove(
-    pathMapper: (Option[URI], String) => Option[URI]
-  ): GvcfMetadata = {
-    this.copy(
-      gvcfPath = pathMapper(gvcfPath, GvcfExtensions.GvcfExtension),
-      gvcfIndexPath = pathMapper(gvcfIndexPath, GvcfExtensions.IndexExtension),
-      gvcfSummaryMetricsPath = pathMapper(
-        gvcfSummaryMetricsPath,
-        GvcfExtensions.SummaryMetricsExtension
-      ),
-      gvcfDetailMetricsPath =
-        pathMapper(gvcfDetailMetricsPath, GvcfExtensions.DetailMetricsExtension)
-    )
-  }
-
   override def markDeleted(deletionNote: String): GvcfMetadata =
     this.copy(
       documentStatus = Some(DocumentStatus.Deleted),

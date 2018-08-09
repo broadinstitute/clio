@@ -76,21 +76,6 @@ case class CramMetadata(
       )
     )
 
-  // As of DSDEGP-1711, we are only delivering the cram, crai, and md5
-  override def mapMove(
-    pathMapper: (Option[URI], String) => Option[URI]
-  ): CramMetadata = {
-    val movedCram = pathMapper(cramPath, CramExtensions.CramExtension)
-    this.copy(
-      cramPath = movedCram,
-      // DSDEGP-1715: We've settled on '.cram.crai' as the extension and
-      // want to fixup files with just '.crai' when possible.
-      craiPath = movedCram.map(
-        cramUri => URI.create(s"$cramUri${CramExtensions.CraiExtensionAddition}")
-      )
-    )
-  }
-
   override def markDeleted(deletionNote: String): CramMetadata =
     this.copy(
       documentStatus = Some(DocumentStatus.Deleted),

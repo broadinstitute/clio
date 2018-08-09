@@ -66,9 +66,6 @@ case class ModelMockMetadata(
   override val notes: Option[String] = None
   override def pathsToDelete: Seq[URI] = Seq.empty[URI]
   override def markDeleted(deletionNote: String): ModelMockMetadata = this
-  override protected def mapMove(
-    pathMapper: (Option[URI], String) => Option[URI]
-  ): ModelMockMetadata = this
 
   def withDocumentStatus(documentStatus: Option[DocumentStatus]): ModelMockMetadata =
     this.copy(mockDocumentStatus = documentStatus)

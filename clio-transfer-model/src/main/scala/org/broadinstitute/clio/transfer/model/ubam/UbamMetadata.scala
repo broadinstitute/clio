@@ -52,12 +52,6 @@ case class UbamMetadata(
 
   override def pathsToDelete: Seq[URI] = ubamPath.toSeq
 
-  override def mapMove(
-    pathMapper: (Option[URI], String) => Option[URI]
-  ): UbamMetadata = {
-    this.copy(ubamPath = pathMapper(ubamPath, UbamExtensions.UbamExtension))
-  }
-
   override def markDeleted(deletionNote: String): UbamMetadata =
     this.copy(
       notes = appendNote(deletionNote),
