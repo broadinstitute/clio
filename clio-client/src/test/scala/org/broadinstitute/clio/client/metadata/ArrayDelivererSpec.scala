@@ -2,7 +2,7 @@ package org.broadinstitute.clio.client.metadata
 
 import java.net.URI
 
-import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, MoveOp}
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.MoveOp
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysMetadata}
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -47,8 +47,8 @@ class ArrayDelivererSpec extends FlatSpec with Matchers {
       MoveOp(vcfPath, destination.resolve(vcfName)),
       MoveOp(vcfIndexPath, destination.resolve(vcfIndexName)),
       MoveOp(gtcPath, destination.resolve(gtcName)),
-      CopyOp(grnPath, idatDestination.resolve(grnName)),
-      CopyOp(redPath, idatDestination.resolve(redName))
+      MoveOp(grnPath, idatDestination.resolve(grnName)),
+      MoveOp(redPath, idatDestination.resolve(redName))
     )
   }
 }
