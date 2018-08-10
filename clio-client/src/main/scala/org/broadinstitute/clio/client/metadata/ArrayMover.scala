@@ -12,6 +12,8 @@ class ArrayMover extends MetadataMover[ArraysMetadata] {
   ): (ArraysMetadata, Iterable[MoveOp]) = {
     import MetadataMover.buildFilePath
 
+    val idatDestination = destination.resolve(ArrayDeliverer.IdatsDir)
+
     val dest = src.copy(
       vcfPath = src.vcfPath.map(
         buildFilePath(
@@ -88,7 +90,9 @@ class ArrayMover extends MetadataMover[ArraysMetadata] {
           destination,
           newBasename.map(_ + ArraysExtensions.VariantCallingSummaryMetricsExtension)
         )
-      )
+      ),
+      grnIdatPath = src.grnIdatPath.map(buildFilePath(_, idatDestination)),
+      redIdatPath = src.redIdatPath.map(buildFilePath(_, idatDestination)),
     )
 
     val ops = Seq[ArraysMetadata => Iterable[URI]](
@@ -101,7 +105,9 @@ class ArrayMover extends MetadataMover[ArraysMetadata] {
       _.genotypeConcordanceDetailMetricsPath,
       _.genotypeConcordanceSummaryMetricsPath,
       _.variantCallingDetailMetricsPath,
-      _.variantCallingSummaryMetricsPath
+      _.variantCallingSummaryMetricsPath,
+      _.redIdatPath,
+      _.grnIdatPath
     ).flatMap(extractMoves(src, dest, _))
 
     (dest, ops)

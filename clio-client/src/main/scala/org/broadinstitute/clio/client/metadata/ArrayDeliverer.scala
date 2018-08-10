@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.client.metadata
 import java.net.URI
 
-import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, IoOp}
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.IoOp
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysMetadata}
 
 class ArrayDeliverer extends MetadataMover[ArraysMetadata] {
@@ -44,8 +44,8 @@ class ArrayDeliverer extends MetadataMover[ArraysMetadata] {
       extractMoves(src, dest, _.vcfPath),
       extractMoves(src, dest, _.vcfIndexPath),
       extractMoves(src, dest, _.gtcPath),
-      src.grnIdatPath.zip(dest.grnIdatPath).map(CopyOp.tupled),
-      src.redIdatPath.zip(dest.redIdatPath).map(CopyOp.tupled)
+      extractMoves(src, dest, _.redIdatPath),
+      extractMoves(src, dest, _.grnIdatPath)
     ).flatten
 
     (dest, ops)
