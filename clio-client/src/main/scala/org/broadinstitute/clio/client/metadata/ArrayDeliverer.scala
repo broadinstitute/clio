@@ -1,7 +1,7 @@
 package org.broadinstitute.clio.client.metadata
 import java.net.URI
 
-import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, IoOp}
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, IoOp, MoveOp}
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysMetadata}
 
 class ArrayDeliverer extends MetadataMover[ArraysMetadata] {
@@ -40,12 +40,18 @@ class ArrayDeliverer extends MetadataMover[ArraysMetadata] {
       redIdatPath = src.redIdatPath.map(buildFilePath(_, idatDestination))
     )
 
+    // If the Array has already been delivered, we want to move the idats instead of copying them.
+    val idatOp = if (src.workspaceName.forall(_.isEmpty)) {
+      CopyOp.tupled
+    } else {
+      MoveOp.tupled
+    }
     val ops = Iterable(
       extractMoves(src, dest, _.vcfPath),
       extractMoves(src, dest, _.vcfIndexPath),
       extractMoves(src, dest, _.gtcPath),
-      src.grnIdatPath.zip(dest.grnIdatPath).map(CopyOp.tupled),
-      src.redIdatPath.zip(dest.redIdatPath).map(CopyOp.tupled)
+      src.grnIdatPath.zip(dest.grnIdatPath).map(idatOp),
+      src.redIdatPath.zip(dest.redIdatPath).map(idatOp)
     ).flatten
 
     (dest, ops)
