@@ -51,4 +51,25 @@ class ArrayDelivererSpec extends FlatSpec with Matchers {
       CopyOp(redPath, idatDestination.resolve(redName))
     )
   }
+
+  it should "move the idats when delivering from an existing workspace" in {
+    val deliveredMetadata = metadata.copy(workspaceName = Some("firecloud-workspace"))
+    val (delivered, ops) = deliverer.moveInto(deliveredMetadata, destination)
+
+    val idatDestination = destination.resolve(ArrayDeliverer.IdatsDir)
+
+    delivered.vcfPath should be(Some(destination.resolve(vcfName)))
+    delivered.vcfIndexPath should be(Some(destination.resolve(vcfIndexName)))
+    delivered.gtcPath should be(Some(destination.resolve(gtcName)))
+    delivered.grnIdatPath should be(Some(idatDestination.resolve(grnName)))
+    delivered.redIdatPath should be(Some(idatDestination.resolve(redName)))
+
+    ops should contain theSameElementsAs Seq(
+      MoveOp(vcfPath, destination.resolve(vcfName)),
+      MoveOp(vcfIndexPath, destination.resolve(vcfIndexName)),
+      MoveOp(gtcPath, destination.resolve(gtcName)),
+      MoveOp(grnPath, idatDestination.resolve(grnName)),
+      MoveOp(redPath, idatDestination.resolve(redName))
+    )
+  }
 }
