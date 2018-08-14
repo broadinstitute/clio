@@ -497,6 +497,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val vcfContents = s"$id --- I am a dummy vcf --- $id"
     val vcfIndexContents = s"$id --- I am a dummy vcfIndex --- $id"
     val gtcContents = s"$id --- I am a dummy gtc --- $id"
+    val paramsContents = s"$id --- I am a dummy params file --- $id"
     val fingerprintingDetailMetricsContents =
       s"$id --- I am dummy fingerprintingDetail metrics --- $id"
     val fingerprintingSummaryMetricsContents =
@@ -516,6 +517,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val vcfSource = rootSource / s"$barcode${ArraysExtensions.VcfGzExtension}"
     val vcfIndexSource = rootSource / s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
     val gtcSource = rootSource / s"$barcode${ArraysExtensions.GtcExtension}"
+    val paramsSource = rootSource / s"params-$id${ArraysExtensions.TxtExtension}"
     val fingerprintingSummaryMetricsSource = rootSource / s"$barcode${ArraysExtensions.FingerprintingSummaryMetricsExtension}"
     val fingerprintingDetailMetricsSource = rootSource / s"$barcode${ArraysExtensions.FingerprintingDetailMetricsExtension}"
     val variantCallingSummaryMetricsSource = rootSource / s"$barcode${ArraysExtensions.VariantCallingSummaryMetricsExtension}"
@@ -530,6 +532,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val vcfDestination = rootDestination / s"$endBasename${ArraysExtensions.VcfGzExtension}"
     val vcfIndexDestination = rootDestination / s"$endBasename${ArraysExtensions.VcfGzTbiExtension}"
     val gtcDestination = rootDestination / s"$endBasename${ArraysExtensions.GtcExtension}"
+    val paramsDestination = rootDestination / s"params-$id${ArraysExtensions.TxtExtension}"
     val fingerprintSummaryMetricsDestination = rootDestination / s"$endBasename${ArraysExtensions.FingerprintingSummaryMetricsExtension}"
     val fingerprintDetailMetricsDestination = rootDestination / s"$endBasename${ArraysExtensions.FingerprintingDetailMetricsExtension}"
     val variantCallingSummaryMetricsDestination = rootDestination / s"$endBasename${ArraysExtensions.VariantCallingSummaryMetricsExtension}"
@@ -543,6 +546,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       vcfPath = Some(vcfSource.uri),
       vcfIndexPath = Some(vcfIndexSource.uri),
       gtcPath = Some(gtcSource.uri),
+      paramsPath = Some(paramsSource.uri),
       fingerprintingSummaryMetricsPath = Some(fingerprintingSummaryMetricsSource.uri),
       fingerprintingDetailMetricsPath = Some(fingerprintingDetailMetricsSource.uri),
       variantCallingSummaryMetricsPath = Some(variantCallingSummaryMetricsSource.uri),
@@ -559,6 +563,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       (vcfSource, vcfContents),
       (vcfIndexSource, vcfIndexContents),
       (gtcSource, gtcContents),
+      (paramsSource, paramsContents),
       (fingerprintingSummaryMetricsSource, fingerprintingSummaryMetricsContents),
       (fingerprintingDetailMetricsSource, fingerprintingDetailMetricsContents),
       (variantCallingSummaryMetricsSource, variantCallingSummaryMetricsContents),
@@ -602,6 +607,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         vcfSource,
         vcfIndexSource,
         gtcSource,
+        paramsSource,
         fingerprintingSummaryMetricsSource,
         fingerprintingDetailMetricsSource,
         variantCallingSummaryMetricsSource,
@@ -615,6 +621,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         vcfDestination,
         vcfIndexDestination,
         gtcDestination,
+        paramsDestination,
         fingerprintSummaryMetricsDestination,
         fingerprintDetailMetricsDestination,
         variantCallingSummaryMetricsDestination,
@@ -628,6 +635,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         (vcfDestination, vcfContents),
         (vcfIndexDestination, vcfIndexContents),
         (gtcDestination, gtcContents),
+        (paramsDestination, paramsContents),
         (fingerprintSummaryMetricsDestination, fingerprintingSummaryMetricsContents),
         (fingerprintDetailMetricsDestination, fingerprintingDetailMetricsContents),
         (variantCallingSummaryMetricsDestination, variantCallingSummaryMetricsContents),
@@ -660,6 +668,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
           vcfIndexDestination,
           gtcSource,
           gtcDestination,
+          paramsSource,
+          paramsDestination,
           fingerprintingSummaryMetricsSource,
           fingerprintSummaryMetricsDestination,
           fingerprintingDetailMetricsSource,

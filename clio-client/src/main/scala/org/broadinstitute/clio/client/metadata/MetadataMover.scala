@@ -45,12 +45,6 @@ object MetadataMover {
     * Given a `source` path, a `destination` directory, and an extension, figure out what
     * the new file name should be were the source file to be moved into the destination path,
     * optionally changing the base-name in the process.
-    *
-    * NOTE: Because we use '.' liberally in both our file names and file extensions,
-    * there's no easy formula at this abstract level for determining which part of a
-    * filename should be replaced by "newBasename" and which should be retained as the
-    * extension. Rather than make dangerous guesses, we require that the code calling
-    * the move operation provide the file extension to retain during the move operation.
     */
   def buildFilePath(
     source: URI,

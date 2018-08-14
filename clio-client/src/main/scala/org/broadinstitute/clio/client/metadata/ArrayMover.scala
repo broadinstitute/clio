@@ -34,6 +34,13 @@ class ArrayMover extends MetadataMover[ArraysMetadata] {
           newBasename.map(_ + ArraysExtensions.GtcExtension)
         )
       ),
+      paramsPath = src.paramsPath.map(
+        buildFilePath(
+          _,
+          destination,
+          newBasename.map(_ + ArraysExtensions.TxtExtension)
+        )
+      ),
       fingerprintingDetailMetricsPath = src.fingerprintingDetailMetricsPath.map(
         buildFilePath(
           _,
@@ -95,6 +102,7 @@ class ArrayMover extends MetadataMover[ArraysMetadata] {
       _.vcfPath,
       _.vcfIndexPath,
       _.gtcPath,
+      _.paramsPath,
       _.fingerprintingDetailMetricsPath,
       _.fingerprintingSummaryMetricsPath,
       _.genotypeConcordanceContingencyMetricsPath,
