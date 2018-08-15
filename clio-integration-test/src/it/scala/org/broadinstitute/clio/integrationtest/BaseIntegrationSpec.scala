@@ -193,7 +193,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     args: String*
   ): Future[Out] = {
     clioClient
-      .instanceMain((command +: args).toArray)
+      .instanceMain((command +: args).toArray, _ => ())
       .fold(
         earlyReturn =>
           Future
