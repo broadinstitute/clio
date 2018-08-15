@@ -1386,9 +1386,15 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         workspaceName2
       )
     } yield {
+      // The source files should exist because they were copied initially
+      grnIdatSource should exist
+      redIdatSource should exist
+
+      // The idats in the first workspace should not exist because they were moved instead of copied
       File(URI.create(outputs.head.unsafeGet[String]("grn_idat_path"))) should not(exist)
       File(URI.create(outputs.head.unsafeGet[String]("red_idat_path"))) should not(exist)
 
+      // The idats should exist in the second workspace
       File(URI.create(outputs2.head.unsafeGet[String]("grn_idat_path"))) should exist
       File(URI.create(outputs2.head.unsafeGet[String]("red_idat_path"))) should exist
     }
