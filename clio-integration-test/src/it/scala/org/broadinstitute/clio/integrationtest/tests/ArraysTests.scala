@@ -1297,6 +1297,115 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "move instead of copying idat files when re-delivering" in {
+    val id = randomId
+    val barcode = s"barcode$id"
+    val version = 3
+
+    val vcfContents = s"$id --- I am a dummy vcf --- $id"
+    val vcfIndexContents = s"$id --- I am a dummy vcfIndex --- $id"
+    val gtcContents = s"$id --- I am a dummy gtc --- $id"
+    val grnIdatContents = s"$id --- I am a dummy grn idat --- $id"
+    val redIdatContents = s"$id --- I am a dummy red idat --- $id"
+
+    val vcfName = s"$barcode${ArraysExtensions.VcfGzExtension}"
+    val vcfIndexName = s"$barcode${ArraysExtensions.VcfGzTbiExtension}"
+    val gtcName = s"$barcode${ArraysExtensions.GtcExtension}"
+    val grnIdatName = s"grn-$id${ArraysExtensions.GrnIdatExtension}"
+    val redIdatName = s"red-$id${ArraysExtensions.RedIdatExtension}"
+
+    val rootSource = rootTestStorageDir / s"arrays/$barcode/v$version/"
+    val vcfSource = rootSource / vcfName
+    val vcfIndexSource = rootSource / vcfIndexName
+    val gtcSource = rootSource / gtcName
+    val grnIdatSource = rootSource / "idats" / grnIdatName
+    val redIdatSource = rootSource / "idats" / redIdatName
+
+    val rootDestination = rootSource.parent / s"moved/$randomId/"
+    val rootDestination2 = rootSource.parent / s"moved2/$randomId/"
+
+    val key = ArraysKey(Location.GCP, Symbol(barcode), version)
+    val metadata = ArraysMetadata(
+      vcfPath = Some(vcfSource.uri),
+      vcfIndexPath = Some(vcfIndexSource.uri),
+      gtcPath = Some(gtcSource.uri),
+      grnIdatPath = Some(grnIdatSource.uri),
+      redIdatPath = Some(redIdatSource.uri),
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+
+    val workspaceName = s"$id-TestWorkspace-$id"
+    val workspaceName2 = s"$id-TestWorkspace2-$id"
+
+    val _ = Seq(
+      (vcfSource, vcfContents),
+      (vcfIndexSource, vcfIndexContents),
+      (gtcSource, gtcContents),
+      (grnIdatSource, grnIdatContents),
+      (redIdatSource, redIdatContents)
+    ).map {
+      case (source, contents) => source.write(contents)
+    }
+    val result = for {
+      _ <- runUpsertArrays(key, metadata)
+      _ <- runIgnore(
+        ClioCommand.deliverArraysName,
+        "--location",
+        Location.GCP.entryName,
+        "--chipwell-barcode",
+        barcode,
+        "--version",
+        version.toString,
+        "--workspace-name",
+        workspaceName,
+        "--workspace-path",
+        rootDestination.uri.toString
+      )
+      outputs <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--workspace-name",
+        workspaceName
+      )
+      _ <- runIgnore(
+        ClioCommand.deliverArraysName,
+        "--location",
+        Location.GCP.entryName,
+        "--chipwell-barcode",
+        barcode,
+        "--version",
+        version.toString,
+        "--workspace-name",
+        workspaceName2,
+        "--workspace-path",
+        rootDestination2.uri.toString,
+        "--force"
+      )
+      outputs2 <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--workspace-name",
+        workspaceName2
+      )
+    } yield {
+      // The source files should exist because they were copied initially
+      grnIdatSource should exist
+      redIdatSource should exist
+
+      // The idats in the first workspace should not exist because they were moved instead of copied
+      File(URI.create(outputs.head.unsafeGet[String]("grn_idat_path"))) should not(exist)
+      File(URI.create(outputs.head.unsafeGet[String]("red_idat_path"))) should not(exist)
+
+      // The idats should exist in the second workspace
+      File(URI.create(outputs2.head.unsafeGet[String]("grn_idat_path"))) should exist
+      File(URI.create(outputs2.head.unsafeGet[String]("red_idat_path"))) should exist
+    }
+
+    result.andThen {
+      case _ =>
+        val _ = Seq(vcfSource, vcfIndexSource)
+          .map(_.delete(swallowIOExceptions = true))
+    }
+  }
+
   it should "upsert a new arrays if force is false" in {
     val upsertKey = ArraysKey(
       location = Location.GCP,
