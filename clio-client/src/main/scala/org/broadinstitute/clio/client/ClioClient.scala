@@ -178,7 +178,8 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     * with the main method already present in the companion object.
     */
   def instanceMain(
-    args: Array[String]
+    args: Array[String],
+    print: Any => Unit = Predef.print
   ): Either[EarlyReturn, Source[Json, NotUsed]] = {
     val maybeParse =
       ClioCommand.parser.withHelp
@@ -193,7 +194,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
           _ <- checkRemainingArgs(commonArgs)
           response <- maybeCommandParse.map { commandParse =>
             wrapError(commandParse)
-              .flatMap(commandMain)
+              .flatMap(commandParse => commandMain(commandParse, print))
           }.getOrElse(Left(ParsingError(Error.Other(usageMessage))))
         } yield {
           response
@@ -241,7 +242,8 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     * Handle the result of a sub-command parse.
     */
   private def commandMain(
-    commandParseWithArgs: (String, WithHelp[ClioCommand], RemainingArgs)
+    commandParseWithArgs: (String, WithHelp[ClioCommand], RemainingArgs),
+    print: Any => Unit
   ): Either[EarlyReturn, Source[Json, NotUsed]] = {
     val (commandName, commandParse, args) = commandParseWithArgs
 
@@ -258,7 +260,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
         case deleteCommand: DeleteCommand[_]   => new DeleteExecutor(deleteCommand)
         case patchCommand: PatchCommand[_]     => new PatchExecutor(patchCommand)
         case retrieveAndPrint: RetrieveAndPrintCommand =>
-          new RetrieveAndPrintExecutor(retrieveAndPrint, Predef.print)
+          new RetrieveAndPrintExecutor(retrieveAndPrint, print)
       }
 
       executor.execute(webClient, ioUtil)
