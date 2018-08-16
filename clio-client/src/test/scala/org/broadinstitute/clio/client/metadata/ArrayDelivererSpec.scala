@@ -72,4 +72,25 @@ class ArrayDelivererSpec extends FlatSpec with Matchers {
       MoveOp(redPath, idatDestination.resolve(redName))
     )
   }
+
+  it should "copy the idats if the workspace name is an empty string" in {
+    val deliveredMetadata = metadata.copy(workspaceName = Some(""))
+    val (delivered, ops) = deliverer.moveInto(deliveredMetadata, destination)
+
+    val idatDestination = destination.resolve(ArrayDeliverer.IdatsDir)
+
+    delivered.vcfPath should be(Some(destination.resolve(vcfName)))
+    delivered.vcfIndexPath should be(Some(destination.resolve(vcfIndexName)))
+    delivered.gtcPath should be(Some(destination.resolve(gtcName)))
+    delivered.grnIdatPath should be(Some(idatDestination.resolve(grnName)))
+    delivered.redIdatPath should be(Some(idatDestination.resolve(redName)))
+
+    ops should contain theSameElementsAs Seq(
+      MoveOp(vcfPath, destination.resolve(vcfName)),
+      MoveOp(vcfIndexPath, destination.resolve(vcfIndexName)),
+      MoveOp(gtcPath, destination.resolve(gtcName)),
+      CopyOp(grnPath, idatDestination.resolve(grnName)),
+      CopyOp(redPath, idatDestination.resolve(redName))
+    )
+  }
 }
