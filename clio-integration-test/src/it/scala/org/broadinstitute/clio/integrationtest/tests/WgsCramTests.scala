@@ -449,7 +449,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       createMockFile(rootSrc, sample, CramExtensions.CrossCheckExtension)
     val (duplicateMetricsSrc, duplicateMetricsContents) =
       createMockFile(rootSrc, sample, CramExtensions.DuplicateMetricsExtension)
-    val (fingerprintVcfSrc, fingerprintVcfContents) =
+    val (fingerprintSrc, fingerprintContents) =
       createMockFile(rootSrc, sample, CramExtensions.FingerprintVcfExtension)
     val (fingerprintSummaryMetricsSrc, fingerprintingSummaryMetricsContents) =
       createMockFile(
@@ -487,7 +487,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
     val cramValidationReportDest = rootDest / s"$endBasename${CramExtensions.CramValidationReportExtension}"
     val crosscheckDest = rootDest / s"$endBasename${CramExtensions.CrossCheckExtension}"
     val duplicateMetricsDest = rootDest / s"$endBasename${CramExtensions.DuplicateMetricsExtension}"
-    val fingerprintVcfDest = rootDest / s"$endBasename${CramExtensions.FingerprintVcfExtension}"
+    val fingerprintDest = rootDest / s"$endBasename${CramExtensions.FingerprintVcfExtension}"
     val fingerprintSummaryMetricsDest = rootDest / s"$endBasename${CramExtensions.FingerprintingSummaryMetricsExtension}"
     val fingerprintDetailMetricsDest = rootDest / s"$endBasename${CramExtensions.FingerprintingDetailMetricsExtension}"
     val preAdapterSummaryMetricsDest = rootDest / s"$endBasename${CramExtensions.PreAdapterSummaryMetricsExtension}"
@@ -507,7 +507,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
       cramValidationReportPath = Some(cramValidationReportSrc.uri),
       crosscheckPath = Some(crosscheckSrc.uri),
       duplicateMetricsPath = Some(duplicateMetricsSrc.uri),
-      fingerprintVcfPath = Some(fingerprintVcfSrc.uri),
+      fingerprintPath = Some(fingerprintSrc.uri),
       fingerprintingSummaryMetricsPath = Some(fingerprintSummaryMetricsSrc.uri),
       fingerprintingDetailMetricsPath = Some(fingerprintDetailMetricsSrc.uri),
       preAdapterSummaryMetricsPath = Some(preAdapterSummaryMetricsSrc.uri),
@@ -551,7 +551,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         cramValidationReportSrc,
         crosscheckSrc,
         duplicateMetricsSrc,
-        fingerprintVcfSrc,
+        fingerprintSrc,
         fingerprintSummaryMetricsSrc,
         fingerprintDetailMetricsSrc,
         preAdapterSummaryMetricsSrc,
@@ -571,7 +571,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         cramValidationReportDest,
         crosscheckDest,
         duplicateMetricsDest,
-        fingerprintVcfDest,
+        fingerprintDest,
         fingerprintSummaryMetricsDest,
         fingerprintDetailMetricsDest,
         preAdapterSummaryMetricsDest,
@@ -591,7 +591,7 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
         (cramValidationReportDest, cramValidationReportContents),
         (crosscheckDest, crosscheckContents),
         (duplicateMetricsDest, duplicateMetricsContents),
-        (fingerprintVcfDest, fingerprintVcfContents),
+        (fingerprintDest, fingerprintContents),
         (fingerprintSummaryMetricsDest, fingerprintingSummaryMetricsContents),
         (fingerprintDetailMetricsDest, fingerprintingDetailMetricsContents),
         (preAdapterSummaryMetricsDest, preAdapterSummaryMetricsContents),
@@ -626,8 +626,8 @@ trait WgsCramTests { self: BaseIntegrationSpec =>
           crosscheckDest,
           duplicateMetricsSrc,
           duplicateMetricsDest,
-          fingerprintVcfSrc,
-          fingerprintVcfDest,
+          fingerprintSrc,
+          fingerprintDest,
           fingerprintSummaryMetricsSrc,
           fingerprintSummaryMetricsDest,
           fingerprintDetailMetricsSrc,

@@ -23,7 +23,6 @@ class CramMover extends MetadataMover[CramMetadata] {
         // want to fixup files with just '.crai' when possible.
         URI.create(s"$cramUri${CramExtensions.CraiExtensionAddition}")
       },
-      logPath = src.logPath.map(buildFilePath(_, destination)),
       analysisFilesTxtPath = src.analysisFilesTxtPath.map(
         buildFilePath(
           _,
@@ -102,13 +101,6 @@ class CramMover extends MetadataMover[CramMetadata] {
         )
       ),
       fingerprintPath = src.fingerprintPath.map(
-        buildFilePath(
-          _,
-          destination,
-          newBasename.map(_ + CramExtensions.FingerprintVcfExtension)
-        )
-      ),
-      fingerprintVcfPath = src.fingerprintVcfPath.map(
         buildFilePath(
           _,
           destination,
@@ -261,7 +253,6 @@ class CramMover extends MetadataMover[CramMetadata] {
       _.crosscheckPath,
       _.duplicateMetricsPath,
       _.fingerprintPath,
-      _.fingerprintVcfPath,
       _.fingerprintingDetailMetricsPath,
       _.fingerprintingSummaryMetricsPath,
       _.gcBiasPdfPath,
