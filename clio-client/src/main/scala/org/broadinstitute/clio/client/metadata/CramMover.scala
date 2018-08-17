@@ -100,6 +100,13 @@ class CramMover extends MetadataMover[CramMetadata] {
           newBasename.map(_ + CramExtensions.DuplicateMetricsExtension)
         )
       ),
+      fingerprintPath = src.fingerprintPath.map(
+        buildFilePath(
+          _,
+          destination,
+          newBasename.map(_ + CramExtensions.FingerprintVcfExtension)
+        )
+      ),
       fingerprintingDetailMetricsPath = src.fingerprintingDetailMetricsPath.map(
         buildFilePath(
           _,
@@ -245,6 +252,7 @@ class CramMover extends MetadataMover[CramMetadata] {
       _.cramValidationReportPath,
       _.crosscheckPath,
       _.duplicateMetricsPath,
+      _.fingerprintPath,
       _.fingerprintingDetailMetricsPath,
       _.fingerprintingSummaryMetricsPath,
       _.gcBiasPdfPath,
