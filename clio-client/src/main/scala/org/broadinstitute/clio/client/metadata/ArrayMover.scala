@@ -34,11 +34,11 @@ class ArrayMover extends MetadataMover[ArraysMetadata] {
           newBasename.map(_ + ArraysExtensions.GtcExtension)
         )
       ),
+      // Note - the params file is named 'params.txt' - it does not get renamed.
       paramsPath = src.paramsPath.map(
         buildFilePath(
           _,
-          destination,
-          newBasename.map(_ + ArraysExtensions.TxtExtension)
+          destination
         )
       ),
       fingerprintingDetailMetricsPath = src.fingerprintingDetailMetricsPath.map(
