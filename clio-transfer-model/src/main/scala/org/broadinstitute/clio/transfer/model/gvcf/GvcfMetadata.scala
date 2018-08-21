@@ -2,12 +2,14 @@ package org.broadinstitute.clio.transfer.model.gvcf
 
 import java.net.URI
 import java.time.OffsetDateTime
+import java.util.UUID
 
-import org.broadinstitute.clio.transfer.model.Metadata
+import org.broadinstitute.clio.transfer.model.{CromwellWorkflowResultMetadata, Metadata}
 import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
 case class GvcfMetadata(
   analysisDate: Option[OffsetDateTime] = None,
+  cromwellId: Option[UUID] = None,
   contamination: Option[Float] = None,
   documentStatus: Option[DocumentStatus] = None,
   gvcfMd5: Option[Symbol] = None,
@@ -19,7 +21,8 @@ case class GvcfMetadata(
   pipelineVersion: Option[Symbol] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   notes: Option[String] = None
-) extends Metadata[GvcfMetadata] {
+) extends Metadata[GvcfMetadata]
+    with CromwellWorkflowResultMetadata[GvcfMetadata] {
 
   override def pathsToDelete: Seq[URI] =
     Seq.concat(gvcfPath, gvcfIndexPath)
@@ -29,6 +32,12 @@ case class GvcfMetadata(
       documentStatus = Some(DocumentStatus.Deleted),
       notes = appendNote(deletionNote)
     )
+
+  override def withCromwellId(cromwellId: UUID): GvcfMetadata = {
+    this.copy(
+      cromwellId = Some(cromwellId)
+    )
+  }
 
   override def withDocumentStatus(
     docStatus: Option[DocumentStatus]
