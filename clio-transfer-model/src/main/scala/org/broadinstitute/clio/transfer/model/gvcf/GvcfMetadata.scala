@@ -33,12 +33,6 @@ case class GvcfMetadata(
       notes = appendNote(deletionNote)
     )
 
-  override def withCromwellId(cromwellId: UUID): GvcfMetadata = {
-    this.copy(
-      cromwellId = Some(cromwellId)
-    )
-  }
-
   override def withDocumentStatus(
     docStatus: Option[DocumentStatus]
   ): GvcfMetadata =

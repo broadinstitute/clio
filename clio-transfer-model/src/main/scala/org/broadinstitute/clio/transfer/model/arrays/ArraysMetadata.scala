@@ -74,10 +74,6 @@ case class ArraysMetadata(
     )
   }
 
-  override def withCromwellId(cromwellId: UUID): ArraysMetadata = {
-    this.copy(cromwellId = Some(cromwellId))
-  }
-
   override def withDocumentStatus(
     documentStatus: Option[DocumentStatus]
   ): ArraysMetadata =

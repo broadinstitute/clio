@@ -92,10 +92,6 @@ case class CramMetadata(
     )
   }
 
-  override def withCromwellId(cromwellId: UUID): CramMetadata = {
-    this.copy(cromwellId = Some(cromwellId))
-  }
-
   override def withDocumentStatus(
     documentStatus: Option[DocumentStatus]
   ): CramMetadata =
