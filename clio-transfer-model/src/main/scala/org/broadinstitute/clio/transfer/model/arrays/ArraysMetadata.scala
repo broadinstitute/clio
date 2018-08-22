@@ -2,8 +2,13 @@ package org.broadinstitute.clio.transfer.model.arrays
 
 import java.net.URI
 import java.time.OffsetDateTime
+import java.util.UUID
 
-import org.broadinstitute.clio.transfer.model.{DeliverableMetadata, Metadata}
+import org.broadinstitute.clio.transfer.model.{
+  CromwellWorkflowResultMetadata,
+  DeliverableMetadata,
+  Metadata
+}
 import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
 /* Declare Metadata fields in lexicographic order.  Metadata is the
@@ -12,6 +17,7 @@ import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation
 case class ArraysMetadata(
   chipType: Option[String] = None,
   clusterPath: Option[URI] = None,
+  cromwellId: Option[UUID] = None,
   documentStatus: Option[DocumentStatus] = None,
   extendedChipManifestPath: Option[URI] = None,
   fingerprintingDetailMetricsPath: Option[URI] = None,
@@ -42,7 +48,8 @@ case class ArraysMetadata(
   workflowEndDate: Option[OffsetDateTime] = None,
   workspaceName: Option[String] = None
 ) extends Metadata[ArraysMetadata]
-    with DeliverableMetadata[ArraysMetadata] {
+    with DeliverableMetadata[ArraysMetadata]
+    with CromwellWorkflowResultMetadata[ArraysMetadata] {
 
   /**
     * @return paths to delete

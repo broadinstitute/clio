@@ -4,7 +4,11 @@ import java.net.URI
 import java.time.OffsetDateTime
 import java.util.UUID
 
-import org.broadinstitute.clio.transfer.model.{DeliverableMetadata, Metadata}
+import org.broadinstitute.clio.transfer.model.{
+  CromwellWorkflowResultMetadata,
+  DeliverableMetadata,
+  Metadata
+}
 import org.broadinstitute.clio.util.model.{DocumentStatus, RegulatoryDesignation}
 
 case class CramMetadata(
@@ -59,7 +63,8 @@ case class CramMetadata(
   // TODO: Move these to top-level named fields in the wgs-ubam index?
   readgroupLevelMetricsFiles: Option[List[URI]] = None
 ) extends Metadata[CramMetadata]
-    with DeliverableMetadata[CramMetadata] {
+    with DeliverableMetadata[CramMetadata]
+    with CromwellWorkflowResultMetadata[CramMetadata] {
 
   override def pathsToDelete: Seq[URI] =
     Seq.concat(
