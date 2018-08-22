@@ -46,7 +46,8 @@ case class UbamMetadata(
   ubamMd5: Option[Symbol] = None,
   ubamPath: Option[URI] = None,
   ubamSize: Option[Long] = None,
-  aggregatedBy: Option[AggregatedBy] = None,
+  aggregatedBy: Option[AggregatedBy] = None, // No longer used. Superseded by aggregationProject
+  aggregationProject: Option[String] = None,
   documentStatus: Option[DocumentStatus] = None
 ) extends Metadata[UbamMetadata] {
 
