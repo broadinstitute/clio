@@ -47,6 +47,7 @@ object ClioWebClient {
     clioPort: Int = ClioClientConfig.ClioServer.clioServerPort,
     useHttps: Boolean = ClioClientConfig.ClioServer.clioServerUseHttps,
     requestTimeout: FiniteDuration = ClioClientConfig.responseTimeout,
+    idleTimeout: FiniteDuration = ClioClientConfig.idleTimeout,
     maxRequestRetries: Int = ClioClientConfig.maxRequestRetries
   )(implicit system: ActorSystem): ClioWebClient = {
 
@@ -69,6 +70,7 @@ object ClioWebClient {
     new ClioWebClient(
       connectionFlow,
       requestTimeout,
+      idleTimeout,
       maxRequestRetries,
       GoogleCredentialsGenerator(credentials)
     )
@@ -92,6 +94,7 @@ object ClioWebClient {
 class ClioWebClient(
   connectionFlow: Flow[HttpRequest, HttpResponse, _],
   requestTimeout: FiniteDuration,
+  idleTimeout: FiniteDuration,
   maxRequestRetries: Int,
   tokenGenerator: CredentialsGenerator
 ) extends StrictLogging {
@@ -143,6 +146,7 @@ class ClioWebClient(
       .single(requestWithCreds)
       .via(connectionFlow)
       .initialTimeout(requestTimeout)
+      .idleTimeout(idleTimeout)
 
     /*
      * Retry on any connection failures (since Akka's built-in retry mechanisms
