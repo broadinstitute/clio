@@ -26,7 +26,6 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
 
   behavior of "ClioWebClient"
 
-  //private val index = ModelMockIndex()
   private val timeout = 1.second
   private val idleTimeout = 1.second
 
