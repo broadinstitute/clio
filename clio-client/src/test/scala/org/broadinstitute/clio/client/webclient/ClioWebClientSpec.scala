@@ -41,7 +41,8 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       HttpResponse(entity = entity)
     }
 
-    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
+    val client =
+      new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
 
     client.dispatchRequest(req, false).runFold(ByteString.empty)(_ ++ _).map {
       _.decodeString("UTF-8") should be(response)
@@ -79,7 +80,8 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       HttpResponse(status = code, entity = HttpEntity(err))
     }
 
-    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
+    val client =
+      new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
 
     recoverToExceptionIf[ClioWebClient.FailedResponse] {
       client.dispatchRequest(HttpRequest(), false).runWith(Sink.ignore)
@@ -92,7 +94,8 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
   it should "time out requests that take too long" in {
 
     val flow = Flow[HttpRequest].delay(timeout * 2).map(_ => HttpResponse())
-    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
+    val client =
+      new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
 
     recoverToSucceededIf[TimeoutException] {
       client.dispatchRequest(HttpRequest(), false).runWith(Sink.ignore)
@@ -117,7 +120,8 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       }
     }
 
-    val client = new ClioWebClient(flow, timeout, idleTimeout, retries, stub[CredentialsGenerator])
+    val client =
+      new ClioWebClient(flow, timeout, idleTimeout, retries, stub[CredentialsGenerator])
 
     client.dispatchRequest(HttpRequest(), false).runFold(ByteString.empty)(_ ++ _).map {
       _.decodeString("UTF-8") should be(response)
@@ -131,7 +135,8 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
     val entity = HttpEntity(contentType = ContentTypes.`text/plain(UTF-8)`, data)
     val flow = Flow[HttpRequest].map(_ => HttpResponse(entity = entity))
 
-    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
+    val client =
+      new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
     recoverToSucceededIf[TimeoutException] {
       client.dispatchRequest(HttpRequest(), false).runWith(Sink.ignore)
     }
@@ -154,7 +159,8 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       jsonResponse(response)
     }
 
-    val client = new ClioWebClient(flow, timeout, idleTimeout, 1, stub[CredentialsGenerator])
+    val client =
+      new ClioWebClient(flow, timeout, idleTimeout, 1, stub[CredentialsGenerator])
 
     client.getClioServerHealth.runWith(Sink.head).map {
       _.as[StatusInfo] should be(Right(response))
@@ -170,7 +176,8 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       jsonResponse(response)
     }
 
-    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
+    val client =
+      new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
 
     client.getClioServerVersion.runWith(Sink.head).map {
       _.as[VersionInfo] should be(Right(response))
