@@ -28,6 +28,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
 
   //private val index = ModelMockIndex()
   private val timeout = 1.second
+  private val idleTimeout = 1.second
 
   it should "dispatch requests" in {
     val req = HttpRequest(uri = "my-cool-uri")
@@ -40,7 +41,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       HttpResponse(entity = entity)
     }
 
-    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
+    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
 
     client.dispatchRequest(req, false).runFold(ByteString.empty)(_ ++ _).map {
       _.decodeString("UTF-8") should be(response)
@@ -63,7 +64,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       HttpResponse(entity = entity)
     }
 
-    val client = new ClioWebClient(flow, timeout, 0, generator)
+    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, generator)
 
     client.dispatchRequest(req, true).runFold(ByteString.empty)(_ ++ _).map {
       _.decodeString("UTF-8") should be(response)
@@ -78,7 +79,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       HttpResponse(status = code, entity = HttpEntity(err))
     }
 
-    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
+    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
 
     recoverToExceptionIf[ClioWebClient.FailedResponse] {
       client.dispatchRequest(HttpRequest(), false).runWith(Sink.ignore)
@@ -91,7 +92,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
   it should "time out requests that take too long" in {
 
     val flow = Flow[HttpRequest].delay(timeout * 2).map(_ => HttpResponse())
-    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
+    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
 
     recoverToSucceededIf[TimeoutException] {
       client.dispatchRequest(HttpRequest(), false).runWith(Sink.ignore)
@@ -116,7 +117,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       }
     }
 
-    val client = new ClioWebClient(flow, timeout, retries, stub[CredentialsGenerator])
+    val client = new ClioWebClient(flow, timeout, idleTimeout, retries, stub[CredentialsGenerator])
 
     client.dispatchRequest(HttpRequest(), false).runFold(ByteString.empty)(_ ++ _).map {
       _.decodeString("UTF-8") should be(response)
@@ -130,7 +131,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
     val entity = HttpEntity(contentType = ContentTypes.`text/plain(UTF-8)`, data)
     val flow = Flow[HttpRequest].map(_ => HttpResponse(entity = entity))
 
-    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
+    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
     recoverToSucceededIf[TimeoutException] {
       client.dispatchRequest(HttpRequest(), false).runWith(Sink.ignore)
     }
@@ -153,7 +154,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       jsonResponse(response)
     }
 
-    val client = new ClioWebClient(flow, timeout, 1, stub[CredentialsGenerator])
+    val client = new ClioWebClient(flow, timeout, idleTimeout, 1, stub[CredentialsGenerator])
 
     client.getClioServerHealth.runWith(Sink.head).map {
       _.as[StatusInfo] should be(Right(response))
@@ -169,7 +170,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       jsonResponse(response)
     }
 
-    val client = new ClioWebClient(flow, timeout, 0, stub[CredentialsGenerator])
+    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, stub[CredentialsGenerator])
 
     client.getClioServerVersion.runWith(Sink.head).map {
       _.as[VersionInfo] should be(Right(response))
@@ -214,7 +215,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       val generator = mock[CredentialsGenerator]
       (generator.generateCredentials _).expects().returning(OAuth2BearerToken("fake"))
 
-      val client = new ClioWebClient(flow, timeout, 0, generator)
+      val client = new ClioWebClient(flow, timeout, idleTimeout, 0, generator)
 
       client.upsert(index)(key, metadata, force).runWith(Sink.head).map {
         _.as[UpsertId] should be(Right(response))
@@ -263,7 +264,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       val generator = mock[CredentialsGenerator]
       (generator.generateCredentials _).expects().returning(OAuth2BearerToken("fake"))
 
-      val client = new ClioWebClient(flow, timeout, 0, generator)
+      val client = new ClioWebClient(flow, timeout, idleTimeout, 0, generator)
 
       client.simpleQuery(index)(query, includeDeleted).runWith(Sink.seq).map {
         _ should contain theSameElementsAs expectedOut
@@ -309,7 +310,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
       val generator = mock[CredentialsGenerator]
       (generator.generateCredentials _).expects().returning(OAuth2BearerToken("fake"))
 
-      val client = new ClioWebClient(flow, timeout, 0, generator)
+      val client = new ClioWebClient(flow, timeout, idleTimeout, 0, generator)
 
       client.getMetadataForKey(index)(key, includeDeleted).runWith(Sink.head).map {
         _ should be(metadata)
@@ -333,7 +334,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
     val generator = mock[CredentialsGenerator]
     (generator.generateCredentials _).expects().returning(OAuth2BearerToken("fake"))
 
-    val client = new ClioWebClient(flow, timeout, 0, generator)
+    val client = new ClioWebClient(flow, timeout, idleTimeout, 0, generator)
 
     recoverToSucceededIf[IllegalStateException] {
       client.getMetadataForKey(index)(key, false).runWith(Sink.head)

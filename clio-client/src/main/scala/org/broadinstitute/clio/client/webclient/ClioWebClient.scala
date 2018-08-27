@@ -164,7 +164,7 @@ class ClioWebClient(
     retriedResponse.flatMapConcat { response =>
       if (response.status.isSuccess()) {
         logger.debug(s"Successfully completed request: $request")
-        response.entity.withoutSizeLimit().dataBytes.idleTimeout(requestTimeout)
+        response.entity.withoutSizeLimit().dataBytes.idleTimeout(idleTimeout)
       } else {
         response.entity.dataBytes.reduce(_ ++ _).flatMapConcat { bytes =>
           Source.failed {
