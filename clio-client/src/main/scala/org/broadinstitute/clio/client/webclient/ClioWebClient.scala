@@ -46,7 +46,7 @@ object ClioWebClient {
     clioHost: String = ClioClientConfig.ClioServer.clioServerHostName,
     clioPort: Int = ClioClientConfig.ClioServer.clioServerPort,
     useHttps: Boolean = ClioClientConfig.ClioServer.clioServerUseHttps,
-    requestTimeout: FiniteDuration = ClioClientConfig.responseTimeout,
+    responseTimeout: FiniteDuration = ClioClientConfig.responseTimeout,
     idleTimeout: FiniteDuration = ClioClientConfig.idleTimeout,
     maxRequestRetries: Int = ClioClientConfig.maxRequestRetries
   )(implicit system: ActorSystem): ClioWebClient = {
@@ -69,7 +69,7 @@ object ClioWebClient {
 
     new ClioWebClient(
       connectionFlow,
-      requestTimeout,
+      responseTimeout,
       idleTimeout,
       maxRequestRetries,
       GoogleCredentialsGenerator(credentials)
@@ -93,7 +93,7 @@ object ClioWebClient {
   */
 class ClioWebClient(
   connectionFlow: Flow[HttpRequest, HttpResponse, _],
-  requestTimeout: FiniteDuration,
+  responseTimeout: FiniteDuration,
   idleTimeout: FiniteDuration,
   maxRequestRetries: Int,
   tokenGenerator: CredentialsGenerator
@@ -145,7 +145,7 @@ class ClioWebClient(
     val responseSource = Source
       .single(requestWithCreds)
       .via(connectionFlow)
-      .initialTimeout(requestTimeout)
+      .initialTimeout(responseTimeout)
       .idleTimeout(idleTimeout)
 
     /*
