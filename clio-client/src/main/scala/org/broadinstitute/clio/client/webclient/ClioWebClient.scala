@@ -47,7 +47,6 @@ object ClioWebClient {
     clioPort: Int = ClioClientConfig.ClioServer.clioServerPort,
     useHttps: Boolean = ClioClientConfig.ClioServer.clioServerUseHttps,
     responseTimeout: FiniteDuration = ClioClientConfig.responseTimeout,
-    idleTimeout: FiniteDuration = ClioClientConfig.idleTimeout,
     maxRequestRetries: Int = ClioClientConfig.maxRequestRetries
   )(implicit system: ActorSystem): ClioWebClient = {
 
