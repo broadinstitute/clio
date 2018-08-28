@@ -70,7 +70,6 @@ object ClioWebClient {
     new ClioWebClient(
       connectionFlow,
       responseTimeout,
-      idleTimeout,
       maxRequestRetries,
       GoogleCredentialsGenerator(credentials)
     )
@@ -94,7 +93,6 @@ object ClioWebClient {
 class ClioWebClient(
   connectionFlow: Flow[HttpRequest, HttpResponse, _],
   responseTimeout: FiniteDuration,
-  idleTimeout: FiniteDuration,
   maxRequestRetries: Int,
   tokenGenerator: CredentialsGenerator
 ) extends StrictLogging {
@@ -146,7 +144,7 @@ class ClioWebClient(
       .single(requestWithCreds)
       .via(connectionFlow)
       .initialTimeout(responseTimeout)
-      .idleTimeout(idleTimeout)
+      .idleTimeout(responseTimeout)
 
     /*
      * Retry on any connection failures (since Akka's built-in retry mechanisms
@@ -164,7 +162,7 @@ class ClioWebClient(
     retriedResponse.flatMapConcat { response =>
       if (response.status.isSuccess()) {
         logger.debug(s"Successfully completed request: $request")
-        response.entity.withoutSizeLimit().dataBytes.idleTimeout(idleTimeout)
+        response.entity.withoutSizeLimit().dataBytes.idleTimeout(responseTimeout)
       } else {
         response.entity.dataBytes.reduce(_ ++ _).flatMapConcat { bytes =>
           Source.failed {
