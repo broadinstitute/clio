@@ -18,9 +18,6 @@ object ClioClientConfig extends ConfigReaders {
   val responseTimeout: FiniteDuration =
     clientConfig.as[FiniteDuration]("response-timeout")
 
-  val idleTimeout: FiniteDuration =
-    clientConfig.as[FiniteDuration]("idle-timeout")
-
   val maxRequestRetries: Int =
     clientConfig.as[Int]("max-request-retries")
 
