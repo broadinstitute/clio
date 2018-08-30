@@ -85,7 +85,7 @@ object Dependencies {
   val ServerDependencies: Seq[ModuleID] = ServerMainDependencies ++ ServerTestDependencies
 
   /** Suppress warning for evicted libraries. */
-  val ServerOverrideDependencies: Set[ModuleID] = Set(
+  val ServerOverrideDependencies: Seq[ModuleID] = Seq(
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
     "io.circe" %% "circe-generic-extras" % CirceVersion,

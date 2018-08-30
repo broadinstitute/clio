@@ -133,10 +133,9 @@ lazy val `clio-client` = project
   .settings(
     inConfig(FatJar) {
       addArtifact(
-        Artifact("clio-client", "jar", "jar").copy(
-          configurations = Seq(Default),
-          classifier = Some("assembly")
-        ),
+        Artifact("clio-client", "jar", "jar")
+          .withConfigurations(Vector(Default))
+          .withClassifier(Some("assembly")),
         assembly
       )
     }

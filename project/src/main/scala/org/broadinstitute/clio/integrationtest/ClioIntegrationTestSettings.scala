@@ -24,7 +24,7 @@ object ClioIntegrationTestSettings extends BuildInfoKeys {
     *
     *   Docker version 17.09.0-ce, build afdb6d4
     */
-  private val DockerMajorVersionRegex = ".+version\\s+(\\d+)\\..+".r
+//  private val DockerMajorVersionRegex = ".+version\\s+(\\d+)\\..+".r
 
   /**
     * Name of the properties file used for overriding testcontainers properties.
@@ -58,8 +58,9 @@ object ClioIntegrationTestSettings extends BuildInfoKeys {
     Def.task {
       val generatedResourceDir = (resourceManaged in IntegrationTest).value
 
-      val DockerMajorVersionRegex(dockerMajorVersion) =
-        Process(Seq("docker", "--version")).!!.trim
+//      val DockerMajorVersionRegex(dockerMajorVersion) =
+//        Process(Seq("docker", "--version")).!!.trim
+      val dockerMajorVersion = "17"
 
       val propertiesFile = generatedResourceDir / TestcontainersPropsFile
       val imagePrefix = if (dockerMajorVersion.toInt == 1) {

@@ -30,9 +30,11 @@ object ArtifactoryFatJarPublishingPlugin extends AutoPlugin {
   private val ivyXmlPattern =
     "[organization]/[module]/[revision]/[type]s/ivy-[revision].xml"
   private val ivyArtifactoryPatterns = Patterns(
-    ivyPatterns = Seq(ivyXmlPattern),
-    artifactPatterns = Seq(ivyArtifactPattern),
-    isMavenCompatible = true
+    ivyPatterns = Vector(ivyXmlPattern),
+    artifactPatterns = Vector(ivyArtifactPattern),
+    isMavenCompatible = true,
+    descriptorOptional = true,
+    skipConsistencyCheck = false
   )
 
   /** For ivy-style publishing (only used by the client fat-jar publish, for nightly tests). */
@@ -49,13 +51,7 @@ object ArtifactoryFatJarPublishingPlugin extends AutoPlugin {
       Seq(
         publishTo := Some(ivyArtifactoryResolver),
         publishMavenStyle := false,
-        isSnapshot := true,
-        moduleSettings := InlineConfigurationWithExcludes(
-          projectID.value,
-          projectInfo.value,
-          Seq.empty,
-          configurations = Seq(Default)
-        )
+        isSnapshot := true
       )
     )
   }
