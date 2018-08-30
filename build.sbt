@@ -4,7 +4,8 @@ import org.broadinstitute.clio.sbt._
 // ## sbt settings
 // For more info, see: https://broadinstitute.atlassian.net/wiki/pages/viewpage.action?pageId=114531509
 
-enablePlugins(GitVersioning)
+lazy val root = (project in file("."))
+  .enablePlugins(GitVersioning)
 
 // Settings applied at the scope of the entire build.
 inThisBuild(
