@@ -22,6 +22,7 @@ case class UbamQueryInput(
   baitIntervals: Option[Symbol] = None,
   targetIntervals: Option[Symbol] = None,
   aggregatedBy: Option[AggregatedBy] = None,
+  aggregationProject: Option[String] = None,
   dataType: Option[DataType] = None
 ) extends QueryInput[UbamQueryInput] {
 
