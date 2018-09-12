@@ -12,7 +12,7 @@ object Dependencies {
   private val AkkaVersion = "2.5.14"
   private val AlpakkaVersion = "0.20"
   private val ApacheHttpClientVersion = "4.5.6"
-  private val BetterFilesVersion = "3.5.0"
+  private val BetterFilesVersion = "3.6.0"
   private val CaseAppVersion = "2.0.0-M3"
   private val CirceVersion = "0.9.3"
   private val CommonsIoVersion = "2.6"
