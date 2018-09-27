@@ -10,7 +10,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.AddWgsUbam
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.transfer.model.{ArraysIndex, WgsUbamIndex}
+import org.broadinstitute.clio.transfer.model.{ArraysIndex, UbamIndex}
 import org.broadinstitute.clio.transfer.model.arrays.ArraysMetadata
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
 import org.broadinstitute.clio.util.model.{Location, UpsertId}
@@ -41,7 +41,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     it should s"read and upsert metadata with force=$force" in {
       val ioUtil = mock[IoUtil]
       (ioUtil
-        .readMetadata(_: WgsUbamIndex.type)(_: URI))
+        .readMetadata(_: UbamIndex.type)(_: URI))
         .expects(*, loc)
         .returning(Source.single(metadata))
 
@@ -53,7 +53,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
           _: UbamMetadata,
           _: Boolean
         ))
-        .expects(WgsUbamIndex, theKey, metadata, force)
+        .expects(UbamIndex, theKey, metadata, force)
         .returning(Source.single(id.asJson))
 
       val executor = new AddExecutor(AddWgsUbam(theKey, loc, force))
@@ -66,7 +66,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   it should "fail if the given metadata can't be read from disk" in {
     val ioUtil = mock[IoUtil]
     (ioUtil
-      .readMetadata(_: WgsUbamIndex.type)(_: URI))
+      .readMetadata(_: UbamIndex.type)(_: URI))
       .expects(*, loc)
       .returning(Source.failed(new IOException("I BROKE")))
 
@@ -94,7 +94,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   it should "fail if the upsert to the server fails" in {
     val ioUtil = mock[IoUtil]
     (ioUtil
-      .readMetadata(_: WgsUbamIndex.type)(_: URI))
+      .readMetadata(_: UbamIndex.type)(_: URI))
       .expects(*, loc)
       .returning(Source.single(metadata))
 
@@ -105,7 +105,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
         _: UbamMetadata,
         _: Boolean
       ))
-      .expects(WgsUbamIndex, theKey, metadata, false)
+      .expects(UbamIndex, theKey, metadata, false)
       .returning(
         Source.failed(
           ClioWebClient

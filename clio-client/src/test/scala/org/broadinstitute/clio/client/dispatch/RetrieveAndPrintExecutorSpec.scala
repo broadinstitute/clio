@@ -21,7 +21,7 @@ import org.broadinstitute.clio.status.model.{
   StatusInfo,
   VersionInfo
 }
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
+import org.broadinstitute.clio.transfer.model.UbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
 import org.broadinstitute.clio.util.model.Location
 import org.scalamock.scalatest.AsyncMockFactory
@@ -94,7 +94,7 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
             _: Boolean
           )
         )
-        .expects(WgsUbamIndex, query, includeDeleted)
+        .expects(UbamIndex, query, includeDeleted)
         .returning(Source(keys.map(_.asJson)))
 
       val stdout = mutable.StringBuilder.newBuilder
@@ -124,8 +124,8 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
 
     val webClient = mock[ClioWebClient]
     (webClient
-      .query(_: WgsUbamIndex.type)(_: Json, _: Boolean))
-      .expects(WgsUbamIndex, rawQuery, true)
+      .query(_: UbamIndex.type)(_: Json, _: Boolean))
+      .expects(UbamIndex, rawQuery, true)
       .returning(Source(keys.map(_.asJson)))
 
     File

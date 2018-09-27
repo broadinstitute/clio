@@ -63,23 +63,14 @@ case object GvcfIndex
   override val commandName: String = "gvcf"
 }
 
-// Temporary trait to remain until WgsUbam fully phased out
-trait BackCompatibleUbamIndex
+case object UbamIndex
     extends SemiAutoClioIndex[
       UbamKey,
       UbamMetadata,
       UbamQueryInput
     ] {
-  override val name: String = "Ubam"
-}
-
-case object WgsUbamIndex extends BackCompatibleUbamIndex {
-  override val urlSegment: String = "wgsubam"
-  override val commandName: String = "wgs-ubam"
-}
-
-case object UbamIndex extends BackCompatibleUbamIndex {
   override val urlSegment: String = "ubam"
+  override val name: String = "Ubam"
   override val commandName: String = "ubam"
 }
 

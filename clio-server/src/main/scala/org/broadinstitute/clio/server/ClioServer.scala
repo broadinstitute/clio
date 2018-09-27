@@ -66,9 +66,6 @@ object ClioServer extends StrictLogging {
     new UbamWebService(
       new UbamService(persistenceDAO, searchDAO)
     ),
-    new UbamWebService(
-      new WgsUbamService(persistenceDAO, searchDAO)
-    ),
     new GvcfWebService(
       new GvcfService(persistenceDAO, searchDAO)
     ),

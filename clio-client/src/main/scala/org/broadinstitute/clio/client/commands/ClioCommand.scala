@@ -93,25 +93,25 @@ final case class AddWgsUbam(
   @Recurse key: UbamKey,
   metadataLocation: URI,
   force: Boolean = false
-) extends AddCommand(WgsUbamIndex)
+) extends AddCommand(UbamIndex)
 
 @CommandName(ClioCommand.queryWgsUbamName)
 final case class QueryWgsUbam(
   @Recurse queryInput: UbamQueryInput,
   includeDeleted: Boolean = false
-) extends SimpleQueryCommand(WgsUbamIndex)
+) extends SimpleQueryCommand(UbamIndex)
 
 @CommandName(ClioCommand.rawQueryWgsUbamName)
 final case class RawQueryWgsUbam(
   queryInputPath: File
-) extends RawQueryCommand(WgsUbamIndex)
+) extends RawQueryCommand(UbamIndex)
 
 @CommandName(ClioCommand.moveWgsUbamName)
 final case class MoveWgsUbam(
   @Recurse key: UbamKey,
   destination: URI,
   newBasename: Option[String] = None
-) extends MoveCommand(WgsUbamIndex) {
+) extends MoveCommand(UbamIndex) {
   override val metadataMover = new UbamMover
 }
 
@@ -120,7 +120,7 @@ final case class DeleteWgsUbam(
   @Recurse key: UbamKey,
   note: String,
   force: Boolean = false
-) extends DeleteCommand(WgsUbamIndex)
+) extends DeleteCommand(UbamIndex)
 
 // GVCF commands.
 
@@ -370,11 +370,11 @@ object ClioCommand extends ClioParsers {
   val patchPrefix = "patch-"
 
   // Names for WGS uBAM commands.
-  val addWgsUbamName: String = addPrefix + WgsUbamIndex.commandName
-  val queryWgsUbamName: String = simpleQueryPrefix + WgsUbamIndex.commandName
-  val rawQueryWgsUbamName: String = rawQueryPrefix + WgsUbamIndex.commandName
-  val moveWgsUbamName: String = movePrefix + WgsUbamIndex.commandName
-  val deleteWgsUbamName: String = deletePrefix + WgsUbamIndex.commandName
+  val addWgsUbamName: String = addPrefix + UbamIndex.commandName
+  val queryWgsUbamName: String = simpleQueryPrefix + UbamIndex.commandName
+  val rawQueryWgsUbamName: String = rawQueryPrefix + UbamIndex.commandName
+  val moveWgsUbamName: String = movePrefix + UbamIndex.commandName
+  val deleteWgsUbamName: String = deletePrefix + UbamIndex.commandName
 
   // Names for GVCF commands.
   val addGvcfName: String = addPrefix + GvcfIndex.commandName
