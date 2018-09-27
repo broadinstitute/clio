@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.commands.AddWgsUbam
+import org.broadinstitute.clio.client.commands.AddUbam
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.{ArraysIndex, UbamIndex}
@@ -56,7 +56,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
         .expects(UbamIndex, theKey, metadata, force)
         .returning(Source.single(id.asJson))
 
-      val executor = new AddExecutor(AddWgsUbam(theKey, loc, force))
+      val executor = new AddExecutor(AddUbam(theKey, loc, force))
       executor.execute(webClient, ioUtil).runWith(Sink.head).map { json =>
         json.as[UpsertId] should be(Right(id))
       }
@@ -71,7 +71,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       .returning(Source.failed(new IOException("I BROKE")))
 
     recoverToSucceededIf[IOException] {
-      val executor = new AddExecutor(AddWgsUbam(theKey, loc, false))
+      val executor = new AddExecutor(AddUbam(theKey, loc, false))
       executor.execute(stub[ClioWebClient], ioUtil).runWith(Sink.ignore)
     }
   }
@@ -85,7 +85,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       .expects(*, loc)
       .returning(Source.single(otherMetadata))
 
-    val executor = new AddExecutor(AddWgsUbam(theKey, loc, false))
+    val executor = new AddExecutor(AddUbam(theKey, loc, false))
     recoverToSucceededIf[NullPointerException] {
       executor.execute(stub[ClioWebClient], ioUtil).runWith(Sink.ignore)
     }
@@ -113,7 +113,7 @@ class AddExecutorSpec extends BaseClientSpec with AsyncMockFactory {
         )
       )
 
-    val executor = new AddExecutor(AddWgsUbam(theKey, loc, false))
+    val executor = new AddExecutor(AddUbam(theKey, loc, false))
     recoverToSucceededIf[ClioWebClient.FailedResponse] {
       executor.execute(webClient, ioUtil).runWith(Sink.ignore)
     }

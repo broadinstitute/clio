@@ -10,8 +10,8 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.{
   GetServerHealth,
   GetServerVersion,
-  QueryWgsUbam,
-  RawQueryWgsUbam
+  QueryUbam,
+  RawQueryUbam
 }
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -98,10 +98,9 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
         .returning(Source(keys.map(_.asJson)))
 
       val stdout = mutable.StringBuilder.newBuilder
-      val executor = new RetrieveAndPrintExecutor(QueryWgsUbam(query, includeDeleted), {
-        s =>
-          stdout.append(s)
-          ()
+      val executor = new RetrieveAndPrintExecutor(QueryUbam(query, includeDeleted), { s =>
+        stdout.append(s)
+        ()
       })
 
       executor.execute(webClient, stub[IoUtil]).runWith(Sink.seq).map { jsons =>
@@ -133,7 +132,7 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
       .map { tempFile =>
         tempFile.write(rawQuery.noSpaces)
         val stdout = mutable.StringBuilder.newBuilder
-        val executor = new RetrieveAndPrintExecutor(RawQueryWgsUbam(tempFile), { s =>
+        val executor = new RetrieveAndPrintExecutor(RawQueryUbam(tempFile), { s =>
           stdout.append(s)
           ()
         })
