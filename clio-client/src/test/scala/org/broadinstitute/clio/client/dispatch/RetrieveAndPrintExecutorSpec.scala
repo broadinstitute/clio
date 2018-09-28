@@ -10,8 +10,8 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands.{
   GetServerHealth,
   GetServerVersion,
-  QueryWgsUbam,
-  RawQueryWgsUbam
+  QueryUbam,
+  RawQueryUbam
 }
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
@@ -21,7 +21,7 @@ import org.broadinstitute.clio.status.model.{
   StatusInfo,
   VersionInfo
 }
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
+import org.broadinstitute.clio.transfer.model.UbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
 import org.broadinstitute.clio.util.model.Location
 import org.scalamock.scalatest.AsyncMockFactory
@@ -94,14 +94,13 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
             _: Boolean
           )
         )
-        .expects(WgsUbamIndex, query, includeDeleted)
+        .expects(UbamIndex, query, includeDeleted)
         .returning(Source(keys.map(_.asJson)))
 
       val stdout = mutable.StringBuilder.newBuilder
-      val executor = new RetrieveAndPrintExecutor(QueryWgsUbam(query, includeDeleted), {
-        s =>
-          stdout.append(s)
-          ()
+      val executor = new RetrieveAndPrintExecutor(QueryUbam(query, includeDeleted), { s =>
+        stdout.append(s)
+        ()
       })
 
       executor.execute(webClient, stub[IoUtil]).runWith(Sink.seq).map { jsons =>
@@ -124,8 +123,8 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
 
     val webClient = mock[ClioWebClient]
     (webClient
-      .query(_: WgsUbamIndex.type)(_: Json, _: Boolean))
-      .expects(WgsUbamIndex, rawQuery, true)
+      .query(_: UbamIndex.type)(_: Json, _: Boolean))
+      .expects(UbamIndex, rawQuery, true)
       .returning(Source(keys.map(_.asJson)))
 
     File
@@ -133,7 +132,7 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
       .map { tempFile =>
         tempFile.write(rawQuery.noSpaces)
         val stdout = mutable.StringBuilder.newBuilder
-        val executor = new RetrieveAndPrintExecutor(RawQueryWgsUbam(tempFile), { s =>
+        val executor = new RetrieveAndPrintExecutor(RawQueryUbam(tempFile), { s =>
           stdout.append(s)
           ()
         })
