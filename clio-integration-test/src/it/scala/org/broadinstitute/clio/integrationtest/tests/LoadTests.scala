@@ -6,7 +6,7 @@ import akka.stream.scaladsl.{Sink, Source}
 import com.dimafeng.testcontainers.ForAllTestContainer
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
-import org.broadinstitute.clio.transfer.model.WgsUbamIndex
+import org.broadinstitute.clio.transfer.model.UbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamExtensions, UbamKey, UbamMetadata}
 import org.broadinstitute.clio.util.model.{DataType, Location}
 
@@ -73,7 +73,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
       .flatMapMerge(
         50, {
           case (key, metadata) => {
-            clioWebClient.upsert(WgsUbamIndex)(key, metadata)
+            clioWebClient.upsert(UbamIndex)(key, metadata)
           }
         }
       )
