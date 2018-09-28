@@ -81,7 +81,7 @@ trait LoadTests extends ForAllTestContainer { self: BaseIntegrationSpec =>
 
     val queries = immutable.Seq.fill(10) { () =>
       runCollectJson(
-        ClioCommand.queryWgsUbamName,
+        ClioCommand.queryUbamName,
         "--location",
         location.entryName
       )

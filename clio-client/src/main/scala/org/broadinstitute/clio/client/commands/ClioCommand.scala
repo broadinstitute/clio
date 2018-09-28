@@ -86,41 +86,6 @@ case object GetServerHealth extends RetrieveAndPrintCommand
 @CommandName(ClioCommand.getServerVersionName)
 case object GetServerVersion extends RetrieveAndPrintCommand
 
-// WGS-uBAM commands.
-@CommandName(ClioCommand.addWgsUbamName)
-final case class AddWgsUbam(
-  @Recurse key: UbamKey,
-  metadataLocation: URI,
-  force: Boolean = false
-) extends AddCommand(UbamIndex)
-
-@CommandName(ClioCommand.queryWgsUbamName)
-final case class QueryWgsUbam(
-  @Recurse queryInput: UbamQueryInput,
-  includeDeleted: Boolean = false
-) extends SimpleQueryCommand(UbamIndex)
-
-@CommandName(ClioCommand.rawQueryWgsUbamName)
-final case class RawQueryWgsUbam(
-  queryInputPath: File
-) extends RawQueryCommand(UbamIndex)
-
-@CommandName(ClioCommand.moveWgsUbamName)
-final case class MoveWgsUbam(
-  @Recurse key: UbamKey,
-  destination: URI,
-  newBasename: Option[String] = None
-) extends MoveCommand(UbamIndex) {
-  override val metadataMover = new UbamMover
-}
-
-@CommandName(ClioCommand.deleteWgsUbamName)
-final case class DeleteWgsUbam(
-  @Recurse key: UbamKey,
-  note: String,
-  force: Boolean = false
-) extends DeleteCommand(UbamIndex)
-
 // GVCF commands.
 
 @CommandName(ClioCommand.addGvcfName)
@@ -367,13 +332,6 @@ object ClioCommand extends ClioParsers {
   val deletePrefix = "delete-"
   val deliverPrefix = "deliver-"
   val patchPrefix = "patch-"
-
-  // Names for WGS uBAM commands.
-  val addWgsUbamName: String = addPrefix + UbamIndex.commandName
-  val queryWgsUbamName: String = simpleQueryPrefix + UbamIndex.commandName
-  val rawQueryWgsUbamName: String = rawQueryPrefix + UbamIndex.commandName
-  val moveWgsUbamName: String = movePrefix + UbamIndex.commandName
-  val deleteWgsUbamName: String = deletePrefix + UbamIndex.commandName
 
   // Names for GVCF commands.
   val addGvcfName: String = addPrefix + GvcfIndex.commandName
