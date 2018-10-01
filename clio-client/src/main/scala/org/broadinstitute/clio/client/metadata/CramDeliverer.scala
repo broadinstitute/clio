@@ -39,7 +39,9 @@ class CramDeliverer extends MetadataMover[CramMetadata] {
 
     if (src.regulatoryDesignation.exists(_.equals(RegulatoryDesignation.ResearchOnly))) {
       lazy val oldBaseName =
-        src.cramPath.map(p => File(p.getPath).name.replace(CramExtensions.CramExtension, ""))
+        src.cramPath.map(
+          p => File(p.getPath).name.replace(CramExtensions.CramExtension, "")
+        )
 
       def makeDestMetrics(srcMetric: Option[URI]): Option[URI] = {
         srcMetric.map { metric =>
