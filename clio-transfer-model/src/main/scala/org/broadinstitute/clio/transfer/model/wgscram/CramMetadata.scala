@@ -98,4 +98,25 @@ case class CramMetadata(
     this.copy(
       documentStatus = documentStatus
     )
+
+  val sampleLevelMetrics = Iterable(
+    preAdapterSummaryMetricsPath,
+    preAdapterDetailMetricsPath,
+    alignmentSummaryMetricsPath,
+    duplicateMetricsPath,
+    fingerprintingSummaryMetricsPath,
+    fingerprintingDetailMetricsPath,
+    gcBiasSummaryMetricsPath,
+    gcBiasDetailMetricsPath,
+    insertSizeMetricsPath,
+    qualityDistributionMetricsPath,
+    rawWgsMetricsPath,
+    readgroupAlignmentSummaryMetricsPath,
+    readgroupGcBiasSummaryMetricsPath,
+    readgroupGcBiasDetailMetricsPath,
+    baitBiasSummaryMetricsPath,
+    baitBiasDetailMetricsPath,
+    wgsMetricsPath,
+    crosscheckPath
+  )
 }
