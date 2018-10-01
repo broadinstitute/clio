@@ -30,7 +30,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
   ): Future[UpsertId] = {
     val tmpMetadata = writeLocalTmpJson(metadata)
     val command =
-      if (useOldCommands) ClioCommand.addWgsUbamName
+      if (useOldCommands) ClioCommand.addUbamName
       else ClioCommand.addUbamName
     runDecode[UpsertId](
       command,
@@ -90,7 +90,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
       val expected = expectedMerge(key, metadata)
       val queryCommand =
-        if (useOldCommands) ClioCommand.queryWgsUbamName
+        if (useOldCommands) ClioCommand.queryUbamName
         else ClioCommand.queryUbamName
 
       for {
@@ -449,7 +449,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     // Clio needs the metadata to be added before it can be moved.
     val _ = sourceUbam.write(fileContents)
     val moveCommand =
-      if (useOldCommand) ClioCommand.moveWgsUbamName
+      if (useOldCommand) ClioCommand.moveUbamName
       else ClioCommand.moveUbamName
     val result = for {
       _ <- runUpsertUbam(key, metadata)
@@ -618,7 +618,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       cloudPath.write(fileContents)
     }
     val deleteCommand =
-      if (useOldCommand) ClioCommand.deleteWgsUbamName
+      if (useOldCommand) ClioCommand.deleteUbamName
       else ClioCommand.deleteUbamName
 
     val result = for {

@@ -4,10 +4,10 @@ import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.util.model.Location
 import org.broadinstitute.clio.server.service.UbamService
-import org.broadinstitute.clio.transfer.model.{BackCompatibleUbamIndex, UbamIndex}
+import org.broadinstitute.clio.transfer.model.UbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.UbamKey
 
-class UbamWebServiceSpec extends IndexWebServiceSpec[BackCompatibleUbamIndex] {
+class UbamWebServiceSpec extends IndexWebServiceSpec[UbamIndex.type] {
 
   def webServiceName = "UbamWebService"
 

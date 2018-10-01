@@ -196,7 +196,7 @@ class RecoveryIntegrationSpec extends DockerIntegrationSpec with OptionValues {
     val tmpMetadata = writeLocalTmpJson(UbamMetadata())
     recoverToSucceededIf[RuntimeException] {
       runIgnore(
-        ClioCommand.addWgsUbamName,
+        ClioCommand.addUbamName,
         "--flowcell-barcode",
         "some-barcode",
         "--lane",
@@ -237,7 +237,7 @@ class RecoveryIntegrationSpec extends DockerIntegrationSpec with OptionValues {
   Seq(
     (
       "wgs-ubam",
-      ClioCommand.queryWgsUbamName,
+      ClioCommand.queryUbamName,
       "lane",
       updatedUbams,
       ElasticsearchIndex.Ubam
