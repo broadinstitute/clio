@@ -17,50 +17,11 @@ class CramDeliverer extends MetadataMover[CramMetadata] {
         .buildFilePath(_, destination, newBasename.map(_ + CramExtensions.CramExtension))
     )
 
-    lazy val oldBaseName =
-      src.cramPath.map(File(_).name.replace(CramExtensions.CramExtension, ""))
-
-    def makeDestMetrics(srcMetric: Option[URI]): Option[URI] = {
-      srcMetric.map { metric =>
-        val srcMetricFileName = File(metric).name
-        val destMetricFileName = (for {
-          nbn <- newBasename
-          obn <- oldBaseName
-        } yield {
-          srcMetricFileName.replace(obn, nbn)
-        }).getOrElse(srcMetricFileName)
-        destination.resolve(destMetricFileName)
-      }
-    }
-
-    val dest = src.copy(
+    val movedCramsDest = src.copy(
       cramPath = movedCram,
       craiPath = movedCram.map(
         cramUri => URI.create(s"$cramUri${CramExtensions.CraiExtensionAddition}")
-      ),
-      preAdapterSummaryMetricsPath = makeDestMetrics(src.preAdapterSummaryMetricsPath),
-      preAdapterDetailMetricsPath = makeDestMetrics(src.preAdapterDetailMetricsPath),
-      alignmentSummaryMetricsPath = makeDestMetrics(src.alignmentSummaryMetricsPath),
-      duplicateMetricsPath = makeDestMetrics(src.duplicateMetricsPath),
-      fingerprintingSummaryMetricsPath =
-        makeDestMetrics(src.fingerprintingSummaryMetricsPath),
-      fingerprintingDetailMetricsPath =
-        makeDestMetrics(src.fingerprintingDetailMetricsPath),
-      gcBiasSummaryMetricsPath = makeDestMetrics(src.gcBiasSummaryMetricsPath),
-      gcBiasDetailMetricsPath = makeDestMetrics(src.gcBiasDetailMetricsPath),
-      insertSizeMetricsPath = makeDestMetrics(src.insertSizeMetricsPath),
-      qualityDistributionMetricsPath = makeDestMetrics(src.qualityDistributionMetricsPath),
-      rawWgsMetricsPath = makeDestMetrics(src.rawWgsMetricsPath),
-      readgroupAlignmentSummaryMetricsPath =
-        makeDestMetrics(src.readgroupAlignmentSummaryMetricsPath),
-      readgroupGcBiasSummaryMetricsPath =
-        makeDestMetrics(src.readgroupGcBiasSummaryMetricsPath),
-      readgroupGcBiasDetailMetricsPath =
-        makeDestMetrics(src.readgroupGcBiasDetailMetricsPath),
-      baitBiasSummaryMetricsPath = makeDestMetrics(src.baitBiasSummaryMetricsPath),
-      baitBiasDetailMetricsPath = makeDestMetrics(src.baitBiasDetailMetricsPath),
-      wgsMetricsPath = makeDestMetrics(src.wgsMetricsPath),
-      crosscheckPath = makeDestMetrics(src.crosscheckPath),
+      )
     )
 
     val writeMd5Op = for {
@@ -71,21 +32,62 @@ class CramDeliverer extends MetadataMover[CramMetadata] {
     }
 
     val ops = Iterable(
-      extractMoves(src, dest, _.cramPath),
-      extractMoves(src, dest, _.craiPath),
+      extractMoves(src, movedCramsDest, _.cramPath),
+      extractMoves(src, movedCramsDest, _.craiPath),
       writeMd5Op.toIterable
     ).flatten
 
-    val moveMetricsOps =
-      if (src.regulatoryDesignation
-            .exists(_.equals(RegulatoryDesignation.ResearchOnly))) {
+    if (src.regulatoryDesignation.exists(_.equals(RegulatoryDesignation.ResearchOnly))) {
+      lazy val oldBaseName =
+        src.cramPath.map(File(_).name.replace(CramExtensions.CramExtension, ""))
+
+      def makeDestMetrics(srcMetric: Option[URI]): Option[URI] = {
+        srcMetric.map { metric =>
+          val srcMetricFileName = File(metric).name
+          val destMetricFileName = (for {
+            nbn <- newBasename
+            obn <- oldBaseName
+          } yield {
+            srcMetricFileName.replace(obn, nbn)
+          }).getOrElse(srcMetricFileName)
+          destination.resolve(destMetricFileName)
+        }
+      }
+
+      val moveMetricsOps =
         src.sampleLevelMetrics.flatten
           .zip(src.sampleLevelMetrics.flatMap(makeDestMetrics))
           .map(MoveOp.tupled)
-      } else {
-        Iterable.empty
-      }
 
-    (dest, ops ++ moveMetricsOps)
+      val movedMetricsDest = movedCramsDest.copy(
+        preAdapterSummaryMetricsPath = makeDestMetrics(src.preAdapterSummaryMetricsPath),
+        preAdapterDetailMetricsPath = makeDestMetrics(src.preAdapterDetailMetricsPath),
+        alignmentSummaryMetricsPath = makeDestMetrics(src.alignmentSummaryMetricsPath),
+        duplicateMetricsPath = makeDestMetrics(src.duplicateMetricsPath),
+        fingerprintingSummaryMetricsPath =
+          makeDestMetrics(src.fingerprintingSummaryMetricsPath),
+        fingerprintingDetailMetricsPath =
+          makeDestMetrics(src.fingerprintingDetailMetricsPath),
+        gcBiasSummaryMetricsPath = makeDestMetrics(src.gcBiasSummaryMetricsPath),
+        gcBiasDetailMetricsPath = makeDestMetrics(src.gcBiasDetailMetricsPath),
+        insertSizeMetricsPath = makeDestMetrics(src.insertSizeMetricsPath),
+        qualityDistributionMetricsPath =
+          makeDestMetrics(src.qualityDistributionMetricsPath),
+        rawWgsMetricsPath = makeDestMetrics(src.rawWgsMetricsPath),
+        readgroupAlignmentSummaryMetricsPath =
+          makeDestMetrics(src.readgroupAlignmentSummaryMetricsPath),
+        readgroupGcBiasSummaryMetricsPath =
+          makeDestMetrics(src.readgroupGcBiasSummaryMetricsPath),
+        readgroupGcBiasDetailMetricsPath =
+          makeDestMetrics(src.readgroupGcBiasDetailMetricsPath),
+        baitBiasSummaryMetricsPath = makeDestMetrics(src.baitBiasSummaryMetricsPath),
+        baitBiasDetailMetricsPath = makeDestMetrics(src.baitBiasDetailMetricsPath),
+        wgsMetricsPath = makeDestMetrics(src.wgsMetricsPath),
+        crosscheckPath = makeDestMetrics(src.crosscheckPath)
+      )
+      (movedMetricsDest, ops ++ moveMetricsOps)
+    } else {
+      (movedCramsDest, ops)
+    }
   }
 }
