@@ -104,8 +104,6 @@ case class CramMetadata(
     preAdapterDetailMetricsPath,
     alignmentSummaryMetricsPath,
     duplicateMetricsPath,
-    fingerprintingSummaryMetricsPath,
-    fingerprintingDetailMetricsPath,
     gcBiasSummaryMetricsPath,
     gcBiasDetailMetricsPath,
     insertSizeMetricsPath,
