@@ -103,6 +103,7 @@ case class CramMetadata(
     preAdapterSummaryMetricsPath,
     preAdapterDetailMetricsPath,
     alignmentSummaryMetricsPath,
+    fingerprintingSummaryMetricsPath,
     duplicateMetricsPath,
     gcBiasSummaryMetricsPath,
     gcBiasDetailMetricsPath,

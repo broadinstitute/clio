@@ -65,6 +65,8 @@ class CramDeliverer extends MetadataMover[CramMetadata] {
         preAdapterSummaryMetricsPath = makeDestMetrics(src.preAdapterSummaryMetricsPath),
         preAdapterDetailMetricsPath = makeDestMetrics(src.preAdapterDetailMetricsPath),
         alignmentSummaryMetricsPath = makeDestMetrics(src.alignmentSummaryMetricsPath),
+        fingerprintingSummaryMetricsPath =
+          makeDestMetrics(src.fingerprintingSummaryMetricsPath),
         duplicateMetricsPath = makeDestMetrics(src.duplicateMetricsPath),
         gcBiasSummaryMetricsPath = makeDestMetrics(src.gcBiasSummaryMetricsPath),
         gcBiasDetailMetricsPath = makeDestMetrics(src.gcBiasDetailMetricsPath),
