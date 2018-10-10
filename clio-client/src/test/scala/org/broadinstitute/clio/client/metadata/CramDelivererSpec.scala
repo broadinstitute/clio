@@ -4,6 +4,7 @@ import java.net.URI
 
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{MoveOp, WriteOp}
 import org.broadinstitute.clio.transfer.model.wgscram.{CramExtensions, CramMetadata}
+import org.broadinstitute.clio.util.model.RegulatoryDesignation
 import org.scalatest.{FlatSpec, Matchers}
 
 class CramDelivererSpec extends FlatSpec with Matchers {
@@ -16,11 +17,37 @@ class CramDelivererSpec extends FlatSpec with Matchers {
   private val craiPath = URI.create(s"gs://bucket/$craiName")
   private val cramMd5 = Symbol("abcdefg")
 
+  private val preAdapterSummaryMetricsName = "the-preAdapterSummaryMetricsName"
+  private val preAdapterDetailMetricsName = "the-preAdapterDetailMetricsName"
+  private val alignmentSummaryMetricsName = "the-alignmentSummaryMetricsName"
+  private val duplicateMetricsName = "the-duplicateMetricsName"
+  private val fingerprintingSummaryMetricsName = "the-fingerprintSummaryMetricsName"
+  private val fingerprintingDetailMetricsName = "the-fingerprintDetailMetricsName"
+
+  private val preAdapterSummaryMetricsPath =
+    URI.create(s"gs://bucket/$preAdapterSummaryMetricsName")
+  private val preAdapterDetailMetricsPath =
+    URI.create(s"gs://bucket/$preAdapterDetailMetricsName")
+  private val alignmentSummaryMetricsPath =
+    URI.create(s"gs://bucket/$alignmentSummaryMetricsName")
+  private val duplicateMetricsPath = URI.create(s"gs://bucket/$duplicateMetricsName")
+  private val fingerprintingSummaryMetricsPath =
+    URI.create(s"gs://bucket/$fingerprintingSummaryMetricsName")
+  private val fingerprintingDetailMetricsPath =
+    URI.create(s"gs://bucket/$fingerprintingDetailMetricsName")
+
   private val metadata =
     CramMetadata(
       cramPath = Some(cramPath),
       craiPath = Some(craiPath),
-      cramMd5 = Some(cramMd5)
+      cramMd5 = Some(cramMd5),
+      preAdapterSummaryMetricsPath = Some(preAdapterSummaryMetricsPath),
+      preAdapterDetailMetricsPath = Some(preAdapterDetailMetricsPath),
+      alignmentSummaryMetricsPath = Some(alignmentSummaryMetricsPath),
+      duplicateMetricsPath = Some(duplicateMetricsPath),
+      regulatoryDesignation = Some(RegulatoryDesignation.ResearchOnly),
+      fingerprintingSummaryMetricsPath = Some(fingerprintingSummaryMetricsPath),
+      fingerprintingDetailMetricsPath = Some(fingerprintingDetailMetricsPath)
     )
   private val destination = URI.create("gs://the-destination/")
 
@@ -31,14 +58,54 @@ class CramDelivererSpec extends FlatSpec with Matchers {
 
     delivered.cramPath should be(Some(destination.resolve(cramName)))
     delivered.craiPath should be(Some(destination.resolve(craiName)))
+    delivered.preAdapterSummaryMetricsPath should be(
+      Some(destination.resolve(preAdapterSummaryMetricsName))
+    )
+    delivered.preAdapterDetailMetricsPath should be(
+      Some(destination.resolve(preAdapterDetailMetricsName))
+    )
+    delivered.alignmentSummaryMetricsPath should be(
+      Some(destination.resolve(alignmentSummaryMetricsName))
+    )
+    delivered.duplicateMetricsPath should be(
+      Some(destination.resolve(duplicateMetricsName))
+    )
+    delivered.fingerprintingSummaryMetricsPath should be(
+      Some(destination.resolve(fingerprintingSummaryMetricsName))
+    )
+    delivered.fingerprintingDetailMetricsPath should be(
+      Some(fingerprintingDetailMetricsPath)
+    )
 
     ops should contain theSameElementsAs Seq(
       MoveOp(cramPath, destination.resolve(cramName)),
       MoveOp(craiPath, destination.resolve(craiName)),
+      MoveOp(
+        preAdapterSummaryMetricsPath,
+        destination.resolve(preAdapterSummaryMetricsName)
+      ),
+      MoveOp(
+        preAdapterDetailMetricsPath,
+        destination.resolve(preAdapterDetailMetricsName)
+      ),
+      MoveOp(
+        alignmentSummaryMetricsPath,
+        destination.resolve(alignmentSummaryMetricsName)
+      ),
+      MoveOp(duplicateMetricsPath, destination.resolve(duplicateMetricsName)),
+      MoveOp(
+        fingerprintingSummaryMetricsPath,
+        destination.resolve(fingerprintingSummaryMetricsName)
+      ),
       WriteOp(
         cramMd5.name,
         destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
       )
+    )
+
+    ops should not contain MoveOp(
+      fingerprintingDetailMetricsPath,
+      destination.resolve(fingerprintingDetailMetricsName)
     )
   }
 
@@ -59,6 +126,23 @@ class CramDelivererSpec extends FlatSpec with Matchers {
       WriteOp(
         cramMd5.name,
         destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
+      ),
+      MoveOp(
+        preAdapterSummaryMetricsPath,
+        destination.resolve(preAdapterSummaryMetricsName)
+      ),
+      MoveOp(
+        preAdapterDetailMetricsPath,
+        destination.resolve(preAdapterDetailMetricsName)
+      ),
+      MoveOp(
+        alignmentSummaryMetricsPath,
+        destination.resolve(alignmentSummaryMetricsName)
+      ),
+      MoveOp(duplicateMetricsPath, destination.resolve(duplicateMetricsName)),
+      MoveOp(
+        fingerprintingSummaryMetricsPath,
+        destination.resolve(fingerprintingSummaryMetricsName)
       )
     )
   }
