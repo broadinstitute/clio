@@ -3,7 +3,7 @@ import java.net.URI
 
 import better.files.File
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, MoveOp, WriteOp}
-import org.broadinstitute.clio.transfer.model.wgscram.{CramExtensions, CramMetadata}
+import org.broadinstitute.clio.transfer.model.cram.{CramExtensions, CramMetadata}
 import org.broadinstitute.clio.util.model.RegulatoryDesignation
 
 class CramDeliverer extends MetadataMover[CramMetadata] {

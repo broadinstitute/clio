@@ -3,7 +3,7 @@ package org.broadinstitute.clio.client.metadata
 import java.net.URI
 
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{MoveOp, WriteOp}
-import org.broadinstitute.clio.transfer.model.wgscram.{CramExtensions, CramMetadata}
+import org.broadinstitute.clio.transfer.model.cram.{CramExtensions, CramMetadata}
 import org.broadinstitute.clio.util.model.RegulatoryDesignation
 import org.scalatest.{FlatSpec, Matchers}
 

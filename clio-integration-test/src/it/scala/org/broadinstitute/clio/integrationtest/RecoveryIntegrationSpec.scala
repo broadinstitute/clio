@@ -16,7 +16,7 @@ import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
-import org.broadinstitute.clio.transfer.model.wgscram.{CramKey, CramMetadata}
+import org.broadinstitute.clio.transfer.model.cram.{CramKey, CramMetadata}
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location, UpsertId}
 import org.scalatest.OptionValues
@@ -213,7 +213,7 @@ class RecoveryIntegrationSpec extends DockerIntegrationSpec with OptionValues {
 
   it should "reject queries before recovery is complete" in {
     recoverToExceptionIf[FailedResponse] {
-      runCollectJson(ClioCommand.queryWgsCramName)
+      runCollectJson(ClioCommand.queryCramName)
     }.map { err =>
       err.statusCode should be(StatusCodes.ServiceUnavailable)
     }

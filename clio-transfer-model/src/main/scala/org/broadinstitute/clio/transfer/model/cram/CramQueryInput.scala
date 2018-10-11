@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.transfer.model.wgscram
+package org.broadinstitute.clio.transfer.model.cram
 
 import java.net.URI
 import java.time.OffsetDateTime
