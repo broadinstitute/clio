@@ -1,8 +1,8 @@
-package org.broadinstitute.clio.transfer.model.wgscram
+package org.broadinstitute.clio.transfer.model.cram
 
 import org.broadinstitute.clio.transfer.model.FileExtensions
 
-/** Expected extensions for files tracked by the wgs-cram index. */
+/** Expected extensions for files tracked by the cram index. */
 object CramExtensions extends FileExtensions {
 
   /** File extension for crams. */

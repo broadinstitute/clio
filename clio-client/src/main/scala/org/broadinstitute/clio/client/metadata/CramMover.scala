@@ -2,7 +2,7 @@ package org.broadinstitute.clio.client.metadata
 import java.net.URI
 
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.MoveOp
-import org.broadinstitute.clio.transfer.model.wgscram.{CramExtensions, CramMetadata}
+import org.broadinstitute.clio.transfer.model.cram.{CramExtensions, CramMetadata}
 
 class CramMover extends MetadataMover[CramMetadata] {
   override protected def moveMetadata(

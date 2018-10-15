@@ -8,7 +8,7 @@ import org.broadinstitute.clio.client.commands.DeliverCram
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.CramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.{CramKey, CramMetadata}
+import org.broadinstitute.clio.transfer.model.cram.{CramKey, CramMetadata}
 import org.broadinstitute.clio.util.model.{DataType, Location}
 import org.scalamock.scalatest.AsyncMockFactory
 

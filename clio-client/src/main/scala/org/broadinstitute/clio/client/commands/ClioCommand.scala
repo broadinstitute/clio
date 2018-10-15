@@ -9,11 +9,7 @@ import caseapp.core.help.CommandsHelp
 import caseapp.core.commandparser.CommandParser
 import org.broadinstitute.clio.client.metadata._
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfQueryInput}
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  CramKey,
-  CramQueryInput,
-  WgsCramKey
-}
+import org.broadinstitute.clio.transfer.model.cram.{CramKey, CramQueryInput}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysQueryInput}
 
@@ -179,51 +175,6 @@ final case class PatchCram(
   maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(CramIndex)
 
-//TODO Get rid of these wgs-cram commands when they're no longer being used
-
-@CommandName(ClioCommand.addWgsCramName)
-final case class AddWgsCram(
-  @Recurse key: WgsCramKey,
-  metadataLocation: URI,
-  force: Boolean = false
-) extends AddCommand(CramIndex)
-
-@CommandName(ClioCommand.queryWgsCramName)
-final case class QueryWgsCram(
-  @Recurse queryInput: CramQueryInput,
-  includeDeleted: Boolean = false
-) extends SimpleQueryCommand(CramIndex)
-
-@CommandName(ClioCommand.rawQueryWgsCramName)
-final case class RawQueryWgsCram(
-  queryInputPath: File
-) extends RawQueryCommand(CramIndex)
-
-@CommandName(ClioCommand.moveWgsCramName)
-final case class MoveWgsCram(
-  @Recurse key: WgsCramKey,
-  destination: URI,
-  newBasename: Option[String] = None
-) extends MoveCommand(CramIndex) {
-  override val metadataMover = new CramMover
-}
-
-@CommandName(ClioCommand.deleteWgsCramName)
-final case class DeleteWgsCram(
-  @Recurse key: WgsCramKey,
-  note: String,
-  force: Boolean = false
-) extends DeleteCommand(CramIndex)
-
-@CommandName(ClioCommand.deliverWgsCramName)
-final case class DeliverWgsCram(
-  @Recurse key: WgsCramKey,
-  workspaceName: String,
-  workspacePath: URI,
-  newBasename: Option[String] = None,
-  force: Boolean = false
-) extends BackCompatibleDeliverCram
-
 // uBAM commands.
 
 @CommandName(ClioCommand.addUbamName)
@@ -340,16 +291,6 @@ object ClioCommand extends ClioParsers {
   val moveGvcfName: String = movePrefix + GvcfIndex.commandName
   val deleteGvcfName: String = deletePrefix + GvcfIndex.commandName
   val patchGvcfName: String = patchPrefix + GvcfIndex.commandName
-
-  // Names for WGS cram commands. Here for compatibility.
-  //TODO Delete these when WgsCram API is no longer used.
-  val wgsCramPrefix = "wgs-"
-  val addWgsCramName: String = addPrefix + wgsCramPrefix + CramIndex.commandName
-  val queryWgsCramName: String = simpleQueryPrefix + wgsCramPrefix + CramIndex.commandName
-  val rawQueryWgsCramName: String = rawQueryPrefix + wgsCramPrefix + CramIndex.commandName
-  val moveWgsCramName: String = movePrefix + wgsCramPrefix + CramIndex.commandName
-  val deleteWgsCramName: String = deletePrefix + wgsCramPrefix + CramIndex.commandName
-  val deliverWgsCramName: String = deliverPrefix + wgsCramPrefix + CramIndex.commandName
 
   // Names for cram commands.
   val addCramName: String = addPrefix + CramIndex.commandName

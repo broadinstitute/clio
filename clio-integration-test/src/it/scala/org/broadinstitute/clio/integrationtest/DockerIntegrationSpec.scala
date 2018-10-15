@@ -41,7 +41,6 @@ abstract class DockerIntegrationSpec
 class CoreDockerBasicSpec extends DockerIntegrationSpec with BasicTests
 class CoreDockerUbamSpec extends DockerIntegrationSpec with UbamTests
 class CoreDockerCramSpec extends DockerIntegrationSpec with CramTests
-class CoreDockerWgsCramSpec extends DockerIntegrationSpec with WgsCramTests
 class CoreDockerGvcfSpec extends DockerIntegrationSpec with GvcfTests
 class CoreDockerArraysSpec extends DockerIntegrationSpec with ArraysTests
 

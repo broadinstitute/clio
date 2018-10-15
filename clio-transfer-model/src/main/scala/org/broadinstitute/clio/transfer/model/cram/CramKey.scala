@@ -1,4 +1,4 @@
-package org.broadinstitute.clio.transfer.model.wgscram
+package org.broadinstitute.clio.transfer.model.cram
 
 import org.broadinstitute.clio.transfer.model.IndexKey
 import org.broadinstitute.clio.util.model.{DataType, Location}

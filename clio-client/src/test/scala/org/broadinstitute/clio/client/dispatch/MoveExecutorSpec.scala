@@ -14,11 +14,7 @@ import org.broadinstitute.clio.client.metadata.{CramMover, MetadataMover}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.CramIndex
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  CramExtensions,
-  CramKey,
-  CramMetadata
-}
+import org.broadinstitute.clio.transfer.model.cram.{CramExtensions, CramKey, CramMetadata}
 import org.broadinstitute.clio.util.model.{DataType, Location, UpsertId}
 import org.scalamock.scalatest.AsyncMockFactory
 

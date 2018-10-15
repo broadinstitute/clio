@@ -9,11 +9,7 @@ import org.broadinstitute.clio.transfer.model.arrays.{
   ArraysQueryInput
 }
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata, GvcfQueryInput}
-import org.broadinstitute.clio.transfer.model.wgscram.{
-  CramKey,
-  CramMetadata,
-  CramQueryInput
-}
+import org.broadinstitute.clio.transfer.model.cram.{CramKey, CramMetadata, CramQueryInput}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata, UbamQueryInput}
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation._

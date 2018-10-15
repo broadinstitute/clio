@@ -12,7 +12,7 @@ import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
   ElasticsearchUtil
 }
-import org.broadinstitute.clio.transfer.model.wgscram._
+import org.broadinstitute.clio.transfer.model.cram._
 import org.broadinstitute.clio.util.model._
 import org.scalatest.Assertion
 
