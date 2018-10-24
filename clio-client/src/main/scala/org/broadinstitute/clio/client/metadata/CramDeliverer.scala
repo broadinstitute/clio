@@ -37,7 +37,9 @@ class CramDeliverer extends MetadataMover[CramMetadata] {
       writeMd5Op.toIterable
     ).flatten
 
-    if (src.regulatoryDesignation.exists(_.equals(RegulatoryDesignation.ResearchOnly))) {
+    if (false && src.regulatoryDesignation.exists(
+          _.equals(RegulatoryDesignation.ResearchOnly)
+        )) {
       lazy val oldBaseName =
         src.cramPath.map(
           p => File(p.getPath).name.replace(CramExtensions.CramExtension, "")
