@@ -865,48 +865,65 @@ trait CramTests { self: BaseIntegrationSpec =>
     force = true
   )
 
-  it should "move files, generate an md5 file, and record the workspace name when delivering crams" in {
-    val id = randomId
-    val project = s"project$id"
-    val sample = s"sample$id"
-    val version = 3
-
-    val cramContents = s"$id --- I am a dummy cram --- $id"
-    val craiContents = s"$id --- I am a dummy crai --- $id"
-    val md5Contents = randomId
-
-    val cramName = s"$sample${CramExtensions.CramExtension}"
-    val craiName = s"$cramName${CramExtensions.CraiExtensionAddition}"
-    val md5Name = s"$cramName${CramExtensions.Md5ExtensionAddition}"
-
-    val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
-    val cramSource = rootSource / cramName
-    val craiSource = rootSource / craiName
-
-    val prefix = "new_basename_"
-    val newBasename = s"$prefix$sample"
-    val rootDestination = rootSource.parent / s"moved/$id/"
-    val cramDestination = rootDestination / s"$prefix$cramName"
-    val craiDestination = rootDestination / s"$prefix$craiName"
-    val md5Destination = rootDestination / s"$prefix$md5Name"
-
-    val key = CramKey(Location.GCP, project, DataType.WGS, sample, version)
-    val metadata = CramMetadata(
-      cramPath = Some(cramSource.uri),
-      craiPath = Some(craiSource.uri),
-      cramMd5 = Some(Symbol(md5Contents)),
-      documentStatus = Some(DocumentStatus.Normal)
+  def testDeliverMetrics(
+    deliverMetrics: Boolean,
+    regulatoryDesignation: RegulatoryDesignation
+  ): Unit = {
+    val metricsDelivered = deliverMetrics && regulatoryDesignation.equals(
+      RegulatoryDesignation.ResearchOnly
     )
+    it should s"move files, generate an md5 file, ${if (metricsDelivered) "" else "not "}" +
+      s"deliver metrics, and record the workspace name when delivering crams " +
+      s"($regulatoryDesignation, deliverMetrics=$deliverMetrics)" in {
+      val id = randomId
+      val project = s"project$id"
+      val sample = s"sample$id"
+      val version = 3
 
-    val workspaceName = s"$id-TestWorkspace-$id"
+      val cramContents = s"$id --- I am a dummy cram --- $id"
+      val craiContents = s"$id --- I am a dummy crai --- $id"
+      val md5Contents = randomId
+      val crosscheckContents = s"$id --- I am a dummy crosscheck --- $id"
 
-    val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
-      case (source, contents) => source.write(contents)
-    }
-    val result = for {
-      _ <- runUpsertCram(key, metadata)
-      _ <- runIgnore(
-        ClioCommand.deliverCramName,
+      val cramName = s"$sample${CramExtensions.CramExtension}"
+      val craiName = s"$cramName${CramExtensions.CraiExtensionAddition}"
+      val md5Name = s"$cramName${CramExtensions.Md5ExtensionAddition}"
+      val crosscheckName = s"$cramName.crosscheck"
+
+      val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+      val cramSource = rootSource / cramName
+      val craiSource = rootSource / craiName
+      val crosscheckSource = rootSource / crosscheckName
+
+      val prefix = "new_basename_"
+      val newBasename = s"$prefix$sample"
+      val rootDestination = rootSource.parent / s"moved/$id/"
+      val cramDestination = rootDestination / s"$prefix$cramName"
+      val craiDestination = rootDestination / s"$prefix$craiName"
+      val md5Destination = rootDestination / s"$prefix$md5Name"
+      val crosscheckDestination = rootDestination / s"$prefix$crosscheckName"
+
+      val key = CramKey(Location.GCP, project, DataType.WGS, sample, version)
+      val metadata = CramMetadata(
+        cramPath = Some(cramSource.uri),
+        craiPath = Some(craiSource.uri),
+        cramMd5 = Some(Symbol(md5Contents)),
+        documentStatus = Some(DocumentStatus.Normal),
+        crosscheckPath = Some(crosscheckSource.uri),
+        regulatoryDesignation = Some(regulatoryDesignation)
+      )
+
+      val workspaceName = s"$id-TestWorkspace-$id"
+
+      val _ = Seq(
+        (cramSource, cramContents),
+        (craiSource, craiContents),
+        (crosscheckSource, crosscheckContents)
+      ).map {
+        case (source, contents) => source.write(contents)
+      }
+
+      val commandArgs = Seq(
         "--location",
         Location.GCP.entryName,
         "--project",
@@ -923,48 +940,75 @@ trait CramTests { self: BaseIntegrationSpec =>
         rootDestination.uri.toString,
         "--new-basename",
         newBasename
-      )
-      outputs <- runCollectJson(
-        ClioCommand.queryCramName,
-        "--workspace-name",
-        workspaceName
-      )
-    } yield {
-      Seq(cramSource, craiSource).foreach(_ shouldNot exist)
+      ) ++ (if (metricsDelivered) Some("--deliver-sample-level-metrics") else None)
+      val result = for {
+        _ <- runUpsertCram(key, metadata)
+        _ <- runIgnore(ClioCommand.deliverCramName, commandArgs: _*)
+        outputs <- runCollectJson(
+          ClioCommand.queryCramName,
+          "--workspace-name",
+          workspaceName
+        )
+      } yield {
+        (Seq(cramSource, craiSource) ++ (if (metricsDelivered)
+                                           Some(crosscheckSource)
+                                         else Some(crosscheckDestination)))
+          .foreach(_ shouldNot exist)
 
-      Seq(cramDestination, craiDestination, md5Destination).foreach(_ should exist)
+        (Seq(cramDestination, craiDestination, md5Destination) ++ (if (metricsDelivered)
+                                                                     Some(
+                                                                       crosscheckDestination
+                                                                     )
+                                                                   else
+                                                                     Some(
+                                                                       crosscheckSource
+                                                                     )))
+          .foreach(_ should exist)
 
-      Seq(
-        (cramDestination, cramContents),
-        (craiDestination, craiContents),
-        (md5Destination, md5Contents)
-      ).foreach {
-        case (destination, contents) =>
-          destination.contentAsString should be(contents)
+        Seq(
+          (cramDestination, cramContents),
+          (craiDestination, craiContents),
+          (md5Destination, md5Contents),
+          (
+            if (metricsDelivered) crosscheckDestination else crosscheckSource,
+            crosscheckContents
+          )
+        ).foreach {
+          case (destination, contents) =>
+            destination.contentAsString should be(contents)
+        }
+
+        outputs should contain only expectedMerge(
+          key,
+          metadata.copy(
+            workspaceName = Some(workspaceName),
+            cramPath = Some(cramDestination.uri),
+            craiPath = Some(craiDestination.uri),
+            crosscheckPath = Some(
+              (if (metricsDelivered) crosscheckDestination else crosscheckSource).uri
+            )
+          )
+        )
       }
 
-      outputs should contain only expectedMerge(
-        key,
-        metadata.copy(
-          workspaceName = Some(workspaceName),
-          cramPath = Some(cramDestination.uri),
-          craiPath = Some(craiDestination.uri)
-        )
-      )
-    }
-
-    result.andThen {
-      case _ => {
-        val _ = Seq(
-          cramSource,
-          cramDestination,
-          craiSource,
-          craiDestination,
-          md5Destination
-        ).map(_.delete(swallowIOExceptions = true))
+      result.andThen {
+        case _ => {
+          val _ = Seq(
+            cramSource,
+            cramDestination,
+            craiSource,
+            craiDestination,
+            md5Destination,
+            crosscheckSource,
+            crosscheckDestination
+          ).map(_.delete(swallowIOExceptions = true))
+        }
       }
     }
   }
+
+  RegulatoryDesignation.values.foreach(it should behave like testDeliverMetrics(true, _))
+  RegulatoryDesignation.values.foreach(it should behave like testDeliverMetrics(false, _))
 
   it should "not fail delivery if the cram is already in its target location" in {
     val project = s"project$randomId"

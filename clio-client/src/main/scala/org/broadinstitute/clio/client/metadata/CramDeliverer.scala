@@ -10,7 +10,8 @@ class CramDeliverer extends MetadataMover[CramMetadata] {
   override protected def moveMetadata(
     src: CramMetadata,
     destination: URI,
-    newBasename: Option[String]
+    newBasename: Option[String],
+    deliverMetrics: Boolean
   ): (CramMetadata, Iterable[IoOp]) = {
     val movedCram = src.cramPath.map(
       MetadataMover
@@ -37,7 +38,8 @@ class CramDeliverer extends MetadataMover[CramMetadata] {
       writeMd5Op.toIterable
     ).flatten
 
-    if (src.regulatoryDesignation.exists(_.equals(RegulatoryDesignation.ResearchOnly))) {
+    if (deliverMetrics &&
+        src.regulatoryDesignation.exists(_.equals(RegulatoryDesignation.ResearchOnly))) {
       lazy val oldBaseName =
         src.cramPath.map(
           p => File(p.getPath).name.replace(CramExtensions.CramExtension, "")

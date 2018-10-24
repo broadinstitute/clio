@@ -17,12 +17,12 @@ class CramDelivererSpec extends FlatSpec with Matchers {
   private val craiPath = URI.create(s"gs://bucket/$craiName")
   private val cramMd5 = Symbol("abcdefg")
 
-  private val preAdapterSummaryMetricsName = "the-preAdapterSummaryMetricsName"
-  private val preAdapterDetailMetricsName = "the-preAdapterDetailMetricsName"
-  private val alignmentSummaryMetricsName = "the-alignmentSummaryMetricsName"
-  private val duplicateMetricsName = "the-duplicateMetricsName"
-  private val fingerprintingSummaryMetricsName = "the-fingerprintSummaryMetricsName"
-  private val fingerprintingDetailMetricsName = "the-fingerprintDetailMetricsName"
+  private val preAdapterSummaryMetricsName = "the-cram-preAdapterSummaryMetricsName"
+  private val preAdapterDetailMetricsName = "the-cram-preAdapterDetailMetricsName"
+  private val alignmentSummaryMetricsName = "the-cram-alignmentSummaryMetricsName"
+  private val duplicateMetricsName = "the-cram-duplicateMetricsName"
+  private val fingerprintingSummaryMetricsName = "the-cram-fingerprintSummaryMetricsName"
+  private val fingerprintingDetailMetricsName = "the-cram-fingerprintDetailMetricsName"
 
   private val preAdapterSummaryMetricsPath =
     URI.create(s"gs://bucket/$preAdapterSummaryMetricsName")
@@ -53,8 +53,9 @@ class CramDelivererSpec extends FlatSpec with Matchers {
 
   private val deliverer = new CramDeliverer
 
-  it should "generate ops to move the cram & crai, and write the cram md5" in {
-    val (delivered, ops) = deliverer.moveInto(metadata, destination)
+  it should "generate ops to move the cram, crai, and metrics, and write the cram md5" in {
+    val (delivered, ops) =
+      deliverer.moveInto(metadata, destination, deliverMetrics = true)
 
     delivered.cramPath should be(Some(destination.resolve(cramName)))
     delivered.craiPath should be(Some(destination.resolve(craiName)))
@@ -109,16 +110,30 @@ class CramDelivererSpec extends FlatSpec with Matchers {
     )
   }
 
-  it should "use the new basename for the md5 file, if given" in {
-    val basename = "the-new-basename"
-
-    val (delivered, ops) = deliverer.moveInto(metadata, destination, Some(basename))
-
-    val cramName = s"$basename${CramExtensions.CramExtension}"
-    val craiName = s"$cramName${CramExtensions.CraiExtensionAddition}"
+  it should "generate ops to move the cram, crai, and write the cram md5, but not deliver metrics" in {
+    val (delivered, ops) =
+      deliverer.moveInto(metadata, destination, deliverMetrics = false)
 
     delivered.cramPath should be(Some(destination.resolve(cramName)))
     delivered.craiPath should be(Some(destination.resolve(craiName)))
+    delivered.preAdapterSummaryMetricsPath should be(
+      Some(preAdapterSummaryMetricsPath)
+    )
+    delivered.preAdapterDetailMetricsPath should be(
+      Some(preAdapterDetailMetricsPath)
+    )
+    delivered.alignmentSummaryMetricsPath should be(
+      Some(alignmentSummaryMetricsPath)
+    )
+    delivered.duplicateMetricsPath should be(
+      Some(duplicateMetricsPath)
+    )
+    delivered.fingerprintingSummaryMetricsPath should be(
+      Some(fingerprintingSummaryMetricsPath)
+    )
+    delivered.fingerprintingDetailMetricsPath should be(
+      Some(fingerprintingDetailMetricsPath)
+    )
 
     ops should contain theSameElementsAs Seq(
       MoveOp(cramPath, destination.resolve(cramName)),
@@ -126,6 +141,13 @@ class CramDelivererSpec extends FlatSpec with Matchers {
       WriteOp(
         cramMd5.name,
         destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
+      )
+    )
+
+    ops should contain noElementsOf Seq(
+      MoveOp(
+        fingerprintingDetailMetricsPath,
+        destination.resolve(fingerprintingDetailMetricsName)
       ),
       MoveOp(
         preAdapterSummaryMetricsPath,
@@ -143,6 +165,56 @@ class CramDelivererSpec extends FlatSpec with Matchers {
       MoveOp(
         fingerprintingSummaryMetricsPath,
         destination.resolve(fingerprintingSummaryMetricsName)
+      )
+    )
+  }
+
+  it should "use the new basename for the md5 file, if given" in {
+    val basename = "the-new-basename"
+
+    val (delivered, ops) =
+      deliverer.moveInto(metadata, destination, Some(basename), deliverMetrics = true)
+
+    val cramName = s"$basename${CramExtensions.CramExtension}"
+    val craiName = s"$cramName${CramExtensions.CraiExtensionAddition}"
+
+    delivered.cramPath should be(Some(destination.resolve(cramName)))
+    delivered.craiPath should be(Some(destination.resolve(craiName)))
+
+    ops should contain theSameElementsAs Seq(
+      MoveOp(cramPath, destination.resolve(cramName)),
+      MoveOp(craiPath, destination.resolve(craiName)),
+      WriteOp(
+        cramMd5.name,
+        destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
+      ),
+      MoveOp(
+        preAdapterSummaryMetricsPath,
+        destination.resolve(
+          preAdapterSummaryMetricsName.replace("the-cram", "the-new-basename")
+        )
+      ),
+      MoveOp(
+        preAdapterDetailMetricsPath,
+        destination.resolve(
+          preAdapterDetailMetricsName.replace("the-cram", "the-new-basename")
+        )
+      ),
+      MoveOp(
+        alignmentSummaryMetricsPath,
+        destination.resolve(
+          alignmentSummaryMetricsName.replace("the-cram", "the-new-basename")
+        )
+      ),
+      MoveOp(
+        duplicateMetricsPath,
+        destination.resolve(duplicateMetricsName.replace("the-cram", "the-new-basename"))
+      ),
+      MoveOp(
+        fingerprintingSummaryMetricsPath,
+        destination.resolve(
+          fingerprintingSummaryMetricsName.replace("the-cram", "the-new-basename")
+        )
       )
     )
   }
