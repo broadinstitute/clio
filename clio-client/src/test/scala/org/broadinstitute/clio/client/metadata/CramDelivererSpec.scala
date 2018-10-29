@@ -51,10 +51,12 @@ class CramDelivererSpec extends FlatSpec with Matchers {
     )
   private val destination = URI.create("gs://the-destination/")
 
-  private val deliverer = new CramDeliverer
+  private val delivererWithMetrics = CramDeliverer(deliverSampleMetrics = true)
 
-  it should "generate ops to move the cram & crai, and write the cram md5" in {
-    val (delivered, ops) = deliverer.moveInto(metadata, destination)
+  private val delivererNoMetrics = CramDeliverer(deliverSampleMetrics = false)
+
+  it should "generate ops to move the cram & crai, write the cram md5 and copy metrics files" in {
+    val (delivered, ops) = delivererWithMetrics.moveInto(metadata, destination)
 
     delivered.cramPath should be(Some(destination.resolve(cramName)))
     delivered.craiPath should be(Some(destination.resolve(craiName)))
@@ -109,10 +111,11 @@ class CramDelivererSpec extends FlatSpec with Matchers {
     )
   }
 
-  it should "use the new basename for the md5 file, if given" in {
+  it should "use the new basename for the md5 file, if given, and copy metrics files" in {
     val basename = "the-new-basename"
 
-    val (delivered, ops) = deliverer.moveInto(metadata, destination, Some(basename))
+    val (delivered, ops) =
+      delivererWithMetrics.moveInto(metadata, destination, Some(basename))
 
     val cramName = s"$basename${CramExtensions.CramExtension}"
     val craiName = s"$cramName${CramExtensions.CraiExtensionAddition}"
@@ -146,4 +149,42 @@ class CramDelivererSpec extends FlatSpec with Matchers {
       )
     )
   }
+  it should "generate ops to move the cram & crai, and write the cram md5" in {
+    val (delivered, ops) = delivererNoMetrics.moveInto(metadata, destination)
+
+    delivered.cramPath should be(Some(destination.resolve(cramName)))
+    delivered.craiPath should be(Some(destination.resolve(craiName)))
+
+    ops should contain theSameElementsAs Seq(
+      MoveOp(cramPath, destination.resolve(cramName)),
+      MoveOp(craiPath, destination.resolve(craiName)),
+      WriteOp(
+        cramMd5.name,
+        destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
+      )
+    )
+  }
+
+  it should "use the new basename for the md5 file, if given" in {
+    val basename = "the-new-basename"
+
+    val (delivered, ops) =
+      delivererNoMetrics.moveInto(metadata, destination, Some(basename))
+
+    val cramName = s"$basename${CramExtensions.CramExtension}"
+    val craiName = s"$cramName${CramExtensions.CraiExtensionAddition}"
+
+    delivered.cramPath should be(Some(destination.resolve(cramName)))
+    delivered.craiPath should be(Some(destination.resolve(craiName)))
+
+    ops should contain theSameElementsAs Seq(
+      MoveOp(cramPath, destination.resolve(cramName)),
+      MoveOp(craiPath, destination.resolve(craiName)),
+      WriteOp(
+        cramMd5.name,
+        destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
+      )
+    )
+  }
+
 }

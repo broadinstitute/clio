@@ -4,9 +4,9 @@ import java.net.URI
 import better.files.File
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, MoveOp, WriteOp}
 import org.broadinstitute.clio.transfer.model.cram.{CramExtensions, CramMetadata}
-import org.broadinstitute.clio.util.model.RegulatoryDesignation
 
-class CramDeliverer extends MetadataMover[CramMetadata] {
+case class CramDeliverer(deliverSampleMetrics: Boolean)
+    extends MetadataMover[CramMetadata] {
   override protected def moveMetadata(
     src: CramMetadata,
     destination: URI,
@@ -37,7 +37,7 @@ class CramDeliverer extends MetadataMover[CramMetadata] {
       writeMd5Op.toIterable
     ).flatten
 
-    if (src.regulatoryDesignation.exists(_.equals(RegulatoryDesignation.ResearchOnly))) {
+    if (deliverSampleMetrics) {
       lazy val oldBaseName =
         src.cramPath.map(
           p => File(p.getPath).name.replace(CramExtensions.CramExtension, "")
