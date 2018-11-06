@@ -472,6 +472,8 @@ trait CramTests { self: BaseIntegrationSpec =>
       createMockFile(rootSrc, sample, CramExtensions.PreBqsrSelfSMExtension)
     val (preBqsrDepthSmSrc, preBqsrDepthSmContents) =
       createMockFile(rootSrc, sample, CramExtensions.PreBqsrDepthSMExtension)
+    val (hybridSelectionMetricsSrc, hybridSelectionMetricsContents) =
+      createMockFile(rootSrc, sample, CramExtensions.HybridSelectionMetricsExtension)
     val (insertSizeMetricsSrc, insertSizeMetricsContents) =
       createMockFile(rootSrc, readgroup, ".insert_size_metrics")
     val (insertSizeHistogramSrc, insertSizeHistogramContents) =
@@ -491,6 +493,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     val fingerprintDest = rootDest / s"$endBasename${CramExtensions.FingerprintVcfExtension}"
     val fingerprintSummaryMetricsDest = rootDest / s"$endBasename${CramExtensions.FingerprintingSummaryMetricsExtension}"
     val fingerprintDetailMetricsDest = rootDest / s"$endBasename${CramExtensions.FingerprintingDetailMetricsExtension}"
+    val hybridSelectionMetricsDest = rootDest / s"$endBasename${CramExtensions.HybridSelectionMetricsExtension}"
     val preAdapterSummaryMetricsDest = rootDest / s"$endBasename${CramExtensions.PreAdapterSummaryMetricsExtension}"
     val preAdapterDetailMetricsDest = rootDest / s"$endBasename${CramExtensions.PreAdapterDetailMetricsExtension}"
     val preBqsrSelfSmDest = rootDest / s"$endBasename${CramExtensions.PreBqsrSelfSMExtension}"
@@ -511,6 +514,7 @@ trait CramTests { self: BaseIntegrationSpec =>
       fingerprintPath = Some(fingerprintSrc.uri),
       fingerprintingSummaryMetricsPath = Some(fingerprintSummaryMetricsSrc.uri),
       fingerprintingDetailMetricsPath = Some(fingerprintDetailMetricsSrc.uri),
+      hybridSelectionMetricsPath = Some(hybridSelectionMetricsSrc.uri),
       preAdapterSummaryMetricsPath = Some(preAdapterSummaryMetricsSrc.uri),
       preAdapterDetailMetricsPath = Some(preAdapterDetailMetricsSrc.uri),
       preBqsrSelfSmPath = Some(preBqsrSelfSmSrc.uri),
@@ -557,6 +561,7 @@ trait CramTests { self: BaseIntegrationSpec =>
         fingerprintSrc,
         fingerprintSummaryMetricsSrc,
         fingerprintDetailMetricsSrc,
+        hybridSelectionMetricsSrc,
         preAdapterSummaryMetricsSrc,
         preAdapterDetailMetricsSrc,
         preBqsrSelfSmSrc,
@@ -577,6 +582,7 @@ trait CramTests { self: BaseIntegrationSpec =>
         fingerprintDest,
         fingerprintSummaryMetricsDest,
         fingerprintDetailMetricsDest,
+        hybridSelectionMetricsDest,
         preAdapterSummaryMetricsDest,
         preAdapterDetailMetricsDest,
         preBqsrSelfSmDest,
@@ -597,6 +603,7 @@ trait CramTests { self: BaseIntegrationSpec =>
         (fingerprintDest, fingerprintContents),
         (fingerprintSummaryMetricsDest, fingerprintingSummaryMetricsContents),
         (fingerprintDetailMetricsDest, fingerprintingDetailMetricsContents),
+        (hybridSelectionMetricsDest, hybridSelectionMetricsContents),
         (preAdapterSummaryMetricsDest, preAdapterSummaryMetricsContents),
         (preAdapterDetailMetricsDest, preAdapterDetailMetricsContents),
         (preBqsrSelfSmDest, preBqsrSelfSmContents),
@@ -635,6 +642,8 @@ trait CramTests { self: BaseIntegrationSpec =>
           fingerprintSummaryMetricsDest,
           fingerprintDetailMetricsSrc,
           fingerprintDetailMetricsDest,
+          hybridSelectionMetricsSrc,
+          hybridSelectionMetricsDest,
           preAdapterSummaryMetricsSrc,
           preAdapterSummaryMetricsDest,
           preAdapterDetailMetricsSrc,

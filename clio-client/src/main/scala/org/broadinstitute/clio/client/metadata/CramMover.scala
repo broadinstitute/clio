@@ -142,6 +142,13 @@ class CramMover extends MetadataMover[CramMetadata] {
           newBasename.map(_ + CramExtensions.GcBiasSummaryMetricsExtension)
         )
       ),
+      hybridSelectionMetricsPath = src.hybridSelectionMetricsPath.map(
+        buildFilePath(
+          _,
+          destination,
+          newBasename.map(_ + CramExtensions.HybridSelectionMetricsExtension)
+        )
+      ),
       insertSizeHistogramPath = src.insertSizeHistogramPath.map(
         buildFilePath(
           _,
@@ -258,6 +265,7 @@ class CramMover extends MetadataMover[CramMetadata] {
       _.gcBiasPdfPath,
       _.gcBiasDetailMetricsPath,
       _.gcBiasSummaryMetricsPath,
+      _.hybridSelectionMetricsPath,
       _.insertSizeHistogramPath,
       _.insertSizeMetricsPath,
       _.qualityDistributionPdfPath,

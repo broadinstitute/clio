@@ -60,6 +60,8 @@ object CramExtensions extends FileExtensions {
 
   val GcBiasDetailMetricsExtension = ".gc_bias.detail_metrics"
 
+  val HybridSelectionMetricsExtension = ".hybrid_selection_metrics"
+
   val InsertSizeHistogramPdfExtension = ".insert_size_histogram.pdf"
 
   val InsertSizeMetricsExtension = ".insert_size_metrics"
