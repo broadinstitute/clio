@@ -71,9 +71,6 @@ sealed abstract class PatchCommand[CI <: ClioIndex](val index: CI) extends ClioC
   def maxParallelUpserts: Int
 }
 
-sealed abstract class BackCompatibleDeliverCram extends DeliverCommand(CramIndex) {
-  override val metadataMover = new CramDeliverer
-}
 // Generic commands.
 
 @CommandName(ClioCommand.getServerHealthName)
@@ -166,8 +163,11 @@ final case class DeliverCram(
   workspaceName: String,
   workspacePath: URI,
   newBasename: Option[String] = None,
-  force: Boolean = false
-) extends BackCompatibleDeliverCram
+  force: Boolean = false,
+  deliverSampleMetrics: Boolean = false
+) extends DeliverCommand(CramIndex) {
+  override val metadataMover = CramDeliverer(deliverSampleMetrics)
+}
 
 @CommandName(ClioCommand.patchCramName)
 final case class PatchCram(
