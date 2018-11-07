@@ -46,6 +46,7 @@ case class CramMetadata(
   gcBiasPdfPath: Option[URI] = None,
   gcBiasSummaryMetricsPath: Option[URI] = None,
   gcBiasDetailMetricsPath: Option[URI] = None,
+  hybridSelectionMetricsPath: Option[URI] = None,
   insertSizeHistogramPath: Option[URI] = None,
   insertSizeMetricsPath: Option[URI] = None,
   qualityDistributionPdfPath: Option[URI] = None,

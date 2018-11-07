@@ -76,6 +76,7 @@ case class CramDeliverer(deliverSampleMetrics: Boolean)
         duplicateMetricsPath = makeDestMetrics(src.duplicateMetricsPath),
         gcBiasSummaryMetricsPath = makeDestMetrics(src.gcBiasSummaryMetricsPath),
         gcBiasDetailMetricsPath = makeDestMetrics(src.gcBiasDetailMetricsPath),
+        hybridSelectionMetricsPath = makeDestMetrics(src.hybridSelectionMetricsPath),
         insertSizeMetricsPath = makeDestMetrics(src.insertSizeMetricsPath),
         qualityDistributionMetricsPath =
           makeDestMetrics(src.qualityDistributionMetricsPath),
