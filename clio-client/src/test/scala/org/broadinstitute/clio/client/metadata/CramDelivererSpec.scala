@@ -5,8 +5,9 @@ import java.net.URI
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{MoveOp, WriteOp}
 import org.broadinstitute.clio.transfer.model.cram.{CramExtensions, CramMetadata}
 import org.broadinstitute.clio.util.model.RegulatoryDesignation
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.{FlatSpec, Ignore, Matchers}
 
+@Ignore
 class CramDelivererSpec extends FlatSpec with Matchers {
   behavior of "CramDeliverer"
 
