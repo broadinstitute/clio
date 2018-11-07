@@ -865,7 +865,10 @@ trait CramTests { self: BaseIntegrationSpec =>
     force = true
   )
 
-  it should "move files, generate an md5 file, and record the workspace name when delivering crams" in {
+  def testDeliverMetrics(
+    deliverMetrics: Boolean,
+    regulatoryDesignation: RegulatoryDesignation
+  ): Future[Assertion] = {
     val id = randomId
     val project = s"project$id"
     val sample = s"sample$id"
@@ -874,14 +877,17 @@ trait CramTests { self: BaseIntegrationSpec =>
     val cramContents = s"$id --- I am a dummy cram --- $id"
     val craiContents = s"$id --- I am a dummy crai --- $id"
     val md5Contents = randomId
+    val crosscheckContents = s"$id --- I am a dummy crosscheck --- $id"
 
     val cramName = s"$sample${CramExtensions.CramExtension}"
     val craiName = s"$cramName${CramExtensions.CraiExtensionAddition}"
     val md5Name = s"$cramName${CramExtensions.Md5ExtensionAddition}"
+    val crosscheckName = s"$cramName.crosscheck"
 
     val rootSource = rootTestStorageDir / s"cram/$project/$sample/v$version/"
     val cramSource = rootSource / cramName
     val craiSource = rootSource / craiName
+    val crosscheckSource = rootSource / crosscheckName
 
     val prefix = "new_basename_"
     val newBasename = s"$prefix$sample"
@@ -889,55 +895,78 @@ trait CramTests { self: BaseIntegrationSpec =>
     val cramDestination = rootDestination / s"$prefix$cramName"
     val craiDestination = rootDestination / s"$prefix$craiName"
     val md5Destination = rootDestination / s"$prefix$md5Name"
+    val crosscheckDestination = rootDestination / s"$prefix$crosscheckName"
 
     val key = CramKey(Location.GCP, project, DataType.WGS, sample, version)
     val metadata = CramMetadata(
       cramPath = Some(cramSource.uri),
       craiPath = Some(craiSource.uri),
       cramMd5 = Some(Symbol(md5Contents)),
-      documentStatus = Some(DocumentStatus.Normal)
+      documentStatus = Some(DocumentStatus.Normal),
+      crosscheckPath = Some(crosscheckSource.uri),
+      regulatoryDesignation = Some(regulatoryDesignation)
     )
 
     val workspaceName = s"$id-TestWorkspace-$id"
 
-    val _ = Seq((cramSource, cramContents), (craiSource, craiContents)).map {
+    val _ = Seq(
+      (cramSource, cramContents),
+      (craiSource, craiContents),
+      (crosscheckSource, crosscheckContents)
+    ).map {
       case (source, contents) => source.write(contents)
     }
+
+    val commandArgs = Seq(
+      "--location",
+      Location.GCP.entryName,
+      "--project",
+      project,
+      "--data-type",
+      DataType.WGS.entryName,
+      "--sample-alias",
+      sample,
+      "--version",
+      version.toString,
+      "--workspace-name",
+      workspaceName,
+      "--workspace-path",
+      rootDestination.uri.toString,
+      "--new-basename",
+      newBasename
+    ) ++ (if (deliverMetrics) Some("--deliver-sample-metrics") else None)
     val result = for {
       _ <- runUpsertCram(key, metadata)
-      _ <- runIgnore(
-        ClioCommand.deliverCramName,
-        "--location",
-        Location.GCP.entryName,
-        "--project",
-        project,
-        "--data-type",
-        DataType.WGS.entryName,
-        "--sample-alias",
-        sample,
-        "--version",
-        version.toString,
-        "--workspace-name",
-        workspaceName,
-        "--workspace-path",
-        rootDestination.uri.toString,
-        "--new-basename",
-        newBasename
-      )
+      _ <- runIgnore(ClioCommand.deliverCramName, commandArgs: _*)
       outputs <- runCollectJson(
         ClioCommand.queryCramName,
         "--workspace-name",
         workspaceName
       )
     } yield {
-      Seq(cramSource, craiSource).foreach(_ shouldNot exist)
+      (Seq(cramSource, craiSource) ++ (if (deliverMetrics)
+                                         Some(crosscheckSource)
+                                       else Some(crosscheckDestination)))
+        .foreach(_ shouldNot exist)
 
-      Seq(cramDestination, craiDestination, md5Destination).foreach(_ should exist)
+      (Seq(cramDestination, craiDestination, md5Destination) ++ (if (deliverMetrics)
+                                                                   Some(
+                                                                     crosscheckDestination
+                                                                   )
+                                                                 else
+                                                                   Some(
+                                                                     crosscheckSource
+                                                                   )))
+        .foreach(_ should exist)
 
       Seq(
         (cramDestination, cramContents),
         (craiDestination, craiContents),
-        (md5Destination, md5Contents)
+        (md5Destination, md5Contents),
+        (
+          if (deliverMetrics) crosscheckDestination else crosscheckSource,
+          crosscheckContents
+        )
       ).foreach {
         case (destination, contents) =>
           destination.contentAsString should be(contents)
@@ -948,7 +977,10 @@ trait CramTests { self: BaseIntegrationSpec =>
         metadata.copy(
           workspaceName = Some(workspaceName),
           cramPath = Some(cramDestination.uri),
-          craiPath = Some(craiDestination.uri)
+          craiPath = Some(craiDestination.uri),
+          crosscheckPath = Some(
+            (if (deliverMetrics) crosscheckDestination else crosscheckSource).uri
+          )
         )
       )
     }
@@ -960,9 +992,35 @@ trait CramTests { self: BaseIntegrationSpec =>
           cramDestination,
           craiSource,
           craiDestination,
-          md5Destination
+          md5Destination,
+          crosscheckSource,
+          crosscheckDestination
         ).map(_.delete(swallowIOExceptions = true))
       }
+    }
+  }
+
+  RegulatoryDesignation.values.foreach(
+    designation ⇒
+      if (designation.isClinical) {
+        it should s"throw an exception when delivering metrics and designation is $designation" in {
+          recoverToSucceededIf[Exception] {
+            testDeliverMetrics(true, designation)
+          }
+        }
+      } else {
+        it should s"move files, generate an md5 file, " +
+          s"deliver metrics, and record the workspace name when delivering crams " +
+          s"($designation, deliverMetrics=true)" in {
+          testDeliverMetrics(true, designation)
+        }
+    }
+  )
+  RegulatoryDesignation.values.foreach { designation ⇒
+    it should s"move files, generate an md5 file, not " +
+      s"deliver metrics, and record the workspace name when delivering crams " +
+      s"($designation, deliverMetrics=false)" in {
+      testDeliverMetrics(false, designation)
     }
   }
 

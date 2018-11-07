@@ -1,4 +1,5 @@
 package org.broadinstitute.clio.client.metadata
+
 import java.net.URI
 
 import better.files.File
@@ -38,6 +39,11 @@ case class CramDeliverer(deliverSampleMetrics: Boolean)
     ).flatten
 
     if (deliverSampleMetrics) {
+      if (src.regulatoryDesignation.exists(_.isClinical)) {
+        throw new RuntimeException(
+          s"Cannot delivery sample level metrics for clinical sample $src"
+        )
+      }
       lazy val oldBaseName =
         src.cramPath.map(
           p => File(p.getPath).name.replace(CramExtensions.CramExtension, "")
