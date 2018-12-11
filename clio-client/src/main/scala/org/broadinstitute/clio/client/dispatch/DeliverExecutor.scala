@@ -32,7 +32,7 @@ class DeliverExecutor[CI <: DeliverableIndex](
 
     baseStream.flatMapConcat { metadata =>
       metadata.workspaceName
-        .filterNot(n => deliverCommand.force || n == newWorkspace)
+        .filterNot(n => deliverCommand.force || n.isEmpty || n == newWorkspace)
         .fold(Source.single(metadata)) { existingWorkspace =>
           Source.failed(
             new UnsupportedOperationException(
