@@ -77,7 +77,6 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
     *
     * @param patchMetadataJson The new metadata to insert into the index
     * @param documentJson The old document to insert the metadata into
-    *
     * @return An optional pair of key to new-metadata-to-upsert for that key
     */
   private def mergeMetadata(
@@ -97,6 +96,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
 
   /**
     * Get a IndexKey from a json document returned from Elasticsearch
+    *
     * @param json document of both key and metadata fields
     * @return An IndexKey that identifies the document
     */
@@ -119,6 +119,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
 
   /**
     * Get the metadata fields only from a json document returned from Elasticseach
+    *
     * @param json document of both key and metadata fields
     * @return a json with only the metadata fields
     */

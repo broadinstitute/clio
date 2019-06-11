@@ -163,7 +163,6 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactor
       .readMetadata(UbamIndex)(metadataFile.uri)
       .map { readMetadata =>
         readMetadata should be(metadata)
-
       }
       .runWith(Sink.head)
   }
