@@ -36,7 +36,7 @@ object Dependencies {
   private val SwaggerUi = "3.1.5"
   private val TestContainersScalaVersion = "0.19.0"
   private val TypesafeConfigVersion = "1.3.3"
-  private val VaultJavaDriverVersion = "3.1.0"
+  private val VaultJavaDriverVersion = "4.0.0"
 
   /** Version of Scala to build Clio with. */
   val ScalaVersion = "2.12.6"

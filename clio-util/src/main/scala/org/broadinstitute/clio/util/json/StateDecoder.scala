@@ -17,7 +17,6 @@ import shapeless.labelled._
   * Also based on examples from [[https://github.com/underscoreio/shapeless-guide Shapeless]].
   *
   * @tparam A The type decoded by state.
-  *
   * @see [[org.broadinstitute.clio.util.generic.FieldMapper]]
   */
 trait StateDecoder[A] {

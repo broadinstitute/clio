@@ -58,7 +58,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
   lazy implicit val m: Materializer = ActorMaterializer()
 
   /** URL of vault server to use when getting bearer tokens for service accounts. */
-  private val vaultUrl = "https://clotho.broadinstitute.org:8200/"
+  private val vaultUrl = "https://clotho.broadinstitute.org:8200"
 
   /** Path in vault to the service account JSON to use in testing. */
   private val vaultPath = "secret/dsde/gotc/test/clio/clio-account.json"
@@ -78,6 +78,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
 
     val vaultConfig = new VaultConfig()
       .address(vaultUrl)
+      .engineVersion(1)
       .token(vaultToken)
       .build()
 
