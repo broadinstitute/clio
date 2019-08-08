@@ -84,6 +84,9 @@ object ElasticsearchFieldMapper extends IntEnum[ElasticsearchFieldMapper] {
           value =>
             queryStringQuery(s""""${value.asInstanceOf[Symbol].name}"""")
               .defaultField(fieldName)
+        case tpe if is[EnumEntry](tpe) =>
+          value =>
+            queryStringQuery(s""""${value.asInstanceOf[EnumEntry].entryName}"""")
         case _ =>
           value =>
             queryStringQuery(s""""$value"""").defaultField(fieldName)

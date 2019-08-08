@@ -224,6 +224,47 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
+  it should "query crams by regulatory designation" in {
+    val location = Location.GCP
+    val project = "testProject" + randomId
+
+    val samples = {
+      val sameId = "testSample" + randomId
+      Seq(sameId, sameId, "testSample" + randomId)
+    }
+
+    val upserts = Future.sequence {
+      samples.zip(1 to 3).map {
+        case (sample, version) =>
+          val key = CramKey(location, project, DataType.WGS, sample, version)
+          val data = CramMetadata(
+            cramPath = Some(
+              URI.create(s"gs://path/cram${CramExtensions.CramExtension}")
+            ),
+            cramSize = Some(1000L),
+            regulatoryDesignation = Some(RegulatoryDesignation.ClinicalDiagnostics)
+          )
+          runUpsertCram(key, data)
+      }
+    }
+
+    for {
+      _ <- upserts
+      results <- runCollectJson(
+        ClioCommand.queryCramName,
+        "--regulatory-designation",
+        RegulatoryDesignation.ClinicalDiagnostics.entryName,
+        "--project",
+        project
+      )
+    } yield {
+      results should have length 3
+      results.foldLeft(succeed) { (_, result) =>
+        result.unsafeGet[String]("project") should be(project)
+      }
+    }
+  }
+
   it should "only return exact matches for string queries" in {
     val location = Location.GCP
     val project = s"testProject$randomId"
