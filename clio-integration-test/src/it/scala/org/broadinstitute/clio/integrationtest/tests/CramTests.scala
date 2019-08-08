@@ -253,7 +253,9 @@ trait CramTests { self: BaseIntegrationSpec =>
       results <- runCollectJson(
         ClioCommand.queryCramName,
         "--regulatory-designation",
-        RegulatoryDesignation.ClinicalDiagnostics.entryName
+        RegulatoryDesignation.ClinicalDiagnostics.entryName,
+        "--project",
+        project
       )
     } yield {
       results should have length 3
