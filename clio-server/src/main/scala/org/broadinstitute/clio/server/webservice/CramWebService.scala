@@ -22,7 +22,7 @@ class CramWebService(cramService: IndexService[CramIndex.type])
         location,
         project,
         dataType,
-        sampleAlias,
+        IndexWebService.decodeSlashes(sampleAlias),
         version
       )
   }

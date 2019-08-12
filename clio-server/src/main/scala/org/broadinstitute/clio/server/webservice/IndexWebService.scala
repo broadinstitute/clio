@@ -10,6 +10,12 @@ import org.broadinstitute.clio.transfer.model.ApiConstants._
 import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.model.UpsertId
 
+object IndexWebService {
+
+  def decodeSlashes(s: String): String =
+    s.replace("%2F", "/")
+}
+
 abstract class IndexWebService[CI <: ClioIndex](
   val indexService: IndexService[CI]
 ) extends JsonWebService
