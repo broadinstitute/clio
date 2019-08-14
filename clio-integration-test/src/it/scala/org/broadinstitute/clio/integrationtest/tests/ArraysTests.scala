@@ -1333,6 +1333,10 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val rootDestination = rootSource.parent / s"moved/$randomId/"
     val rootDestination2 = rootSource.parent / s"moved2/$randomId/"
+    val grnIdatDestination = rootDestination / "idats" / grnIdatName
+    val redIdatDestination = rootDestination / "idats" / redIdatName
+    val grnIdatDestination2 = rootDestination2 / "idats" / grnIdatName
+    val redIdatDestination2 = rootDestination2 / "idats" / redIdatName
 
     val key = ArraysKey(Location.GCP, Symbol(barcode), version)
     val metadata = ArraysMetadata(
@@ -1401,12 +1405,12 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       redIdatSource should exist
 
       // The idats in the first workspace should not exist because they were moved instead of copied
-      File(URI.create(outputs.head.unsafeGet[String]("grn_idat_path"))) should not(exist)
-      File(URI.create(outputs.head.unsafeGet[String]("red_idat_path"))) should not(exist)
+      grnIdatDestination should not(exist)
+      redIdatDestination should not(exist)
 
       // The idats should exist in the second workspace
-      File(URI.create(outputs2.head.unsafeGet[String]("grn_idat_path"))) should exist
-      File(URI.create(outputs2.head.unsafeGet[String]("red_idat_path"))) should exist
+      grnIdatDestination2 should exist
+      redIdatDestination2 should exist
     }
 
     result.andThen {

@@ -22,7 +22,7 @@ class GvcfWebService(gvcfService: IndexService[GvcfIndex.type])
         location,
         project,
         dataType,
-        sampleAlias,
+        IndexWebService.decodeSlashes(sampleAlias),
         version
       )
   }
