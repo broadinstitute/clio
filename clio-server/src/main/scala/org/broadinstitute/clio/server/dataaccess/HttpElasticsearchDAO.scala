@@ -41,7 +41,7 @@ class HttpElasticsearchDAO private[dataaccess] (
       .setRequestConfigCallback(
         _.setConnectionRequestTimeout(
           ClioServerConfig.Elasticsearch.httpRequestTimeout.toMillis.toInt
-        )
+        ).setSocketTimeout(ClioServerConfig.Elasticsearch.socketTimeoutMillis)
       )
       .build()
     HttpClient.fromRestClient(restClient)
@@ -113,7 +113,6 @@ class HttpElasticsearchDAO private[dataaccess] (
     index: ElasticsearchIndex[_]
   ): Future[Unit] = {
     val createIndexDefinition = createIndex(index.indexName)
-      .shards(10)
       .mappings(mapping(index.indexType))
     val replicatedIndexDefinition =
       if (ClioServerConfig.Elasticsearch.replicateIndices)

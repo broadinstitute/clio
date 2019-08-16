@@ -114,5 +114,7 @@ object ClioServerConfig extends ConfigReaders {
       */
     val httpRequestTimeout: FiniteDuration =
       elasticsearch.as[FiniteDuration]("http-request-timeout")
+
+    val socketTimeoutMillis: Int = 1000 * 60 * 5
   }
 }
