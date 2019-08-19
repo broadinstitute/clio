@@ -114,7 +114,6 @@ class HttpElasticsearchDAO private[dataaccess] (
   ): Future[Unit] = {
     val createIndexDefinition = createIndex(index.indexName)
       .mappings(mapping(index.indexType))
-      .shards(10)
     val replicatedIndexDefinition =
       if (ClioServerConfig.Elasticsearch.replicateIndices)
         createIndexDefinition
