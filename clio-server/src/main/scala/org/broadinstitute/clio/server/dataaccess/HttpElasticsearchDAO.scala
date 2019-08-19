@@ -41,7 +41,9 @@ class HttpElasticsearchDAO private[dataaccess] (
       .setRequestConfigCallback(
         _.setConnectionRequestTimeout(
           ClioServerConfig.Elasticsearch.httpRequestTimeout.toMillis.toInt
-        ).setSocketTimeout(ClioServerConfig.Elasticsearch.socketTimeoutMillis)
+        ).setSocketTimeout(
+          ClioServerConfig.Elasticsearch.socketTimeout.toMillis.toInt
+        )
       )
       .build()
     HttpClient.fromRestClient(restClient)
