@@ -5,9 +5,9 @@ import java.time.Duration
 import java.util.TimeZone
 
 import better.files._
+import com.dimafeng.testcontainers.lifecycle.TestLifecycleAware
 import com.dimafeng.testcontainers.{Container, DockerComposeContainer, ExposedService}
 import org.apache.commons.io.input.{Tailer, TailerListenerAdapter}
-import org.junit.runner.Description
 import org.testcontainers.containers.wait.strategy.{
   AbstractWaitStrategy,
   WaitStrategy,
@@ -24,7 +24,8 @@ class ClioDockerComposeContainer private (
   tmpDir: File,
   readyLog: String,
   seedDocuments: Map[String, String]
-) extends Container {
+) extends Container
+    with TestLifecycleAware {
 
   /**
     * Local directory which will be mounted into the compose containers to
@@ -124,7 +125,7 @@ class ClioDockerComposeContainer private (
     * with weird uids and gids. If permissions aren't set properly, log4j will fail
     * to initialize in the ES containers and tests will fail to start.
     */
-  override def starting()(implicit description: Description): Unit = {
+  override def start(): Unit = {
 
     // Clean out the log directory so the Tailer won't exit early from examining previous logs.
     if (logDir.exists) {
@@ -162,30 +163,11 @@ class ClioDockerComposeContainer private (
         )
     }
 
-    container.starting()
+    container.start()
   }
 
-  /**
-    * After the container stops, move its logs and storage so
-    * they don't interfere with subsequent test suites.
-    */
-  override def finished()(implicit description: Description): Unit = {
-
-    container.finished()
-
-    Seq(logDir, persistenceDir).foreach { dirPrefix =>
-      val target = File(s"$dirPrefix-${description.getDisplayName}")
-        .delete(swallowIOExceptions = true)
-      val _ = dirPrefix.moveTo(target, overwrite = true)
-    }
-  }
-
-  // Pass-through methods:
-  override def failed(e: Throwable)(implicit description: Description): Unit =
-    container.failed(e)
-
-  override def succeeded()(implicit description: Description): Unit =
-    container.succeeded()
+  override def stop(): Unit =
+    container.stop()
 
   /**
     * Get the exposed hostname for one of the exposed services running in the underlying container.

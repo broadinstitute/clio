@@ -35,6 +35,15 @@ abstract class DockerIntegrationSpec
     s"http://${container.esHost}:${container.esPort}"
 
   override val useHttps = false
+
+  override def beforeStop(): Unit = {
+    Seq(container.logDir, container.persistenceDir).foreach { dirPrefix =>
+      val target = File(s"$dirPrefix-${this.suiteName}")
+        .delete(swallowIOExceptions = true)
+      val _ = dirPrefix.moveTo(target, overwrite = true)
+    }
+    super.beforeStop()
+  }
 }
 
 /** Dockerized versions of the integration tests that also run against our deployed Clios. */
