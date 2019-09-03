@@ -5,7 +5,6 @@ import java.time.Duration
 import java.util.TimeZone
 
 import better.files._
-import com.dimafeng.testcontainers.lifecycle.TestLifecycleAware
 import com.dimafeng.testcontainers.{Container, DockerComposeContainer, ExposedService}
 import org.apache.commons.io.input.{Tailer, TailerListenerAdapter}
 import org.testcontainers.containers.wait.strategy.{
@@ -24,8 +23,7 @@ class ClioDockerComposeContainer private (
   tmpDir: File,
   readyLog: String,
   seedDocuments: Map[String, String]
-) extends Container
-    with TestLifecycleAware {
+) extends Container {
 
   /**
     * Local directory which will be mounted into the compose containers to
