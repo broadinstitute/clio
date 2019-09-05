@@ -155,7 +155,7 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactor
     val object2 = Array(path, s"${unique}-2").mkString(IoUtil.GoogleCloudPathSeparator)
     val location1 = URI.create(object1)
     val location2 = URI.create(object2)
-    val expectedObjects = Seq(location1, location2)
+    val expectedObjects = collection.immutable.Seq(location1, location2)
     val ioUtil = IoUtil(credentials)
     val before = ioUtil.listGoogleGenerations(dir)
     ioUtil.writeGoogleObjectData("Thing 1\n", location1)
@@ -165,7 +165,7 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactor
     val objects = ioUtil.listGoogleObjects(prefix)
     val generations = ioUtil.listGoogleGenerations(prefix)
     ioUtil
-      .deleteCloudObjects(generations.to[collection.immutable.Seq])
+      .deleteCloudGenerations(expectedObjects)
       .runWith(Sink.ignore)
       .map(_ => {
         generations.size should be(4)

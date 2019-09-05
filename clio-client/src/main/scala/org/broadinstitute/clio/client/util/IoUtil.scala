@@ -96,6 +96,31 @@ class IoUtil(storage: Storage) extends StrictLogging {
       }
   }
 
+  /**
+    * Build a stream which, when pulled, will delete all generations
+    * of the given cloud paths in parallel.
+    */
+  def deleteCloudGenerations(
+    paths: immutable.Iterable[URI]
+  )(implicit ec: ExecutionContext): Source[Unit, NotUsed] = {
+    val generations = paths.flatMap(path => listGoogleGenerations(path))
+    Source(generations)
+      .mapAsyncUnordered(paths.size + 1) { path =>
+        Future(Either.catchNonFatal(deleteGoogleObject(path)))
+      }
+      .fold(Seq.empty[Throwable]) { (acc, attempt) =>
+        attempt.fold(acc :+ _, _ => acc)
+      }
+      .flatMapConcat {
+        case Seq() => Source.single(())
+        case head +: tail =>
+          val exception =
+            new IOException("Failed to delete cloud generations", head)
+              tail.foreach(exception.addSuppressed)
+          Source.failed(exception)
+      }
+  }
+
   def getBlob(path: URI): Option[Blob] = {
     Option(storage.get(toBlobId(path)))
   }
