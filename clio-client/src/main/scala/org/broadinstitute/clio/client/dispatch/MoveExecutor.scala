@@ -66,7 +66,9 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
             )
         }
       _ <- ioUtil
-        .deleteCloudObjects(filteredOpsToPerform.collect { case MoveOp(src, _) => src })
+        .deleteCloudGenerations(filteredOpsToPerform.collect {
+          case MoveOp(src, _) => src
+        })
         .mapError {
           case ex =>
             new RuntimeException(

@@ -37,7 +37,7 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
     for {
       existingMetadata <- checkPreconditions(webClient, ioUtil)
       pathsToDelete <- buildDelete(existingMetadata, ioUtil)
-      _ <- ioUtil.deleteCloudObjects(pathsToDelete).mapError {
+      _ <- ioUtil.deleteCloudGenerations(pathsToDelete).mapError {
         case ex =>
           new RuntimeException(
             s"""Errors encountered while deleting files for $prettyKey.

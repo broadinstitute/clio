@@ -59,7 +59,7 @@ class DeleteExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     }
 
     (ioUtil
-      .deleteCloudObjects(_: immutable.Iterable[URI])(_: ExecutionContext))
+      .deleteCloudGenerations(_: immutable.Iterable[URI])(_: ExecutionContext))
       .expects(paths, executionContext)
       .returning(Source.single(()))
 
@@ -193,7 +193,7 @@ class DeleteExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     }
 
     (ioUtil
-      .deleteCloudObjects(_: immutable.Iterable[URI])(_: ExecutionContext))
+      .deleteCloudGenerations(_: immutable.Iterable[URI])(_: ExecutionContext))
       .expects(immutable.Iterable.empty[URI], executionContext)
       .returning(Source.single(()))
 
@@ -233,7 +233,7 @@ class DeleteExecutorSpec extends BaseClientSpec with AsyncMockFactory {
     }
 
     (ioUtil
-      .deleteCloudObjects(_: immutable.Iterable[URI])(_: ExecutionContext))
+      .deleteCloudGenerations(_: immutable.Iterable[URI])(_: ExecutionContext))
       .expects(paths, executionContext)
       .returning(Source.single(()))
 

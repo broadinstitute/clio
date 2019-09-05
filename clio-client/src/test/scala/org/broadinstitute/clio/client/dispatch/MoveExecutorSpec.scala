@@ -111,7 +111,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
           (ioUtil.copyGoogleObject _).expects(uri, expectedDest).returning(())
       }
       (ioUtil
-        .deleteCloudObjects(_: immutable.Iterable[URI])(_: ExecutionContext))
+        .deleteCloudGenerations(_: immutable.Iterable[URI])(_: ExecutionContext))
         .expects(
           immutable.Iterable.concat(metadata.cramPath, metadata.craiPath),
           executionContext
@@ -221,7 +221,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       case (src, dest) =>
         (ioUtil.copyGoogleObject _).expects(src, dest).returning(())
         (ioUtil
-          .deleteCloudObjects(_: immutable.Iterable[URI])(_: ExecutionContext))
+          .deleteCloudGenerations(_: immutable.Iterable[URI])(_: ExecutionContext))
           .expects(immutable.Iterable(src), executionContext)
           .returning(Source.single(()))
     }
@@ -333,7 +333,7 @@ class MoveExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       (ioUtil.copyGoogleObject _).expects(uri, expectedDest).returning(())
     }
     (ioUtil
-      .deleteCloudObjects(_: immutable.Iterable[URI])(_: ExecutionContext))
+      .deleteCloudGenerations(_: immutable.Iterable[URI])(_: ExecutionContext))
       .expects(
         immutable.Iterable.concat(metadata.cramPath, metadata.craiPath),
         executionContext
