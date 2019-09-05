@@ -116,7 +116,7 @@ class IoUtil(storage: Storage) extends StrictLogging {
         case head +: tail =>
           val exception =
             new IOException("Failed to delete cloud generations", head)
-              tail.foreach(exception.addSuppressed)
+          tail.foreach(exception.addSuppressed)
           Source.failed(exception)
       }
   }
