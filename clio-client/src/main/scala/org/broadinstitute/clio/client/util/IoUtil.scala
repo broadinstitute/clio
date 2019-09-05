@@ -161,9 +161,9 @@ class IoUtil(storage: Storage) extends StrictLogging {
 
 object IoUtil {
 
-  private val GoogleCloudStorageScheme = "gs"
-  private val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "://"
-  private val GoogleCloudPathSeparator = "/"
+  val GoogleCloudPathSeparator = "/"
+  val GoogleCloudStorageScheme = "gs"
+  val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "://"
 
   def apply(credentials: ClioCredentials): IoUtil = {
     new IoUtil(
@@ -198,10 +198,16 @@ object IoUtil {
   def toBlobId(path: URI): BlobId = {
     val noPrefix = path.toString.substring(GoogleCloudPathPrefix.length)
     val firstSeparator = noPrefix.indexOf(GoogleCloudPathSeparator)
-    // Get the bucket and the object name (aka path) from the gcs path.
-    BlobId.of(
-      noPrefix.substring(0, firstSeparator),
-      noPrefix.substring(firstSeparator + 1)
-    )
+    if (-1 == firstSeparator) {
+      BlobId.of(
+        noPrefix,
+        ""
+      )
+    } else {
+      BlobId.of(
+        noPrefix.substring(0, firstSeparator),
+        noPrefix.substring(firstSeparator + 1)
+      )
+    }
   }
 }

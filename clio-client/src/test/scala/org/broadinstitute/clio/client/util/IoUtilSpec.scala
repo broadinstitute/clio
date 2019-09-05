@@ -2,15 +2,17 @@ package org.broadinstitute.clio.client.util
 
 import java.io.{IOException, PrintWriter, StringWriter}
 import java.net.URI
+import java.util.UUID
 
 import akka.stream.scaladsl.Sink
 import better.files.File
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
 import io.circe.syntax._
-import org.broadinstitute.clio.client.BaseClientSpec
+import org.broadinstitute.clio.client.{BaseClientSpec, ClioClientConfig}
 import org.broadinstitute.clio.transfer.model.{CramIndex, UbamIndex}
 import org.broadinstitute.clio.transfer.model.ubam.UbamMetadata
+import org.broadinstitute.clio.util.auth.ClioCredentials
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.AsyncTestSuite
 
@@ -153,6 +155,28 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactor
 
     ioUtil.listGoogleObjects(URI.create("gs://bucket/path/")) should contain theSameElementsAs expected
 
+  }
+
+  it should "list ALL versions of objects" in {
+    val bucket      = "broad-gotc-dev-clio-test-po-19725-tbl"
+    val credentials = new ClioCredentials(ClioClientConfig.serviceAccountJson)
+    val scheme      = s"${IoUtil.GoogleCloudStorageScheme}:"
+    val user        = System.getProperty("user.name")
+    val leaf        = s"${user}-test-${UUID.randomUUID()}"
+    val path        = Array(scheme, "", bucket).mkString(IoUtil.GoogleCloudPathSeparator)
+    val thing       = Array(path, leaf).mkString(IoUtil.GoogleCloudPathSeparator)
+    val location    = URI.create(thing)
+    val expected    = Seq(location)
+    val ioUtil      = IoUtil(credentials)
+    info(credentials.userInfo().toString)
+    info(leaf)
+    info(location.toString)
+    ioUtil.writeGoogleObjectData("version zero\n", location)
+    ioUtil.writeGoogleObjectData("version one\n", location)
+    ioUtil.writeGoogleObjectData("version two\n", location)
+    val stuff = ioUtil.listGoogleObjects(URI.create(path))
+    info(stuff.toString)
+    ioUtil.listGoogleObjects(location) should contain theSameElementsAs expected
   }
 
   it should "parse a metadata json" in {
