@@ -142,41 +142,33 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactor
     storage.readAllBytes(IoUtil.toBlobId(destination)) should be(contents.getBytes)
   }
 
-  it should "list all children of objects" in {
-    val source = URI.create("gs://bucket/path/data")
-    val source2 = URI.create("gs://bucket/path/data2")
-    val expected = Seq(source, source2)
-    val contents = "my data"
-    val storage = createStorage
-    storage.create(uriToBlobInfo(source), contents.getBytes)
-    storage.create(uriToBlobInfo(source2), contents.getBytes)
-
-    val ioUtil = new IoUtil(storage)
-
-    ioUtil.listGoogleObjects(URI.create("gs://bucket/path/")) should contain theSameElementsAs expected
-
-  }
-
-  it should "list ALL versions of objects" in {
-    val bucket      = "broad-gotc-dev-clio-test-po-19725-tbl"
+  it should "PO-19725 list ALL generations of objects" in {
+    val bucket = "broad-gotc-dev-clio-test-po-19725-tbl"
     val credentials = new ClioCredentials(ClioClientConfig.serviceAccountJson)
-    val scheme      = s"${IoUtil.GoogleCloudStorageScheme}:"
-    val user        = System.getProperty("user.name")
-    val leaf        = s"${user}-test-${UUID.randomUUID()}"
-    val path        = Array(scheme, "", bucket).mkString(IoUtil.GoogleCloudPathSeparator)
-    val thing       = Array(path, leaf).mkString(IoUtil.GoogleCloudPathSeparator)
-    val location    = URI.create(thing)
-    val expected    = Seq(location)
-    val ioUtil      = IoUtil(credentials)
-    info(credentials.userInfo().toString)
-    info(leaf)
-    info(location.toString)
-    ioUtil.writeGoogleObjectData("version zero\n", location)
-    ioUtil.writeGoogleObjectData("version one\n", location)
-    ioUtil.writeGoogleObjectData("version two\n", location)
-    val stuff = ioUtil.listGoogleObjects(URI.create(path))
-    info(stuff.toString)
-    ioUtil.listGoogleObjects(location) should contain theSameElementsAs expected
+    val scheme = s"${IoUtil.GoogleCloudStorageScheme}:"
+    val user = System.getProperty("user.name")
+    val unique = s"${user}-${UUID.randomUUID()}"
+    val path = Array(scheme, "", bucket, "path").mkString(IoUtil.GoogleCloudPathSeparator)
+    val dir = URI.create(path)
+    val prefix = URI.create(Array(path, unique).mkString(IoUtil.GoogleCloudPathSeparator))
+    val object1 = Array(path, s"${unique}-1").mkString(IoUtil.GoogleCloudPathSeparator)
+    val object2 = Array(path, s"${unique}-2").mkString(IoUtil.GoogleCloudPathSeparator)
+    val location1 = URI.create(object1)
+    val location2 = URI.create(object2)
+    val expectedObjects = Seq(location1, location2)
+    val ioUtil = IoUtil(credentials)
+    val before = ioUtil.listGoogleGenerations(dir)
+    ioUtil.writeGoogleObjectData("Thing 1\n", location1)
+    ioUtil.writeGoogleObjectData("Thing 1\n", location2)
+    ioUtil.writeGoogleObjectData("Thing 2\n", location1)
+    ioUtil.writeGoogleObjectData("Thing 2\n", location2)
+    val objects = ioUtil.listGoogleObjects(prefix)
+    val generations = ioUtil.listGoogleGenerations(prefix)
+    ioUtil.deleteCloudObjects(generations.to[collection.immutable.Seq]).runWith(Sink.ignore).map(_ => {
+      generations.size should be(4)
+      objects should contain theSameElementsAs expectedObjects
+      ioUtil.listGoogleGenerations(dir) should contain theSameElementsAs before
+    })
   }
 
   it should "parse a metadata json" in {

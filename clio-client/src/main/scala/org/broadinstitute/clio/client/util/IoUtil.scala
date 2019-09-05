@@ -18,8 +18,8 @@ import org.broadinstitute.clio.transfer.model.ClioIndex
 import org.broadinstitute.clio.util.auth.ClioCredentials
 import org.threeten.bp.Duration
 
-import scala.collection.immutable
 import scala.collection.JavaConverters._
+import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -149,7 +149,6 @@ class IoUtil(storage: Storage) extends StrictLogging {
     storage
       .list(
         blobId.getBucket,
-        BlobListOption.currentDirectory(),
         BlobListOption.prefix(blobId.getName)
       )
       .iterateAll()
@@ -157,10 +156,30 @@ class IoUtil(storage: Storage) extends StrictLogging {
       .map(b => URI.create(s"$GoogleCloudPathPrefix${b.getBucket}/${b.getName}"))
       .toList
   }
+
+  def listGoogleGenerations(path: URI): Seq[URI] = {
+    val blobId = IoUtil.toBlobId(path)
+    storage
+      .list(
+        blobId.getBucket,
+        BlobListOption.prefix(blobId.getName),
+        BlobListOption.versions(true)
+      )
+      .iterateAll()
+      .asScala
+      .map(
+        b =>
+          URI.create(
+            s"$GoogleCloudPathPrefix${b.getBucket}/${b.getName}#${b.getGeneration}"
+        )
+      )
+      .toList
+  }
 }
 
 object IoUtil {
 
+  val GoogleCloudGeneration = "#"
   val GoogleCloudPathSeparator = "/"
   val GoogleCloudStorageScheme = "gs"
   val GoogleCloudPathPrefix = GoogleCloudStorageScheme + "://"
@@ -198,16 +217,16 @@ object IoUtil {
   def toBlobId(path: URI): BlobId = {
     val noPrefix = path.toString.substring(GoogleCloudPathPrefix.length)
     val firstSeparator = noPrefix.indexOf(GoogleCloudPathSeparator)
-    if (-1 == firstSeparator) {
-      BlobId.of(
-        noPrefix,
-        ""
-      )
+    val bucket = noPrefix.substring(0, firstSeparator)
+    val generationIndex = noPrefix.lastIndexOf(GoogleCloudGeneration)
+    if (-1 == generationIndex) {
+      val blob = noPrefix.substring(firstSeparator + 1)
+      BlobId.of(bucket, blob)
     } else {
-      BlobId.of(
-        noPrefix.substring(0, firstSeparator),
-        noPrefix.substring(firstSeparator + 1)
-      )
+      val blob = noPrefix.substring(firstSeparator + 1, generationIndex)
+      val generationString = noPrefix.substring(generationIndex + 1)
+      val generation = generationString.toLong
+      BlobId.of(bucket, blob, generation)
     }
   }
 }
