@@ -164,11 +164,14 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactor
     ioUtil.writeGoogleObjectData("Thing 2\n", location2)
     val objects = ioUtil.listGoogleObjects(prefix)
     val generations = ioUtil.listGoogleGenerations(prefix)
-    ioUtil.deleteCloudObjects(generations.to[collection.immutable.Seq]).runWith(Sink.ignore).map(_ => {
-      generations.size should be(4)
-      objects should contain theSameElementsAs expectedObjects
-      ioUtil.listGoogleGenerations(dir) should contain theSameElementsAs before
-    })
+    ioUtil
+      .deleteCloudObjects(generations.to[collection.immutable.Seq])
+      .runWith(Sink.ignore)
+      .map(_ => {
+        generations.size should be(4)
+        objects should contain theSameElementsAs expectedObjects
+        ioUtil.listGoogleGenerations(dir) should contain theSameElementsAs before
+      })
   }
 
   it should "parse a metadata json" in {
