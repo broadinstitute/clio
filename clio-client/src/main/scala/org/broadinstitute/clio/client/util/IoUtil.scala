@@ -103,8 +103,11 @@ class IoUtil(storage: Storage) extends StrictLogging {
   def deleteCloudGenerations(
     paths: immutable.Iterable[URI]
   )(implicit ec: ExecutionContext): Source[Unit, NotUsed] = {
+    logger.info("TBL: deleteCloudGenerations paths == " + paths.mkString("\n"))
     val generations = paths.flatMap(path => listGoogleGenerations(path)).toStream.distinct
-    logger.info("TBL: deleteCloudGenerations: " + generations.mkString("\n"))
+    logger.info(
+      "TBL: deleteCloudGenerations generations == " + generations.mkString("\n")
+    )
     Source(generations)
       .mapAsyncUnordered(paths.size + 1) { path =>
         Future(Either.catchNonFatal(deleteGoogleObject(path)))
@@ -171,7 +174,9 @@ class IoUtil(storage: Storage) extends StrictLogging {
   }
 
   def listGoogleObjects(path: URI): Seq[URI] = {
+    logger.info("TBL: listGoogleObjects: path == " + path.toString)
     val blobId = IoUtil.toBlobId(path)
+    logger.info("TBL: listGoogleObjects: blobId == " + blobId.toString)
     storage
       .list(
         blobId.getBucket,
@@ -184,7 +189,9 @@ class IoUtil(storage: Storage) extends StrictLogging {
   }
 
   def listGoogleGenerations(path: URI): Seq[URI] = {
+    logger.info("TBL: listGoogleGenerations: path == " + path.toString)
     val blobId = IoUtil.toBlobId(path)
+    logger.info("TBL: listGoogleGenerations: blobId == " + blobId.toString)
     storage
       .list(
         blobId.getBucket,
@@ -193,6 +200,7 @@ class IoUtil(storage: Storage) extends StrictLogging {
       )
       .iterateAll()
       .asScala
+      .filter(b => b.getBlobId.getName == blobId.getName)
       .map(
         b =>
           URI.create(
