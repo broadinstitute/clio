@@ -129,13 +129,9 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * using Google's NIO filesystem adapter.
     */
   def rootPathForBucketInEnv(env: String, readOnly: Boolean): File = {
-    logger.info("TBL: rootPathForBucketInEnv(" + env + ", " + readOnly.toString + ")")
     val project = s"broad-gotc-$env-storage"
-    logger.info("TBL: project == " + project)
-
     val gcs: FileSystem = CloudStorageFileSystem.forBucket(
       s"broad-gotc-$env-clio",
-      // "broad-gotc-dev-clio-test-po-19725-tbl",
       CloudStorageConfiguration.DEFAULT,
       StorageOptions
         .newBuilder()
@@ -143,9 +139,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
         .setCredentials(clioCredentials.storage(readOnly))
         .build()
     )
-    logger.info("TBL: gcs == " + gcs.toString)
     val result = File(gcs.getPath("/"))
-    logger.info("TBL: result == " + result.toString)
     result
   }
 

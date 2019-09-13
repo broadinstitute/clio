@@ -922,8 +922,6 @@ trait CramTests { self: BaseIntegrationSpec =>
     deliverMetrics: Boolean,
     regulatoryDesignation: RegulatoryDesignation
   ): Future[Assertion] = {
-    logger.info("TBL: deliverMetrics == " + deliverMetrics.toString)
-    logger.info("TBL: regulatoryDesignation == " + regulatoryDesignation.toString)
 
     val id = randomId
     val project = s"project$id"
@@ -972,14 +970,8 @@ trait CramTests { self: BaseIntegrationSpec =>
     ).map {
       case (source, contents) => source.write(contents)
     }
-    logger.info("rootTestStorageDir == " + rootTestStorageDir.toString)
-    logger.info("rootSource == " + rootSource.toString)
-    logger.info("rootDestination == " + rootDestination.toString)
-    logger.info("crosscheckSource == " + crosscheckSource.toString)
-    logger.info("crosscheckDestination == " + crosscheckDestination.toString)
     val ioUtil = IoUtil(new ClioCredentials(ClioClientConfig.serviceAccountJson))
     val sources = ioUtil.listGoogleGenerations(rootSource.uri)
-    logger.info("sources == " + sources.toString)
 
     val commandArgs = Seq(
       "--location",
