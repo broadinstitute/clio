@@ -104,6 +104,7 @@ class IoUtil(storage: Storage) extends StrictLogging {
     paths: immutable.Iterable[URI]
   )(implicit ec: ExecutionContext): Source[Unit, NotUsed] = {
     val generations = paths.flatMap(path => listGoogleGenerations(path)).toStream.distinct
+    logger.info("TBL: deleteCloudGenerations: " + generations.mkString("\n"))
     Source(generations)
       .mapAsyncUnordered(paths.size + 1) { path =>
         Future(Either.catchNonFatal(deleteGoogleObject(path)))
