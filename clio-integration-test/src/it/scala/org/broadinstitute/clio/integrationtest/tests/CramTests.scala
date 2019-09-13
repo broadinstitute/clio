@@ -922,7 +922,6 @@ trait CramTests { self: BaseIntegrationSpec =>
     deliverMetrics: Boolean,
     regulatoryDesignation: RegulatoryDesignation
   ): Future[Assertion] = {
-
     val id = randomId
     val project = s"project$id"
     val sample = s"sample$id"

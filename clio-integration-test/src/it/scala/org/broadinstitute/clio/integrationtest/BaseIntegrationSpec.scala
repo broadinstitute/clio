@@ -139,8 +139,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
         .setCredentials(clioCredentials.storage(readOnly))
         .build()
     )
-    val result = File(gcs.getPath("/"))
-    result
+    File(gcs.getPath("/"))
   }
 
   /**
