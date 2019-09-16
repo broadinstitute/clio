@@ -98,7 +98,7 @@ class IoUtil(storage: Storage) extends StrictLogging {
 
   /**
     * Build a stream which, when pulled, will delete all generations
-    * of the given cloud paths in parallel.
+    * of the given cloud prefixes in parallel.
     */
   def deleteCloudGenerations(
     paths: immutable.Iterable[URI]

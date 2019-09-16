@@ -154,6 +154,8 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactor
     ioUtil.listGoogleObjects(URI.create("gs://bucket/path/")) should contain theSameElementsAs expected
   }
 
+  // The bucket must have `gsutil versioning set on gs://<bucket>/`.
+  //
   it should "PO-19725 list ALL generations of objects" in {
     val bucket = "broad-gotc-dev-clio-test-po-19725-tbl"
     val credentials = new ClioCredentials(ClioClientConfig.serviceAccountJson)
