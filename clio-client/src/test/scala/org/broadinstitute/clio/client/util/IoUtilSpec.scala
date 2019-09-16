@@ -154,39 +154,39 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactor
     ioUtil.listGoogleObjects(URI.create("gs://bucket/path/")) should contain theSameElementsAs expected
   }
 
-  // The bucket must have `gsutil versioning set on gs://<bucket>/`.
-  //
-  it should "PO-19725 list ALL generations of objects" in {
-    val bucket = "broad-gotc-dev-clio-test-po-19725-tbl"
-    val credentials = new ClioCredentials(ClioClientConfig.serviceAccountJson)
-    val scheme = s"${IoUtil.GoogleCloudStorageScheme}:"
-    val user = System.getProperty("user.name")
-    val unique = s"${user}-${UUID.randomUUID()}"
-    val path = Array(scheme, "", bucket, "path").mkString(IoUtil.GoogleCloudPathSeparator)
-    val dir = URI.create(path)
-    val prefix = URI.create(Array(path, unique).mkString(IoUtil.GoogleCloudPathSeparator))
-    val object1 = Array(path, s"${unique}-1").mkString(IoUtil.GoogleCloudPathSeparator)
-    val object2 = Array(path, s"${unique}-2").mkString(IoUtil.GoogleCloudPathSeparator)
-    val location1 = URI.create(object1)
-    val location2 = URI.create(object2)
-    val expectedObjects = collection.immutable.Seq(location1, location2)
-    val ioUtil = IoUtil(credentials)
-    val before = ioUtil.listGoogleGenerations(dir)
-    ioUtil.writeGoogleObjectData("Thing 1\n", location1)
-    ioUtil.writeGoogleObjectData("Thing 1\n", location2)
-    ioUtil.writeGoogleObjectData("Thing 2\n", location1)
-    ioUtil.writeGoogleObjectData("Thing 2\n", location2)
-    val objects = ioUtil.listGoogleObjects(prefix)
-    val generations = expectedObjects.flatMap(o => ioUtil.listGoogleGenerations(o))
-    ioUtil
-      .deleteCloudGenerations(expectedObjects)
-      .runWith(Sink.ignore)
-      .map(_ => {
-        generations.size should be(4)
-        objects should contain theSameElementsAs expectedObjects
-        ioUtil.listGoogleGenerations(dir) should contain theSameElementsAs before
-      })
-  }
+  // // The bucket must have `gsutil versioning set on gs://<bucket>/`.
+  // //
+  // it should "PO-19725 list ALL generations of objects" in {
+  //   val bucket = "broad-gotc-dev-clio-test-po-19725-tbl"
+  //   val credentials = new ClioCredentials(ClioClientConfig.serviceAccountJson)
+  //   val scheme = s"${IoUtil.GoogleCloudStorageScheme}:"
+  //   val user = System.getProperty("user.name")
+  //   val unique = s"${user}-${UUID.randomUUID()}"
+  //   val path = Array(scheme, "", bucket, "path").mkString(IoUtil.GoogleCloudPathSeparator)
+  //   val dir = URI.create(path)
+  //   val prefix = URI.create(Array(path, unique).mkString(IoUtil.GoogleCloudPathSeparator))
+  //   val object1 = Array(path, s"${unique}-1").mkString(IoUtil.GoogleCloudPathSeparator)
+  //   val object2 = Array(path, s"${unique}-2").mkString(IoUtil.GoogleCloudPathSeparator)
+  //   val location1 = URI.create(object1)
+  //   val location2 = URI.create(object2)
+  //   val expectedObjects = collection.immutable.Seq(location1, location2)
+  //   val ioUtil = IoUtil(credentials)
+  //   val before = ioUtil.listGoogleGenerations(dir)
+  //   ioUtil.writeGoogleObjectData("Thing 1\n", location1)
+  //   ioUtil.writeGoogleObjectData("Thing 1\n", location2)
+  //   ioUtil.writeGoogleObjectData("Thing 2\n", location1)
+  //   ioUtil.writeGoogleObjectData("Thing 2\n", location2)
+  //   val objects = ioUtil.listGoogleObjects(prefix)
+  //   val generations = expectedObjects.flatMap(o => ioUtil.listGoogleGenerations(o))
+  //   ioUtil
+  //     .deleteCloudGenerations(expectedObjects)
+  //     .runWith(Sink.ignore)
+  //     .map(_ => {
+  //       generations.size should be(4)
+  //       objects should contain theSameElementsAs expectedObjects
+  //       ioUtil.listGoogleGenerations(dir) should contain theSameElementsAs before
+  //     })
+  // }
 
   it should "parse a metadata json" in {
     val metadata = UbamMetadata(ubamSize = Some(10l), ubamMd5 = Some(Symbol("md5")))
