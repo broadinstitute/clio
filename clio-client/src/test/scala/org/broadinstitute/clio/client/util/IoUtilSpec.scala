@@ -2,17 +2,15 @@ package org.broadinstitute.clio.client.util
 
 import java.io.{IOException, PrintWriter, StringWriter}
 import java.net.URI
-import java.util.UUID
 
 import akka.stream.scaladsl.Sink
 import better.files.File
 import com.google.cloud.storage.BlobInfo
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper
 import io.circe.syntax._
-import org.broadinstitute.clio.client.{BaseClientSpec, ClioClientConfig}
-import org.broadinstitute.clio.transfer.model.{CramIndex, UbamIndex}
+import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.transfer.model.ubam.UbamMetadata
-import org.broadinstitute.clio.util.auth.ClioCredentials
+import org.broadinstitute.clio.transfer.model.{CramIndex, UbamIndex}
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.AsyncTestSuite
 
