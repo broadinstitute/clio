@@ -6,16 +6,13 @@ import better.files.File
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 import io.circe.syntax._
-import org.broadinstitute.clio.client.ClioClientConfig
 import org.broadinstitute.clio.client.commands.ClioCommand
-import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
   ElasticsearchIndex,
   ElasticsearchUtil
 }
 import org.broadinstitute.clio.transfer.model.cram._
-import org.broadinstitute.clio.util.auth.ClioCredentials
 import org.broadinstitute.clio.util.model._
 import org.scalatest.Assertion
 
@@ -53,8 +50,8 @@ trait CramTests { self: BaseIntegrationSpec =>
   }
 
   it should "create the expected cram mapping in elasticsearch" in {
-    import com.sksamuel.elastic4s.http.ElasticDsl._
     import ElasticsearchUtil.HttpClientOps
+    import com.sksamuel.elastic4s.http.ElasticDsl._
 
     val expected = ElasticsearchIndex.Cram
     val getRequest = getMapping(IndexAndType(expected.indexName, expected.indexType))
@@ -969,8 +966,6 @@ trait CramTests { self: BaseIntegrationSpec =>
     ).map {
       case (source, contents) => source.write(contents)
     }
-    val ioUtil = IoUtil(new ClioCredentials(ClioClientConfig.serviceAccountJson))
-    val sources = ioUtil.listGoogleGenerations(rootSource.uri)
 
     val commandArgs = Seq(
       "--location",
@@ -1035,29 +1030,23 @@ trait CramTests { self: BaseIntegrationSpec =>
           (if (deliverMetrics) crosscheckDestination else crosscheckSource).uri
         )
       )
-      info("metadata == " + metadata.toString)
-      info("newMetadata == " + newMetadata.toString)
 
       outputs should contain only expectedMerge(key, newMetadata)
     }
 
-    val destinations = ioUtil.listGoogleGenerations(rootDestination.uri)
-    info("destinations == " + destinations.toString)
-
-    // result.andThen {
-    //   case _ => {
-    //     val _ = Seq(
-    //       cramSource,
-    //       cramDestination,
-    //       craiSource,
-    //       craiDestination,
-    //       md5Destination,
-    //       crosscheckSource,
-    //       crosscheckDestination
-    //     ).map(_.delete(swallowIOExceptions = true))
-    //   }
-    // }
-    result
+    result.andThen {
+      case _ => {
+        val _ = Seq(
+          cramSource,
+          cramDestination,
+          craiSource,
+          craiDestination,
+          md5Destination,
+          crosscheckSource,
+          crosscheckDestination
+        ).map(_.delete(swallowIOExceptions = true))
+      }
+    }
   }
 
   RegulatoryDesignation.values.foreach(

@@ -174,6 +174,7 @@ class IoUtil(storage: Storage) extends StrictLogging {
     storage
       .list(
         blobId.getBucket,
+        BlobListOption.currentDirectory(),
         BlobListOption.prefix(blobId.getName)
       )
       .iterateAll()
