@@ -337,7 +337,12 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "show deleted records on queryall, but not query" in {
+  def testQueryAll(documentStatus: DocumentStatus): Future[Assertion] = {
+    val queryArg = documentStatus match {
+      case DocumentStatus.Deleted          => "--include-deleted"
+      case DocumentStatus.ExternallyHosted => "--include-all"
+      case _                               => ""
+    }
     val barcode = "fc5440"
     val project = "testProject" + randomId
     val sample = "sample688." + randomId
@@ -355,7 +360,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
       )
       (upsertKey, upsertMetadata)
     }
-    val (deleteKey, deleteData) = keysWithMetadata.head
+    val (notNormalKey, notNormalMetadata) = keysWithMetadata.head
 
     val upserts = Future.sequence {
       keysWithMetadata.map {
@@ -389,8 +394,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
       _ <- upserts
       _ <- checkQuery(expectedLength = 3)
       _ <- runUpsertUbam(
-        deleteKey,
-        deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
+        notNormalKey,
+        notNormalMetadata.copy(documentStatus = Some(documentStatus))
       )
       _ <- checkQuery(expectedLength = 2)
 
@@ -400,7 +405,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
         project,
         "--flowcell-barcode",
         barcode,
-        "--include-deleted"
+        queryArg
       )
     } yield {
       results.length should be(keysWithMetadata.length)
@@ -416,11 +421,19 @@ trait UbamTests { self: BaseIntegrationSpec =>
         )
 
         result.unsafeGet[DocumentStatus]("document_status") should be {
-          if (resultKey == deleteKey) DocumentStatus.Deleted else DocumentStatus.Normal
+          if (resultKey == notNormalKey) documentStatus else DocumentStatus.Normal
         }
       }
       succeed
     }
+  }
+
+  it should "show deleted records on queryall, but not query" in {
+    testQueryAll(DocumentStatus.Deleted)
+  }
+
+  it should "show relinquished records on queryall, but not query" in {
+    testQueryAll(DocumentStatus.ExternallyHosted)
   }
 
   def testMoveUbam(
@@ -590,6 +603,101 @@ trait UbamTests { self: BaseIntegrationSpec =>
       queried.unsafeGet[RegulatoryDesignation]("regulatory_designation") should be(
         regulatoryDesignation
       )
+    }
+  }
+
+  def testRelinquishUbam(
+    existingNote: Option[String] = None
+  ): Future[Assertion] = {
+    val relinquishNote =
+      s"$randomId --- Relinquished by the integration tests --- $randomId"
+
+    val flowcell = s"flowcell$randomId"
+    val lane = 1
+    val libraryName = s"library$randomId"
+
+    val ubamContents = s"$randomId --- I am a ubam fated for other worlds --- $randomId"
+
+    val storageDir = rootTestStorageDir / s"ubam/$flowcell/$lane/v$libraryName/"
+    val ubamPath = storageDir / s"$randomId${UbamExtensions.UbamExtension}"
+
+    val key = UbamKey(Location.GCP, flowcell, lane, libraryName)
+    val metadata = UbamMetadata(
+      ubamPath = Some(ubamPath.uri),
+      notes = existingNote
+    )
+
+    ubamPath.write(ubamContents)
+
+    val result = for {
+      _ <- runUpsertUbam(key, metadata)
+      _ <- runIgnore(
+        ClioCommand.relinquishUbamName,
+        Seq(
+          "--location",
+          Location.GCP.entryName,
+          "--flowcell-barcode",
+          flowcell,
+          "--lane",
+          lane.toString,
+          "--library-name",
+          libraryName,
+          "--note",
+          relinquishNote
+        ).filter(_.nonEmpty): _*
+      )
+      outputs <- runCollectJson(
+        ClioCommand.queryUbamName,
+        "--location",
+        Location.GCP.entryName,
+        "--flowcell-barcode",
+        flowcell,
+        "--lane",
+        lane.toString,
+        "--library-name",
+        libraryName,
+        "--include-deleted"
+      )
+    } yield {
+
+      outputs should have length 1
+      val output = outputs.head
+      output.unsafeGet[String]("notes") should be(
+        metadata.notes.fold(relinquishNote)(existing => s"$existing\n$relinquishNote")
+      )
+      output.unsafeGet[DocumentStatus]("document_status") should be(
+        DocumentStatus.ExternallyHosted
+      )
+    }
+
+    result.andThen[Unit] {
+      case _ => ubamPath.delete(swallowIOExceptions = true)
+    }
+  }
+
+  it should "mark ubams as ExternallyHosted when relinquishing" in {
+    testRelinquishUbam()
+  }
+
+  it should "preserve existing notes when relinquishing ubams" in testRelinquishUbam(
+    existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
+  )
+
+  it should "require a note when relinquishing a ubam" in {
+    recoverToExceptionIf[Exception] {
+      runDecode[UpsertId](
+        ClioCommand.relinquishUbamName,
+        "--flowcell-barcode",
+        randomId,
+        "--lane",
+        "123",
+        "--library-name",
+        randomId,
+        "--location",
+        Location.GCP.entryName
+      )
+    }.map {
+      _.getMessage should include("--note")
     }
   }
 

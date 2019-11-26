@@ -35,6 +35,12 @@ trait Metadata[M <: Metadata[M]] { self: M =>
   def markDeleted(deletionNote: String): M
 
   /**
+    * return a copy of this object which has been marked as externally hosted,
+    * with the given notes appended.
+    */
+  def markExternallyHosted(relinquishNote: String): M
+
+  /**
     * Return a copy of this object with given document status.
     */
   def withDocumentStatus(documentStatus: Option[DocumentStatus]): M

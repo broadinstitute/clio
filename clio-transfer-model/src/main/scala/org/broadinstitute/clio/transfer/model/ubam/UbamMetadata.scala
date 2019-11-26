@@ -60,6 +60,12 @@ case class UbamMetadata(
       documentStatus = Some(DocumentStatus.Deleted)
     )
 
+  override def markExternallyHosted(relinquishNote: String): UbamMetadata =
+    this.copy(
+      documentStatus = Some(DocumentStatus.ExternallyHosted),
+      notes = appendNote(relinquishNote)
+    )
+
   override def withDocumentStatus(
     documentStatus: Option[DocumentStatus]
   ): UbamMetadata =

@@ -33,6 +33,12 @@ case class GvcfMetadata(
       notes = appendNote(deletionNote)
     )
 
+  override def markExternallyHosted(relinquishNote: String): GvcfMetadata =
+    this.copy(
+      documentStatus = Some(DocumentStatus.ExternallyHosted),
+      notes = appendNote(relinquishNote)
+    )
+
   override def withDocumentStatus(
     docStatus: Option[DocumentStatus]
   ): GvcfMetadata =

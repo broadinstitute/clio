@@ -87,6 +87,12 @@ case class CramMetadata(
       notes = appendNote(deletionNote)
     )
 
+  override def markExternallyHosted(relinquishNote: String): CramMetadata =
+    this.copy(
+      documentStatus = Some(DocumentStatus.ExternallyHosted),
+      notes = appendNote(relinquishNote)
+    )
+
   override def withWorkspaceName(name: String): CramMetadata = {
     this.copy(
       workspaceName = Some(name)

@@ -68,6 +68,12 @@ case class ArraysMetadata(
       notes = appendNote(deletionNote)
     )
 
+  override def markExternallyHosted(relinquishNote: String): ArraysMetadata =
+    this.copy(
+      documentStatus = Some(DocumentStatus.ExternallyHosted),
+      notes = appendNote(relinquishNote)
+    )
+
   override def withWorkspaceName(name: String): ArraysMetadata = {
     this.copy(
       workspaceName = Some(name)
