@@ -375,7 +375,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     testQueryAll(DocumentStatus.Deleted)
   }
 
-  it should "show relinquised arrays records on queryAll, but not query" in {
+  it should "show relinquished arrays records on queryAll, but not query" in {
     testQueryAll(DocumentStatus.ExternallyHosted)
   }
 
