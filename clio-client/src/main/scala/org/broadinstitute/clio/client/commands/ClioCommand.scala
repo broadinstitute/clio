@@ -72,7 +72,7 @@ sealed abstract class PatchCommand[CI <: ClioIndex](val index: CI) extends ClioC
   def maxParallelUpserts: Int
 }
 
-sealed abstract class[CI <: ClioIndex](val index: CI)
+sealed abstract class RelinquishCommand[CI <: ClioIndex](val index: CI)
     extends ClioCommand {
   def key: index.KeyType
   def note: String
