@@ -271,9 +271,12 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
 
       val client = new ClioWebClient(flow, timeout, 0, generator)
 
-      client.simpleQuery(index)(query, includeDeleted).runWith(Sink.seq).map {
-        _ should contain theSameElementsAs expectedOut
-      }
+      client
+        .simpleQuery(index)(query, includeDeleted, includeDeleted)
+        .runWith(Sink.seq)
+        .map {
+          _ should contain theSameElementsAs expectedOut
+        }
     }
   }
 
