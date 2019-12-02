@@ -99,7 +99,7 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
         .returning(Source(keys.map(_.asJson)))
 
       val stdout = mutable.StringBuilder.newBuilder
-      val executor = new RetrieveAndPrintExecutor(QueryUbam(query, includeDeleted), { s =>
+      val executor = new RetrieveAndPrintExecutor(QueryUbam(query, includeDeleted, includeDeleted), { s =>
         stdout.append(s)
         ()
       })
