@@ -28,6 +28,7 @@ case class CramMetadata(
   wdlPath: Option[URI] = None,
   readgroupMd5: Option[Symbol] = None,
   workspaceName: Option[String] = None,
+  workspaceBillingProject: Option[String] = None,
   notes: Option[String] = None,
   analysisFilesTxtPath: Option[URI] = None,
   /* These fields were originally meant to be part of the cram metrics index. */
