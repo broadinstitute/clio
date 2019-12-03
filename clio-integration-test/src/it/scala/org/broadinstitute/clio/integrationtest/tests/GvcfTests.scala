@@ -522,9 +522,9 @@ trait GvcfTests { self: BaseIntegrationSpec =>
 
   def testQueryAll(documentStatus: DocumentStatus): Future[Assertion] = {
     val queryArg = documentStatus match {
-      case DocumentStatus.Deleted          => "--include-deleted"
-      case DocumentStatus.ExternallyHosted => "--include-all"
-      case _                               => ""
+      case DocumentStatus.Deleted  => "--include-deleted"
+      case DocumentStatus.External => "--include-all"
+      case _                       => ""
     }
     val project = "testProject" + randomId
     val sampleAlias = "sample688." + randomId
@@ -618,8 +618,8 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     testQueryAll(DocumentStatus.Deleted)
   }
 
-  it should "show relinquished gvcf records on queryAll, but not query" in {
-    testQueryAll(DocumentStatus.ExternallyHosted)
+  it should "show External gvcf records on queryAll, but not query" in {
+    testQueryAll(DocumentStatus.External)
   }
 
   it should "respect user-set regulatory designation for gvcfs" in {
@@ -843,11 +843,11 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testRelinquishGvcf(
+  def testExternalGvcf(
     existingNote: Option[String] = None
   ): Future[Assertion] = {
-    val relinquishNote =
-      s"$randomId --- Relinquished by the integration tests --- $randomId"
+    val markExternalNote =
+      s"$randomId --- Marked External by the integration tests --- $randomId"
 
     val project = s"project$randomId"
     val sample = s"sample$randomId"
@@ -887,7 +887,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     val result = for {
       _ <- runUpsertGvcf(key, metadata)
       _ <- runIgnore(
-        ClioCommand.relinquishGvcfName,
+        ClioCommand.markExternalGvcfName,
         Seq(
           "--location",
           Location.GCP.entryName,
@@ -900,7 +900,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
           "--version",
           version.toString,
           "--note",
-          relinquishNote
+          markExternalNote
         ).filter(_.nonEmpty): _*
       )
       outputs <- runCollectJson(
@@ -922,10 +922,10 @@ trait GvcfTests { self: BaseIntegrationSpec =>
       outputs should have length 1
       val output = outputs.head
       output.unsafeGet[String]("notes") should be(
-        metadata.notes.fold(relinquishNote)(existing => s"$existing\n$relinquishNote")
+        metadata.notes.fold(markExternalNote)(existing => s"$existing\n$markExternalNote")
       )
       output.unsafeGet[DocumentStatus]("document_status") should be(
-        DocumentStatus.ExternallyHosted
+        DocumentStatus.External
       )
     }
 
@@ -938,14 +938,14 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "mark gvcfs as ExternallyHosted when relinquishing" in {
-    testRelinquishGvcf()
+  it should "mark gvcfs as External when marking as external" in {
+    testExternalGvcf()
   }
 
-  it should "require a note when relinquishing a gvcf" in {
+  it should "require a note when marking a gvcf as External" in {
     recoverToExceptionIf[Exception] {
       runDecode[UpsertId](
-        ClioCommand.relinquishGvcfName,
+        ClioCommand.markExternalGvcfName,
         "--location",
         Location.GCP.entryName,
         "--project",
@@ -962,7 +962,7 @@ trait GvcfTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "preserve existing notes when relinquishing gvcfs" in testRelinquishGvcf(
+  it should "preserve existing notes when marking gvcfs as External" in testExternalGvcf(
     existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
   )
 

@@ -339,9 +339,9 @@ trait UbamTests { self: BaseIntegrationSpec =>
 
   def testQueryAll(documentStatus: DocumentStatus): Future[Assertion] = {
     val queryArg = documentStatus match {
-      case DocumentStatus.Deleted          => "--include-deleted"
-      case DocumentStatus.ExternallyHosted => "--include-all"
-      case _                               => ""
+      case DocumentStatus.Deleted  => "--include-deleted"
+      case DocumentStatus.External => "--include-all"
+      case _                       => ""
     }
     val barcode = "fc5440"
     val project = "testProject" + randomId
@@ -432,8 +432,8 @@ trait UbamTests { self: BaseIntegrationSpec =>
     testQueryAll(DocumentStatus.Deleted)
   }
 
-  it should "show relinquished records on queryall, but not query" in {
-    testQueryAll(DocumentStatus.ExternallyHosted)
+  it should "show external records on queryall, but not query" in {
+    testQueryAll(DocumentStatus.External)
   }
 
   def testMoveUbam(
@@ -606,11 +606,11 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testRelinquishUbam(
+  def testExternalUbam(
     existingNote: Option[String] = None
   ): Future[Assertion] = {
-    val relinquishNote =
-      s"$randomId --- Relinquished by the integration tests --- $randomId"
+    val markExternalNote =
+      s"$randomId --- Marked External by the integration tests --- $randomId"
 
     val flowcell = s"flowcell$randomId"
     val lane = 1
@@ -632,7 +632,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
     val result = for {
       _ <- runUpsertUbam(key, metadata)
       _ <- runIgnore(
-        ClioCommand.relinquishUbamName,
+        ClioCommand.markExternalUbamName,
         Seq(
           "--location",
           Location.GCP.entryName,
@@ -643,7 +643,7 @@ trait UbamTests { self: BaseIntegrationSpec =>
           "--library-name",
           libraryName,
           "--note",
-          relinquishNote
+          markExternalNote
         ).filter(_.nonEmpty): _*
       )
       outputs <- runCollectJson(
@@ -663,10 +663,10 @@ trait UbamTests { self: BaseIntegrationSpec =>
       outputs should have length 1
       val output = outputs.head
       output.unsafeGet[String]("notes") should be(
-        metadata.notes.fold(relinquishNote)(existing => s"$existing\n$relinquishNote")
+        metadata.notes.fold(markExternalNote)(existing => s"$existing\n$markExternalNote")
       )
       output.unsafeGet[DocumentStatus]("document_status") should be(
-        DocumentStatus.ExternallyHosted
+        DocumentStatus.External
       )
     }
 
@@ -675,18 +675,18 @@ trait UbamTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "mark ubams as ExternallyHosted when relinquishing" in {
-    testRelinquishUbam()
+  it should "mark ubams as External when marking external" in {
+    testExternalUbam()
   }
 
-  it should "preserve existing notes when relinquishing ubams" in testRelinquishUbam(
+  it should "preserve existing notes when marking ubams as External" in testExternalUbam(
     existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
   )
 
-  it should "require a note when relinquishing a ubam" in {
+  it should "require a note when marking a ubam as External" in {
     recoverToExceptionIf[Exception] {
       runDecode[UpsertId](
-        ClioCommand.relinquishUbamName,
+        ClioCommand.markExternalUbamName,
         "--flowcell-barcode",
         randomId,
         "--lane",

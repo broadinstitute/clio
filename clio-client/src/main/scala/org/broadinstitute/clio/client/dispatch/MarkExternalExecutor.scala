@@ -4,23 +4,24 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import cats.syntax.show._
 import io.circe.Json
-import org.broadinstitute.clio.client.commands.RelinquishCommand
+import org.broadinstitute.clio.client.commands.MarkExternalCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.ClioIndex
+import org.broadinstitute.clio.util.model.DocumentStatus
 
 /**
-  * Executor for "relinquish" commands, which updates record in Clio to mark
-  * them as `ExternallyHosted`. This tells us that we no longer control the
+  * Executor for "make-external" commands, which updates record in Clio to mark
+  * them as `External`. This tells us that we no longer control the
   * files.
   */
-class RelinquishExecutor[CI <: ClioIndex](relinquishCommand: RelinquishCommand[CI])
+class MarkExternalExecutor[CI <: ClioIndex](markExternalCommand: MarkExternalCommand[CI])
     extends Executor {
 
-  import relinquishCommand.index.implicits._
+  import markExternalCommand.index.implicits._
 
-  private val prettyKey = relinquishCommand.key.show
-  val name: String = relinquishCommand.index.name
+  private val prettyKey = markExternalCommand.key.show
+  val name: String = markExternalCommand.index.name
 
   override def execute(
     webClient: ClioWebClient,
@@ -31,21 +32,22 @@ class RelinquishExecutor[CI <: ClioIndex](relinquishCommand: RelinquishCommand[C
     for {
       existingMetadata <- checkPreconditions(webClient)
       upsertId <- webClient
-        .upsert(relinquishCommand.index)(
-          relinquishCommand.key,
-          existingMetadata.markExternallyHosted(relinquishCommand.note),
+        .upsert(markExternalCommand.index)(
+          markExternalCommand.key,
+          existingMetadata
+            .changeStatus(DocumentStatus.External, markExternalCommand.note),
           // Always force because we're purposefully overwriting document status.
           force = true
         )
         .mapError {
           case ex =>
             new RuntimeException(
-              s"Failed to relinquish the $name record for $prettyKey in Clio.",
+              s"Failed to mark the $name record for $prettyKey as External in Clio.",
               ex
             )
         }
     } yield {
-      logger.info(s"Successfully relinquished record and files for $prettyKey.")
+      logger.info(s"Successfully marked record and files for $prettyKey as External.")
       upsertId
     }
   }
@@ -57,10 +59,10 @@ class RelinquishExecutor[CI <: ClioIndex](relinquishCommand: RelinquishCommand[C
     */
   private def checkPreconditions(
     webClient: ClioWebClient
-  ): Source[relinquishCommand.index.MetadataType, NotUsed] = {
-    val metadata: Source[relinquishCommand.index.MetadataType, NotUsed] =
-      webClient.getMetadataForKey(relinquishCommand.index)(
-        relinquishCommand.key,
+  ): Source[markExternalCommand.index.MetadataType, NotUsed] = {
+    val metadata: Source[markExternalCommand.index.MetadataType, NotUsed] =
+      webClient.getMetadataForKey(markExternalCommand.index)(
+        markExternalCommand.key,
         includeDeleted = false
       )
 
@@ -69,7 +71,7 @@ class RelinquishExecutor[CI <: ClioIndex](relinquishCommand: RelinquishCommand[C
       Source.lazily { () =>
         Source.failed(
           new IllegalStateException(
-            s"No $name found in Clio for $prettyKey, nothing to relinquish."
+            s"No $name found in Clio for $prettyKey, nothing to mark as external."
           )
         )
       }

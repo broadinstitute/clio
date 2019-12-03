@@ -5,7 +5,7 @@ import java.net.URI
 import akka.stream.scaladsl.{Sink, Source}
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.commands.RelinquishArrays
+import org.broadinstitute.clio.client.commands.MarkExternalArrays
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.ArraysIndex
@@ -13,8 +13,8 @@ import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location, UpsertId}
 import org.scalamock.scalatest.AsyncMockFactory
 
-class RelinquishExecutorSpec extends BaseClientSpec with AsyncMockFactory {
-  behavior of "RelinquishExecutor"
+class MarkExternalExecutorSpec extends BaseClientSpec with AsyncMockFactory {
+  behavior of "MarkExternalExecutor"
 
   // Calling it 'key' clashes with a ScalaTest member...
   private val theKey = ArraysKey(
@@ -34,7 +34,7 @@ class RelinquishExecutorSpec extends BaseClientSpec with AsyncMockFactory {
 
   type Aux = ClioWebClient.UpsertAux[ArraysKey, ArraysMetadata]
 
-  it should "relinquish cloud records" in {
+  it should "mark-external cloud records" in {
     val ioUtil = mock[IoUtil]
     val webClient = mock[ClioWebClient]
 
@@ -50,14 +50,14 @@ class RelinquishExecutorSpec extends BaseClientSpec with AsyncMockFactory {
         ArraysIndex,
         theKey,
         metadata.copy(
-          documentStatus = Some(DocumentStatus.ExternallyHosted),
+          documentStatus = Some(DocumentStatus.External),
           notes = Some(theNote)
         ),
         true
       )
       .returning(Source.single(id.asJson))
 
-    val executor = new RelinquishExecutor(RelinquishArrays(theKey, theNote))
+    val executor = new MarkExternalExecutor(MarkExternalArrays(theKey, theNote))
     executor.execute(webClient, ioUtil).runWith(Sink.head).map { json =>
       json.as[UpsertId] should be(Right(id))
     }

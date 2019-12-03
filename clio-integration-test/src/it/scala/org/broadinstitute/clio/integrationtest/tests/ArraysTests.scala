@@ -296,9 +296,9 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
   def testQueryAll(documentStatus: DocumentStatus): Future[Assertion] = {
     val queryArg = documentStatus match {
-      case DocumentStatus.Deleted          => "--include-deleted"
-      case DocumentStatus.ExternallyHosted => "--include-all"
-      case _                               => ""
+      case DocumentStatus.Deleted  => "--include-deleted"
+      case DocumentStatus.External => "--include-all"
+      case _                       => ""
     }
     val barcode = "barcode." + randomId
 
@@ -375,8 +375,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     testQueryAll(DocumentStatus.Deleted)
   }
 
-  it should "show relinquished arrays records on queryAll, but not query" in {
-    testQueryAll(DocumentStatus.ExternallyHosted)
+  it should "show External arrays records on queryAll, but not query" in {
+    testQueryAll(DocumentStatus.External)
   }
 
   it should "respect user-set regulatory designation for arrays" in {
@@ -749,11 +749,11 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testRelinquishArrays(
+  def testExternalArrays(
     existingNote: Option[String] = None
   ): Future[Assertion] = {
-    val relinquishNote =
-      s"$randomId --- Relinquished by the integration tests --- $randomId"
+    val markExternalNote =
+      s"$randomId --- Marked External by the integration tests --- $randomId"
 
     val chipwellBarcode = s" chip$randomId"
     val version = 3
@@ -792,7 +792,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val result = for {
       _ <- runUpsertArrays(key, metadata)
       _ <- runIgnore(
-        ClioCommand.relinquishArraysName,
+        ClioCommand.markExternalArraysName,
         Seq(
           "--location",
           Location.GCP.entryName,
@@ -801,7 +801,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
           "--version",
           version.toString,
           "--note",
-          relinquishNote
+          markExternalNote
         ).filter(_.nonEmpty): _*
       )
       outputs <- runCollectJson(
@@ -819,10 +819,10 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       outputs should have length 1
       val output = outputs.head
       output.unsafeGet[String]("notes") should be(
-        metadata.notes.fold(relinquishNote)(existing => s"$existing\n$relinquishNote")
+        metadata.notes.fold(markExternalNote)(existing => s"$existing\n$markExternalNote")
       )
       output.unsafeGet[DocumentStatus]("document_status") should be(
-        DocumentStatus.ExternallyHosted
+        DocumentStatus.External
       )
     }
 
@@ -835,14 +835,14 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "mark arrays as ExternallyHosted when relinquishing" in {
-    testRelinquishArrays()
+  it should "mark arrays as External when marking external" in {
+    testExternalArrays()
   }
 
-  it should "require a note when relinquishing arrays" in {
+  it should "require a note when marking arrays as External" in {
     recoverToExceptionIf[Exception] {
       runIgnore(
-        ClioCommand.relinquishArraysName,
+        ClioCommand.markExternalArraysName,
         "--location",
         Location.GCP.entryName,
         "--chipwell-barcode",
@@ -855,7 +855,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "preserve existing notes when relinquishing arrays" in testRelinquishArrays(
+  it should "preserve existing notes when marking arrays as External" in testExternalArrays(
     existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
   )
 

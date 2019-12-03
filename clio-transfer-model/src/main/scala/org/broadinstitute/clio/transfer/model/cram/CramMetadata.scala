@@ -81,16 +81,13 @@ case class CramMetadata(
       )
     )
 
-  override def markDeleted(deletionNote: String): CramMetadata =
+  override def changeStatus(
+    documentStatus: DocumentStatus,
+    changeNote: String
+  ): CramMetadata =
     this.copy(
-      documentStatus = Some(DocumentStatus.Deleted),
-      notes = appendNote(deletionNote)
-    )
-
-  override def markExternallyHosted(relinquishNote: String): CramMetadata =
-    this.copy(
-      documentStatus = Some(DocumentStatus.ExternallyHosted),
-      notes = appendNote(relinquishNote)
+      documentStatus = Some(documentStatus),
+      notes = appendNote(changeNote)
     )
 
   override def withWorkspaceName(name: String): CramMetadata = {

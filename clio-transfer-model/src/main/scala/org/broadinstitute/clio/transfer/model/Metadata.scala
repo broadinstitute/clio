@@ -29,16 +29,10 @@ trait Metadata[M <: Metadata[M]] { self: M =>
   def pathsToDelete: Seq[URI]
 
   /**
-    * Return a copy of this object which has been marked as deleted,
-    * with the given notes appended.
+    * Return a copy of this object that has been marked with the given
+    * DocumentStatus, with the given notes appended.
     */
-  def markDeleted(deletionNote: String): M
-
-  /**
-    * return a copy of this object which has been marked as externally hosted,
-    * with the given notes appended.
-    */
-  def markExternallyHosted(relinquishNote: String): M
+  def changeStatus(documentStatus: DocumentStatus, changeNote: String): M
 
   /**
     * Return a copy of this object with given document status.
@@ -56,9 +50,7 @@ trait Metadata[M <: Metadata[M]] { self: M =>
 }
 
 object Metadata {
-
-  val documentStatusFieldName = "document_stats"
-
+  
   def jsonWithDocumentStatus(input: Json, documentStatus: DocumentStatus): Json = {
     import org.broadinstitute.clio.util.json.ModelAutoDerivation.encodeEnum
     input.mapObject(

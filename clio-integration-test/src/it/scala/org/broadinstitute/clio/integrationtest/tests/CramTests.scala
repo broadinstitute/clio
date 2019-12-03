@@ -363,9 +363,9 @@ trait CramTests { self: BaseIntegrationSpec =>
 
   def testQueryAll(documentStatus: DocumentStatus): Future[Assertion] = {
     val queryArg = documentStatus match {
-      case DocumentStatus.Deleted          => "--include-deleted"
-      case DocumentStatus.ExternallyHosted => "--include-all"
-      case _                               => ""
+      case DocumentStatus.Deleted  => "--include-deleted"
+      case DocumentStatus.External => "--include-all"
+      case _                       => ""
     }
     val project = "testProject" + randomId
     val sampleAlias = "sample688." + randomId
@@ -455,8 +455,8 @@ trait CramTests { self: BaseIntegrationSpec =>
     testQueryAll(DocumentStatus.Deleted)
   }
 
-  it should "show relinquished cram records on queryAll, but not query" in {
-    testQueryAll(DocumentStatus.ExternallyHosted)
+  it should "show External cram records on queryAll, but not query" in {
+    testQueryAll(DocumentStatus.External)
   }
 
   def createMockFile(
@@ -776,11 +776,11 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  def testRelinquishCram(
+  def testExternalCram(
     existingNote: Option[String] = None
   ): Future[Assertion] = {
-    val relinquishNote =
-      s"$randomId --- Relinquished by the integration tests --- $randomId"
+    val markExternalNote =
+      s"$randomId --- Marked External by the integration tests --- $randomId"
 
     val project = s"project$randomId"
     val sample = s"sample$randomId"
@@ -819,7 +819,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     val result = for {
       _ <- runUpsertCram(key, metadata)
       _ <- runIgnore(
-        ClioCommand.relinquishCramName,
+        ClioCommand.markExternalCramName,
         Seq(
           "--location",
           Location.GCP.entryName,
@@ -832,7 +832,7 @@ trait CramTests { self: BaseIntegrationSpec =>
           "--version",
           version.toString,
           "--note",
-          relinquishNote
+          markExternalNote
         ).filter(_.nonEmpty): _*
       )
       outputs <- runCollectJson(
@@ -854,10 +854,10 @@ trait CramTests { self: BaseIntegrationSpec =>
       outputs should have length 1
       val output = outputs.head
       output.unsafeGet[String]("notes") should be(
-        metadata.notes.fold(relinquishNote)(existing => s"$existing\n$relinquishNote")
+        metadata.notes.fold(markExternalNote)(existing => s"$existing\n$markExternalNote")
       )
       output.unsafeGet[DocumentStatus]("document_status") should be(
-        DocumentStatus.ExternallyHosted
+        DocumentStatus.External
       )
     }
 
@@ -870,14 +870,14 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "mark crams as ExternallyHosted when relinquishing" in {
-    testRelinquishCram()
+  it should "mark crams as External when marking external" in {
+    testExternalCram()
   }
 
-  it should "require a note when relinquishing a cram" in {
+  it should "require a note when marking a cram as External" in {
     recoverToExceptionIf[Exception] {
       runDecode[UpsertId](
-        ClioCommand.relinquishCramName,
+        ClioCommand.markExternalCramName,
         "--location",
         Location.GCP.entryName,
         "--project",
@@ -894,7 +894,7 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "preserve existing notes when relinquishing crams" in testRelinquishCram(
+  it should "preserve existing notes when marking crams as External" in testExternalCram(
     existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
   )
 

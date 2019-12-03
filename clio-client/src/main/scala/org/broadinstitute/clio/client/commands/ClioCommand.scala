@@ -72,7 +72,7 @@ sealed abstract class PatchCommand[CI <: ClioIndex](val index: CI) extends ClioC
   def maxParallelUpserts: Int
 }
 
-sealed abstract class RelinquishCommand[CI <: ClioIndex](val index: CI)
+sealed abstract class MarkExternalCommand[CI <: ClioIndex](val index: CI)
     extends ClioCommand {
   def key: index.KeyType
   def note: String
@@ -129,11 +129,11 @@ final case class PatchGvcf(
   maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(GvcfIndex)
 
-@CommandName(ClioCommand.relinquishGvcfName)
-final case class RelinquishGvcf(
+@CommandName(ClioCommand.markExternalGvcfName)
+final case class MarkExternalGvcf(
   @Recurse key: GvcfKey,
   note: String
-) extends RelinquishCommand(GvcfIndex)
+) extends MarkExternalCommand(GvcfIndex)
 
 // cram commands.
 
@@ -190,11 +190,11 @@ final case class PatchCram(
   maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(CramIndex)
 
-@CommandName(ClioCommand.relinquishCramName)
-final case class RelinquishCram(
+@CommandName(ClioCommand.markExternalCramName)
+final case class MarkExternalCram(
   @Recurse key: CramKey,
   note: String
-) extends RelinquishCommand(CramIndex)
+) extends MarkExternalCommand(CramIndex)
 
 // uBAM commands.
 
@@ -239,11 +239,11 @@ final case class PatchUbam(
   maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(UbamIndex)
 
-@CommandName(ClioCommand.relinquishUbamName)
-final case class RelinquishUbam(
+@CommandName(ClioCommand.markExternalUbamName)
+final case class MarkExternalUbam(
   @Recurse key: UbamKey,
   note: String
-) extends RelinquishCommand(UbamIndex)
+) extends MarkExternalCommand(UbamIndex)
 
 // ARRAYS commands.
 
@@ -299,11 +299,11 @@ final case class PatchArrays(
   maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(ArraysIndex)
 
-@CommandName(ClioCommand.relinquishArraysName)
-final case class RelinquishArrays(
+@CommandName(ClioCommand.markExternalArraysName)
+final case class MarkExternalArrays(
   @Recurse key: ArraysKey,
   note: String
-) extends RelinquishCommand(ArraysIndex)
+) extends MarkExternalCommand(ArraysIndex)
 
 object ClioCommand extends ClioParsers {
 
@@ -318,7 +318,7 @@ object ClioCommand extends ClioParsers {
   val deletePrefix = "delete-"
   val deliverPrefix = "deliver-"
   val patchPrefix = "patch-"
-  val relinquishPrefix = "relinquish-"
+  val markExternalPrefix = "mark-external-"
 
   // Names for GVCF commands.
   val addGvcfName: String = addPrefix + GvcfIndex.commandName
@@ -327,7 +327,7 @@ object ClioCommand extends ClioParsers {
   val moveGvcfName: String = movePrefix + GvcfIndex.commandName
   val deleteGvcfName: String = deletePrefix + GvcfIndex.commandName
   val patchGvcfName: String = patchPrefix + GvcfIndex.commandName
-  val relinquishGvcfName: String = relinquishPrefix + GvcfIndex.commandName
+  val markExternalGvcfName: String = markExternalPrefix + GvcfIndex.commandName
 
   // Names for cram commands.
   val addCramName: String = addPrefix + CramIndex.commandName
@@ -337,7 +337,7 @@ object ClioCommand extends ClioParsers {
   val deleteCramName: String = deletePrefix + CramIndex.commandName
   val deliverCramName: String = deliverPrefix + CramIndex.commandName
   val patchCramName: String = patchPrefix + CramIndex.commandName
-  val relinquishCramName: String = relinquishPrefix + CramIndex.commandName
+  val markExternalCramName: String = markExternalPrefix + CramIndex.commandName
 
   // Names for uBAM commands.
   val addUbamName: String = addPrefix + UbamIndex.commandName
@@ -346,7 +346,7 @@ object ClioCommand extends ClioParsers {
   val moveUbamName: String = movePrefix + UbamIndex.commandName
   val deleteUbamName: String = deletePrefix + UbamIndex.commandName
   val patchUbamName: String = patchPrefix + UbamIndex.commandName
-  val relinquishUbamName: String = relinquishPrefix + UbamIndex.commandName
+  val markExternalUbamName: String = markExternalPrefix + UbamIndex.commandName
 
   // Names for Arrays commands.
   val addArraysName: String = addPrefix + ArraysIndex.commandName
@@ -356,7 +356,7 @@ object ClioCommand extends ClioParsers {
   val deleteArraysName: String = deletePrefix + ArraysIndex.commandName
   val deliverArraysName: String = deliverPrefix + ArraysIndex.commandName
   val patchArraysName: String = patchPrefix + ArraysIndex.commandName
-  val relinquishArraysName: String = relinquishPrefix + ArraysIndex.commandName
+  val markExternalArraysName: String = markExternalPrefix + ArraysIndex.commandName
 
   /**
     * Default parallelism for patch commands.
