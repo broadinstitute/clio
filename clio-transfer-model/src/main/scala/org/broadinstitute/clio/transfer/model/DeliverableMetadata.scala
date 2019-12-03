@@ -4,5 +4,5 @@ trait DeliverableMetadata[M <: DeliverableMetadata[M]] extends Metadata[M] {
   self: M =>
   val workspaceName: Option[String]
 
-  def withWorkspaceName(name: String): M
+  def withWorkspace(name: String, billingProject: String): M
 }

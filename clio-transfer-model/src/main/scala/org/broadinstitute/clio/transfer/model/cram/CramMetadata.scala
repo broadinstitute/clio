@@ -28,7 +28,7 @@ case class CramMetadata(
   wdlPath: Option[URI] = None,
   readgroupMd5: Option[Symbol] = None,
   workspaceName: Option[String] = None,
-  workspaceBillingProject: Option[String] = None,
+  billingProject: Option[String] = None,
   notes: Option[String] = None,
   analysisFilesTxtPath: Option[URI] = None,
   /* These fields were originally meant to be part of the cram metrics index. */
@@ -88,9 +88,10 @@ case class CramMetadata(
       notes = appendNote(deletionNote)
     )
 
-  override def withWorkspaceName(name: String): CramMetadata = {
+  override def withWorkspace(name: String, billingProject: String): CramMetadata = {
     this.copy(
-      workspaceName = Some(name)
+      workspaceName = Some(name),
+      billingProject = Some(billingProject)
     )
   }
 

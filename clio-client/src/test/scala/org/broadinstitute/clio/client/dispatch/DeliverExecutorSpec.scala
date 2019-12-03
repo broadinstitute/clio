@@ -24,9 +24,10 @@ class DeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   )
 
   private val workspaceName = "workspace"
+  private val billingProject = "billing-project"
   private val workspacePath = URI.create("gs://workspacePath/")
 
-  private val command = DeliverCram(theKey, workspaceName, workspacePath)
+  private val command = DeliverCram(theKey, workspaceName, billingProject, workspacePath)
 
   type Aux = ClioWebClient.UpsertAux[CramKey, CramMetadata]
 

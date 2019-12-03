@@ -60,6 +60,7 @@ sealed abstract class DeliverCommand[+CI <: DeliverableIndex](override val index
     extends MoveCommand(index) {
   def key: index.KeyType
   def workspaceName: String
+  def billingProject: String
   def workspacePath: URI
   final def destination: URI = workspacePath
   def newBasename: Option[String]
@@ -161,6 +162,7 @@ final case class DeleteCram(
 final case class DeliverCram(
   @Recurse key: CramKey,
   workspaceName: String,
+  billingProject: String = "broad-genomics-data",
   workspacePath: URI,
   newBasename: Option[String] = None,
   force: Boolean = false,
@@ -257,6 +259,7 @@ final case class DeleteArrays(
 final case class DeliverArrays(
   @Recurse key: ArraysKey,
   workspaceName: String,
+  billingProject: String = "broad-genomics-data",
   workspacePath: URI,
   newBasename: Option[String] = None,
   force: Boolean = false
