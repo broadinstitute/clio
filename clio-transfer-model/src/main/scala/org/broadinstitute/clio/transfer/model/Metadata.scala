@@ -50,7 +50,7 @@ trait Metadata[M <: Metadata[M]] { self: M =>
 }
 
 object Metadata {
-  
+
   def jsonWithDocumentStatus(input: Json, documentStatus: DocumentStatus): Json = {
     import org.broadinstitute.clio.util.json.ModelAutoDerivation.encodeEnum
     input.mapObject(

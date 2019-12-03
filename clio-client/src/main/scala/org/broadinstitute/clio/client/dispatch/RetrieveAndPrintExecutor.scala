@@ -36,8 +36,7 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
       case query: SimpleQueryCommand[_] =>
         webClient.simpleQuery(query.index)(
           query.queryInput,
-          query.includeDeleted,
-          query.includeAll
+          query.includeAllStatuses
         )
     }
 

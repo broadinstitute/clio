@@ -91,11 +91,10 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
         webClient
           .simpleQuery(_: ClioWebClient.QueryAux[UbamQueryInput])(
             _: UbamQueryInput,
-            _: Boolean,
             _: Boolean
           )
         )
-        .expects(UbamIndex, query, includeDeleted, includeDeleted)
+        .expects(UbamIndex, query, includeDeleted)
         .returning(Source(keys.map(_.asJson)))
 
       val stdout = mutable.StringBuilder.newBuilder

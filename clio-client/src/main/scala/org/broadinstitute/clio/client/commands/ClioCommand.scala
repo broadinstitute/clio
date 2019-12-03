@@ -41,6 +41,7 @@ sealed abstract class SimpleQueryCommand[CI <: ClioIndex](val index: CI)
   def queryInput: index.QueryInputType
   def includeDeleted: Boolean
   def includeAll: Boolean
+  def includeAllStatuses: Boolean = includeDeleted || includeAll
 }
 
 sealed abstract class MoveCommand[+CI <: ClioIndex](val index: CI) extends ClioCommand {
