@@ -478,7 +478,10 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
       outputs should contain only expectedMerge(
         key,
-        metadata.copy(workspaceName = Some(workspaceName))
+        metadata.copy(
+          workspaceName = Some(workspaceName),
+          billingProject = Some(ClioCommand.defaultBillingProject)
+        )
       )
     }
 
@@ -938,7 +941,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
     val workspaceName = s"$id-TestWorkspace-$id"
     val billingProject =
-      if (customBillingProject) s"$id-TestBillingProject-$id" else "broad-genomics-data"
+      if (customBillingProject) s"$id-TestBillingProject-$id"
+      else ClioCommand.defaultBillingProject
 
     val _ = Seq(
       (vcfSource, vcfContents),
@@ -1127,7 +1131,10 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
       outputs should contain only expectedMerge(
         key,
-        metadata.copy(workspaceName = Some(workspaceName))
+        metadata.copy(
+          workspaceName = Some(workspaceName),
+          billingProject = Some(ClioCommand.defaultBillingProject)
+        )
       )
     }
 

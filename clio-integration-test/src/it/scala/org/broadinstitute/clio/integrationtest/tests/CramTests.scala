@@ -960,7 +960,8 @@ trait CramTests { self: BaseIntegrationSpec =>
 
     val workspaceName = s"$id-TestWorkspace-$id"
     val billingProject =
-      if (customBillingProject) s"$id-TestBillingProject-$id" else "broad-genomics-data"
+      if (customBillingProject) s"$id-TestBillingProject-$id"
+      else ClioCommand.defaultBillingProject
 
     val _ = Seq(
       (cramSource, cramContents),
@@ -1159,7 +1160,10 @@ trait CramTests { self: BaseIntegrationSpec =>
 
       outputs should contain only expectedMerge(
         key,
-        metadata.copy(workspaceName = Some(workspaceName))
+        metadata.copy(
+          workspaceName = Some(workspaceName),
+          billingProject = Some(ClioCommand.defaultBillingProject)
+        )
       )
     }
 
@@ -1296,6 +1300,7 @@ trait CramTests { self: BaseIntegrationSpec =>
         key,
         metadata.copy(
           workspaceName = Some(workspaceName),
+          billingProject = Some(ClioCommand.defaultBillingProject),
           cramPath = Some(cramDestination.uri),
           craiPath = Some(craiDestination.uri)
         )

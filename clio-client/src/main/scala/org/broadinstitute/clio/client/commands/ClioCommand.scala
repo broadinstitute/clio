@@ -162,7 +162,7 @@ final case class DeleteCram(
 final case class DeliverCram(
   @Recurse key: CramKey,
   workspaceName: String,
-  billingProject: String = "broad-genomics-data",
+  billingProject: String = ClioCommand.defaultBillingProject,
   workspacePath: URI,
   newBasename: Option[String] = None,
   force: Boolean = false,
@@ -259,7 +259,7 @@ final case class DeleteArrays(
 final case class DeliverArrays(
   @Recurse key: ArraysKey,
   workspaceName: String,
-  billingProject: String = "broad-genomics-data",
+  billingProject: String = ClioCommand.defaultBillingProject,
   workspacePath: URI,
   newBasename: Option[String] = None,
   force: Boolean = false
@@ -329,6 +329,8 @@ object ClioCommand extends ClioParsers {
     * dropped it down to 16.
     */
   val defaultPatchParallelism = 16
+
+  val defaultBillingProject = "broad-genomics-data"
 
   /** The caseapp parser to use for all Clio sub-commands. */
   val parser: CommandParser[ClioCommand] =
