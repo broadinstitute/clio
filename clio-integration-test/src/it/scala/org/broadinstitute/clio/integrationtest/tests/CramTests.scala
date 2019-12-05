@@ -917,7 +917,8 @@ trait CramTests { self: BaseIntegrationSpec =>
 
   def testDeliverMetrics(
     deliverMetrics: Boolean,
-    regulatoryDesignation: RegulatoryDesignation
+    regulatoryDesignation: RegulatoryDesignation,
+    customBillingProject: Boolean = false
   ): Future[Assertion] = {
     val id = randomId
     val project = s"project$id"
@@ -958,6 +959,9 @@ trait CramTests { self: BaseIntegrationSpec =>
     )
 
     val workspaceName = s"$id-TestWorkspace-$id"
+    val billingProject =
+      if (customBillingProject) s"$id-TestBillingProject-$id"
+      else ClioCommand.defaultBillingProject
 
     val _ = Seq(
       (cramSource, cramContents),
@@ -966,6 +970,13 @@ trait CramTests { self: BaseIntegrationSpec =>
     ).map {
       case (source, contents) => source.write(contents)
     }
+
+    val customBillingProjectArgs =
+      if (customBillingProject) {
+        Seq("--billing-project", billingProject)
+      } else {
+        Seq.empty
+      }
 
     val commandArgs = Seq(
       "--location",
@@ -984,7 +995,7 @@ trait CramTests { self: BaseIntegrationSpec =>
       rootDestination.uri.toString,
       "--new-basename",
       newBasename
-    ) ++ (if (deliverMetrics) Some("--deliver-sample-metrics") else None)
+    ) ++ (if (deliverMetrics) Some("--deliver-sample-metrics") else None) ++ customBillingProjectArgs
     val result = for {
       _ <- runUpsertCram(key, metadata)
       _ <- runIgnore(ClioCommand.deliverCramName, commandArgs: _*)
@@ -1026,6 +1037,7 @@ trait CramTests { self: BaseIntegrationSpec =>
         key,
         metadata.copy(
           workspaceName = Some(workspaceName),
+          billingProject = Some(billingProject),
           cramPath = Some(cramDestination.uri),
           craiPath = Some(craiDestination.uri),
           crosscheckPath = Some(
@@ -1072,6 +1084,10 @@ trait CramTests { self: BaseIntegrationSpec =>
       s"($designation, deliverMetrics=false)" in {
       testDeliverMetrics(false, designation)
     }
+  }
+
+  it should "deliver with a custom billing project" in {
+    testDeliverMetrics(true, RegulatoryDesignation.ResearchOnly, true)
   }
 
   it should "not fail delivery if the cram is already in its target location" in {
@@ -1144,7 +1160,10 @@ trait CramTests { self: BaseIntegrationSpec =>
 
       outputs should contain only expectedMerge(
         key,
-        metadata.copy(workspaceName = Some(workspaceName))
+        metadata.copy(
+          workspaceName = Some(workspaceName),
+          billingProject = Some(ClioCommand.defaultBillingProject)
+        )
       )
     }
 
@@ -1281,6 +1300,7 @@ trait CramTests { self: BaseIntegrationSpec =>
         key,
         metadata.copy(
           workspaceName = Some(workspaceName),
+          billingProject = Some(ClioCommand.defaultBillingProject),
           cramPath = Some(cramDestination.uri),
           craiPath = Some(craiDestination.uri)
         )

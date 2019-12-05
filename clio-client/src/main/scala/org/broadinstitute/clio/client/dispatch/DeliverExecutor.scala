@@ -50,7 +50,10 @@ class DeliverExecutor[CI <: DeliverableIndex](
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
     super.buildMove(metadata).map {
       case (m, ops) =>
-        (m.withWorkspaceName(deliverCommand.workspaceName), ops)
+        (
+          m.withWorkspace(deliverCommand.workspaceName, deliverCommand.billingProject),
+          ops
+        )
     }
   }
 }

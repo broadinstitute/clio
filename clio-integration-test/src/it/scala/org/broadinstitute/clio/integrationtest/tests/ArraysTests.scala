@@ -478,7 +478,10 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
       outputs should contain only expectedMerge(
         key,
-        metadata.copy(workspaceName = Some(workspaceName))
+        metadata.copy(
+          workspaceName = Some(workspaceName),
+          billingProject = Some(ClioCommand.defaultBillingProject)
+        )
       )
     }
 
@@ -877,11 +880,18 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
   it should "move files and record the workspace name when delivering" in testDeliver()
 
+  it should "deliver using a custom billing project when given one" in testDeliver(
+    customBillingProject = true
+  )
+
   it should "support changing the vcf, vcfIndex, and gtc basename on deliver" in testDeliver(
     changeBasename = true
   )
 
-  def testDeliver(changeBasename: Boolean = false): Future[Assertion] = {
+  def testDeliver(
+    changeBasename: Boolean = false,
+    customBillingProject: Boolean = false
+  ): Future[Assertion] = {
     val id = randomId
     val barcode = s"barcode$id"
     val version = 3
@@ -930,6 +940,9 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     )
 
     val workspaceName = s"$id-TestWorkspace-$id"
+    val billingProject =
+      if (customBillingProject) s"$id-TestBillingProject-$id"
+      else ClioCommand.defaultBillingProject
 
     val _ = Seq(
       (vcfSource, vcfContents),
@@ -941,6 +954,13 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     ).map {
       case (source, contents) => source.write(contents)
     }
+
+    val customBillingProjectArgs =
+      if (customBillingProject) {
+        Seq("--billing-project", billingProject)
+      } else {
+        Seq.empty
+      }
 
     val args = Seq.concat(
       Seq(
@@ -954,7 +974,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         workspaceName,
         "--workspace-path",
         rootDestination.uri.toString
-      ),
+      ) ++ customBillingProjectArgs,
       if (changeBasename) {
         Seq("--new-basename", endBasename)
       } else {
@@ -1003,6 +1023,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         key,
         metadata.copy(
           workspaceName = Some(workspaceName),
+          billingProject = Some(billingProject),
           vcfPath = Some(vcfDestination.uri),
           vcfIndexPath = Some(vcfIndexDestination.uri),
           gtcPath = Some(gtcDestination.uri),
@@ -1110,7 +1131,10 @@ trait ArraysTests { self: BaseIntegrationSpec =>
 
       outputs should contain only expectedMerge(
         key,
-        metadata.copy(workspaceName = Some(workspaceName))
+        metadata.copy(
+          workspaceName = Some(workspaceName),
+          billingProject = Some(ClioCommand.defaultBillingProject)
+        )
       )
     }
 

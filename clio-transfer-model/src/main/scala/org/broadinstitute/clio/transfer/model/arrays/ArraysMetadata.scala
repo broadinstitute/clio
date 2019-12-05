@@ -46,7 +46,8 @@ case class ArraysMetadata(
   vcfIndexPath: Option[URI] = None,
   workflowStartDate: Option[OffsetDateTime] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
-  workspaceName: Option[String] = None
+  workspaceName: Option[String] = None,
+  billingProject: Option[String] = None
 ) extends Metadata[ArraysMetadata]
     with DeliverableMetadata[ArraysMetadata]
     with CromwellWorkflowResultMetadata[ArraysMetadata] {
@@ -68,9 +69,10 @@ case class ArraysMetadata(
       notes = appendNote(deletionNote)
     )
 
-  override def withWorkspaceName(name: String): ArraysMetadata = {
+  override def withWorkspace(name: String, billingProject: String): ArraysMetadata = {
     this.copy(
-      workspaceName = Some(name)
+      workspaceName = Some(name),
+      billingProject = Some(billingProject)
     )
   }
 
