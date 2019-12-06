@@ -98,10 +98,12 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
         .returning(Source(keys.map(_.asJson)))
 
       val stdout = mutable.StringBuilder.newBuilder
-      val executor = new RetrieveAndPrintExecutor(QueryUbam(query, includeDeleted), { s =>
-        stdout.append(s)
-        ()
-      })
+      val executor =
+        new RetrieveAndPrintExecutor(QueryUbam(query, includeDeleted, includeDeleted), {
+          s =>
+            stdout.append(s)
+            ()
+        })
 
       executor.execute(webClient, stub[IoUtil]).runWith(Sink.seq).map { jsons =>
         jsons.map(_.as[UbamKey]) should contain theSameElementsAs keys.map(Right(_))

@@ -40,6 +40,8 @@ sealed abstract class SimpleQueryCommand[CI <: ClioIndex](val index: CI)
     extends RetrieveAndPrintCommand {
   def queryInput: index.QueryInputType
   def includeDeleted: Boolean
+  def includeAll: Boolean
+  def includeAllStatuses: Boolean = includeDeleted || includeAll
 }
 
 sealed abstract class MoveCommand[+CI <: ClioIndex](val index: CI) extends ClioCommand {
@@ -72,6 +74,12 @@ sealed abstract class PatchCommand[CI <: ClioIndex](val index: CI) extends ClioC
   def maxParallelUpserts: Int
 }
 
+sealed abstract class MarkExternalCommand[CI <: ClioIndex](val index: CI)
+    extends ClioCommand {
+  def key: index.KeyType
+  def note: String
+}
+
 // Generic commands.
 
 @CommandName(ClioCommand.getServerHealthName)
@@ -92,7 +100,8 @@ final case class AddGvcf(
 @CommandName(ClioCommand.queryGvcfName)
 final case class QueryGvcf(
   @Recurse queryInput: GvcfQueryInput,
-  includeDeleted: Boolean = false
+  includeDeleted: Boolean = false,
+  includeAll: Boolean = false
 ) extends SimpleQueryCommand(GvcfIndex)
 
 @CommandName(ClioCommand.rawQueryGvcfName)
@@ -122,6 +131,12 @@ final case class PatchGvcf(
   maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(GvcfIndex)
 
+@CommandName(ClioCommand.markExternalGvcfName)
+final case class MarkExternalGvcf(
+  @Recurse key: GvcfKey,
+  note: String
+) extends MarkExternalCommand(GvcfIndex)
+
 // cram commands.
 
 @CommandName(ClioCommand.addCramName)
@@ -134,7 +149,8 @@ final case class AddCram(
 @CommandName(ClioCommand.queryCramName)
 final case class QueryCram(
   @Recurse queryInput: CramQueryInput,
-  includeDeleted: Boolean = false
+  includeDeleted: Boolean = false,
+  includeAll: Boolean = false
 ) extends SimpleQueryCommand(CramIndex)
 
 @CommandName(ClioCommand.rawQueryCramName)
@@ -177,6 +193,12 @@ final case class PatchCram(
   maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(CramIndex)
 
+@CommandName(ClioCommand.markExternalCramName)
+final case class MarkExternalCram(
+  @Recurse key: CramKey,
+  note: String
+) extends MarkExternalCommand(CramIndex)
+
 // uBAM commands.
 
 @CommandName(ClioCommand.addUbamName)
@@ -189,7 +211,8 @@ final case class AddUbam(
 @CommandName(ClioCommand.queryUbamName)
 final case class QueryUbam(
   @Recurse queryInput: UbamQueryInput,
-  includeDeleted: Boolean = false
+  includeDeleted: Boolean = false,
+  includeAll: Boolean = false
 ) extends SimpleQueryCommand(UbamIndex)
 
 @CommandName(ClioCommand.rawQueryUbamName)
@@ -219,6 +242,12 @@ final case class PatchUbam(
   maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(UbamIndex)
 
+@CommandName(ClioCommand.markExternalUbamName)
+final case class MarkExternalUbam(
+  @Recurse key: UbamKey,
+  note: String
+) extends MarkExternalCommand(UbamIndex)
+
 // ARRAYS commands.
 
 @CommandName(ClioCommand.addArraysName)
@@ -231,7 +260,8 @@ final case class AddArrays(
 @CommandName(ClioCommand.queryArraysName)
 final case class QueryArrays(
   @Recurse queryInput: ArraysQueryInput,
-  includeDeleted: Boolean = false
+  includeDeleted: Boolean = false,
+  includeAll: Boolean = false
 ) extends SimpleQueryCommand(ArraysIndex)
 
 @CommandName(ClioCommand.rawQueryArraysName)
@@ -273,6 +303,12 @@ final case class PatchArrays(
   maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
 ) extends PatchCommand(ArraysIndex)
 
+@CommandName(ClioCommand.markExternalArraysName)
+final case class MarkExternalArrays(
+  @Recurse key: ArraysKey,
+  note: String
+) extends MarkExternalCommand(ArraysIndex)
+
 object ClioCommand extends ClioParsers {
 
   // Names for generic commands.
@@ -286,6 +322,7 @@ object ClioCommand extends ClioParsers {
   val deletePrefix = "delete-"
   val deliverPrefix = "deliver-"
   val patchPrefix = "patch-"
+  val markExternalPrefix = "mark-external-"
 
   // Names for GVCF commands.
   val addGvcfName: String = addPrefix + GvcfIndex.commandName
@@ -294,6 +331,7 @@ object ClioCommand extends ClioParsers {
   val moveGvcfName: String = movePrefix + GvcfIndex.commandName
   val deleteGvcfName: String = deletePrefix + GvcfIndex.commandName
   val patchGvcfName: String = patchPrefix + GvcfIndex.commandName
+  val markExternalGvcfName: String = markExternalPrefix + GvcfIndex.commandName
 
   // Names for cram commands.
   val addCramName: String = addPrefix + CramIndex.commandName
@@ -303,6 +341,7 @@ object ClioCommand extends ClioParsers {
   val deleteCramName: String = deletePrefix + CramIndex.commandName
   val deliverCramName: String = deliverPrefix + CramIndex.commandName
   val patchCramName: String = patchPrefix + CramIndex.commandName
+  val markExternalCramName: String = markExternalPrefix + CramIndex.commandName
 
   // Names for uBAM commands.
   val addUbamName: String = addPrefix + UbamIndex.commandName
@@ -311,6 +350,7 @@ object ClioCommand extends ClioParsers {
   val moveUbamName: String = movePrefix + UbamIndex.commandName
   val deleteUbamName: String = deletePrefix + UbamIndex.commandName
   val patchUbamName: String = patchPrefix + UbamIndex.commandName
+  val markExternalUbamName: String = markExternalPrefix + UbamIndex.commandName
 
   // Names for Arrays commands.
   val addArraysName: String = addPrefix + ArraysIndex.commandName
@@ -320,6 +360,7 @@ object ClioCommand extends ClioParsers {
   val deleteArraysName: String = deletePrefix + ArraysIndex.commandName
   val deliverArraysName: String = deliverPrefix + ArraysIndex.commandName
   val patchArraysName: String = patchPrefix + ArraysIndex.commandName
+  val markExternalArraysName: String = markExternalPrefix + ArraysIndex.commandName
 
   /**
     * Default parallelism for patch commands.

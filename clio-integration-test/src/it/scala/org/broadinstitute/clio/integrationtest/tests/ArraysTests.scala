@@ -5,6 +5,7 @@ import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
 import io.circe.syntax._
 import java.net.URI
+
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -293,7 +294,12 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "show deleted arrays records on queryAll, but not query" in {
+  def testQueryAll(documentStatus: DocumentStatus): Future[Assertion] = {
+    val queryArg = documentStatus match {
+      case DocumentStatus.Deleted  => "--include-deleted"
+      case DocumentStatus.External => "--include-all"
+      case _                       => ""
+    }
     val barcode = "barcode." + randomId
 
     val keysWithMetadata = (1 to 3).map { version =>
@@ -305,7 +311,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       val upsertMetadata = ArraysMetadata(chipType = Some("chip type"))
       (upsertKey, upsertMetadata)
     }
-    val (deleteKey, deleteData) = keysWithMetadata.head
+    val (notNormalKey, notNormalData) = keysWithMetadata.head
 
     val upserts = Future.sequence {
       keysWithMetadata.map {
@@ -336,8 +342,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       _ <- upserts
       _ <- checkQuery(expectedLength = 3)
       _ <- runUpsertArrays(
-        deleteKey,
-        deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
+        notNormalKey,
+        notNormalData.copy(documentStatus = Some(documentStatus))
       )
       _ <- checkQuery(expectedLength = 2)
 
@@ -345,7 +351,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         ClioCommand.queryArraysName,
         "--chipwell-barcode",
         barcode,
-        "--include-deleted"
+        queryArg
       )
     } yield {
       results.length should be(keysWithMetadata.length)
@@ -359,10 +365,18 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         )
 
         result.unsafeGet[DocumentStatus]("document_status") should be {
-          if (resultKey == deleteKey) DocumentStatus.Deleted else DocumentStatus.Normal
+          if (resultKey == notNormalKey) documentStatus else DocumentStatus.Normal
         }
       }
     }
+  }
+
+  it should "show deleted arrays records on queryAll, but not query" in {
+    testQueryAll(DocumentStatus.Deleted)
+  }
+
+  it should "show External arrays records on queryAll, but not query" in {
+    testQueryAll(DocumentStatus.External)
   }
 
   it should "respect user-set regulatory designation for arrays" in {
@@ -737,6 +751,116 @@ trait ArraysTests { self: BaseIntegrationSpec =>
       }
     }
   }
+
+  def testExternalArrays(
+    existingNote: Option[String] = None
+  ): Future[Assertion] = {
+    val markExternalNote =
+      s"$randomId --- Marked External by the integration tests --- $randomId"
+
+    val chipwellBarcode = s" chip$randomId"
+    val version = 3
+
+    val vcfContents = s"$randomId --- I am a vcf fated for other worlds --- $randomId"
+    val vcfIndexContents =
+      s"$randomId --- I am an index fated for other worlds --- $randomId"
+    val metrics1Contents = s"$randomId --- I am a questing metrics file --- $randomId"
+    val metrics2Contents =
+      s"$randomId --- I am a second questing metrics file --- $randomId"
+
+    val storageDir = rootTestStorageDir / s"arrays/$chipwellBarcode/$version/"
+    val vcfPath = storageDir / s"$randomId${ArraysExtensions.VcfGzExtension}"
+    val vcfIndexPath = storageDir / s"$randomId${ArraysExtensions.VcfGzTbiExtension}"
+    val metrics1Path = storageDir / s"$randomId.metrics"
+    val metrics2Path = storageDir / s"$randomId.metrics"
+
+    val key = ArraysKey(Location.GCP, Symbol(chipwellBarcode), version)
+    val metadata = ArraysMetadata(
+      vcfPath = Some(vcfPath.uri),
+      vcfIndexPath = Some(vcfIndexPath.uri),
+      variantCallingDetailMetricsPath = Some(metrics1Path.uri),
+      variantCallingSummaryMetricsPath = Some(metrics1Path.uri),
+      notes = existingNote
+    )
+
+    Seq(
+      (vcfPath, vcfContents),
+      (vcfIndexPath, vcfIndexContents),
+      (metrics1Path, metrics1Contents),
+      (metrics2Path, metrics2Contents)
+    ).map {
+      case (path, contents) => path.write(contents)
+    }
+
+    val result = for {
+      _ <- runUpsertArrays(key, metadata)
+      _ <- runIgnore(
+        ClioCommand.markExternalArraysName,
+        Seq(
+          "--location",
+          Location.GCP.entryName,
+          "--chipwell-barcode",
+          chipwellBarcode,
+          "--version",
+          version.toString,
+          "--note",
+          markExternalNote
+        ).filter(_.nonEmpty): _*
+      )
+      outputs <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--location",
+        Location.GCP.entryName,
+        "--chipwell-barcode",
+        chipwellBarcode,
+        "--version",
+        version.toString,
+        "--include-deleted"
+      )
+    } yield {
+
+      outputs should have length 1
+      val output = outputs.head
+      output.unsafeGet[String]("notes") should be(
+        metadata.notes.fold(markExternalNote)(existing => s"$existing\n$markExternalNote")
+      )
+      output.unsafeGet[DocumentStatus]("document_status") should be(
+        DocumentStatus.External
+      )
+    }
+
+    result.andThen[Unit] {
+      case _ => {
+        // Without `val _ =`, the compiler complains about discarded non-Unit value.
+        val _ = Seq(vcfPath, vcfIndexPath, metrics1Path, metrics2Path)
+          .map(_.delete(swallowIOExceptions = true))
+      }
+    }
+  }
+
+  it should "mark arrays as External when marking external" in {
+    testExternalArrays()
+  }
+
+  it should "require a note when marking arrays as External" in {
+    recoverToExceptionIf[Exception] {
+      runIgnore(
+        ClioCommand.markExternalArraysName,
+        "--location",
+        Location.GCP.entryName,
+        "--chipwell-barcode",
+        randomId,
+        "--version",
+        "123"
+      )
+    }.map {
+      _.getMessage should include("--note")
+    }
+  }
+
+  it should "preserve existing notes when marking arrays as External" in testExternalArrays(
+    existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
+  )
 
   def testDelete(
     existingNote: Option[String] = None,

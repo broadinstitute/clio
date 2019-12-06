@@ -34,7 +34,10 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
             webClient.query(query.index)(_, raw = true)
           )
       case query: SimpleQueryCommand[_] =>
-        webClient.simpleQuery(query.index)(query.queryInput, query.includeDeleted)
+        webClient.simpleQuery(query.index)(
+          query.queryInput,
+          query.includeAllStatuses
+        )
     }
 
     responseStream.alsoTo {
