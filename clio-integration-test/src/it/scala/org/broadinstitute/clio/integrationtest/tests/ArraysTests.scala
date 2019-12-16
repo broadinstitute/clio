@@ -881,6 +881,8 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val metrics1Contents = s"$id --- I am an immortal metrics file --- $id"
     val metrics2Contents =
       s"$id --- I am a second immortal metrics file --- $id"
+    val redIdatContents = s"$id --- I am a red idat file --- $id"
+    val grnIdatContents = s"$id --- I am a green idat file --- $id"
 
     val storageDir = rootTestStorageDir / s"arrays/$barcode/v$version/"
     val vcfPath = storageDir / s"$id${ArraysExtensions.VcfGzExtension}"
@@ -889,11 +891,15 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     val paramsPath = storageDir / s"params-$id${ArraysExtensions.TxtExtension}"
     val metrics1Path = storageDir / s"detail-$id${ArraysExtensions.FingerprintingDetailMetricsExtension}"
     val metrics2Path = storageDir / s"summary-$id${ArraysExtensions.FingerprintingSummaryMetricsExtension}"
+    val redIdatPath = storageDir / s"red-idat-$id${ArraysExtensions.RedIdatExtension}"
+    val grnIdatPath = storageDir / s"grn-idat-$id${ArraysExtensions.GrnIdatExtension}"
 
     val key = ArraysKey(Location.GCP, Symbol(barcode), version)
     val metadata = ArraysMetadata(
       vcfPath = Some(vcfPath.uri),
       vcfIndexPath = Some(vcfIndexPath.uri),
+      redIdatPath = Some(redIdatPath.uri),
+      grnIdatPath = Some(grnIdatPath.uri),
       gtcPath = Some(gtcPath.uri),
       paramsPath = Some(paramsPath.uri),
       fingerprintingDetailMetricsPath = Some(metrics1Path.uri),
@@ -909,7 +915,9 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         (gtcPath, gtcContents),
         (paramsPath, paramsContents),
         (metrics1Path, metrics1Contents),
-        (metrics2Path, metrics2Contents)
+        (metrics2Path, metrics2Contents),
+        (redIdatPath, redIdatContents),
+        (grnIdatPath, grnIdatContents)
       ).map {
         case (path, contents) => path.write(contents)
       }
@@ -951,6 +959,18 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         }
       }
 
+      if (workspaceName.isEmpty && !testNonExistingFile) {
+        Seq((redIdatPath, redIdatContents), (grnIdatPath, grnIdatContents)).foreach {
+          case (path, contents) =>
+            path should exist
+            path.contentAsString should be(contents)
+        }
+      } else {
+        Seq(redIdatPath, grnIdatPath).foreach { path =>
+          path should not(exist)
+        }
+      }
+
       outputs should have length 1
       val output = outputs.head
       output.unsafeGet[String]("notes") should be(
@@ -964,10 +984,15 @@ trait ArraysTests { self: BaseIntegrationSpec =>
     result.andThen[Unit] {
       case _ =>
         // Without `val _ =`, the compiler complains about discarded non-Unit value.
-        val _ = Seq(vcfPath, vcfIndexPath, metrics1Path, metrics2Path)
-          .map(_.delete(swallowIOExceptions = true))
+        val _ =
+          Seq(vcfPath, vcfIndexPath, metrics1Path, metrics2Path, redIdatPath, grnIdatPath)
+            .map(_.delete(swallowIOExceptions = true))
     }
   }
+
+  it should "delete idats when deleting delivered arrays" in testDelete(
+    workspaceName = Some(s"$randomId-workspace")
+  )
 
   it should "delete vcf in GCP along with its index, but not metrics" in testDelete()
 

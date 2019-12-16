@@ -55,13 +55,17 @@ case class ArraysMetadata(
   /**
     * @return paths to delete
     */
-  override def pathsToDelete: Seq[URI] =
+  override def pathsToDelete: Seq[URI] = {
+    val idatPaths =
+      if (workspaceName.exists(!_.isEmpty)) Seq(redIdatPath, grnIdatPath).flatten
+      else Seq.empty
     Seq.concat(
       gtcPath,
       paramsPath,
       vcfPath,
       vcfIndexPath,
-    )
+    ) ++ idatPaths
+  }
 
   override def changeStatus(
     documentStatus: DocumentStatus,
