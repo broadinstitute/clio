@@ -228,14 +228,14 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
     }
   }
 
-  def queryTest(includeDeleted: Boolean): Unit = {
-    it should s"query metadata with includeDeleted=$includeDeleted" in {
+  def queryTest(includeAllStatuses: Boolean): Unit = {
+    it should s"query metadata with includeAllStatuses=$includeAllStatuses" in {
 
       val index = ModelMockIndex()
 
       val query = ModelMockQueryInput(mockFieldInt = Some(1))
       val expectedRequestBody = (
-        if (includeDeleted) {
+        if (includeAllStatuses) {
           query
         } else {
           query.withDocumentStatus(Some(DocumentStatus.Normal))
@@ -271,9 +271,12 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
 
       val client = new ClioWebClient(flow, timeout, 0, generator)
 
-      client.simpleQuery(index)(query, includeDeleted).runWith(Sink.seq).map {
-        _ should contain theSameElementsAs expectedOut
-      }
+      client
+        .simpleQuery(index)(query, includeAllStatuses)
+        .runWith(Sink.seq)
+        .map {
+          _ should contain theSameElementsAs expectedOut
+        }
     }
   }
 

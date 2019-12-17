@@ -10,7 +10,7 @@ import org.broadinstitute.clio.client.commands.DeleteCommand
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.transfer.model.ClioIndex
-import org.broadinstitute.clio.util.model.Location
+import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
 
 import scala.collection.immutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -48,7 +48,7 @@ class DeleteExecutor[CI <: ClioIndex](deleteCommand: DeleteCommand[CI])(
       upsertId <- webClient
         .upsert(deleteCommand.index)(
           deleteCommand.key,
-          existingMetadata.markDeleted(deleteCommand.note),
+          existingMetadata.changeStatus(DocumentStatus.Deleted, deleteCommand.note),
           // Always force because we're purposefully overwriting document status.
           force = true
         )

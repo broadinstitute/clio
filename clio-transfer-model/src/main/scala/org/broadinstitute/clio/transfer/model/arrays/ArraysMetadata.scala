@@ -63,10 +63,13 @@ case class ArraysMetadata(
       vcfIndexPath,
     )
 
-  override def markDeleted(deletionNote: String): ArraysMetadata =
+  override def changeStatus(
+    documentStatus: DocumentStatus,
+    changeNote: String
+  ): ArraysMetadata =
     this.copy(
-      documentStatus = Some(DocumentStatus.Deleted),
-      notes = appendNote(deletionNote)
+      documentStatus = Some(documentStatus),
+      notes = appendNote(changeNote)
     )
 
   override def withWorkspace(name: String, billingProject: String): ArraysMetadata = {

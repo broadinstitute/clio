@@ -361,7 +361,12 @@ trait CramTests { self: BaseIntegrationSpec =>
     }
   }
 
-  it should "show deleted cram records on queryAll, but not query" in {
+  def testQueryAll(documentStatus: DocumentStatus): Future[Assertion] = {
+    val queryArg = documentStatus match {
+      case DocumentStatus.Deleted  => "--include-deleted"
+      case DocumentStatus.External => "--include-all"
+      case _                       => ""
+    }
     val project = "testProject" + randomId
     val sampleAlias = "sample688." + randomId
 
@@ -378,7 +383,7 @@ trait CramTests { self: BaseIntegrationSpec =>
       )
       (upsertKey, upsertMetadata)
     }
-    val (deleteKey, deleteData) = keysWithMetadata.head
+    val (notNormalKey, notNormalData) = keysWithMetadata.head
 
     val upserts = Future.sequence {
       keysWithMetadata.map {
@@ -412,8 +417,8 @@ trait CramTests { self: BaseIntegrationSpec =>
       _ <- upserts
       _ <- checkQuery(expectedLength = 3)
       _ <- runUpsertCram(
-        deleteKey,
-        deleteData.copy(documentStatus = Some(DocumentStatus.Deleted))
+        notNormalKey,
+        notNormalData.copy(documentStatus = Some(documentStatus))
       )
       _ <- checkQuery(expectedLength = 2)
 
@@ -423,7 +428,7 @@ trait CramTests { self: BaseIntegrationSpec =>
         project,
         "--sample-alias",
         sampleAlias,
-        "--include-deleted"
+        queryArg
       )
     } yield {
       results.length should be(keysWithMetadata.length)
@@ -440,10 +445,18 @@ trait CramTests { self: BaseIntegrationSpec =>
         )
 
         result.unsafeGet[DocumentStatus]("document_status") should be {
-          if (resultKey == deleteKey) DocumentStatus.Deleted else DocumentStatus.Normal
+          if (resultKey == notNormalKey) documentStatus else DocumentStatus.Normal
         }
       }
     }
+  }
+
+  it should "show deleted cram records on queryAll, but not query" in {
+    testQueryAll(DocumentStatus.Deleted)
+  }
+
+  it should "show External cram records on queryAll, but not query" in {
+    testQueryAll(DocumentStatus.External)
   }
 
   def createMockFile(
@@ -762,6 +775,128 @@ trait CramTests { self: BaseIntegrationSpec =>
       }
     }
   }
+
+  def testExternalCram(
+    existingNote: Option[String] = None
+  ): Future[Assertion] = {
+    val markExternalNote =
+      s"$randomId --- Marked External by the integration tests --- $randomId"
+
+    val project = s"project$randomId"
+    val sample = s"sample$randomId"
+    val version = 3
+
+    val cramContents = s"$randomId --- I am a cram fated for other worlds --- $randomId"
+    val craiContents = s"$randomId --- I am an index fated for other worlds --- $randomId"
+    val metrics1Contents = s"$randomId --- I am a questing metrics file --- $randomId"
+    val metrics2Contents =
+      s"$randomId --- I am a second questing metrics file --- $randomId"
+
+    val storageDir = rootTestStorageDir / s"cram/$project/$sample/v$version/"
+    val cramPath = storageDir / s"$randomId${CramExtensions.CramExtension}"
+    val craiPath = storageDir / s"$randomId${CramExtensions.CraiExtensionAddition}"
+    val metrics1Path = storageDir / s"$randomId.metrics"
+    val metrics2Path = storageDir / s"$randomId.metrics"
+
+    val key = CramKey(Location.GCP, project, DataType.WGS, sample, version)
+    val metadata = CramMetadata(
+      cramPath = Some(cramPath.uri),
+      craiPath = Some(craiPath.uri),
+      alignmentSummaryMetricsPath = Some(metrics1Path.uri),
+      fingerprintingSummaryMetricsPath = Some(metrics1Path.uri),
+      notes = existingNote
+    )
+
+    Seq(
+      (cramPath, cramContents),
+      (craiPath, craiContents),
+      (metrics1Path, metrics1Contents),
+      (metrics2Path, metrics2Contents)
+    ).map {
+      case (path, contents) => path.write(contents)
+    }
+
+    val result = for {
+      _ <- runUpsertCram(key, metadata)
+      _ <- runIgnore(
+        ClioCommand.markExternalCramName,
+        Seq(
+          "--location",
+          Location.GCP.entryName,
+          "--project",
+          project,
+          "--data-type",
+          DataType.WGS.entryName,
+          "--sample-alias",
+          sample,
+          "--version",
+          version.toString,
+          "--note",
+          markExternalNote
+        ).filter(_.nonEmpty): _*
+      )
+      outputs <- runCollectJson(
+        ClioCommand.queryCramName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        project,
+        "--data-type",
+        DataType.WGS.entryName,
+        "--sample-alias",
+        sample,
+        "--version",
+        version.toString,
+        "--include-deleted"
+      )
+    } yield {
+
+      outputs should have length 1
+      val output = outputs.head
+      output.unsafeGet[String]("notes") should be(
+        metadata.notes.fold(markExternalNote)(existing => s"$existing\n$markExternalNote")
+      )
+      output.unsafeGet[DocumentStatus]("document_status") should be(
+        DocumentStatus.External
+      )
+    }
+
+    result.andThen[Unit] {
+      case _ => {
+        // Without `val _ =`, the compiler complains about discarded non-Unit value.
+        val _ = Seq(cramPath, craiPath, metrics1Path, metrics2Path)
+          .map(_.delete(swallowIOExceptions = true))
+      }
+    }
+  }
+
+  it should "mark crams as External when marking external" in {
+    testExternalCram()
+  }
+
+  it should "require a note when marking a cram as External" in {
+    recoverToExceptionIf[Exception] {
+      runDecode[UpsertId](
+        ClioCommand.markExternalCramName,
+        "--location",
+        Location.GCP.entryName,
+        "--project",
+        randomId,
+        "--data-type",
+        DataType.WGS.entryName,
+        "--sample-alias",
+        randomId,
+        "--version",
+        "123"
+      )
+    }.map {
+      _.getMessage should include("--note")
+    }
+  }
+
+  it should "preserve existing notes when marking crams as External" in testExternalCram(
+    existingNote = Some(s"$randomId --- I am an existing note --- $randomId")
+  )
 
   def testDeleteCram(
     existingNote: Option[String] = None,

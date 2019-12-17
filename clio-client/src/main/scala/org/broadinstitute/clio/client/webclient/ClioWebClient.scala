@@ -249,10 +249,10 @@ class ClioWebClient(
     */
   def simpleQuery[I](clioIndex: ClioWebClient.QueryAux[I])(
     input: I,
-    includeDeleted: Boolean
+    includeAllStatuses: Boolean
   ): Source[Json, NotUsed] = {
     import clioIndex.implicits._
-    if (includeDeleted) {
+    if (includeAllStatuses) {
       query(clioIndex)(input.asJson)
     } else {
       query(clioIndex)(

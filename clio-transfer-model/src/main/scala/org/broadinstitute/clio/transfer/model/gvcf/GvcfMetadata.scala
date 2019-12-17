@@ -27,10 +27,13 @@ case class GvcfMetadata(
   override def pathsToDelete: Seq[URI] =
     Seq.concat(gvcfPath, gvcfIndexPath)
 
-  override def markDeleted(deletionNote: String): GvcfMetadata =
+  override def changeStatus(
+    documentStatus: DocumentStatus,
+    changeNote: String
+  ): GvcfMetadata =
     this.copy(
-      documentStatus = Some(DocumentStatus.Deleted),
-      notes = appendNote(deletionNote)
+      documentStatus = Some(documentStatus),
+      notes = appendNote(changeNote)
     )
 
   override def withDocumentStatus(

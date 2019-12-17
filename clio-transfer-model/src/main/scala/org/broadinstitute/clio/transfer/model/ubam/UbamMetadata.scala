@@ -54,10 +54,13 @@ case class UbamMetadata(
 
   override def pathsToDelete: Seq[URI] = ubamPath.toSeq
 
-  override def markDeleted(deletionNote: String): UbamMetadata =
+  override def changeStatus(
+    documentStatus: DocumentStatus,
+    changeNote: String
+  ): UbamMetadata =
     this.copy(
-      notes = appendNote(deletionNote),
-      documentStatus = Some(DocumentStatus.Deleted)
+      documentStatus = Some(documentStatus),
+      notes = appendNote(changeNote)
     )
 
   override def withDocumentStatus(
