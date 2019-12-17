@@ -8,8 +8,8 @@ import sbt._
 object Dependencies {
   // The version numbers of each main and test dependency.
   private val AkkaHttpCirceVersion = "1.21.0"
-  private val AkkaHttpVersion = "10.1.3"
-  private val AkkaVersion = "2.5.14"
+  private val AkkaHttpVersion = "10.1.8"
+  private val AkkaVersion = "2.5.19"
   private val AlpakkaVersion = "0.20"
   private val ApacheHttpClientVersion = "4.5.6"
   private val BetterFilesVersion = "3.6.0"
@@ -33,7 +33,6 @@ object Dependencies {
   private val ScalamockVersion = "4.1.0"
   private val ShapelessVersion = "2.3.3"
   private val Slf4jVersion = "1.7.25"
-  private val SwaggerUi = "3.1.5"
   private val TestContainersScalaVersion = "0.27.0"
   private val TypesafeConfigVersion = "1.3.3"
   private val VaultJavaDriverVersion = "4.0.0"
@@ -58,8 +57,8 @@ object Dependencies {
     "com.lightbend.akka" %% "akka-stream-alpakka-file" % AlpakkaVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-http-streams" % Elastic4sVersion,
-    "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.akka" %% "akka-stream" % AkkaVersion,
+    "com.typesafe.akka" %% "akka-http" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
     "io.circe" %% "circe-core" % CirceVersion,
@@ -67,16 +66,15 @@ object Dependencies {
     "io.circe" %% "circe-generic-extras" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
     "org.gnieh" %% "diffson-circe" % DiffsonVersion,
-    "org.slf4j" % "slf4j-api" % Slf4jVersion,
-    "org.webjars" % "swagger-ui" % SwaggerUi
+    "org.slf4j" % "slf4j-api" % Slf4jVersion
   )
 
   /** Dependencies only used by test code. */
   private val ServerTestDependencies: Seq[ModuleID] = Seq(
     "com.dimafeng" %% "testcontainers-scala" % TestContainersScalaVersion,
     "com.google.jimfs" % "jimfs" % JimfsVersion,
-    "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
+    "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "org.scalamock" %% "scalamock" % ScalamockVersion,
     "org.scalatest" %% "scalatest" % ScalaTestVersion
   ).map(_ % Test)
@@ -111,6 +109,7 @@ object Dependencies {
 
   private val ClientTestDependencies: Seq[ModuleID] = Seq(
     "com.google.cloud" % "google-cloud-nio" % GoogleCloudNioVersion,
+    "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "org.scalamock" %% "scalamock" % ScalamockVersion,
     "org.scalatest" %% "scalatest" % ScalaTestVersion
@@ -184,6 +183,7 @@ object Dependencies {
     "com.lightbend.akka" %% "akka-stream-alpakka-file" % AlpakkaVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
     "com.sksamuel.elastic4s" %% "elastic4s-circe" % Elastic4sVersion,
+    "com.typesafe.akka" %% "akka-stream-testkit" % AkkaVersion,
     "com.typesafe.akka" %% "akka-http-testkit" % AkkaHttpVersion,
     "com.typesafe.scala-logging" %% "scala-logging" % ScalaLoggingVersion,
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
