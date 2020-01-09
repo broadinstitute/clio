@@ -49,8 +49,8 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
           ()
         }
       )
-    executor.execute(webClient, stub[IoUtil]).runWith(Sink.seq).map { json =>
-      json.toString() should be("[]")
+    executor.execute(webClient, stub[IoUtil]).runWith(Sink.seq).map { _ =>
+      stdout.toString should be("[]")
     }
   }
 
