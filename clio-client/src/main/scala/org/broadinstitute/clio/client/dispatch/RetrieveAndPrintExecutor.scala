@@ -42,23 +42,11 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
     }
 
     responseStream
-      .orElse(Source.single(json"[]"))
+      .orElse(Source.single(json"[23]"))
       .alsoTo {
-      val stringify = Flow[Json].map(_.spaces2)
-      val flow = command match {
-        case _: SimpleQueryCommand[_] | _: RawQueryCommand[_] =>
-          /*
-           * For queries we expect a stream of multiple elements, so we inject extra
-           * characters to be sure the printed stream can be parsed as a JSON array
-           * by the caller.
-           */
-          stringify
-            .intersperse("[", ",\n", "]")
-        case _ => stringify
+        Flow[Json]
+          .map(_.spaces2)
+          .to(Sink.foreach(print))
       }
-      flow
-        .concat(Source.single("\n"))
-        .to(Sink.foreach(print))
-    }
   }
 }
