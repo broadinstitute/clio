@@ -3,6 +3,7 @@ package org.broadinstitute.clio.client.dispatch
 import akka.NotUsed
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import io.circe.Json
+import io.circe.literal._
 import io.circe.parser.parse
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.util.IoUtil
@@ -40,10 +41,10 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
         )
     }
 
-    responseStream.alsoTo {
-      // val emptyJsonArray = Source("[]")
-      val stringify = Flow[Json].map(_.spaces2).orElse(Source.single("[]"))
-      // val stringify0 = Flow[Json].map(_.spaces2)
+    responseStream
+      .orElse(Source.single(json"[]"))
+      .alsoTo {
+      val stringify = Flow[Json].map(_.spaces2)
       val flow = command match {
         case _: SimpleQueryCommand[_] | _: RawQueryCommand[_] =>
           /*
@@ -51,11 +52,13 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
            * characters to be sure the printed stream can be parsed as a JSON array
            * by the caller.
            */
-          stringify.intersperse("[", ",\n", "]")
+          stringify
+            .intersperse("[", ",\n", "]")
         case _ => stringify
       }
-
-      flow.concat(Source.single("\n")).to(Sink.foreach(print))
+      flow
+        .concat(Source.single("\n"))
+        .to(Sink.foreach(print))
     }
   }
 }

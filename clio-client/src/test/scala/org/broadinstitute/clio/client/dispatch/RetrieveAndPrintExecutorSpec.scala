@@ -49,9 +49,11 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
           ()
         }
       )
-    executor.execute(webClient, stub[IoUtil]).runWith(Sink.seq).map { _ =>
-      stdout.toString should be("[]")
-    }
+    val result = executor
+      .execute(webClient, stub[IoUtil])
+      .runWith(Sink.ignore)
+      .map(_ => stdout.toString.trim should be("[[\n]]"))
+    result
   }
 
   it should "retrieve and print server health" in {
