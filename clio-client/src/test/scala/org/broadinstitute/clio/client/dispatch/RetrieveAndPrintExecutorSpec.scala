@@ -52,7 +52,7 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
     val result = executor
       .execute(webClient, stub[IoUtil])
       .runWith(Sink.ignore)
-      .map(_ => stdout.toString.trim should be("[23]"))
+      .map(_ => stdout.toString.trim should be("[\n]"))
     result
   }
 

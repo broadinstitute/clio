@@ -42,7 +42,7 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
     }
 
     responseStream
-      .orElse(Source.single(json"[23]"))
+      .orElse(Source.single(json"[]"))
       .alsoTo {
         Flow[Json]
           .map(_.spaces2)
