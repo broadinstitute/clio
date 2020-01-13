@@ -41,7 +41,9 @@ class RetrieveAndPrintExecutor(command: RetrieveAndPrintCommand, print: String =
     }
 
     responseStream.alsoTo {
-      val stringify = Flow[Json].map(_.spaces2)
+      // val emptyJsonArray = Source("[]")
+      val stringify = Flow[Json].map(_.spaces2).orElse(Source.single("[]"))
+      // val stringify0 = Flow[Json].map(_.spaces2)
       val flow = command match {
         case _: SimpleQueryCommand[_] | _: RawQueryCommand[_] =>
           /*
