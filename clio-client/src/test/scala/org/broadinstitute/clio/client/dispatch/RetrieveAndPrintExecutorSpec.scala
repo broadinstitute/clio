@@ -7,7 +7,12 @@ import io.circe.jawn.JawnParser
 import io.circe.literal._
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.commands._
+import org.broadinstitute.clio.client.commands.{
+  GetServerHealth,
+  GetServerVersion,
+  QueryUbam,
+  RawQueryUbam
+}
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.status.model.{
@@ -16,9 +21,8 @@ import org.broadinstitute.clio.status.model.{
   StatusInfo,
   VersionInfo
 }
-import org.broadinstitute.clio.transfer.model.arrays.ArraysQueryInput
+import org.broadinstitute.clio.transfer.model.UbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
-import org.broadinstitute.clio.transfer.model.{ArraysIndex, UbamIndex}
 import org.broadinstitute.clio.util.model.Location
 import org.scalamock.scalatest.AsyncMockFactory
 
@@ -28,33 +32,6 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
   behavior of "RetrieveAndPrintExecutor"
 
   private val parser = new JawnParser
-
-  it should "return JSON [] when no results" in {
-    val query = ArraysQueryInput(chipwellBarcode = Some(Symbol("abcd")))
-    val webClient = mock[ClioWebClient]
-    (
-      webClient
-        .simpleQuery(_: ClioWebClient.QueryAux[ArraysQueryInput])(
-          _: ArraysQueryInput,
-          _: Boolean
-        )
-      )
-      .expects(ArraysIndex, query, true)
-      .returning(Source.empty[Json])
-    val stdout = mutable.StringBuilder.newBuilder
-    val executor =
-      new RetrieveAndPrintExecutor(
-        QueryArrays(query, includeDeleted = true, includeAll = true), { s =>
-          stdout.append(s)
-          ()
-        }
-      )
-    val result = executor
-      .execute(webClient, stub[IoUtil])
-      .runWith(Sink.ignore)
-      .map(_ => stdout.toString.trim should be("[\n]"))
-    result
-  }
 
   it should "retrieve and print server health" in {
     val health = StatusInfo(ClioStatus.Started, SearchStatus.Error)
