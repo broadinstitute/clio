@@ -2,8 +2,9 @@ package org.broadinstitute.clio.server.dataaccess.elasticsearch
 
 import com.sksamuel.elastic4s.http.ElasticDsl.boolQuery
 import com.sksamuel.elastic4s.http.search.queries.compound.BoolQueryBuilderFn
-import io.circe.{Json, JsonObject}
 import io.circe.parser._
+import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import org.broadinstitute.clio.util.generic.{CaseClassMapperWithTypes, FieldMapper}
 
 import scala.reflect.ClassTag
@@ -78,7 +79,9 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
     * @return The query output.
     */
   def toQueryOutput(document: Json): Json = {
-    document.mapObject(_.filterKeys(!keysToDrop.contains(_)))
+    val result = document.mapObject(_.filterKeys(!keysToDrop.contains(_)))
+      .fold[Json](().asJson, _.asJson, _.asJson, _.asJson, _.asJson, _.asJson)
+    result
   }
 }
 

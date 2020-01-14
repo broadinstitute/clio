@@ -65,6 +65,9 @@ abstract class IndexWebServiceSpec[
   it should "successfully query with an empty request" in {
     expectQueryMetadata()
     Post(s"/$queryString", Map.empty[String, String]) ~> webService.query ~> check {
+      val response = responseAs[String]
+      info(s"responseAs[String] == '${response}'")
+      response shouldEqual "[]"
       status shouldEqual StatusCodes.OK
     }
   }
