@@ -73,14 +73,15 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
   }
 
   /**
-    * Munges the query result document into the appropriate form for the query output.
+    * Munge the query result into the appropriate form for the query output.
+    * Effectively, fold(identity) except replace `jsonNull` with an empty array.
     *
     * @param document A query result document.
     * @return The query output.
     */
   def toQueryOutput(document: Json): Json = {
     val result = document.mapObject(_.filterKeys(!keysToDrop.contains(_)))
-      .fold[Json](().asJson, _.asJson, _.asJson, _.asJson, _.asJson, _.asJson)
+      .fold(().asJson, _.asJson, _.asJson, _.asJson, _.asJson, _.asJson)
     result
   }
 }
