@@ -80,7 +80,8 @@ class ElasticsearchQueryMapper[Input: ClassTag: FieldMapper] {
     * @return The query output.
     */
   def toQueryOutput(document: Json): Json = {
-    val result = document.mapObject(_.filterKeys(!keysToDrop.contains(_)))
+    val result = document
+      .mapObject(_.filterKeys(!keysToDrop.contains(_)))
       .fold(().asJson, _.asJson, _.asJson, _.asJson, _.asJson, _.asJson)
     result
   }
