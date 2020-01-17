@@ -70,12 +70,12 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
   it should "return JSON [] when no results" in {
     val query = ArraysQueryInput(chipwellBarcode = Some(Symbol("abcd")))
     val webClient = mock[ClioWebClient]
-      (
-        webClient
-          .simpleQuery(_: ClioWebClient.QueryAux[ArraysQueryInput])(
-            _: ArraysQueryInput,
-            _: Boolean
-          )
+    (
+      webClient
+        .simpleQuery(_: ClioWebClient.QueryAux[ArraysQueryInput])(
+          _: ArraysQueryInput,
+          _: Boolean
+        )
       )
       .expects(ArraysIndex, query, true)
       .returning(Source.empty[Json])
@@ -97,7 +97,7 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
     val health = StatusInfo(ClioStatus.Started, SearchStatus.Error)
 
     val webClient = mock[ClioWebClient]
-      (webClient.getClioServerHealth _).expects().returning(Source.single(health.asJson))
+    (webClient.getClioServerHealth _).expects().returning(Source.single(health.asJson))
 
     val stdout = mutable.StringBuilder.newBuilder
     val executor = new RetrieveAndPrintExecutor(GetServerHealth, { s =>
@@ -115,7 +115,7 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
     val version = VersionInfo("the-version")
 
     val webClient = mock[ClioWebClient]
-      (webClient.getClioServerVersion _).expects().returning(Source.single(version.asJson))
+    (webClient.getClioServerVersion _).expects().returning(Source.single(version.asJson))
 
     val stdout = mutable.StringBuilder.newBuilder
     val executor = new RetrieveAndPrintExecutor(GetServerVersion, { s =>
@@ -147,12 +147,12 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
 
       val webClient = mock[ClioWebClient]
       // Type annotations needed for scalamockery.
-        (
-          webClient
-            .simpleQuery(_: ClioWebClient.QueryAux[UbamQueryInput])(
-              _: UbamQueryInput,
-              _: Boolean
-            )
+      (
+        webClient
+          .simpleQuery(_: ClioWebClient.QueryAux[UbamQueryInput])(
+            _: UbamQueryInput,
+            _: Boolean
+          )
         )
         .expects(UbamIndex, query, includeDeleted)
         .returning(Source(keys.map(_.asJson)))
@@ -161,8 +161,8 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
       val executor =
         new RetrieveAndPrintExecutor(QueryUbam(query, includeDeleted, includeDeleted), {
           s =>
-          stdout.append(s)
-          ()
+            stdout.append(s)
+            ()
         })
 
       executor.execute(webClient, stub[IoUtil]).runWith(Sink.seq).map { jsons =>
@@ -184,8 +184,8 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
     }
 
     val webClient = mock[ClioWebClient]
-      (webClient
-        .query(_: UbamIndex.type)(_: Json, _: Boolean))
+    (webClient
+      .query(_: UbamIndex.type)(_: Json, _: Boolean))
       .expects(UbamIndex, rawQuery, true)
       .returning(Source(keys.map(_.asJson)))
 
