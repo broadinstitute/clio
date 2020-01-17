@@ -64,7 +64,7 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
       .intersperse("[", ",\n", "]")
       // .orElse(Source.single("[]"))
       .runWith(Sink.foreach(s => println(s"foreach == '$s'")))
-    Future(true should be(true))
+    Future(true shouldEqual true)
   }
 
   it should "return JSON [] when no results" in {
