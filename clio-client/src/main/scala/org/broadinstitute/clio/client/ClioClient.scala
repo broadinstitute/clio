@@ -78,7 +78,10 @@ object ClioClient extends LazyLogging {
           }
         },
         _.runWith(Sink.ignore).onComplete {
-          case Success(_) => sys.exit(0)
+          case Success(_) => {
+            wait(23000)
+            sys.exit(0)
+          }
           case Failure(ex) =>
             logger.error("Failed to execute command", ex)
             sys.exit(1)
@@ -168,6 +171,11 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
       )
   }
 
+  private def printHere(x: Any): Unit = {
+    println(s"WTF: x == '$x'")
+    Predef.print(x)
+  }
+
   /**
     * The client's entry point.
     *
@@ -179,13 +187,14 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     */
   def instanceMain(
     args: Array[String],
-    print: Any => Unit = Predef.print
+    print: Any => Unit = printHere
   ): Either[EarlyReturn, Source[Json, NotUsed]] = {
+    printHere("WTF WTF WTF")
     val maybeParse =
       ClioCommand.parser.withHelp
         .detailedParse(args)(Parser[None.type].withHelp)
 
-    wrapError(maybeParse).flatMap {
+    val result = wrapError(maybeParse).flatMap {
       case (commonParse, commonArgs, maybeCommandParse) => {
         for {
           _ <- messageIfAsked(helpMessage, commonParse.help)
@@ -201,6 +210,7 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
         }
       }
     }
+    result
   }
 
   /**
