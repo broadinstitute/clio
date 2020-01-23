@@ -31,42 +31,6 @@ class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory 
 
   private val parser = new JawnParser
 
-  it should "let TBL mess around with streams" in {
-    Source
-      .empty[Json]
-      .runWith(Sink.onComplete {
-        case Success(result) => println(s"onComplete result == '$result'")
-        case Failure(result) => println(s"onComplete Oops!  == '$result'")
-      })
-    Source.empty[Json].map(_.toString).runWith(Sink.seq).onComplete {
-      case Success(result) => println(s"seq result == '$result'")
-      case Failure(result) => println(s"seq Oops!  == '$result'")
-    }
-    Source
-      .empty[Json]
-      .map(_.toString)
-      .runWith(Sink.headOption)
-      .map(o => println(s"empty o.getOrElse == '${o.getOrElse("[]")}'"))
-    Source
-      .single(json"23")
-      .map(_.toString)
-      .runWith(Sink.headOption)
-      .map(o => println(s"23 o.getOrElse == '${o.getOrElse("[]")}'"))
-    Source
-      .empty[Json]
-      .orElse(Source.single(json"[]"))
-      .map(_.toString)
-      .runWith(Sink.head)
-      .map(s => println(s"orElse == '$s'"))
-    Source
-      .empty[Json]
-      .map(_.spaces2)
-      .intersperse("[", ",\n", "]")
-      // .orElse(Source.single("[]"))
-      .runWith(Sink.foreach(s => println(s"foreach == '$s'")))
-    Future(true shouldEqual true)
-  }
-
   it should "return JSON [] when no results" in {
     val query = ArraysQueryInput(chipwellBarcode = Some(Symbol("abcd")))
     val webClient = mock[ClioWebClient]
