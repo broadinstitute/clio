@@ -10,12 +10,7 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.status.model.{
-  ClioStatus,
-  SearchStatus,
-  StatusInfo,
-  VersionInfo
-}
+import org.broadinstitute.clio.status.model.{ClioStatus, SearchStatus, StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model.arrays.ArraysQueryInput
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
 import org.broadinstitute.clio.transfer.model.{ArraysIndex, UbamIndex}
@@ -23,8 +18,6 @@ import org.broadinstitute.clio.util.model.Location
 import org.scalamock.scalatest.AsyncMockFactory
 
 import scala.collection.{immutable, mutable}
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
 
 class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   behavior of "RetrieveAndPrintExecutor"
