@@ -1,9 +1,9 @@
 package org.broadinstitute.clio.client
 
-import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.{ActorMaterializer, KillSwitches, Materializer}
+import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{ActorMaterializer, Materializer}
+import akka.{Done, NotUsed}
 import caseapp.core.help.{Help, WithHelp}
 import caseapp.core.parser.Parser
 import caseapp.core.{Error, RemainingArgs}
@@ -79,23 +79,18 @@ object ClioClient extends LazyLogging {
 
     def complete(done: Try[Done]): Unit = {
       done match {
-        case Success(hack) => {
-          println(s"hack == '${hack.toString}'")
-          sys.exit(0)
-        }
+        case Success(_) => // Why argue with success?
         case Failure(ex) =>
           logger.error("Failed to execute command", ex)
-          sys.exit(1)
       }
+      system.terminate()
+      ()
     }
 
     def otherwise(source: Source[Json, NotUsed]): Unit = {
-      val (killswitch, done) = source
-        .viaMat(KillSwitches.single)(Keep.right)
-        .toMat(Sink.ignore)(Keep.both)
-        .run
-      done.onComplete(complete)
-      killswitch.shutdown
+      source
+        .runWith(Sink.ignore)
+        .onComplete(complete)
     }
 
     new ClioClient(ClioWebClient(baseCreds), IoUtil(baseCreds))
