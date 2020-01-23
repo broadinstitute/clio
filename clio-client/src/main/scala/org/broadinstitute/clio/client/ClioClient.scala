@@ -90,10 +90,12 @@ object ClioClient extends LazyLogging {
     }
 
     def otherwise(source: Source[Json, NotUsed]): Unit = {
-      source
+      val (killswitch, done) = source
         .viaMat(KillSwitches.single)(Keep.right)
-        .runWith(Sink.ignore)
-        .onComplete(complete)
+        .toMat(Sink.ignore)(Keep.both)
+        .run
+      done.onComplete(complete)
+      killswitch.shutdown
     }
 
     new ClioClient(ClioWebClient(baseCreds), IoUtil(baseCreds))
