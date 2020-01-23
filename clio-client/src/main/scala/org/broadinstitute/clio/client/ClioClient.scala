@@ -16,7 +16,8 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.auth.ClioCredentials
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -78,13 +79,14 @@ object ClioClient extends LazyLogging {
     }
 
     def complete(done: Try[Done]): Unit = {
-      done match {
-        case Success(_) => // Why argue with success?
+      val status = done match {
+        case Success(_) => 0
         case Failure(ex) =>
           logger.error("Failed to execute command", ex)
+          1
       }
-      system.terminate()
-      ()
+      Await.result(system.terminate(), 23.seconds)
+      sys.exit(status)
     }
 
     def otherwise(source: Source[Json, NotUsed]): Unit = {
