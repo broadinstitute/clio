@@ -2,8 +2,8 @@ package org.broadinstitute.clio.client
 
 import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Sink, Source}
-import akka.stream.{ActorMaterializer, Materializer}
+import akka.stream.scaladsl.{Keep, Sink, Source}
+import akka.stream.{ActorMaterializer, KillSwitches, Materializer}
 import caseapp.core.help.{Help, WithHelp}
 import caseapp.core.parser.Parser
 import caseapp.core.{Error, RemainingArgs}
@@ -90,7 +90,10 @@ object ClioClient extends LazyLogging {
     }
 
     def otherwise(source: Source[Json, NotUsed]): Unit = {
-      source.runWith(Sink.ignore).onComplete(complete)
+      source
+        .viaMat(KillSwitches.single)(Keep.right)
+        .runWith(Sink.ignore)
+        .onComplete(complete)
     }
 
     new ClioClient(ClioWebClient(baseCreds), IoUtil(baseCreds))
