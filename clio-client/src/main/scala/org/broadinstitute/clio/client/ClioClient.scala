@@ -182,11 +182,6 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
       )
   }
 
-  // private def printHere(x: Any): Unit = {
-  //   println(s"WTF: x == '$x'")
-  //   Predef.print(x)
-  // }
-
   /**
     * The client's entry point.
     *
@@ -200,12 +195,11 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     args: Array[String],
     print: Any => Unit = Predef.print
   ): Either[EarlyReturn, Source[Json, NotUsed]] = {
-    // printHere("WTF WTF WTF")
     val maybeParse =
       ClioCommand.parser.withHelp
         .detailedParse(args)(Parser[None.type].withHelp)
 
-    val result = wrapError(maybeParse).flatMap {
+    wrapError(maybeParse).flatMap {
       case (commonParse, commonArgs, maybeCommandParse) => {
         for {
           _ <- messageIfAsked(helpMessage, commonParse.help)
@@ -221,7 +215,6 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
         }
       }
     }
-    result
   }
 
   /**
