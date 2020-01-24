@@ -10,53 +10,18 @@ import org.broadinstitute.clio.client.BaseClientSpec
 import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
-import org.broadinstitute.clio.status.model.{
-  ClioStatus,
-  SearchStatus,
-  StatusInfo,
-  VersionInfo
-}
-import org.broadinstitute.clio.transfer.model.arrays.ArraysQueryInput
+import org.broadinstitute.clio.status.model.{ClioStatus, SearchStatus, StatusInfo, VersionInfo}
+import org.broadinstitute.clio.transfer.model.UbamIndex
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
-import org.broadinstitute.clio.transfer.model.{ArraysIndex, UbamIndex}
 import org.broadinstitute.clio.util.model.Location
 import org.scalamock.scalatest.AsyncMockFactory
 
 import scala.collection.{immutable, mutable}
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class RetrieveAndPrintExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   behavior of "RetrieveAndPrintExecutor"
 
   private val parser = new JawnParser
-
-  it should "return JSON [] when no results" in {
-    val query = ArraysQueryInput(chipwellBarcode = Some(Symbol("abcd")))
-    val webClient = mock[ClioWebClient]
-    (
-      webClient
-        .simpleQuery(_: ClioWebClient.QueryAux[ArraysQueryInput])(
-          _: ArraysQueryInput,
-          _: Boolean
-        )
-      )
-      .expects(ArraysIndex, query, true)
-      .returning(Source.empty[Json])
-    val stdout = mutable.StringBuilder.newBuilder
-    val executor =
-      new RetrieveAndPrintExecutor(
-        QueryArrays(query, includeDeleted = true, includeAll = true), { s =>
-          stdout.append(s)
-          ()
-        }
-      )
-    val done = executor
-      .execute(webClient, stub[IoUtil])
-      .runWith(Sink.ignore)
-      .transformWith(_ => stdout.toString.trim shouldEqual "[]")
-    Await.ready(done, 23.seconds)
-  }
 
   it should "retrieve and print server health" in {
     val health = StatusInfo(ClioStatus.Started, SearchStatus.Error)
