@@ -1,11 +1,13 @@
 package org.broadinstitute.clio.integrationtest.tests
 
+import java.net.URI
+import java.util.UUID
+
 import better.files.File
 import com.sksamuel.elastic4s.IndexAndType
 import io.circe.Json
+import io.circe.literal._
 import io.circe.syntax._
-import java.net.URI
-
 import org.broadinstitute.clio.client.commands.ClioCommand
 import org.broadinstitute.clio.integrationtest.BaseIntegrationSpec
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.{
@@ -50,6 +52,18 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         if (force) "--force" else ""
       ).filter(_.nonEmpty): _*
     )
+  }
+
+  it should "return JSON [] when nothing matches query" in {
+    for {
+      result <- runCollectJson(
+        ClioCommand.queryArraysName,
+        "--project",
+        UUID.randomUUID.toString
+      )
+    } yield {
+      result.asJson shouldEqual json"[]"
+    }
   }
 
   it should "create the expected arrays mapping in elasticsearch" in {

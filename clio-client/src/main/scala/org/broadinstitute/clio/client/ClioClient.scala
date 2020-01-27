@@ -1,9 +1,9 @@
 package org.broadinstitute.clio.client
 
-import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
+import akka.{Done, NotUsed}
 import caseapp.core.help.{Help, WithHelp}
 import caseapp.core.parser.Parser
 import caseapp.core.{Error, RemainingArgs}
@@ -16,8 +16,9 @@ import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.util.auth.ClioCredentials
 
-import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
+import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContext}
+import scala.util.{Failure, Success, Try}
 
 /**
   * The command-line entry point for the clio-client.
@@ -64,26 +65,42 @@ object ClioClient extends LazyLogging {
         sys.exit(1)
       }
 
+    def early(source: ClioClient.EarlyReturn): Unit = {
+      source match {
+        case UsageOrHelpAsked(message) => {
+          println(message)
+          sys.exit(0)
+        }
+        case ParsingError(error) => {
+          System.err.println(error.message)
+          sys.exit(1)
+        }
+      }
+    }
+
+    // 23.seconds is arbitrary.
+    // Try increasing it should this ever fail.
+    //
+    def complete(done: Try[Done]): Unit = {
+      val status = done match {
+        case Success(_) => 0
+        case Failure(ex) =>
+          logger.error("Failed to execute command", ex)
+          1
+      }
+      Await.result(system.terminate(), 23.seconds)
+      sys.exit(status)
+    }
+
+    def otherwise(source: Source[Json, NotUsed]): Unit = {
+      source
+        .runWith(Sink.ignore)
+        .onComplete(complete)
+    }
+
     new ClioClient(ClioWebClient(baseCreds), IoUtil(baseCreds))
       .instanceMain(args)
-      .fold(
-        {
-          case UsageOrHelpAsked(message) => {
-            println(message)
-            sys.exit(0)
-          }
-          case ParsingError(error) => {
-            System.err.println(error.message)
-            sys.exit(1)
-          }
-        },
-        _.runWith(Sink.ignore).onComplete {
-          case Success(_) => sys.exit(0)
-          case Failure(ex) =>
-            logger.error("Failed to execute command", ex)
-            sys.exit(1)
-        }
-      )
+      .fold(early, otherwise)
   }
 }
 

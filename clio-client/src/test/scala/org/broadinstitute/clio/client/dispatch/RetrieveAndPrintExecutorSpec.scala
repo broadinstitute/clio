@@ -7,12 +7,7 @@ import io.circe.jawn.JawnParser
 import io.circe.literal._
 import io.circe.syntax._
 import org.broadinstitute.clio.client.BaseClientSpec
-import org.broadinstitute.clio.client.commands.{
-  GetServerHealth,
-  GetServerVersion,
-  QueryUbam,
-  RawQueryUbam
-}
+import org.broadinstitute.clio.client.commands._
 import org.broadinstitute.clio.client.util.IoUtil
 import org.broadinstitute.clio.client.webclient.ClioWebClient
 import org.broadinstitute.clio.status.model.{
