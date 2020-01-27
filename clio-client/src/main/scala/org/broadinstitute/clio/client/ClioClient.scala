@@ -78,6 +78,9 @@ object ClioClient extends LazyLogging {
       }
     }
 
+    // 23.seconds is arbitrary.
+    // Try increasing it should this ever fail.
+    //
     def complete(done: Try[Done]): Unit = {
       val status = done match {
         case Success(_) => 0
