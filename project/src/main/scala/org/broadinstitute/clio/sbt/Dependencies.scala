@@ -17,7 +17,7 @@ object Dependencies {
   private val CirceVersion = "0.9.3"
   private val CommonsIoVersion = "2.6"
   private val DiffsonVersion = "3.0.0"
-  private val Elastic4sVersion = "6.2.10"
+  private val Elastic4sVersion = "6.7.4"
   private val EnumeratumCirceVersion = "1.5.17"
   private val EnumeratumVersion = "1.5.13"
   private val FicusVersion = "1.4.3"
