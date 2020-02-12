@@ -5,7 +5,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import com.sksamuel.elastic4s.mappings.FieldDefinition
-import com.sksamuel.elastic4s.searches.queries.Query QueryDefinition
+import com.sksamuel.elastic4s.searches.queries.Query
 import enumeratum.EnumEntry
 import enumeratum.values.{IntEnum, IntEnumEntry}
 import org.broadinstitute.clio.util.generic.FieldMapper
