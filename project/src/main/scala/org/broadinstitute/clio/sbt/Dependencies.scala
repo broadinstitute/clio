@@ -24,7 +24,7 @@ object Dependencies {
   private val GoogleAuthHttpVersion = "0.10.0"
   private val GoogleCloudNioVersion = "0.54.0-alpha"
   private val GoogleCloudStorageVersion = "1.36.0"
-  private val JacksonVersion = "2.9.6"
+  private val JacksonVersion = "2.10.2"
   private val JimfsVersion = "1.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
