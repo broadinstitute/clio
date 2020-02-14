@@ -226,7 +226,7 @@ class HttpElasticsearchDAOSpec
     val deleteDefinition: DeleteByIdDefinition =
       delete("uk") from "places" / "cities" refresh RefreshPolicy.WAIT_UNTIL
 
-    lazy val httpClient = httpElasticsearchDAO.httpClient
+    lazy val httpClient = httpElasticsearchDAO.elasticClient
 
     for {
       health <- httpClient.executeAndUnpack(clusterHealthDefinition)

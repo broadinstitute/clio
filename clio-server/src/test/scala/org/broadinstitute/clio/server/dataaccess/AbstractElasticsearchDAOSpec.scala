@@ -1,6 +1,8 @@
 package org.broadinstitute.clio.server.dataaccess
 
-import com.sksamuel.elastic4s.http.HttpEntity
+import com.sksamuel.elastic4s.admin.UpdateIndexLevelSettingsRequest
+import com.sksamuel.elastic4s.http.{ElasticRequest, HttpEntity}
+import com.sksamuel.elastic4s.settings.UpdateSettingsRequest
 import io.circe.parser._
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.server.TestKitSuite
@@ -53,7 +55,7 @@ abstract class AbstractElasticsearchDAOSpec(actorSystemName: String)
       */
     def performDisableReplicas(): Future[Unit] = {
       val futureResponse =
-        httpElasticsearchDAO.httpClient.client.async("PUT", "/_settings", params, entity)
+        httpElasticsearchDAO.elasticClient.execute(ElasticRequest("PUT", "/_settings", entity))
       futureResponse map { response =>
         val json =
           response.entity.fold(fail("No JSON returned from Elasticsearch"))(_.content)

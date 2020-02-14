@@ -14,11 +14,8 @@ import better.files.File
 import com.bettercloud.vault.{Vault, VaultConfig}
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.google.cloud.storage.StorageOptions
-import com.google.cloud.storage.contrib.nio.{
-  CloudStorageConfiguration,
-  CloudStorageFileSystem
-}
-import com.sksamuel.elastic4s.http.HttpClient
+import com.google.cloud.storage.contrib.nio.{CloudStorageConfiguration, CloudStorageFileSystem}
+import com.sksamuel.elastic4s.http.ElasticClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
@@ -179,10 +176,10 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * UninitializedFieldError in the containerized spec because of
     * the initialization-order weirdness around the container field.
     */
-  lazy val elasticsearchClient: HttpClient = {
+  lazy val elasticsearchClient: ElasticClient = {
     val host = HttpHost.create(elasticsearchUri.toString())
     val restClient = RestClient.builder(host).build()
-    HttpClient.fromRestClient(restClient)
+    ElasticClient.fromRestClient(restClient)
   }
 
   /**
