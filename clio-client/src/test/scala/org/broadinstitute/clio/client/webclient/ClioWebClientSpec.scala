@@ -143,7 +143,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
   def jsonResponse[A: Encoder](body: A): HttpResponse = {
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      body.asJson.pretty(defaultPrinter)
+      body.asJson.printWith(defaultPrinter)
     )
     HttpResponse(entity = entity)
   }
@@ -210,7 +210,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
         req.entity should be(
           HttpEntity(
             ContentTypes.`application/json`,
-            metadata.asJson.pretty(defaultPrinter)
+            metadata.asJson.printWith(defaultPrinter)
           )
         )
         req.uri.query().get(ApiConstants.forceString) should be(Some(force.toString))
@@ -240,7 +240,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
         } else {
           query.withDocumentStatus(Some(DocumentStatus.Normal))
         }
-      ).asJson.pretty(defaultPrinter)
+      ).asJson.printWith(defaultPrinter)
 
       val keys = Seq.tabulate(3)(i => ModelMockKey(i.toLong, "abcdefg"))
       val expectedOut =
@@ -302,7 +302,7 @@ class ClioWebClientSpec extends BaseClientSpec with AsyncMockFactory {
         } else {
           Metadata.jsonWithDocumentStatus(key.asJson, DocumentStatus.Normal)
         }
-      ).pretty(defaultPrinter)
+      ).printWith(defaultPrinter)
 
       val flow = Flow[HttpRequest].map { req =>
         req.uri.path.toString should be(expectedSegments.mkString("/", "/", ""))

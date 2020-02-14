@@ -5,7 +5,7 @@ import java.time.OffsetDateTime
 
 import akka.NotUsed
 import akka.stream.scaladsl.{Sink, Source}
-import com.sksamuel.elastic4s.searches.queries.BoolQueryDefinition
+import com.sksamuel.elastic4s.searches.queries.BoolQuery
 import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import org.broadinstitute.clio.server.TestKitSuite
@@ -39,7 +39,7 @@ abstract class IndexServiceSpec[
 
   def elasticsearchIndex: ElasticsearchIndex[CI]
   def dummyKey: indexService.clioIndex.KeyType
-  def dummyKeyQuery: BoolQueryDefinition
+  def dummyKeyQuery: BoolQuery
   def dummyInput: indexService.clioIndex.QueryInputType
 
   def getDummyMetadata(

@@ -186,7 +186,7 @@ abstract class IndexService[CI <: ClioIndex](
           case None =>
             Right(Some(storedDocs.mapObject(_.filterKeys(!fieldsToDrop.contains(_)))))
           case Some(_) =>
-            val keyAsJson = indexKey.asJson.pretty(ModelAutoDerivation.defaultPrinter)
+            val keyAsJson = indexKey.asJson.printWith(ModelAutoDerivation.defaultPrinter)
             Left(
               UpsertValidationException(
                 s"Got > 1 ${clioIndex.name}s from Clio for key:$keyAsJson"

@@ -218,7 +218,7 @@ class ClioWebClient(
   ): Source[Json, NotUsed] = {
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      metadata.pretty(ModelAutoDerivation.defaultPrinter)
+      metadata.printWith(ModelAutoDerivation.defaultPrinter)
     )
     /*
      * The `/` method on Uri.Path performs a raw URI encoding on the
@@ -326,7 +326,7 @@ class ClioWebClient(
     val queryPath = if (raw) rawQueryString else queryString
     val entity = HttpEntity(
       ContentTypes.`application/json`,
-      input.pretty(ModelAutoDerivation.defaultPrinter)
+      input.printWith(ModelAutoDerivation.defaultPrinter)
     )
     dispatchRequest(
       HttpRequest(

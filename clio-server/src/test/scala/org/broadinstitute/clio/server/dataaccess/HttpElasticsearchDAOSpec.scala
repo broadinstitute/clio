@@ -6,8 +6,10 @@ import com.sksamuel.elastic4s.RefreshPolicy
 import com.sksamuel.elastic4s.analyzers._
 import com.sksamuel.elastic4s.bulk.BulkRequest
 import com.sksamuel.elastic4s.cluster.ClusterHealthRequest
+import com.sksamuel.elastic4s.delete.DeleteByIdRequest
 import com.sksamuel.elastic4s.http.ElasticDsl._
 import com.sksamuel.elastic4s.indexes.CreateIndexRequest
+import com.sksamuel.elastic4s.searches.SearchRequest
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.RequestException
@@ -209,7 +211,7 @@ class HttpElasticsearchDAOSpec
           )
       ).refresh(RefreshPolicy.WAIT_UNTIL)
 
-    val searchDefinition: SearchDefinition =
+    val searchDefinition: SearchRequest =
       searchWithType("places" / "cities") scroll "1m" size 10 query {
         boolQuery must (
           queryStringQuery(""""London"""").defaultField("name"),
@@ -217,7 +219,7 @@ class HttpElasticsearchDAOSpec
         )
       }
 
-    val deleteDefinition: DeleteByIdDefinition =
+    val deleteDefinition: DeleteByIdRequest =
       delete("uk") from "places" / "cities" refresh RefreshPolicy.WAIT_UNTIL
 
     lazy val httpClient = httpElasticsearchDAO.elasticClient

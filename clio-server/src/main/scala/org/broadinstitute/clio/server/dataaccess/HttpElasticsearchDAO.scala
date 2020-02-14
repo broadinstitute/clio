@@ -65,7 +65,7 @@ class HttpElasticsearchDAO private[dataaccess] (
 
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.ElasticsearchScrollKeepAlive)
-      .source(requestBody.pretty(ModelAutoDerivation.defaultPrinter))
+      .source(requestBody.printWith(ModelAutoDerivation.defaultPrinter))
 
     val responsePublisher = elasticClient.publisher(
       searchDefinition,
@@ -79,7 +79,7 @@ class HttpElasticsearchDAO private[dataaccess] (
       .map(_.to[Json])
       .alsoTo(
         Sink.foreach { json =>
-          logger.debug(json.pretty(ModelAutoDerivation.defaultPrinter))
+          logger.debug(json.printWith(ModelAutoDerivation.defaultPrinter))
         }
       )
   }
@@ -175,7 +175,7 @@ class HttpElasticsearchDAO private[dataaccess] (
 
     update(id)
       .in(index.indexName / index.indexType)
-      .docAsUpsert(document.pretty(ModelAutoDerivation.defaultPrinter))
+      .docAsUpsert(document.printWith(ModelAutoDerivation.defaultPrinter))
   }
 }
 

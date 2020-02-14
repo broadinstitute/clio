@@ -2,10 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import java.net.URI
 
-import com.sksamuel.elastic4s.searches.queries.{
-  BoolQueryDefinition,
-  QueryStringQueryDefinition
-}
+import com.sksamuel.elastic4s.searches.queries.{BoolQuery, QueryStringQuery}
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.transfer.model.GvcfIndex
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
@@ -25,21 +22,21 @@ class GvcfServiceSpec extends IndexServiceSpec[GvcfIndex.type]("GvcfService") {
 
   val dummyInput = GvcfQueryInput(project = Option("testProject"))
 
-  val dummyKeyQuery = BoolQueryDefinition(
+  val dummyKeyQuery = BoolQuery(
     must = Seq(
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.location.toString + "\"",
         defaultField = Some("location")
       ),
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.project + "\"",
         defaultField = Some("project.exact")
       ),
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.sampleAlias + "\"",
         defaultField = Some("sample_alias.exact")
       ),
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.version.toString + "\"",
         defaultField = Some("version")
       )

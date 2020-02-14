@@ -4,7 +4,7 @@ import java.net.URI
 import java.time.OffsetDateTime
 
 import cats.Show
-import io.circe.{Decoder, Encoder, ObjectEncoder}
+import io.circe.{Decoder, Encoder}
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.{DocumentStatus, Location}
@@ -26,8 +26,8 @@ case class ModelMockIndex(
   override val metadataTag: ClassTag[MetadataType] = implicitly[ClassTag[MetadataType]]
   override val queryInputTag: ClassTag[QueryInputType] =
     implicitly[ClassTag[QueryInputType]]
-  override val keyEncoder: ObjectEncoder[KeyType] =
-    implicitly[ObjectEncoder[KeyType]]
+  override val keyEncoder: Encoder.AsObject[KeyType] =
+    implicitly[Encoder.AsObject[KeyType]]
   override val keyDecoder: Decoder[KeyType] = implicitly[Decoder[KeyType]]
   override val metadataDecoder: Decoder[MetadataType] = implicitly[Decoder[MetadataType]]
   override val metadataEncoder: Encoder[MetadataType] = implicitly[Encoder[MetadataType]]

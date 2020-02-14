@@ -158,7 +158,7 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactor
   it should "parse a metadata json" in {
     val metadata = UbamMetadata(ubamSize = Some(10l), ubamMd5 = Some(Symbol("md5")))
     val metadataFile =
-      File.newTemporaryFile().deleteOnExit().write(metadata.asJson.pretty(implicitly))
+      File.newTemporaryFile().deleteOnExit().write(metadata.asJson.printWith(implicitly))
     new IoUtil(createStorage)
       .readMetadata(UbamIndex)(metadataFile.uri)
       .map { readMetadata =>
@@ -170,7 +170,7 @@ class IoUtilSpec extends BaseClientSpec with AsyncTestSuite with AsyncMockFactor
   it should "fail to decode incorrect metadata types" in {
     val metadata = UbamMetadata(ubamSize = Some(10l), ubamMd5 = Some(Symbol("md5")))
     val metadataFile =
-      File.newTemporaryFile().deleteOnExit().write(metadata.asJson.pretty(implicitly))
+      File.newTemporaryFile().deleteOnExit().write(metadata.asJson.printWith(implicitly))
     recoverToSucceededIf[IllegalArgumentException] {
       new IoUtil(createStorage)
         .readMetadata(CramIndex)(metadataFile.uri)

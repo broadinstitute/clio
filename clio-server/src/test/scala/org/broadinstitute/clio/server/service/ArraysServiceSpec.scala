@@ -1,9 +1,6 @@
 package org.broadinstitute.clio.server.service
 
-import com.sksamuel.elastic4s.searches.queries.{
-  BoolQueryDefinition,
-  QueryStringQueryDefinition
-}
+import com.sksamuel.elastic4s.searches.queries.{BoolQuery, QueryStringQuery}
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.ArraysIndex
@@ -23,17 +20,17 @@ class ArraysServiceSpec extends IndexServiceSpec[ArraysIndex.type]("ArraysServic
 
   val dummyInput = ArraysQueryInput(project = Option("testProject"))
 
-  val dummyKeyQuery = BoolQueryDefinition(
+  val dummyKeyQuery = BoolQuery(
     must = Seq(
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.chipwellBarcode.name + "\"",
         defaultField = Some("chipwell_barcode")
       ),
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.location.toString + "\"",
         defaultField = Some("location")
       ),
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.version.toString + "\"",
         defaultField = Some("version")
       )
