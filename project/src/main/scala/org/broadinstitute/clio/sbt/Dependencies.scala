@@ -8,8 +8,8 @@ import sbt._
 object Dependencies {
   // The version numbers of each main and test dependency.
   private val AkkaHttpCirceVersion = "1.29.1"
-  private val AkkaHttpVersion = "10.1.8"
-  private val AkkaVersion = "2.5.23"
+  private val AkkaHttpVersion = "10.1.10"
+  private val AkkaVersion = "2.5.25"
   private val AlpakkaVersion = "0.20"
   private val ApacheHttpClientVersion = "4.5.6"
   private val BetterFilesVersion = "3.6.0"
@@ -17,7 +17,7 @@ object Dependencies {
   private val CirceVersion = "0.12.3"
   private val CirceGenericVersion = "0.12.2"
   private val CommonsIoVersion = "2.6"
-  private val DiffsonVersion = "3.0.0"
+  private val DiffsonVersion = "4.0.1"
   private val Elastic4sVersion = "6.7.4"
   private val EnumeratumCirceVersion = "1.5.17"
   private val EnumeratumVersion = "1.5.13"

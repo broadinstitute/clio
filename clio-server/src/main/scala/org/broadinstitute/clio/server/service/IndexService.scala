@@ -2,7 +2,7 @@ package org.broadinstitute.clio.server.service
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import gnieh.diffson.circe._
+import diffson.jsonpatch.Replace
 import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
@@ -13,6 +13,7 @@ import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.util.json.ModelAutoDerivation
 import org.broadinstitute.clio.util.model.DocumentStatus.Normal
 import org.broadinstitute.clio.util.model.UpsertId
+import diffson._
 
 import scala.concurrent.ExecutionContext
 
@@ -144,7 +145,7 @@ abstract class IndexService[CI <: ClioIndex](
     existingMetadata: clioIndex.MetadataType,
     newMetadata: clioIndex.MetadataType
   ): Either[Exception, clioIndex.MetadataType] = {
-    val differences = JsonDiff.diff(existingMetadata, newMetadata, remember = true)
+    val differences = diff(existingMetadata, newMetadata)
     /* Types of differences:
         Replace - the existing value is different from what we want to set. We ignore nulls. This will overwrite.
         Remove - the existing value doesn't exist in the new meta data. This will not overwrite.
@@ -152,7 +153,7 @@ abstract class IndexService[CI <: ClioIndex](
         Move - effectively an Add and Remove. This will not overwrite.
         Copy - effectively an Add. This will not overwrite.
      */
-    val replaceOperations: Seq[Replace] = differences.ops.collect {
+    val replaceOperations: Seq[Replace[Json]] = differences.collect {
       case replace @ Replace(_, value, existing)
           if value != Json.Null && !existing.contains(Json.Null) =>
         replace
