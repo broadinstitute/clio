@@ -14,7 +14,10 @@ import better.files.File
 import com.bettercloud.vault.{Vault, VaultConfig}
 import com.google.auth.oauth2.{GoogleCredentials, ServiceAccountCredentials}
 import com.google.cloud.storage.StorageOptions
-import com.google.cloud.storage.contrib.nio.{CloudStorageConfiguration, CloudStorageFileSystem}
+import com.google.cloud.storage.contrib.nio.{
+  CloudStorageConfiguration,
+  CloudStorageFileSystem
+}
 import com.sksamuel.elastic4s.http.ElasticClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
