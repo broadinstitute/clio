@@ -111,7 +111,7 @@ class PatchExecutor[CI <: ClioIndex](patchCommand: PatchCommand[CI]) extends Exe
       .valueOr(
         ex =>
           throw new IllegalArgumentException(
-            s"Could not extract a ${patchCommand.index.name} key from ${json.pretty(defaultPrinter)}",
+            s"Could not extract a ${patchCommand.index.name} key from ${json.printWith(defaultPrinter)}",
             ex
         )
       )

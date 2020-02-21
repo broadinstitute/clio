@@ -4,12 +4,12 @@ import java.util.UUID
 
 import com.sksamuel.elastic4s.RefreshPolicy
 import com.sksamuel.elastic4s.analyzers._
-import com.sksamuel.elastic4s.bulk.BulkDefinition
-import com.sksamuel.elastic4s.cluster.ClusterHealthDefinition
-import com.sksamuel.elastic4s.delete.DeleteByIdDefinition
+import com.sksamuel.elastic4s.bulk.BulkRequest
+import com.sksamuel.elastic4s.cluster.ClusterHealthRequest
+import com.sksamuel.elastic4s.delete.DeleteByIdRequest
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.indexes.CreateIndexDefinition
-import com.sksamuel.elastic4s.searches.SearchDefinition
+import com.sksamuel.elastic4s.indexes.CreateIndexRequest
+import com.sksamuel.elastic4s.searches.SearchRequest
 import io.circe.Json
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchUtil.RequestException
@@ -32,10 +32,6 @@ class HttpElasticsearchDAOSpec
   import com.sksamuel.elastic4s.circe._
 
   behavior of "HttpElasticsearch"
-
-  it should "initialize" in {
-    initialize()
-  }
 
   it should "create an index and update the index field types" in {
     val indexVersion1: ElasticsearchIndex[_] =
@@ -175,10 +171,10 @@ class HttpElasticsearchDAOSpec
   )
 
   it should "perform various CRUD-like operations" in {
-    val clusterHealthDefinition: ClusterHealthDefinition =
+    val clusterHealthDefinition: ClusterHealthRequest =
       clusterHealth()
 
-    val indexCreationDefinition: CreateIndexDefinition =
+    val indexCreationDefinition: CreateIndexRequest =
       createIndex("places") replicas 0 mappings {
         mapping("cities") as (
           keywordField("id"),
@@ -187,7 +183,7 @@ class HttpElasticsearchDAOSpec
         )
       }
 
-    val populateDefinition: BulkDefinition =
+    val populateDefinition: BulkRequest =
       bulk(
         /* Option 1: Fields syntax */
         indexInto("places" / "cities") id "uk" fields (
@@ -215,7 +211,7 @@ class HttpElasticsearchDAOSpec
           )
       ).refresh(RefreshPolicy.WAIT_UNTIL)
 
-    val searchDefinition: SearchDefinition =
+    val searchDefinition: SearchRequest =
       searchWithType("places" / "cities") scroll "1m" size 10 query {
         boolQuery must (
           queryStringQuery(""""London"""").defaultField("name"),
@@ -223,10 +219,10 @@ class HttpElasticsearchDAOSpec
         )
       }
 
-    val deleteDefinition: DeleteByIdDefinition =
+    val deleteDefinition: DeleteByIdRequest =
       delete("uk") from "places" / "cities" refresh RefreshPolicy.WAIT_UNTIL
 
-    lazy val httpClient = httpElasticsearchDAO.httpClient
+    lazy val httpClient = httpElasticsearchDAO.elasticClient
 
     for {
       health <- httpClient.executeAndUnpack(clusterHealthDefinition)

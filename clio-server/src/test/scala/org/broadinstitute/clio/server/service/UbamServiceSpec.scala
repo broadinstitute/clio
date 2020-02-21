@@ -1,9 +1,6 @@
 package org.broadinstitute.clio.server.service
 
-import com.sksamuel.elastic4s.searches.queries.{
-  BoolQueryDefinition,
-  QueryStringQueryDefinition
-}
+import com.sksamuel.elastic4s.searches.queries.{BoolQuery, QueryStringQuery}
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
 import org.broadinstitute.clio.server.dataaccess.elasticsearch.ElasticsearchIndex
 import org.broadinstitute.clio.transfer.model.UbamIndex
@@ -19,21 +16,21 @@ class UbamServiceSpec extends IndexServiceSpec[UbamIndex.type]("UbamService") {
 
   val dummyInput = UbamQueryInput(project = Option("testProject"))
 
-  val dummyKeyQuery = BoolQueryDefinition(
+  val dummyKeyQuery = BoolQuery(
     must = Seq(
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.flowcellBarcode + "\"",
         defaultField = Some("flowcell_barcode.exact")
       ),
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.lane.toString + "\"",
         defaultField = Some("lane")
       ),
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.libraryName + "\"",
         defaultField = Some("library_name.exact")
       ),
-      QueryStringQueryDefinition(
+      QueryStringQuery(
         query = "\"" + dummyKey.location.toString + "\"",
         defaultField = Some("location")
       )

@@ -4,15 +4,15 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 import com.sksamuel.elastic4s.RefreshPolicy
-import com.sksamuel.elastic4s.bulk.BulkCompatibleDefinition
+import com.sksamuel.elastic4s.bulk.BulkCompatibleRequest
+import com.sksamuel.elastic4s.http.ElasticClient
 import com.sksamuel.elastic4s.http.ElasticDsl._
-import com.sksamuel.elastic4s.http.HttpClient
 import com.sksamuel.elastic4s.http.cluster.ClusterHealthResponse
 import com.sksamuel.elastic4s.mappings.dynamictemplate.DynamicMapping
 import com.sksamuel.elastic4s.streams.ReactiveElastic._
 import com.typesafe.scalalogging.StrictLogging
-import io.circe.{Json, JsonObject}
 import io.circe.syntax._
+import io.circe.{Json, JsonObject}
 import org.apache.http.HttpHost
 import org.broadinstitute.clio.server.ClioServerConfig
 import org.broadinstitute.clio.server.ClioServerConfig.Elasticsearch.ElasticsearchHttpHost
@@ -34,7 +34,7 @@ class HttpElasticsearchDAO private[dataaccess] (
 
   implicit val ec: ExecutionContext = system.dispatcher
 
-  private[dataaccess] val httpClient = {
+  private[dataaccess] val elasticClient = {
     val restClient = RestClient
       .builder(httpHosts: _*)
       // The default timeout is 100̈ms, which is too slow for query operations.
@@ -46,7 +46,7 @@ class HttpElasticsearchDAO private[dataaccess] (
         )
       )
       .build()
-    HttpClient.fromRestClient(restClient)
+    ElasticClient.fromRestClient(restClient)
   }
 
   override def updateMetadata(documents: Seq[Json])(
@@ -65,9 +65,9 @@ class HttpElasticsearchDAO private[dataaccess] (
 
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .scroll(HttpElasticsearchDAO.ElasticsearchScrollKeepAlive)
-      .source(requestBody.pretty(ModelAutoDerivation.defaultPrinter))
+      .source(requestBody.printWith(ModelAutoDerivation.defaultPrinter))
 
-    val responsePublisher = httpClient.publisher(
+    val responsePublisher = elasticClient.publisher(
       searchDefinition,
       requestBody.hcursor
         .get[Long](HttpElasticsearchDAO.ElasticsearchSizeField)
@@ -79,7 +79,7 @@ class HttpElasticsearchDAO private[dataaccess] (
       .map(_.to[Json])
       .alsoTo(
         Sink.foreach { json =>
-          logger.debug(json.pretty(ModelAutoDerivation.defaultPrinter))
+          logger.debug(json.printWith(ModelAutoDerivation.defaultPrinter))
         }
       )
   }
@@ -90,25 +90,25 @@ class HttpElasticsearchDAO private[dataaccess] (
     val searchDefinition = searchWithType(index.indexName / index.indexType)
       .size(1)
       .sortByFieldDesc(ElasticsearchIndex.UpsertIdElasticsearchName)
-    httpClient
+    elasticClient
       .executeAndUnpack(searchDefinition)
       .map(_.to[Json].headOption)
   }
 
   private[dataaccess] def getClusterHealth: Future[ClusterHealthResponse] = {
     val clusterHealthDefinition = clusterHealth()
-    httpClient.executeAndUnpack(clusterHealthDefinition)
+    elasticClient.executeAndUnpack(clusterHealthDefinition)
   }
 
   private[dataaccess] def closeClient(): Unit = {
-    httpClient.close()
+    elasticClient.close()
   }
 
   private[dataaccess] def existsIndexType(
     index: ElasticsearchIndex[_]
   ): Future[Boolean] = {
     val indexExistsDefinition = indexExists(index.indexName)
-    httpClient.executeAndUnpack(indexExistsDefinition).map(_.exists)
+    elasticClient.executeAndUnpack(indexExistsDefinition).map(_.exists)
   }
 
   private[dataaccess] def createIndexType(
@@ -120,7 +120,7 @@ class HttpElasticsearchDAO private[dataaccess] (
       if (ClioServerConfig.Elasticsearch.replicateIndices)
         createIndexDefinition
       else createIndexDefinition.replicas(0)
-    httpClient.executeAndUnpack(replicatedIndexDefinition).map { response =>
+    elasticClient.executeAndUnpack(replicatedIndexDefinition).map { response =>
       if (!response.acknowledged || !response.shards_acknowledged) {
         throw new RuntimeException(
           s"""|Bad response:
@@ -139,7 +139,7 @@ class HttpElasticsearchDAO private[dataaccess] (
       putMapping(index.indexName / index.indexType)
         .dynamic(DynamicMapping.False)
         .as(index.fields: _*)
-    httpClient.executeAndUnpack(putMappingDefinition).map { response =>
+    elasticClient.executeAndUnpack(putMappingDefinition).map { response =>
       if (!response.acknowledged) {
         throw new RuntimeException(
           s"""|Bad response:
@@ -152,10 +152,10 @@ class HttpElasticsearchDAO private[dataaccess] (
   }
 
   private[dataaccess] def bulkUpdate(
-    definitions: Seq[BulkCompatibleDefinition]
+    definitions: Seq[BulkCompatibleRequest]
   ): Future[Unit] = {
     val bulkDefinition = bulk(definitions).refresh(RefreshPolicy.WAIT_UNTIL)
-    httpClient.executeAndUnpack(bulkDefinition).map { response =>
+    elasticClient.executeAndUnpack(bulkDefinition).map { response =>
       if (response.errors || response.hasFailures) {
         throw new RuntimeException(
           s"""|Bad response:
@@ -170,12 +170,12 @@ class HttpElasticsearchDAO private[dataaccess] (
   private[dataaccess] def updatePartialDocument(
     index: ElasticsearchIndex[_],
     document: Json
-  ): BulkCompatibleDefinition = {
+  ): BulkCompatibleRequest = {
     val id = index.getId(document)
 
     update(id)
       .in(index.indexName / index.indexType)
-      .docAsUpsert(document.pretty(ModelAutoDerivation.defaultPrinter))
+      .docAsUpsert(document.printWith(ModelAutoDerivation.defaultPrinter))
   }
 }
 

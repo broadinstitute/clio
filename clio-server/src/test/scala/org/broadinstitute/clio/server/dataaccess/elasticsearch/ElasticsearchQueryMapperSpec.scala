@@ -43,7 +43,7 @@ class ElasticsearchQueryMapperSpec
       .buildQuery(input)(index)
       .apply(mapper.elasticsearchQueryObjectName)
       .asJson
-      .pretty(ModelAutoDerivation.defaultPrinter) should be(
+      .printWith(ModelAutoDerivation.defaultPrinter) should be(
       BoolQueryBuilderFn(
         boolQuery must (
           rangeQuery("mock_field_date").lte(endDate.toString),

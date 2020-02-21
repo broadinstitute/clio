@@ -18,7 +18,7 @@ import com.google.cloud.storage.contrib.nio.{
   CloudStorageConfiguration,
   CloudStorageFileSystem
 }
-import com.sksamuel.elastic4s.http.HttpClient
+import com.sksamuel.elastic4s.http.ElasticClient
 import com.sksamuel.elastic4s.http.index.mappings.IndexMappings
 import com.typesafe.scalalogging.LazyLogging
 import de.heikoseeberger.akkahttpcirce.ErrorAccumulatingCirceSupport
@@ -93,7 +93,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
         .asJson
 
     val jsonStream = new ByteArrayInputStream(
-      accountJSON.pretty(defaultPrinter).getBytes()
+      accountJSON.printWith(defaultPrinter).getBytes()
     )
     ServiceAccountCredentials.fromStream(jsonStream)
   }
@@ -179,10 +179,10 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * UninitializedFieldError in the containerized spec because of
     * the initialization-order weirdness around the container field.
     */
-  lazy val elasticsearchClient: HttpClient = {
+  lazy val elasticsearchClient: ElasticClient = {
     val host = HttpHost.create(elasticsearchUri.toString())
     val restClient = RestClient.builder(host).build()
-    HttpClient.fromRestClient(restClient)
+    ElasticClient.fromRestClient(restClient)
   }
 
   /**
@@ -278,7 +278,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * Registers the temp file for deletion.
     */
   def writeLocalTmpJson[A: Encoder](obj: A): File = {
-    writeLocalTmpFile(obj.asJson.pretty(implicitly[Printer]))
+    writeLocalTmpFile(obj.asJson.printWith(implicitly[Printer]))
   }
 
   /**

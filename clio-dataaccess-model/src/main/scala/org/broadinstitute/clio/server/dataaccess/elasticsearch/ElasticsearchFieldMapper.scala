@@ -5,7 +5,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 import com.sksamuel.elastic4s.mappings.FieldDefinition
-import com.sksamuel.elastic4s.searches.queries.QueryDefinition
+import com.sksamuel.elastic4s.searches.queries.Query
 import enumeratum.EnumEntry
 import enumeratum.values.{IntEnum, IntEnumEntry}
 import org.broadinstitute.clio.util.generic.FieldMapper
@@ -20,7 +20,7 @@ private[dataaccess] sealed abstract class ElasticsearchFieldMapper(
 
   def stringToDefinition(fieldType: Type): String => FieldDefinition
 
-  def valueToQuery(fieldName: String, fieldType: Type): Any => QueryDefinition
+  def valueToQuery(fieldName: String, fieldType: Type): Any => Query
 
   final def mapFields[T](implicit fieldMapper: FieldMapper[T]): Seq[FieldDefinition] =
     fieldMapper.fields.map {
@@ -70,7 +70,7 @@ object ElasticsearchFieldMapper extends IntEnum[ElasticsearchFieldMapper] {
     override def valueToQuery(
       fieldName: String,
       fieldType: Type
-    ): Any => QueryDefinition = {
+    ): Any => Query = {
       fieldType match {
         case tpe if is[OffsetDateTime](tpe) && fieldName.endsWith("_start") =>
           value =>
@@ -119,7 +119,7 @@ object ElasticsearchFieldMapper extends IntEnum[ElasticsearchFieldMapper] {
     override def valueToQuery(
       fieldName: String,
       fieldType: Type
-    ): Any => QueryDefinition = {
+    ): Any => Query = {
       fieldType match {
         case tpe if is[String](tpe) =>
           NumericBooleanDateAndKeywordFields.valueToQuery(

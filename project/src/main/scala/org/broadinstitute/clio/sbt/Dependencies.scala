@@ -7,24 +7,25 @@ import sbt._
   */
 object Dependencies {
   // The version numbers of each main and test dependency.
-  private val AkkaHttpCirceVersion = "1.21.0"
-  private val AkkaHttpVersion = "10.1.8"
-  private val AkkaVersion = "2.5.23"
+  private val AkkaHttpCirceVersion = "1.29.1"
+  private val AkkaHttpVersion = "10.1.10"
+  private val AkkaVersion = "2.5.25"
   private val AlpakkaVersion = "0.20"
   private val ApacheHttpClientVersion = "4.5.6"
   private val BetterFilesVersion = "3.6.0"
   private val CaseAppVersion = "2.0.0-M3"
-  private val CirceVersion = "0.9.3"
+  private val CirceVersion = "0.12.3"
+  private val CirceGenericVersion = "0.12.2"
   private val CommonsIoVersion = "2.6"
-  private val DiffsonVersion = "3.0.0"
-  private val Elastic4sVersion = "6.2.10"
+  private val DiffsonVersion = "4.0.1"
+  private val Elastic4sVersion = "6.7.4"
   private val EnumeratumCirceVersion = "1.5.17"
   private val EnumeratumVersion = "1.5.13"
   private val FicusVersion = "1.4.3"
   private val GoogleAuthHttpVersion = "0.10.0"
   private val GoogleCloudNioVersion = "0.54.0-alpha"
   private val GoogleCloudStorageVersion = "1.36.0"
-  private val JacksonVersion = "2.9.6"
+  private val JacksonVersion = "2.10.2"
   private val JimfsVersion = "1.1"
   private val LogbackClassicVersion = "1.2.3"
   private val S_machStringVersion = "2.1.0"
@@ -63,7 +64,7 @@ object Dependencies {
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
-    "io.circe" %% "circe-generic-extras" % CirceVersion,
+    "io.circe" %% "circe-generic-extras" % CirceGenericVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
     "org.gnieh" %% "diffson-circe" % DiffsonVersion,
     "org.slf4j" % "slf4j-api" % Slf4jVersion
@@ -86,7 +87,7 @@ object Dependencies {
   val ServerOverrideDependencies: Set[ModuleID] = Set(
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
-    "io.circe" %% "circe-generic-extras" % CirceVersion,
+    "io.circe" %% "circe-generic-extras" % CirceGenericVersion,
     "io.circe" %% "circe-parser" % CirceVersion
   )
 
@@ -101,7 +102,7 @@ object Dependencies {
     "de.heikoseeberger" %% "akka-http-circe" % AkkaHttpCirceVersion,
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
-    "io.circe" %% "circe-generic-extras" % CirceVersion,
+    "io.circe" %% "circe-generic-extras" % CirceGenericVersion,
     "io.circe" %% "circe-literal" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
     "org.slf4j" % "slf4j-api" % Slf4jVersion
@@ -132,7 +133,7 @@ object Dependencies {
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-parser" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
-    "io.circe" %% "circe-generic-extras" % CirceVersion,
+    "io.circe" %% "circe-generic-extras" % CirceGenericVersion,
     "net.s_mach" %% "string" % S_machStringVersion,
     "org.apache.httpcomponents" % "httpclient" % ApacheHttpClientVersion,
     "org.scala-lang" % "scala-reflect" % ScalaVersion
@@ -149,7 +150,7 @@ object Dependencies {
     "com.beachape" %% "enumeratum-circe" % EnumeratumCirceVersion,
     "io.circe" %% "circe-core" % CirceVersion,
     "io.circe" %% "circe-generic" % CirceVersion,
-    "io.circe" %% "circe-generic-extras" % CirceVersion,
+    "io.circe" %% "circe-generic-extras" % CirceGenericVersion,
     "io.circe" %% "circe-parser" % CirceVersion
   )
   private val TransferModelTestDependencies: Seq[ModuleID] = Seq(

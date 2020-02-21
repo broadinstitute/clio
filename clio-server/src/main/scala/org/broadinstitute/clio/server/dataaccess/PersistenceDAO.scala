@@ -84,7 +84,7 @@ abstract class PersistenceDAO(recoveryParallelism: Int) extends LazyLogging {
 
     val upsertId = ElasticsearchIndex.getUpsertId(document)
 
-    val jsonString = ModelAutoDerivation.defaultPrinter.pretty(document)
+    val jsonString = ModelAutoDerivation.defaultPrinter.print(document)
 
     val written = (writePath / upsertId.persistenceFilename)
       .write(jsonString)(Seq(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE))
