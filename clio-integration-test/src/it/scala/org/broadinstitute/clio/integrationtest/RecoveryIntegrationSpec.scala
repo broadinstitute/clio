@@ -160,7 +160,7 @@ class RecoveryIntegrationSpec extends DockerIntegrationSpec with OptionValues {
                 )
                 .fold(throw _, identity)
 
-              s"$dateDir/${upsertId.persistenceFilename}" -> defaultPrinter.pretty(json)
+              s"$dateDir/${upsertId.persistenceFilename}" -> defaultPrinter.print(json)
           }
       }
     } else {

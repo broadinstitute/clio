@@ -1660,7 +1660,7 @@ trait ArraysTests { self: BaseIntegrationSpec =>
         ArraysMetadata(
           sampleAlias = Some("patched_sample_alias"),
           chipType = Some("patched_chip_type")
-        ).asJson.pretty(implicitly)
+        ).asJson.printWith(implicitly)
       )
 
     val upsertKey1 = ArraysKey(

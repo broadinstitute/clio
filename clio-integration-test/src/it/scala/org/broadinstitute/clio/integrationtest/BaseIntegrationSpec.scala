@@ -93,7 +93,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
         .asJson
 
     val jsonStream = new ByteArrayInputStream(
-      accountJSON.pretty(defaultPrinter).getBytes()
+      accountJSON.printWith(defaultPrinter).getBytes()
     )
     ServiceAccountCredentials.fromStream(jsonStream)
   }
@@ -278,7 +278,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     * Registers the temp file for deletion.
     */
   def writeLocalTmpJson[A: Encoder](obj: A): File = {
-    writeLocalTmpFile(obj.asJson.pretty(implicitly[Printer]))
+    writeLocalTmpFile(obj.asJson.printWith(implicitly[Printer]))
   }
 
   /**
