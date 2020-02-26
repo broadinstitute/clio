@@ -35,7 +35,11 @@ val commonSettings: Seq[Setting[_]] = Seq(
 val commonDockerSettings: Seq[Setting[_]] = Seq(
   assemblyJarName in assembly := Versioning.assemblyName.value,
   test in assembly := {},
-  imageNames in docker := Docker.imageNames.value
+  imageNames in docker := Docker.imageNames.value,
+  assemblyMergeStrategy in assembly := {
+    case "module-info.class" => MergeStrategy.discard
+    case x => (assemblyMergeStrategy in assembly).value(x)
+  }
 )
 
 val commonTestDockerSettings: Seq[Setting[_]] = Seq(
