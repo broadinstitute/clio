@@ -51,6 +51,9 @@ class ArraysServiceSpec extends IndexServiceSpec[ArraysIndex.type]("ArraysServic
     metadata.copy(project = Some(randomString))
   }
 
+  def copyDummyMetadataSetNullField(metadata: ArraysMetadata): ArraysMetadata =
+    metadata.copy(billingProject = Some("test"))
+
   def getService(
     persistenceDAO: PersistenceDAO,
     searchDAO: SearchDAO

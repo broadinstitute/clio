@@ -5,7 +5,8 @@ import akka.stream.scaladsl.Source
 import diffson._
 import diffson.circe._
 import diffson.jsonpatch.Replace
-import diffson.jsonpatch.simplediff._
+import diffson.jsonpatch.simplediff.remembering._
+import diffson.lcs.Patience
 import io.circe.{Json, JsonObject}
 import io.circe.syntax._
 import org.broadinstitute.clio.server.dataaccess.{PersistenceDAO, SearchDAO}
@@ -147,6 +148,7 @@ abstract class IndexService[CI <: ClioIndex](
     existingMetadata: clioIndex.MetadataType,
     newMetadata: clioIndex.MetadataType
   ): Either[Exception, clioIndex.MetadataType] = {
+    implicit val foo = new Patience[Json]
     val differences = diff(existingMetadata.asJson, newMetadata.asJson)
     /* Types of differences:
         Replace - the existing value is different from what we want to set. We ignore nulls. This will overwrite.
@@ -155,6 +157,7 @@ abstract class IndexService[CI <: ClioIndex](
         Move - effectively an Add and Remove. This will not overwrite.
         Copy - effectively an Add. This will not overwrite.
      */
+
     val replaceOperations: Seq[Replace[Json]] = differences.ops.collect {
       case replace @ Replace(_, value, existing)
           if value != Json.Null && !existing.contains(Json.Null) =>
@@ -165,7 +168,7 @@ abstract class IndexService[CI <: ClioIndex](
       Right(newMetadata)
     } else {
       val diffs: String = replaceOperations.map { replaceOp =>
-        s"Field: ${replaceOp.path}, Old value: ${replaceOp.old.getOrElse("")}, New value: ${replaceOp.value}"
+        s"Field: ${replaceOp.path}, Old value: ${replaceOp.old.getOrElse("null")}, New value: ${replaceOp.value}"
       }.mkString("\n")
       Left(
         UpsertValidationException(

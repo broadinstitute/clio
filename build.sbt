@@ -38,7 +38,7 @@ val commonDockerSettings: Seq[Setting[_]] = Seq(
   imageNames in docker := Docker.imageNames.value,
   assemblyMergeStrategy in assembly := {
     case "module-info.class" => MergeStrategy.discard
-    case x => (assemblyMergeStrategy in assembly).value(x)
+    case x                   => (assemblyMergeStrategy in assembly).value(x)
   }
 )
 

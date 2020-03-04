@@ -59,6 +59,9 @@ class GvcfServiceSpec extends IndexServiceSpec[GvcfIndex.type]("GvcfService") {
     metadata.copy(notes = Some(randomString))
   }
 
+  def copyDummyMetadataSetNullField(metadata: GvcfMetadata): GvcfMetadata =
+    metadata.copy(gvcfSize = Some(1L))
+
   def getService(
     persistenceDAO: PersistenceDAO,
     searchDAO: SearchDAO

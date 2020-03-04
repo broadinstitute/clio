@@ -51,6 +51,9 @@ class UbamServiceSpec extends IndexServiceSpec[UbamIndex.type]("UbamService") {
     metadata.copy(project = Some(randomString))
   }
 
+  def copyDummyMetadataSetNullField(metadata: UbamMetadata): UbamMetadata =
+    metadata.copy(libraryType = Some("test"))
+
   def getService(
     persistenceDAO: PersistenceDAO,
     searchDAO: SearchDAO

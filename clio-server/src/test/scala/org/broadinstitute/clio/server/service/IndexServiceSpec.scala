@@ -50,6 +50,10 @@ abstract class IndexServiceSpec[
     metadata: indexService.clioIndex.MetadataType
   ): indexService.clioIndex.MetadataType
 
+  def copyDummyMetadataSetNullField(
+    metadata: indexService.clioIndex.MetadataType
+  ): indexService.clioIndex.MetadataType
+
   def getService(
     persistenceDAO: PersistenceDAO,
     searchDAO: SearchDAO
@@ -65,6 +69,15 @@ abstract class IndexServiceSpec[
 
   it should "succeed if the update would overwrite data and force is set to true" in {
     overMetadataWriteTest(Some(Normal), Some(Normal), force = true)
+  }
+
+  it should "succeed if the update would overwrite a null value" in {
+    overMetadataWriteTest(
+      Some(Normal),
+      Some(Normal),
+      changeField = false,
+      setNullField = true
+    )
   }
 
   it should "not overwrite document status if it is not set" in {
@@ -253,6 +266,7 @@ abstract class IndexServiceSpec[
     originalStatus: Option[DocumentStatus],
     newStatus: Option[DocumentStatus],
     changeField: Boolean = true,
+    setNullField: Boolean = false,
     force: Boolean = false,
     expectQueryOnly: Boolean = false
   ) = {
@@ -260,6 +274,8 @@ abstract class IndexServiceSpec[
     val dummyMetadata = getDummyMetadata(originalStatus)
     val newMetadata = if (changeField) {
       copyDummyMetadataChangeField(dummyMetadata).withDocumentStatus(newStatus)
+    } else if (setNullField) {
+      copyDummyMetadataSetNullField(dummyMetadata).withDocumentStatus(newStatus)
     } else {
       dummyMetadata.withDocumentStatus(newStatus)
     }
