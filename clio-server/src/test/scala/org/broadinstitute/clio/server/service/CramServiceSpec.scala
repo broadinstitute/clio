@@ -61,10 +61,14 @@ class CramServiceSpec extends IndexServiceSpec[CramIndex.type]("CramService") {
     metadata.copy(workspaceName = Some(randomString))
   }
 
+  def copyDummyMetadataSetNullField(metadata: CramMetadata): CramMetadata =
+    metadata.copy(cramSize = Some(1L))
+
   def getService(
     persistenceDAO: PersistenceDAO,
     searchDAO: SearchDAO
   ): CramService = {
     new CramService(persistenceDAO, searchDAO)
   }
+
 }
