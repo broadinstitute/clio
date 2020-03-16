@@ -279,7 +279,7 @@ main() {
   echo "RESULT OF BUILD FQDN: $(build_fqdn ${CLIO_HOST_NAME})"
   echo "RESULT OF GET REAL CLIO NAME: $(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))"
 
-  local -r clio_fqdn=$(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))
+  local -r clio_fqdn=$(build_fqdn ${CLIO_HOST_NAME})
 
   # Temporary directory to store rendered configs.
   local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
