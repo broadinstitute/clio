@@ -119,18 +119,20 @@ build_fqdn() {
 get_real_clio_name() {
   local -r gce_name=$(ssh ${SSH_OPTS[@]} ${SSH_USER}@$1 'uname -n')
 
-  case "$gce_name" in
+  echo "GCE_NAME::: $gce_name"
 
-    *"gotc-clio-"*)
-      local -r instance_number=$(echo ${gce_name} | sed -E "s/gotc-clio-${ENV}([0-9]{3})/\1/")
-      ;;
-
-    *)
-      local -r instance_number=$(echo ${gce_name} | sed -E "s/clio-([0-9]{3})-([0-9]{2})/\1/")
-      ;;
-  esac
-
-  echo $(build_fqdn "clio${instance_number}")
+#  case "$gce_name" in
+#
+#    *"gotc-clio-"*)
+#      local -r instance_number=$(echo ${gce_name} | sed -E "s/gotc-clio-${ENV}([0-9]{3})/\1/")
+#      ;;
+#
+#    *)
+#      local -r instance_number=$(echo ${gce_name} | sed -E "s/clio-([0-9]{3})-([0-9]{2})/\1/")
+#      ;;
+#  esac
+#
+#  echo $(build_fqdn "clio${instance_number}")
 }
 
 # Copy ctmpls to a destination directory, then render them into configs.
@@ -277,11 +279,10 @@ main() {
   local -r docker_tag=$(git rev-parse HEAD)
   echo "CLIO_HOST_NAME: ${CLIO_HOST_NAME}"
   echo "RESULT OF BUILD FQDN: $(build_fqdn ${CLIO_HOST_NAME})"
-  echo "RESULT OF GET REAL CLIO NAME: $(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))"
-
-  echo "RESULT OF GET FAKE CLIO NAME: $(get_real_clio_name clio-300-01)"
+#  echo "RESULT OF GET REAL CLIO NAME: $(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))"
 
   local -r clio_fqdn=$(build_fqdn ${CLIO_HOST_NAME})
+#  local -r clio_fqdn=$(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))
 
   # Temporary directory to store rendered configs.
   local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
