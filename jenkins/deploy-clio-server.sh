@@ -156,6 +156,7 @@ render_ctmpls() {
   # Populate an env file with variables for rendering configs.
   local -r ctmpl_env_file=${config_dir}/env-vars.txt
   for key in ${!env_map[@]}; do
+    echo "KEY: ${key}, VALUE: ${env_map[$key]}"
     echo ${key}=${env_map[$key]} >> ${ctmpl_env_file}
   done
 
