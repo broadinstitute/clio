@@ -118,7 +118,6 @@ build_fqdn() {
 # Now clio is named as:  clio-300-01
 get_real_clio_name() {
   local -r gce_name=$(ssh ${SSH_OPTS[@]} ${SSH_USER}@$1 'uname -n')
-  echo "GCE NAME: ${gce_name}"
 
   case "$gce_name" in
 
