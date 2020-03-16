@@ -281,16 +281,16 @@ main() {
   echo "RESULT OF BUILD FQDN: $(build_fqdn ${CLIO_HOST_NAME})"
   echo "RESULT OF GET REAL CLIO NAME: $(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))"
 
-  local -r clio_fqdn=$(build_fqdn ${CLIO_HOST_NAME})
-#  local -r clio_fqdn=$(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))
-
-  # Temporary directory to store rendered configs.
-  local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
-  trap "rm -rf ${tmpdir}" ERR EXIT HUP INT TERM
-
-  render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
-  tempfolder="$(date +%s)-clio"
-  cp -R ${tmpdir} /tmp/${tempfolder}
+#  local -r clio_fqdn=$(build_fqdn ${CLIO_HOST_NAME})
+##  local -r clio_fqdn=$(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))
+#
+#  # Temporary directory to store rendered configs.
+#  local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
+#  trap "rm -rf ${tmpdir}" ERR EXIT HUP INT TERM
+#
+#  render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
+#  tempfolder="$(date +%s)-clio"
+#  cp -R ${tmpdir} /tmp/${tempfolder}
 
 #  deploy_containers ${clio_fqdn} ${tmpdir}
 #
