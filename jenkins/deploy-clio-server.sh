@@ -270,7 +270,8 @@ main() {
   trap "rm -rf ${tmpdir}" ERR EXIT HUP INT TERM
 
   render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
-  cp -R ${tmpdir} /tmp/$(date)-clio
+  tempfolder="$(date +%s)-clio"
+  cp -R ${tmpdir} /tmp/${tempfolder}
 
   # deploy_containers ${clio_fqdn} ${tmpdir}
 
