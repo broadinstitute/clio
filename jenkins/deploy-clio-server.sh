@@ -115,10 +115,23 @@ build_fqdn() {
 # Assumes that Clio hosts will be named according to the pattern:
 #  gotc-clio-{ENV}(\d{3})
 # i.e. gotc-clio-dev101, gotc-clio-prod203
+# Now clio is named as:  clio-300-01
 get_real_clio_name() {
   local -r gce_name=$(ssh ${SSH_OPTS[@]} ${SSH_USER}@$1 'uname -n')
-  local -r instance_number=$(echo ${gce_name} | sed -E "s/gotc-clio-${ENV}([0-9]{3})/\1/")
+  echo "GCE NAME: ${gce_name}"
 
+  case "$gce_name" in
+
+    *"gotc-clio-"*)
+      local -r instance_number=$(echo ${gce_name} | sed -E "s/gotc-clio-${ENV}([0-9]{3})/\1/")
+      ;;
+
+    *)
+      local -r instance_number=$(echo ${gce_name} | sed -E "s/clio-([0-9]{3})-([0-9]{2})/\1/")
+      ;;
+  esac
+
+  echo "BUILDED FQDN: $(build_fqdn "clio${instance_number}")"
   echo $(build_fqdn "clio${instance_number}")
 }
 
