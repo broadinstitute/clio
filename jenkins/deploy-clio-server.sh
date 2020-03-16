@@ -131,7 +131,6 @@ get_real_clio_name() {
       ;;
   esac
 
-  echo "BUILDED FQDN: $(build_fqdn "clio${instance_number}")"
   echo $(build_fqdn "clio${instance_number}")
 }
 
