@@ -289,15 +289,15 @@ main() {
   tempfolder="$(date +%s)-clio"
   cp -R ${tmpdir} /tmp/${tempfolder}
 
-  deploy_containers ${clio_fqdn} ${tmpdir}
-
-  if poll_clio_health ${clio_fqdn} ${docker_tag}; then
-    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
-  else
-    >&2 echo Error: Clio failed to report expected health / version, rolling back deploy!
-    rollback_deploy ${clio_fqdn}
-    exit 1
-  fi
+#  deploy_containers ${clio_fqdn} ${tmpdir}
+#
+#  if poll_clio_health ${clio_fqdn} ${docker_tag}; then
+#    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
+#  else
+#    >&2 echo Error: Clio failed to report expected health / version, rolling back deploy!
+#    rollback_deploy ${clio_fqdn}
+#    exit 1
+#  fi
 
   # Tag the current commit with the name of the environment that was just deployed to.
   # This is a floating tag, so we have to use -f.
@@ -305,7 +305,7 @@ main() {
   # NOTE: we can't push the tag here because Jenkins has to run this script with its
   # GCE SSH key, which doesn't match its GitHub key. We push the tag as a follow-up
   # step using the git publisher.
-  git tag -f ${ENV}
+#  git tag -f ${ENV}
 }
 
 main
