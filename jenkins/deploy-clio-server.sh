@@ -117,8 +117,20 @@ build_fqdn() {
 # i.e. gotc-clio-dev101, gotc-clio-prod203
 # Now clio is named as:  clio-300-01
 get_real_clio_name() {
+  VAULT_TOKEN=$(cat /etc/vault-token)
+  SA_VAULT_PATH="secret/dsde/gotc/dev/common/ci-deployer-service-account.json"
+
+  docker run --rm -e VAULT_TOKEN=$VAULT_TOKEN \
+    broadinstitute/dsde-toolbox:dev vault read -format=json ${SA_VAULT_PATH} \
+    | jq '.data' > service-account.json
+
+  # activate SA
+  gcloud auth activate-service-account --key-file=service-account.json
+
   # local -r gce_name=$(gcloud compute --project "broad-gotc-dev" ssh "clio-300-01" --zone=us-central1-a --command='uname -n')
   gcloud compute --project "broad-gotc-dev" ssh "clio-300-01" --zone=us-central1-a --command='uname -n'
+
+  
 #  case "$gce_name" in
 #
 #    "gotc-clio-"*)
