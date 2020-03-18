@@ -117,8 +117,8 @@ build_fqdn() {
 # i.e. gotc-clio-dev101, gotc-clio-prod203
 # Now clio is named as:  clio-300-01
 get_real_clio_name() {
-  local -r gce_name=$(gcloud compute --project "broad-gotc-dev" ssh "clio-300-01" --zone=us-central1-a --command='uname -n')
-
+  # local -r gce_name=$(gcloud compute --project "broad-gotc-dev" ssh "clio-300-01" --zone=us-central1-a --command='uname -n')
+  gcloud compute --project "broad-gotc-dev" ssh "clio-300-01" --zone=us-central1-a --command='uname -n'
 #  case "$gce_name" in
 #
 #    "gotc-clio-"*)
