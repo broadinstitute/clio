@@ -117,7 +117,7 @@ build_fqdn() {
 # i.e. gotc-clio-dev101, gotc-clio-prod203
 # Now clio is named as:  clio-300-01
 get_real_clio_name() {
-  CLIO_HOSTNAME=$1
+  CLIO_HOST_NAME=$1
   CLIO_PROJECT=$2
 
   VAULT_TOKEN=$(cat /etc/vault-token-dsde)
@@ -131,7 +131,7 @@ get_real_clio_name() {
   gcloud auth activate-service-account --key-file=service-account.json
 
   # local -r gce_name=$(gcloud compute --project "broad-gotc-dev" ssh "clio-300-01" --zone=us-central1-a --command='uname -n')
-  gcloud compute --project "${CLIO_PROJECT}" ssh "${CLIO_HOSTNAME}" --zone=us-central1-a --command='uname -n'
+  gcloud compute --project "${CLIO_PROJECT}" ssh "${CLIO_HOST_NAME}" --zone=us-central1-a --command='uname -n'
 
 
 #  case "$gce_name" in
@@ -291,9 +291,8 @@ main() {
 
   local -r docker_tag=$(git rev-parse HEAD)
   echo "CLIO_HOST_NAME: ${CLIO_HOST_NAME}"
-  echo "RESULT OF BUILD FQDN: $(build_fqdn ${CLIO_HOST_NAME})"
 
-  local -r clio_fqdn=$(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}) "broad-gotc-dev")
+  local -r clio_fqdn=$(get_real_clio_name ${CLIO_HOST_NAME} "broad-gotc-dev")
   echo "CLIO FQDN IS: ${clio_fqdn}"
 
 
