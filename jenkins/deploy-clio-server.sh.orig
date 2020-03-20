@@ -263,9 +263,8 @@ main() {
   check_usage
 
   local -r docker_tag=$(git rev-parse HEAD)
-  clio_host_fqdn="$(build_fqdn "${CLIO_HOST_NAME}")"
-  local -r clio_cname_fqdn=$(get_real_clio_name "${clio_host_fqdn}")
-  echo "CLIO FQDN: ${clio_cname_fqdn}"
+  local -r clio_fqdn=$(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))
+  echo ${clio_fqdn}
 
 #  # Temporary directory to store rendered configs.
 #  local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
