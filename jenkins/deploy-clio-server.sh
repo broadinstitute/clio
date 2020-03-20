@@ -117,7 +117,10 @@ build_fqdn() {
 # i.e. gotc-clio-dev101, gotc-clio-prod203
 get_real_clio_name() {
   local -r gce_name=$(ssh ${SSH_OPTS[@]} ${SSH_USER}@$1 'uname -n')
+  echo "GCE NAME: ${gce_name}"
+
   local -r instance_number=$(echo ${gce_name} | sed -E "s/gotc-clio-${ENV}([0-9]{3})/\1/")
+  echo "INSTANCE_NUMBER: ${instance_number}"
 
   echo $(build_fqdn "clio${instance_number}")
 }
@@ -264,8 +267,13 @@ main() {
 
   local -r docker_tag=$(git rev-parse HEAD)
   clio_host_fqdn="$(build_fqdn "${CLIO_HOST_NAME}")"
-  local -r clio_cname_fqdn=$(get_real_clio_name "${clio_host_fqdn}")
-  echo "CLIO FQDN: ${clio_cname_fqdn}"
+  local -r clio_fqdn=$(get_real_clio_name "${clio_host_fqdn}")
+  echo "CLIO FQDN: ${clio_fqdn}"
+  # CLIO HOST: clio201 made CLIO FQDN: clio201.gotc-dev.broadinstitute.org
+  # CLIO_HOST: clio101 made CLIO FQDN: clio.gotc-dev.broadinstitute.org
+  # CLIO_HOST: clio made CLIO FQDN: clio201.gotc-dev.broadinstitute.org
+
+
 
 #  # Temporary directory to store rendered configs.
 #  local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
