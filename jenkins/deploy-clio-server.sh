@@ -111,43 +111,6 @@ build_fqdn() {
   echo ${1}.gotc-${ENV}.broadinstitute.org
 }
 
-# Get the "real" hostname for the Clio host at the given address (which might be a DNS).
-# Assumes that Clio hosts will be named according to the pattern:
-#  gotc-clio-{ENV}(\d{3})
-# i.e. gotc-clio-dev101, gotc-clio-prod203
-# Now clio is named as:  clio-300-01
-get_real_clio_name() {
-  CLIO_HOST_NAME=$1
-  CLIO_PROJECT=$2
-
-  VAULT_TOKEN=$(cat /etc/vault-token-dsde)
-  SA_VAULT_PATH="secret/dsde/gotc/dev/common/ci-deployer-service-account.json"
-
-  docker run --rm -e VAULT_TOKEN=$VAULT_TOKEN \
-    broadinstitute/dsde-toolbox:dev vault read -format=json ${SA_VAULT_PATH} \
-    | jq '.data' > service-account.json
-
-  # activate SA
-  gcloud auth activate-service-account --key-file=service-account.json
-
-  # local -r gce_name=$(gcloud compute --project "broad-gotc-dev" ssh "clio-300-01" --zone=us-central1-a --command='uname -n')
-  gcloud compute --project "${CLIO_PROJECT}" ssh "${CLIO_HOST_NAME}" --zone=us-central1-a --command='uname -n'
-
-
-#  case "$gce_name" in
-#
-#    "gotc-clio-"*)
-#      local -r instance_number=$(echo ${gce_name} | sed -E "s/gotc-clio-${ENV}([0-9]{3})/\1/")
-#      ;;
-#
-#    *)
-#      local -r instance_number=$(echo ${gce_name} | sed -E "s/clio-([0-9]{3})-([0-9]{2})/\1/")
-#      ;;
-#  esac
-#
-#  echo $(build_fqdn "clio${instance_number}")
-}
-
 # Copy ctmpls to a destination directory, then render them into configs.
 # Rendering has the side-effect of deleting the copied ctmpl files.
 render_ctmpls() {
@@ -240,6 +203,48 @@ EOF
   start_containers ${clio_fqdn}
 }
 
+new_stop_containers() {
+
+}
+
+new_start_containers() {
+
+}
+
+new_deploy_containers() {
+  GOOGLE_INFRA_PROJECT=${1}
+  CLIO_INSTANCES_LIST=${2}
+  DIR_TO_COPY=${3}
+
+  for instance in ${CLIO_INSTANCES_LIST}
+  do
+    gcloud compute --project ${GOOGLE_INFRA_PROJECT} ssh ${instance} \
+                   --zone=us-central1-a \
+                   --command="sudo rm -rf ${APP_STAGING_DIR} ${APP_BACKUP_BACKUP_DIR} &&
+                              sudo mkdir ${APP_STAGING_DIR} &&
+                              sudo chgrp ${SSH_USER} ${APP_STAGING_DIR} &&
+                              sudo chmod g+w ${APP_STAGING_DIR}"
+
+    gcloud compute --project ${GOOGLE_INFRA_PROJECT} scp \
+                   --zone=us-central1-a \
+                   ${DIR_TO_COPY} \
+                   ${HOST}:/tmp/
+
+    new_stop_containers ${HOST}
+
+    # Create backups, in case we need to roll back.
+    gcloud compute --project ${GOOGLE_INFRA_PROJECT} ssh ${instance} \
+                   --zone=us-central1-a \
+                   --command="([ ! -d ${APP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_DIR} ${APP_BACKUP_BACKUP_DIR}) &&
+                              ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_BACKUP_DIR}) &&
+                              sudo mv ${APP_STAGING_DIR} ${APP_DIR} &&
+                              sudo mkdir -p ${HOST_LOG_DIR}/${POS_LOG_DIR}"
+
+    new_start_containers ${HOST}
+  done
+
+}
+
 rollback_deploy() {
   local -r clio_fqdn=$1
 
@@ -286,26 +291,62 @@ poll_clio_health() {
   return 1
 }
 
+activate_service_account() {
+  VAULT_TOKEN=$(cat /etc/vault-token-dsde)
+  SA_VAULT_PATH="secret/dsde/gotc/dev/common/ci-deployer-service-account.json"
+
+  docker run --rm -e VAULT_TOKEN="${VAULT_TOKEN}" \
+    broadinstitute/dsde-toolbox:dev vault read -format=json ${SA_VAULT_PATH} \
+    | jq '.data' > service-account.json
+
+  # activate SA
+  gcloud auth activate-service-account --key-file=service-account.json
+}
+
 main() {
   check_usage
 
   local -r docker_tag=$(git rev-parse HEAD)
-  echo "CLIO_HOST_NAME: ${CLIO_HOST_NAME}"
+#  echo "CLIO_HOST_NAME: ${CLIO_HOST_NAME}"
+#  CLIO_HOST_NAME="clio-300-01"
+  CLIO_PROJECT="broad-gotc-dev"
 
-  local -r clio_fqdn=$(get_real_clio_name ${CLIO_HOST_NAME} "broad-gotc-dev")
-  echo "CLIO FQDN IS: ${clio_fqdn}"
+  activate_service_account
+
+  # Get the instance marked with the Clio and Active labels (There should only be one)
+  CLIO_INSTANCE_LIST=$(gcloud --format="table[no-heading](Name)" compute \
+                         --project ${CLIO_PROJECT} instances list \
+                         --filter="labels.app=clio AND labels.state=active")
+  echo "${CLIO_INSTANCE_LIST}"
 
 
+
+
+  # Temporary directory to store rendered configs.
+  local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
+  trap "rm -rf ${tmpdir}" ERR EXIT HUP INT TERM
+
+  new_render_ctmpls ${CLIO_INSTANCE_LIST} ${docker_tag} ${tmpdir}
+  tempfolder="$(date +%s)-clio"
+  cp -R ${tmpdir} /tmp/${tempfolder}
+
+  new_deploy_containers ${CLIO_INSTANCE_LIST}
+
+
+
+
+
+
+   # NEXT STEPS:
+ # 1. Build the fqdn for the clio instance
+ # local -r clio_fqdn=$(build_fqdn "${CLIO_INSTANCE}")
+
+
+
+
+#### REPLACE THESE METHODS:
+#  deploy_containers "${CLIO_INSTANCE}"
 #
-#  # Temporary directory to store rendered configs.
-#  local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
-#  trap "rm -rf ${tmpdir}" ERR EXIT HUP INT TERM
-#
-#  render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
-#  tempfolder="$(date +%s)-clio"
-#  cp -R ${tmpdir} /tmp/${tempfolder}
-
-#  deploy_containers ${clio_fqdn} ${tmpdir}
 #
 #  if poll_clio_health ${clio_fqdn} ${docker_tag}; then
 #    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
@@ -314,14 +355,18 @@ main() {
 #    rollback_deploy ${clio_fqdn}
 #    exit 1
 #  fi
+#
+#   Tag the current commit with the name of the environment that was just deployed to.
+#   This is a floating tag, so we have to use -f.
+#
+#   NOTE: we can't push the tag here because Jenkins has to run this script with its
+#   GCE SSH key, which doesn't match its GitHub key. We push the tag as a follow-up
+#   step using the git publisher.
+  git tag -f ${ENV}
 
-  # Tag the current commit with the name of the environment that was just deployed to.
-  # This is a floating tag, so we have to use -f.
-  #
-  # NOTE: we can't push the tag here because Jenkins has to run this script with its
-  # GCE SSH key, which doesn't match its GitHub key. We push the tag as a follow-up
-  # step using the git publisher.
-#  git tag -f ${ENV}
+
+  ### Create as new job and then retire current job
+
 }
 
 main
