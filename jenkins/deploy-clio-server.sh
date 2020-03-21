@@ -276,8 +276,7 @@ start_clio_containers() {
 deploy_clio_containers() {
   CLIO_PROJECT=$1
   CLIO_INSTANCE=$2
-
-  local -r clio_fqdn=$1 config_src=$2
+  RENDERED_FILES=$3
 
   # Clean up any leftover state from previous failed deploys.
   gcloud compute --project ${CLIO_PROJECT} \
@@ -293,7 +292,7 @@ deploy_clio_containers() {
                  scp \
                  --recurse \
                  --zone=us-central1-a \
-                 ${config_src}/* \
+                 ${RENDERED_FILES}/* \
                  ${CLIO_INSTANCE}:/${APP_STAGING_DIR}
 
 #  # Stop anything that's running.
@@ -335,7 +334,7 @@ main() {
 
   render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
 
-  deploy_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
+  deploy_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE} ${tmpdir}
 
 
 
