@@ -296,13 +296,13 @@ deploy_clio_containers() {
                             sudo chgrp ${SSH_USER} ${APP_STAGING_DIR} &&
                             sudo chmod g+w ${APP_STAGING_DIR}"
 
-#  # Copy rendered configs to the staging directory.
-#  gcloud compute --project ${CLIO_PROJECT} \
-#                 scp \
-#                 --recurse \
-#                 --zone=us-central1-a \
-#                 ${RENDERED_FILES}/* \
-#                 ${CLIO_INSTANCE}:/${APP_STAGING_DIR}
+  # Copy rendered configs to the staging directory.
+  gcloud compute --project ${CLIO_PROJECT} \
+                 scp \
+                 --recurse \
+                 --zone=us-central1-a \
+                 ${RENDERED_FILES}/* \
+                 ${CLIO_INSTANCE}:/${APP_STAGING_DIR}
 
 #  # Stop anything that's running.
 #  stop_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
