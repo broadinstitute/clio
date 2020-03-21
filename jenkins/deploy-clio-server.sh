@@ -224,7 +224,6 @@ get_clio_instance() {
   CLIO_INSTANCE_LIST=$(gcloud --format="table[no-heading](Name)" compute \
                          --project ${CLIO_PROJECT} instances list \
                          --filter="labels.app=clio")
-  echo "CLIO_INSTANCE_LIST: ${CLIO_INSTANCE_LIST}"
 
   # Verify that there is only one instance
   if [[ ${#CLIO_INSTANCE_LIST[@]} -ne 1 ]];
