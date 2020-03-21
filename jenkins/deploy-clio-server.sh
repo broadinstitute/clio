@@ -230,6 +230,8 @@ get_clio_instance() {
   then
     exit 1
   fi
+  
+  echo "${CLIO_INSTANCE_LIST}"
 }
 
 get_clio_fqdn() {
@@ -332,6 +334,9 @@ main() {
 #  render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
 #
 #  deploy_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
+
+
+
 
 #  if poll_clio_health ${clio_fqdn} ${docker_tag}; then
 #    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
