@@ -322,15 +322,16 @@ main() {
 
   CLIO_INSTANCE=$(get_clio_instance ${CLIO_PROJECT})
 
+  echo "CLIO INSTANCE IS: ${CLIO_INSTANCE}"
   local -r clio_fqdn=$(get_clio_fqdn ${CLIO_PROJECT} ${CLIO_INSTANCE})
 
-  # Temporary directory to store rendered configs.
-  local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
-  trap "rm -rf ${tmpdir}" ERR EXIT HUP INT TERM
-
-  render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
-
-  deploy_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
+#  # Temporary directory to store rendered configs.
+#  local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
+#  trap "rm -rf ${tmpdir}" ERR EXIT HUP INT TERM
+#
+#  render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
+#
+#  deploy_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
 
 #  if poll_clio_health ${clio_fqdn} ${docker_tag}; then
 #    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
