@@ -278,6 +278,15 @@ deploy_clio_containers() {
   CLIO_INSTANCE=$2
   RENDERED_FILES=$3
 
+  echo "**********************************************
+       APP_STAGING_DIR: ${APP_STAGING_DIR}
+       APP_BACKUP_BACKUP_DIR: ${APP_BACKUP_BACKUP_DIR}
+       SSH_USER: ${SSH_USER}
+       CLIO_INSTANCE: ${CLIO_INSTANCE}
+       CLIO_PROJECT: ${CLIO_PROJECT}
+       RENDERED_FILES: ${RENDERED_FILES}
+       **********************************************"
+
   # Clean up any leftover state from previous failed deploys.
   gcloud compute --project ${CLIO_PROJECT} \
                  ssh ${CLIO_INSTANCE} \
@@ -287,13 +296,13 @@ deploy_clio_containers() {
                             sudo chgrp ${SSH_USER} ${APP_STAGING_DIR} &&
                             sudo chmod g+w ${APP_STAGING_DIR}"
 
-  # Copy rendered configs to the staging directory.
-  gcloud compute --project ${CLIO_PROJECT} \
-                 scp \
-                 --recurse \
-                 --zone=us-central1-a \
-                 ${RENDERED_FILES}/* \
-                 ${CLIO_INSTANCE}:/${APP_STAGING_DIR}
+#  # Copy rendered configs to the staging directory.
+#  gcloud compute --project ${CLIO_PROJECT} \
+#                 scp \
+#                 --recurse \
+#                 --zone=us-central1-a \
+#                 ${RENDERED_FILES}/* \
+#                 ${CLIO_INSTANCE}:/${APP_STAGING_DIR}
 
 #  # Stop anything that's running.
 #  stop_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
