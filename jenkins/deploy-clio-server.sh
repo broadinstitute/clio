@@ -304,19 +304,19 @@ deploy_clio_containers() {
                  ${RENDERED_FILES}/* \
                  ${CLIO_INSTANCE}:/${APP_STAGING_DIR}
 
-#  # Stop anything that's running.
-#  stop_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
-#
-#  # Create backups, in case we need to roll back.
-#  gcloud compute --project ${CLIO_PROJECT} \
-#                 ssh ${CLIO_INSTANCE} \
-#                 --zone=us-central1-a \
-#                 --command="([ ! -d ${APP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_DIR} ${APP_BACKUP_BACKUP_DIR}) &&
-#                            ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_BACKUP_DIR}) &&
-#                            sudo mv ${APP_STAGING_DIR} ${APP_DIR} &&
-#                            sudo mkdir -p ${HOST_LOG_DIR}/${POS_LOG_DIR}"
-#
-#  # Start up the new containers.
+  # Stop anything that's running.
+  stop_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
+
+  # Create backups, in case we need to roll back.
+  gcloud compute --project ${CLIO_PROJECT} \
+                 ssh ${CLIO_INSTANCE} \
+                 --zone=us-central1-a \
+                 --command="([ ! -d ${APP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_DIR} ${APP_BACKUP_BACKUP_DIR}) &&
+                            ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_BACKUP_DIR}) &&
+                            sudo mv ${APP_STAGING_DIR} ${APP_DIR} &&
+                            sudo mkdir -p ${HOST_LOG_DIR}/${POS_LOG_DIR}"
+
+  # Start up the new containers.
 #  start_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
 }
 
