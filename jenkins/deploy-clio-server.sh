@@ -117,10 +117,10 @@ build_fqdn() {
 # i.e. gotc-clio-dev101, gotc-clio-prod203
 get_real_clio_name() {
   local -r gce_name=$(ssh ${SSH_OPTS[@]} ${SSH_USER}@$1 'uname -n')
-  echo "GCE NAME: ${gce_name}"
+  # echo "GCE NAME: ${gce_name}"
 
   local -r instance_number=$(echo ${gce_name} | sed -E "s/gotc-clio-${ENV}([0-9]{3})/\1/")
-  echo "INSTANCE_NUMBER: ${instance_number}"
+  # echo "INSTANCE_NUMBER: ${instance_number}"
 
   echo $(build_fqdn "clio${instance_number}")
 }
@@ -262,6 +262,18 @@ poll_clio_health() {
   return 1
 }
 
+activate_service_account() {
+  VAULT_TOKEN=$(cat /etc/vault-token-dsde)
+  SA_VAULT_PATH="secret/dsde/gotc/dev/common/ci-deployer-service-account.json"
+
+  docker run --rm -e VAULT_TOKEN="${VAULT_TOKEN}" \
+    broadinstitute/dsde-toolbox:dev vault read -format=json ${SA_VAULT_PATH} \
+    | jq '.data' > service-account.json
+
+  # activate SA
+  gcloud auth activate-service-account --key-file=service-account.json
+}
+
 main() {
   check_usage
 
@@ -269,6 +281,31 @@ main() {
   clio_host_fqdn="$(build_fqdn "${CLIO_HOST_NAME}")"
   local -r clio_fqdn=$(get_real_clio_name "${clio_host_fqdn}")
   echo "CLIO FQDN: ${clio_fqdn}"
+  CLIO_PROJECT="broad-gotc-${ENV}"
+
+  activate_service_account
+
+  # Get the instance marked with the Clio and Active labels (There should only be one)
+  CLIO_INSTANCE_LIST=$(gcloud --format="table[no-heading](Name)" compute \
+                         --project ${CLIO_PROJECT} instances list \
+                         --filter="labels.app=clio AND labels.state=active")
+  echo "CLIO_INSTANCE_LIST: ${CLIO_INSTANCE_LIST}"
+
+  # Verify that there is only one instance
+  if [[ ${#CLIO_INSTANCE_LIST[@]} -gt 1 || ${#CLIO_INSTANCE_LIST[@]} -lt 1 ]];
+  then
+    exit 1
+  fi
+
+  declare -r gce_name=$(gcloud compute --project ${GOOGLE_INFRA_PROJECT} ssh ${CLIO_INSTANCE_LIST} --zone=us-central1-a --command="uname -n")
+  echo "GCE_NAME: ${gce_name}"
+
+  local -r instance_number=$(echo ${gce_name} | sed -E "s/clio-([0-9]{3})-([0-9]{2})/\1/")
+  echo "INSTANCE_NUMBER: ${instance_number}"
+
+  echo "$(build_fqdn "clio${instance_number}")"
+
+
   # CLIO HOST: clio201 made CLIO FQDN: clio201.gotc-dev.broadinstitute.org
   # CLIO_HOST: clio101 made CLIO FQDN: clio.gotc-dev.broadinstitute.org
   # CLIO_HOST: clio made CLIO FQDN: clio201.gotc-dev.broadinstitute.org
