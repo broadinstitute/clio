@@ -278,15 +278,6 @@ deploy_clio_containers() {
   CLIO_INSTANCE=$2
   RENDERED_FILES=$3
 
-  echo "**********************************************
-       APP_STAGING_DIR: ${APP_STAGING_DIR}
-       APP_BACKUP_BACKUP_DIR: ${APP_BACKUP_BACKUP_DIR}
-       SSH_USER: ${SSH_USER}
-       CLIO_INSTANCE: ${CLIO_INSTANCE}
-       CLIO_PROJECT: ${CLIO_PROJECT}
-       RENDERED_FILES: ${RENDERED_FILES}
-       **********************************************"
-
   # Clean up any leftover state from previous failed deploys.
   gcloud compute --project ${CLIO_PROJECT} \
                  ssh ${CLIO_INSTANCE} \
@@ -317,7 +308,7 @@ deploy_clio_containers() {
                             sudo mkdir -p ${HOST_LOG_DIR}/${POS_LOG_DIR}"
 
   # Start up the new containers.
-#  start_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
+  start_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
 }
 
 main() {
@@ -344,7 +335,6 @@ main() {
   render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
 
   deploy_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE} ${tmpdir}
-
 
 
 
