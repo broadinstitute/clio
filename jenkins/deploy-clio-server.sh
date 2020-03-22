@@ -338,13 +338,13 @@ main() {
 
 
 
-#  if poll_clio_health ${clio_fqdn} ${docker_tag}; then
-#    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
-#  else
-#    >&2 echo Error: Clio failed to report expected health / version, rolling back deploy!
-#    rollback_deploy ${clio_fqdn}
-#    exit 1
-#  fi
+  if poll_clio_health ${clio_fqdn} ${docker_tag}; then
+    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
+  else
+    >&2 echo Error: Clio failed to report expected health / version, rolling back deploy!
+    rollback_deploy ${clio_fqdn}
+    exit 1
+  fi
 #
 #  # Tag the current commit with the name of the environment that was just deployed to.
 #  # This is a floating tag, so we have to use -f.
