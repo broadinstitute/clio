@@ -159,52 +159,6 @@ render_ctmpls() {
   rm ${ctmpl_env_file}
 }
 
-rollback_deploy() {
-  local -r clio_fqdn=$1
-
-  stop_containers ${clio_fqdn}
-  ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} <<-EOF
-  sudo rm -r ${APP_DIR} &&
-  ([ ! -d ${APP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_DIR} ${APP_DIR}) &&
-  ([ ! -d ${APP_BACKUP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_BACKUP_DIR} ${APP_BACKUP_DIR})
-EOF
-  start_containers ${clio_fqdn}
-}
-
-# Poll the Clio server every 20 seconds for 5 minutes (15 times).
-poll_clio_health() {
-  local -r clio_fqdn=$1 docker_tag=$2
-
-  local status
-  local reported_version
-  local attempts=1
-
-  while [ ${attempts} -le 15 ]; do
-    sleep 20
-    echo Checking Clio status...
-    status=$(curl -fs https://${clio_fqdn}/health | jq -r .clio)
-    reported_version=$(curl -fs https://${clio_fqdn}/version | jq -r .version)
-
-    echo Got status: ${status}, version: ${reported_version}
-    case ${status} in
-      Recovering)
-        ;;
-      Started)
-        if [ "${reported_version}" = ${docker_tag} ]; then
-          return 0
-        else
-          return 1
-        fi
-        ;;
-      *)
-        attempts=$((attempts + 1))
-        ;;
-    esac
-  done
-
-  return 1
-}
-
 activate_service_account() {
   VAULT_TOKEN=$(cat /etc/vault-token-dsde)
   SA_VAULT_PATH="secret/dsde/gotc/dev/common/ci-deployer-service-account.json"
@@ -311,24 +265,75 @@ deploy_clio_containers() {
   start_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
 }
 
+rollback_deploy() {
+  CLIO_PROJECT=$1
+  CLIO_INSTANCE=$2
+
+  stop_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
+
+  gcloud compute --project ${CLIO_PROJECT} \
+                 ssh ${CLIO_INSTANCE} \
+                 --zone=us-central1-a \
+                 --command="sudo rm -r ${APP_DIR} &&
+                            ([ ! -d ${APP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_DIR} ${APP_DIR}) &&
+                            ([ ! -d ${APP_BACKUP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_BACKUP_DIR} ${APP_BACKUP_DIR})"
+
+  start_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
+}
+
+# Poll the Clio server every 20 seconds for 5 minutes (15 times).
+poll_clio_health() {
+  local -r clio_fqdn=$1 docker_tag=$2
+
+  local status
+  local reported_version
+  local attempts=1
+
+  while [ ${attempts} -le 15 ]; do
+    sleep 20
+    echo Checking Clio status...
+    status=$(curl -fs https://${clio_fqdn}/health | jq -r .clio)
+    reported_version=$(curl -fs https://${clio_fqdn}/version | jq -r .version)
+
+    echo Got status: ${status}, version: ${reported_version}
+    case ${status} in
+      Recovering)
+        ;;
+      Started)
+        if [ "${reported_version}" = ${docker_tag} ]; then
+          return 0
+        else
+          return 1
+        fi
+        ;;
+      *)
+        attempts=$((attempts + 1))
+        ;;
+    esac
+  done
+
+  return 1
+}
+
 main() {
   check_usage
 
   local -r docker_tag=$(git rev-parse HEAD)
-#  clio_host_fqdn="$(build_fqdn "${CLIO_HOST_NAME}")"
-#  local -r clio_fqdn=$(get_real_clio_name "${clio_host_fqdn}")
-#  echo "CLIO FQDN: ${clio_fqdn}"
   CLIO_PROJECT="broad-gotc-${ENV}"
 
   activate_service_account
 
+  # Get the instance for the clio server. This should be of the form
+  # clio-300-01, clio-400-01, etc...
   CLIO_INSTANCE=$(get_clio_instance ${CLIO_PROJECT})
   echo "CLIO INSTANCE: ${CLIO_INSTANCE}"
 
+  # Build the fqdn for the clio server. This should look like:
+  # clio301.gotc-dev.broadinstitute.org, clio401.gotc-dev.broadinstitute.org, etc...
   local -r clio_fqdn=$(get_clio_fqdn ${CLIO_PROJECT} ${CLIO_INSTANCE})
   echo "CLIO FQDN: ${clio_fqdn}"
 
-  # Temporary directory to store rendered configs.
+  # Create a temporary directory to store rendered configs.
   local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
   trap "rm -rf ${tmpdir}" ERR EXIT HUP INT TERM
 
@@ -336,23 +341,26 @@ main() {
 
   deploy_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE} ${tmpdir}
 
-
-
+  # If the clio instance is healthy, remove the backup directory
+  # Otherwise, restore the last deployment
   if poll_clio_health ${clio_fqdn} ${docker_tag}; then
-    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
+    gcloud compute --project ${CLIO_PROJECT} \
+                 ssh ${CLIO_INSTANCE} \
+                 --zone=us-central1-a \
+                 --command="sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
   else
     >&2 echo Error: Clio failed to report expected health / version, rolling back deploy!
-    rollback_deploy ${clio_fqdn}
+    rollback_deploy ${CLIO_PROJECT} ${CLIO_INSTANCE}
     exit 1
   fi
-#
+
 #  # Tag the current commit with the name of the environment that was just deployed to.
 #  # This is a floating tag, so we have to use -f.
 #  #
 #  # NOTE: we can't push the tag here because Jenkins has to run this script with its
 #  # GCE SSH key, which doesn't match its GitHub key. We push the tag as a follow-up
 #  # step using the git publisher.
-#  git tag -f ${ENV}
+  git tag -f ${ENV}
 }
 
 main
