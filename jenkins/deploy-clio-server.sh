@@ -72,11 +72,6 @@ check_usage() {
     esac
   fi
 
-  if [ -z ${CLIO_HOST_NAME} ]; then
-    >&2 echo Error: CLIO_HOST_NAME not set!
-    ret=1
-  fi
-
   if [ ! -d ${CTMPL_DIR} ]; then
     >&2 echo Error: Missing ctmpl source directory ${CTMPL_DIR} - Was it accidentally deleted?
     ret=1
