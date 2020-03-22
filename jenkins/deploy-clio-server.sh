@@ -314,6 +314,7 @@ main() {
   check_usage
 
   local -r docker_tag=$(git rev-parse HEAD)
+
   CLIO_PROJECT="broad-gotc-${ENV}"
 
   activate_service_account
