@@ -149,7 +149,8 @@ render_ctmpls() {
     -v ${CLIO_DIR}/jenkins:/scripts \
     -v ${vault_token_file}:/root/.vault-token:ro \
     --env-file=${ctmpl_env_file} \
-    broadinstitute/dsde-toolbox:latest /scripts/render-ctmpl.sh
+    broadinstitute/dsde-toolbox:latest \
+    /scripts/render-ctmpl.sh
 
   rm ${ctmpl_env_file}
 }
@@ -234,7 +235,9 @@ deploy_clio_containers() {
                  --command="sudo rm -rf ${APP_STAGING_DIR} ${APP_BACKUP_BACKUP_DIR} &&
                             sudo mkdir ${APP_STAGING_DIR} &&
                             sudo chgrp ${SSH_USER} ${APP_STAGING_DIR} &&
-                            sudo chmod g+w ${APP_STAGING_DIR}"
+                            sudo chmod g+w ${APP_STAGING_DIR} &&
+                            sudo chown ${SSH_USER_ID} -R /local/clio_logs &&
+                            sudo sysctl -w vm.max_map_count=350000"
 
   # Copy rendered configs to the staging directory.
   gcloud compute --project ${CLIO_PROJECT} \
