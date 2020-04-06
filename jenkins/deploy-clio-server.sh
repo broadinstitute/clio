@@ -208,7 +208,6 @@ stop_clio_containers() {
                  --zone=us-central1-a \
                  --command="test -f ${COMPOSE_FILE} &&
                               ${DOCKER_COMPOSE[*]} stop || echo &&
-                            test -f ${COMPOSE_FILE} &&
                               ${DOCKER_COMPOSE[*]} rm -f || echo"
 }
 
