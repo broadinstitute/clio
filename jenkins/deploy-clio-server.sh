@@ -353,12 +353,12 @@ main() {
     exit 1
   fi
 
-#  # Tag the current commit with the name of the environment that was just deployed to.
-#  # This is a floating tag, so we have to use -f.
-#  #
-#  # NOTE: we can't push the tag here because Jenkins has to run this script with its
-#  # GCE SSH key, which doesn't match its GitHub key. We push the tag as a follow-up
-#  # step using the git publisher.
+  # Tag the current commit with the name of the environment that was just deployed to.
+  # This is a floating tag, so we have to use -f.
+  #
+  # NOTE: we can't push the tag here because Jenkins has to run this script with its
+  # GCE SSH key, which doesn't match its GitHub key. We push the tag as a follow-up
+  # step using the git publisher.
   git tag -f ${ENV}
 }
 
