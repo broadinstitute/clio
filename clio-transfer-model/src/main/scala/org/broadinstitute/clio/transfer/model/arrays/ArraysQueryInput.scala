@@ -31,7 +31,8 @@ case class ArraysQueryInput(
   sampleAlias: Option[String] = None,
   workflowEndDate: Option[OffsetDateTime] = None,
   workflowStartDate: Option[OffsetDateTime] = None,
-  workspaceName: Option[String] = None
+  workspaceName: Option[String] = None,
+  billingProject: Option[String] = None
 ) extends QueryInput[ArraysQueryInput] {
 
   def withDocumentStatus(
