@@ -72,11 +72,6 @@ check_usage() {
     esac
   fi
 
-  if [ -z ${CLIO_HOST_NAME} ]; then
-    >&2 echo Error: CLIO_HOST_NAME not set!
-    ret=1
-  fi
-
   if [ ! -d ${CTMPL_DIR} ]; then
     >&2 echo Error: Missing ctmpl source directory ${CTMPL_DIR} - Was it accidentally deleted?
     ret=1
@@ -109,17 +104,6 @@ find_vault_token() {
 # Build a "conventional" fully-qualified domain name from a hostname and environment.
 build_fqdn() {
   echo ${1}.gotc-${ENV}.broadinstitute.org
-}
-
-# Get the "real" hostname for the Clio host at the given address (which might be a DNS).
-# Assumes that Clio hosts will be named according to the pattern:
-#  gotc-clio-{ENV}(\d{3})
-# i.e. gotc-clio-dev101, gotc-clio-prod203
-get_real_clio_name() {
-  local -r gce_name=$(ssh ${SSH_OPTS[@]} ${SSH_USER}@$1 'uname -n')
-  local -r instance_number=$(echo ${gce_name} | sed -E "s/gotc-clio-${ENV}([0-9]{3})/\1/")
-
-  echo $(build_fqdn "clio${instance_number}")
 }
 
 # Copy ctmpls to a destination directory, then render them into configs.
@@ -165,64 +149,133 @@ render_ctmpls() {
     -v ${CLIO_DIR}/jenkins:/scripts \
     -v ${vault_token_file}:/root/.vault-token:ro \
     --env-file=${ctmpl_env_file} \
-    broadinstitute/dsde-toolbox:latest /scripts/render-ctmpl.sh
+    broadinstitute/dsde-toolbox:latest \
+    /scripts/render-ctmpl.sh
 
   rm ${ctmpl_env_file}
 }
 
-stop_containers() {
-  local -r clio_fqdn=$1
+activate_service_account() {
+  VAULT_TOKEN=$(cat /etc/vault-token-dsde)
+  SA_VAULT_PATH="secret/dsde/gotc/dev/common/ci-deployer-service-account.json"
 
-  ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "test -f ${COMPOSE_FILE} && ${DOCKER_COMPOSE[*]} stop || echo"
-  ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "test -f ${COMPOSE_FILE} && ${DOCKER_COMPOSE[*]} rm -f || echo"
+  docker run --rm -e VAULT_TOKEN="${VAULT_TOKEN}" \
+    broadinstitute/dsde-toolbox:dev vault read -format=json ${SA_VAULT_PATH} \
+    | jq '.data' > service-account.json
+
+  # activate SA
+  gcloud auth activate-service-account --key-file=service-account.json
 }
 
-start_containers() {
-  local -r clio_fqdn=$1
+get_clio_instance() {
+  CLIO_PROJECT=$1
 
-  ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "${DOCKER_COMPOSE[*]} pull"
-  ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "${DOCKER_COMPOSE[*]} up -d"
+  # Get the instance marked with the Clio and Active labels (There should only be one)
+  CLIO_INSTANCE_LIST=$(gcloud --format="table[no-heading](Name)" compute \
+                         --project ${CLIO_PROJECT} instances list \
+                         --filter="labels.app=clio AND labels.state=active")
+
+  # Verify that there is only one instance
+  if [[ ${#CLIO_INSTANCE_LIST[@]} -ne 1 ]];
+  then
+    exit 1
+  fi
+
+  echo "${CLIO_INSTANCE_LIST}"
 }
 
-deploy_containers() {
-  local -r clio_fqdn=$1 config_src=$2
+get_clio_fqdn() {
+  CLIO_PROJECT=$1
+  CLIO_INSTANCE=$2
+
+  local -r gce_name=$(gcloud compute --project ${CLIO_PROJECT} \
+                                     ssh ${CLIO_INSTANCE} \
+                                     --zone=us-central1-a \
+                                     --command="uname -n")
+  local -r clio_cluster_number_long=$(echo "${gce_name}" | sed -E "s/clio-([0-9]{3})-([0-9]{2})/\1/")
+  local -r clio_cluster_number=${clio_cluster_number_long:0:1}
+  local -r instance_number=$(echo "${gce_name}" | sed -E "s/clio-([0-9]{3})-([0-9]{2})/\2/")
+  local -r clio_fqdn=$(build_fqdn "clio${clio_cluster_number}${instance_number}")
+  echo "${clio_fqdn}"
+}
+
+stop_clio_containers() {
+  CLIO_PROJECT=$1
+  CLIO_INSTANCE=$2
+
+  gcloud compute --project ${CLIO_PROJECT} \
+                 ssh ${CLIO_INSTANCE} \
+                 --zone=us-central1-a \
+                 --command="test -f ${COMPOSE_FILE} &&
+                              ${DOCKER_COMPOSE[*]} stop || echo &&
+                              ${DOCKER_COMPOSE[*]} rm -f || echo"
+}
+
+start_clio_containers() {
+  CLIO_PROJECT=$1
+  CLIO_INSTANCE=$2
+
+  gcloud compute --project ${CLIO_PROJECT} \
+                 ssh ${CLIO_INSTANCE} \
+                 --zone=us-central1-a \
+                 --command="${DOCKER_COMPOSE[*]} pull &&
+                            ${DOCKER_COMPOSE[*]} up -d"
+}
+
+deploy_clio_containers() {
+  CLIO_PROJECT=$1
+  CLIO_INSTANCE=$2
+  RENDERED_FILES=$3
 
   # Clean up any leftover state from previous failed deploys.
-  ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} <<-EOF
-  sudo rm -rf ${APP_STAGING_DIR} ${APP_BACKUP_BACKUP_DIR} &&
-  sudo mkdir ${APP_STAGING_DIR} &&
-  sudo chgrp ${SSH_USER} ${APP_STAGING_DIR} &&
-  sudo chmod g+w ${APP_STAGING_DIR}
-EOF
+  gcloud compute --project ${CLIO_PROJECT} \
+                 ssh ${CLIO_INSTANCE} \
+                 --zone=us-central1-a \
+                 --command="sudo rm -rf ${APP_STAGING_DIR} ${APP_BACKUP_BACKUP_DIR} &&
+                            sudo mkdir ${APP_STAGING_DIR} &&
+                            sudo chgrp ${SSH_USER} ${APP_STAGING_DIR} &&
+                            sudo chmod g+w ${APP_STAGING_DIR} &&
+                            sudo chown ${SSH_USER_ID} -R /local/clio_logs &&
+                            sudo sysctl -w vm.max_map_count=350000"
 
   # Copy rendered configs to the staging directory.
-  scp ${SSH_OPTS[@]} -r ${config_src}/* ${SSH_USER}@${clio_fqdn}:${APP_STAGING_DIR}
+  gcloud compute --project ${CLIO_PROJECT} \
+                 scp \
+                 --recurse \
+                 --zone=us-central1-a \
+                 ${RENDERED_FILES}/* \
+                 ${CLIO_INSTANCE}:/${APP_STAGING_DIR}
 
   # Stop anything that's running.
-  stop_containers ${clio_fqdn}
+  stop_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
 
   # Create backups, in case we need to roll back.
-  ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} <<-EOF
-  ([ ! -d ${APP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_DIR} ${APP_BACKUP_BACKUP_DIR}) &&
-  ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_BACKUP_DIR}) &&
-  sudo mv ${APP_STAGING_DIR} ${APP_DIR} &&
-  sudo mkdir -p ${HOST_LOG_DIR}/${POS_LOG_DIR}
-EOF
+  gcloud compute --project ${CLIO_PROJECT} \
+                 ssh ${CLIO_INSTANCE} \
+                 --zone=us-central1-a \
+                 --command="([ ! -d ${APP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_DIR} ${APP_BACKUP_BACKUP_DIR}) &&
+                            ([ ! -d ${APP_DIR} ] || sudo mv ${APP_DIR} ${APP_BACKUP_DIR}) &&
+                            sudo mv ${APP_STAGING_DIR} ${APP_DIR} &&
+                            sudo mkdir -p ${HOST_LOG_DIR}/${POS_LOG_DIR}"
 
   # Start up the new containers.
-  start_containers ${clio_fqdn}
+  start_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
 }
 
 rollback_deploy() {
-  local -r clio_fqdn=$1
+  CLIO_PROJECT=$1
+  CLIO_INSTANCE=$2
 
-  stop_containers ${clio_fqdn}
-  ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} <<-EOF
-  sudo rm -r ${APP_DIR} &&
-  ([ ! -d ${APP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_DIR} ${APP_DIR}) &&
-  ([ ! -d ${APP_BACKUP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_BACKUP_DIR} ${APP_BACKUP_DIR})
-EOF
-  start_containers ${clio_fqdn}
+  stop_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
+
+  gcloud compute --project ${CLIO_PROJECT} \
+                 ssh ${CLIO_INSTANCE} \
+                 --zone=us-central1-a \
+                 --command="sudo rm -r ${APP_DIR} &&
+                            ([ ! -d ${APP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_DIR} ${APP_DIR}) &&
+                            ([ ! -d ${APP_BACKUP_BACKUP_DIR} ] || sudo mv ${APP_BACKUP_BACKUP_DIR} ${APP_BACKUP_DIR})"
+
+  start_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE}
 }
 
 # Poll the Clio server every 20 seconds for 5 minutes (15 times).
@@ -263,21 +316,39 @@ main() {
   check_usage
 
   local -r docker_tag=$(git rev-parse HEAD)
-  local -r clio_fqdn=$(get_real_clio_name $(build_fqdn ${CLIO_HOST_NAME}))
 
-  # Temporary directory to store rendered configs.
+  CLIO_PROJECT="broad-gotc-${ENV}"
+
+  activate_service_account
+
+  # Get the instance for the clio server. This should be of the form
+  # clio-300-01, clio-400-01, etc...
+  CLIO_INSTANCE=$(get_clio_instance ${CLIO_PROJECT})
+  echo "CLIO INSTANCE: ${CLIO_INSTANCE}"
+
+  # Build the fqdn for the clio server. This should look like:
+  # clio301.gotc-dev.broadinstitute.org, clio401.gotc-dev.broadinstitute.org, etc...
+  local -r clio_fqdn=$(get_clio_fqdn ${CLIO_PROJECT} ${CLIO_INSTANCE})
+  echo "CLIO FQDN: ${clio_fqdn}"
+
+  # Create a temporary directory to store rendered configs.
   local -r tmpdir=$(mktemp -d ${CLIO_DIR}/${PROG_NAME}-XXXXXX)
   trap "rm -rf ${tmpdir}" ERR EXIT HUP INT TERM
 
   render_ctmpls ${clio_fqdn} ${docker_tag} ${tmpdir}
 
-  deploy_containers ${clio_fqdn} ${tmpdir}
+  deploy_clio_containers ${CLIO_PROJECT} ${CLIO_INSTANCE} ${tmpdir}
 
+  # If the clio instance is healthy, remove the backup directory
+  # Otherwise, restore the last deployment
   if poll_clio_health ${clio_fqdn} ${docker_tag}; then
-    ssh ${SSH_OPTS[@]} ${SSH_USER}@${clio_fqdn} "sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
+    gcloud compute --project ${CLIO_PROJECT} \
+                 ssh ${CLIO_INSTANCE} \
+                 --zone=us-central1-a \
+                 --command="sudo rm -rf ${APP_BACKUP_BACKUP_DIR}"
   else
     >&2 echo Error: Clio failed to report expected health / version, rolling back deploy!
-    rollback_deploy ${clio_fqdn}
+    rollback_deploy ${CLIO_PROJECT} ${CLIO_INSTANCE}
     exit 1
   fi
 
