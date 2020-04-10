@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -e
 
 declare -r PROG_NAME=$(basename $0)
 declare -r CLIO_DIR=$(dirname $(cd $(dirname $0) && pwd))
