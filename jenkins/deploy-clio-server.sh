@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -ex
 
 declare -r PROG_NAME=$(basename $0)
 declare -r CLIO_DIR=$(dirname $(cd $(dirname $0) && pwd))
@@ -235,7 +235,7 @@ deploy_clio_containers() {
                             sudo mkdir ${APP_STAGING_DIR} &&
                             sudo chgrp ${SSH_USER} ${APP_STAGING_DIR} &&
                             sudo chmod g+w ${APP_STAGING_DIR} &&
-                            sudo chown ${SSH_USER_ID} -R /local/clio_logs &&
+                            sudo chown ${SSH_USER} -R /local/clio_logs &&
                             sudo sysctl -w vm.max_map_count=350000"
 
   # Copy rendered configs to the staging directory.
