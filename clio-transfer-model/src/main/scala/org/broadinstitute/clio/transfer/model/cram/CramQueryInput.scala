@@ -28,6 +28,7 @@ case class CramQueryInput(
   cromwellId: Option[UUID] = None,
   readgroupMd5: Option[Symbol] = None,
   workspaceName: Option[String] = None,
+  billingProject: Option[String] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
   notes: Option[String] = None
 ) extends QueryInput[CramQueryInput] {
