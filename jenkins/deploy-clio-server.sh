@@ -156,8 +156,10 @@ render_ctmpls() {
 }
 
 activate_service_account() {
+  ENV=${1}
+
   VAULT_TOKEN=$(cat /etc/vault-token-dsde)
-  SA_VAULT_PATH="secret/dsde/gotc/dev/common/ci-deployer-service-account.json"
+  SA_VAULT_PATH="secret/dsde/gotc/${ENV}/common/ci-deployer-service-account.json"
 
   docker run --rm -e VAULT_TOKEN="${VAULT_TOKEN}" \
     broadinstitute/dsde-toolbox:dev vault read -format=json ${SA_VAULT_PATH} \
@@ -319,7 +321,7 @@ main() {
 
   CLIO_PROJECT="broad-gotc-${ENV}"
 
-  activate_service_account
+  activate_service_account "${ENV}"
 
   # Get the instance for the clio server. This should be of the form
   # clio-300-01, clio-400-01, etc...
