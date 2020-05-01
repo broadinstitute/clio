@@ -158,6 +158,7 @@ render_ctmpls() {
 activate_service_account() {
   ENV=${1}
 
+  echo "Activating Service Account"
   VAULT_TOKEN=$(cat /etc/vault-token-dsde)
   SA_VAULT_PATH="secret/dsde/gotc/${ENV}/common/ci-deployer-service-account.json"
 
