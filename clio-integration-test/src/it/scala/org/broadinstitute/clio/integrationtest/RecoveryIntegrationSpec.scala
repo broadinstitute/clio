@@ -14,6 +14,7 @@ import org.broadinstitute.clio.client.webclient.ClioWebClient.FailedResponse
 import org.broadinstitute.clio.server.dataaccess.elasticsearch._
 import org.broadinstitute.clio.status.model.{ClioStatus, StatusInfo, VersionInfo}
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysMetadata}
+import org.broadinstitute.clio.transfer.model.bam.{BamKey, BamMetadata}
 import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata}
 import org.broadinstitute.clio.transfer.model.cram.{CramKey, CramMetadata}
@@ -104,6 +105,30 @@ class RecoveryIntegrationSpec extends DockerIntegrationSpec with OptionValues {
   }
   private lazy val updatedCrams = initCrams.map(updateDoc(_, "cram_path"))
 
+  private lazy val initBams = Seq.tabulate(documentCount) { i =>
+    val project = s"project$randomId"
+    val sampleAlias = s"sample$randomId"
+    val key = BamKey(
+      location = location,
+      project = project,
+      sampleAlias = sampleAlias,
+      version = i,
+      dataType = DataType.WGS
+    )
+    val metadata = BamMetadata(
+      bamPath = Some(randomUri(i)),
+      documentStatus = Some(DocumentStatus.Normal)
+    )
+    if (i < (documentCount / 2)) {
+      bamMapper
+        .document(key, metadata)
+        .mapObject(_.remove("data_type"))
+    } else {
+      bamMapper.document(key, metadata)
+    }
+  }
+  private lazy val updatedBams = initBams.map(updateDoc(_, "bam_path"))
+
   private lazy val initArrays = Seq.tabulate(documentCount) { i =>
     val key = ArraysKey(
       location = location,
@@ -121,6 +146,7 @@ class RecoveryIntegrationSpec extends DockerIntegrationSpec with OptionValues {
   lazy val preSeededDocuments: Map[ElasticsearchIndex[_], Seq[Json]] = Map(
     ElasticsearchIndex.Ubam -> (initUbams ++ updatedUbams),
     ElasticsearchIndex.Gvcf -> (initGvcfs ++ updatedGvcfs),
+    ElasticsearchIndex.Bam -> (initBams ++ updatedBams),
     ElasticsearchIndex.Cram -> (initCrams ++ updatedCrams),
     ElasticsearchIndex.Arrays -> (initArrays ++ updatedArrays)
   )
@@ -244,6 +270,13 @@ class RecoveryIntegrationSpec extends DockerIntegrationSpec with OptionValues {
     ),
     ("gvcf", ClioCommand.queryGvcfName, "version", updatedGvcfs, ElasticsearchIndex.Gvcf),
     (
+      "Bam",
+      ClioCommand.queryBamName,
+      "version",
+      updatedBams,
+      ElasticsearchIndex.Bam
+    ),
+    (
       "cram",
       ClioCommand.queryCramName,
       "version",
@@ -318,6 +351,9 @@ object RecoveryIntegrationSpec extends ModelAutoDerivation {
 
   private val gvcfMapper =
     ElasticsearchDocumentMapper[GvcfKey, GvcfMetadata]
+
+  private val bamMapper =
+    ElasticsearchDocumentMapper[BamKey, BamMetadata]
 
   private val cramMapper =
     ElasticsearchDocumentMapper[CramKey, CramMetadata]

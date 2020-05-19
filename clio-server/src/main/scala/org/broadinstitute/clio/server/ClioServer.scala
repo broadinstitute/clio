@@ -69,6 +69,9 @@ object ClioServer extends StrictLogging {
     new GvcfWebService(
       new GvcfService(persistenceDAO, searchDAO)
     ),
+    new BamWebService(
+      new BamService(persistenceDAO, searchDAO)
+    ),
     new CramWebService(
       new CramService(persistenceDAO, searchDAO)
     ),

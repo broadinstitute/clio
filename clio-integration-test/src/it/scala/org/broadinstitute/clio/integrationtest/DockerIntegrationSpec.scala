@@ -49,6 +49,7 @@ abstract class DockerIntegrationSpec
 /** Dockerized versions of the integration tests that also run against our deployed Clios. */
 class CoreDockerBasicSpec extends DockerIntegrationSpec with BasicTests
 class CoreDockerUbamSpec extends DockerIntegrationSpec with UbamTests
+class CoreDockerBamSpec extends DockerIntegrationSpec with BamTests
 class CoreDockerCramSpec extends DockerIntegrationSpec with CramTests
 class CoreDockerGvcfSpec extends DockerIntegrationSpec with GvcfTests
 class CoreDockerArraysSpec extends DockerIntegrationSpec with ArraysTests

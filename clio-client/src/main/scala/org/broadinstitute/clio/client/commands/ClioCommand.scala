@@ -3,15 +3,16 @@ package org.broadinstitute.clio.client.commands
 import java.net.URI
 
 import better.files.File
-import org.broadinstitute.clio.transfer.model._
-import caseapp.{CommandName, Recurse}
-import caseapp.core.help.CommandsHelp
 import caseapp.core.commandparser.CommandParser
+import caseapp.core.help.CommandsHelp
+import caseapp.{CommandName, Recurse}
 import org.broadinstitute.clio.client.metadata._
-import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfQueryInput}
-import org.broadinstitute.clio.transfer.model.cram.{CramKey, CramQueryInput}
-import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
+import org.broadinstitute.clio.transfer.model._
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysKey, ArraysQueryInput}
+import org.broadinstitute.clio.transfer.model.bam.{BamKey, BamQueryInput}
+import org.broadinstitute.clio.transfer.model.cram.{CramKey, CramQueryInput}
+import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfQueryInput}
+import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamQueryInput}
 
 /**
   * A specific operation to perform against Clio.
@@ -136,6 +137,68 @@ final case class MarkExternalGvcf(
   @Recurse key: GvcfKey,
   note: String
 ) extends MarkExternalCommand(GvcfIndex)
+
+// bam commands.
+
+@CommandName(ClioCommand.addBamName)
+final case class AddBam(
+  @Recurse key: BamKey,
+  metadataLocation: URI,
+  force: Boolean = false
+) extends AddCommand(BamIndex)
+
+@CommandName(ClioCommand.queryBamName)
+final case class QueryBam(
+  @Recurse queryInput: BamQueryInput,
+  includeDeleted: Boolean = false,
+  includeAll: Boolean = false
+) extends SimpleQueryCommand(BamIndex)
+
+@CommandName(ClioCommand.rawQueryBamName)
+final case class RawQueryBam(
+  queryInputPath: File
+) extends RawQueryCommand(BamIndex)
+
+@CommandName(ClioCommand.moveBamName)
+final case class MoveBam(
+  @Recurse key: BamKey,
+  destination: URI,
+  newBasename: Option[String] = None
+) extends MoveCommand(BamIndex) {
+  override val metadataMover = new BamMover
+}
+
+@CommandName(ClioCommand.deleteBamName)
+final case class DeleteBam(
+  @Recurse key: BamKey,
+  note: String,
+  force: Boolean = false
+) extends DeleteCommand(BamIndex)
+
+@CommandName(ClioCommand.deliverBamName)
+final case class DeliverBam(
+  @Recurse key: BamKey,
+  workspaceName: String,
+  billingProject: String = ClioCommand.defaultBillingProject,
+  workspacePath: URI,
+  newBasename: Option[String] = None,
+  force: Boolean = false,
+  deliverSampleMetrics: Boolean = false
+) extends DeliverCommand(BamIndex) {
+  override val metadataMover = BamDeliverer()
+}
+
+@CommandName(ClioCommand.patchBamName)
+final case class PatchBam(
+  metadataLocation: URI,
+  maxParallelUpserts: Int = ClioCommand.defaultPatchParallelism
+) extends PatchCommand(BamIndex)
+
+@CommandName(ClioCommand.markExternalBamName)
+final case class MarkExternalBam(
+  @Recurse key: BamKey,
+  note: String
+) extends MarkExternalCommand(BamIndex)
 
 // cram commands.
 
@@ -332,6 +395,16 @@ object ClioCommand extends ClioParsers {
   val deleteGvcfName: String = deletePrefix + GvcfIndex.commandName
   val patchGvcfName: String = patchPrefix + GvcfIndex.commandName
   val markExternalGvcfName: String = markExternalPrefix + GvcfIndex.commandName
+
+  // Names for bam commands.
+  val addBamName: String = addPrefix + BamIndex.commandName
+  val queryBamName: String = simpleQueryPrefix + BamIndex.commandName
+  val rawQueryBamName: String = rawQueryPrefix + BamIndex.commandName
+  val moveBamName: String = movePrefix + BamIndex.commandName
+  val deleteBamName: String = deletePrefix + BamIndex.commandName
+  val deliverBamName: String = deliverPrefix + BamIndex.commandName
+  val patchBamName: String = patchPrefix + BamIndex.commandName
+  val markExternalBamName: String = markExternalPrefix + BamIndex.commandName
 
   // Names for cram commands.
   val addCramName: String = addPrefix + CramIndex.commandName
