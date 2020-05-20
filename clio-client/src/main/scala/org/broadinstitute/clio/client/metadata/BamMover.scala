@@ -19,10 +19,7 @@ class BamMover extends MetadataMover[BamMetadata] {
     val dest = src.copy(
       bamPath = movedBam,
       baiPath = movedBam.map { bamUri =>
-        //TODO: Are Bam Indices suffixed with .bam.bai or just .bai?
-
-        // DSDEGP-1715: We've settled on '.bam.bai' as the extension and
-        // want to fixup files with just '.bai' when possible.
+        // Do for the bam like we do for the cram
         URI.create(s"$bamUri${BamExtensions.BaiExtensionAddition}")
       }
     )

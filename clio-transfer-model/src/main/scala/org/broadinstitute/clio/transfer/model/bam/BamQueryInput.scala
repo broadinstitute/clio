@@ -1,16 +1,8 @@
 package org.broadinstitute.clio.transfer.model.bam
 
 import java.net.URI
-import java.time.OffsetDateTime
-import java.util.UUID
-
 import org.broadinstitute.clio.transfer.model.QueryInput
-import org.broadinstitute.clio.util.model.{
-  DataType,
-  DocumentStatus,
-  Location,
-  RegulatoryDesignation
-}
+import org.broadinstitute.clio.util.model.{DataType, DocumentStatus, Location}
 
 case class BamQueryInput(
   documentStatus: Option[DocumentStatus] = None,
@@ -19,17 +11,11 @@ case class BamQueryInput(
   dataType: Option[DataType] = None,
   sampleAlias: Option[String] = None,
   version: Option[Int] = None,
-  pipelineVersion: Option[Symbol] = None,
-  workflowStartDate: Option[OffsetDateTime] = None,
-  workflowEndDate: Option[OffsetDateTime] = None,
-  cramMd5: Option[Symbol] = None,
-  cramSize: Option[Long] = None,
-  cramPath: Option[URI] = None,
-  cromwellId: Option[UUID] = None,
-  readgroupMd5: Option[Symbol] = None,
+  bamMd5: Option[Symbol] = None,
+  bamSize: Option[Long] = None,
+  bamPath: Option[URI] = None,
   workspaceName: Option[String] = None,
   billingProject: Option[String] = None,
-  regulatoryDesignation: Option[RegulatoryDesignation] = None,
   notes: Option[String] = None
 ) extends QueryInput[BamQueryInput] {
 
