@@ -143,6 +143,18 @@ object ElasticsearchIndex extends ModelAutoDerivation {
       Json.obj(dataTypeKey -> (DataType.WGS: DataType).asJson)
     )
 
+  val Bam: ElasticsearchIndex[BamIndex.type] =
+    new ElasticsearchIndex(
+      BamIndex,
+      // We need to keep this name consistent with GCS, so we cannot easily change it.
+      // Since we compute GCS paths from the ES index name, inconsistency would break GCS paths.
+      indexName = "bam",
+      ElasticsearchFieldMapper.StringsToTextFieldsWithSubKeywords,
+      // Type-widening is needed here because `asJson` tries to jsonify the narrowest type possible.
+      // This results in an empty object instead if the correct string value.
+      Json.obj(dataTypeKey -> (DataType.WGS: DataType).asJson)
+    )
+
   val Cram: ElasticsearchIndex[CramIndex.type] =
     new ElasticsearchIndex(
       CramIndex,

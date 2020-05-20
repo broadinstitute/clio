@@ -29,6 +29,7 @@ abstract class EnvIntegrationSpec(env: String)
 abstract class DevIntegrationSpec extends EnvIntegrationSpec("dev")
 class DevEnvBasicSpec extends DevIntegrationSpec with BasicTests
 class DevEnvUbamSpec extends DevIntegrationSpec with UbamTests
+class DevEnvBamSpec extends DevIntegrationSpec with BamTests
 class DevEnvCramSpec extends DevIntegrationSpec with CramTests
 class DevEnvGvcfSpec extends DevIntegrationSpec with GvcfTests
 class DevEnvArraysSpec extends DevIntegrationSpec with ArraysTests
@@ -37,6 +38,7 @@ class DevEnvArraysSpec extends DevIntegrationSpec with ArraysTests
 abstract class StagingIntegrationSpec extends EnvIntegrationSpec("staging")
 class StagingEnvBasicSpec extends StagingIntegrationSpec with BasicTests
 class StagingEnvUbamSpec extends StagingIntegrationSpec with UbamTests
+class StagingEnvBamSpec extends StagingIntegrationSpec with BamTests
 class StagingEnvCramSpec extends StagingIntegrationSpec with CramTests
 class StagingEnvGvcfSpec extends StagingIntegrationSpec with GvcfTests
 class StagingEnvArraysSpec extends StagingIntegrationSpec with ArraysTests

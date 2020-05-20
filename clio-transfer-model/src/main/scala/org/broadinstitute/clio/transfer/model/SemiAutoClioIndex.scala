@@ -1,15 +1,16 @@
 package org.broadinstitute.clio.transfer.model
 
 import cats.Show
-import io.circe.{Decoder, Encoder, Printer}
 import io.circe.syntax._
+import io.circe.{Decoder, Encoder, Printer}
 import org.broadinstitute.clio.transfer.model.arrays.{
   ArraysKey,
   ArraysMetadata,
   ArraysQueryInput
 }
-import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata, GvcfQueryInput}
+import org.broadinstitute.clio.transfer.model.bam.{BamKey, BamMetadata, BamQueryInput}
 import org.broadinstitute.clio.transfer.model.cram.{CramKey, CramMetadata, CramQueryInput}
+import org.broadinstitute.clio.transfer.model.gvcf.{GvcfKey, GvcfMetadata, GvcfQueryInput}
 import org.broadinstitute.clio.transfer.model.ubam.{UbamKey, UbamMetadata, UbamQueryInput}
 import org.broadinstitute.clio.util.generic.FieldMapper
 import org.broadinstitute.clio.util.json.ModelAutoDerivation._
@@ -68,6 +69,14 @@ case object UbamIndex
   override val urlSegment: String = "ubam"
   override val name: String = "Ubam"
   override val commandName: String = "ubam"
+}
+
+case object BamIndex
+    extends SemiAutoClioIndex[BamKey, BamMetadata, BamQueryInput]
+    with DeliverableIndex {
+  override val urlSegment: String = "bam"
+  override val name: String = "Bam"
+  override val commandName: String = "bam"
 }
 
 case object CramIndex
