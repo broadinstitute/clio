@@ -26,12 +26,16 @@ class UndeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
   private val prodStoragePath = URI.create("gs://prod-storage-path/")
   private val noteForUndeliver: String = "undelivering"
 
-  private val command = UndeliverCram(theKey, prodStoragePath, force=false, None, noteForUndeliver)
+  private val command =
+    UndeliverCram(theKey, prodStoragePath, force = false, None, noteForUndeliver)
 
   type Aux = ClioWebClient.UpsertAux[CramKey, CramMetadata]
 
   private def testUndeliver(
-    metadata: CramMetadata = CramMetadata(workspaceName = Option("Workspace"), billingProject = Option("BillingProject")),
+    metadata: CramMetadata = CramMetadata(
+      workspaceName = Option("Workspace"),
+      billingProject = Option("BillingProject")
+    ),
     force: Boolean = false
   ) = {
     val ioUtil = mock[IoUtil]
@@ -42,6 +46,8 @@ class UndeliverExecutorSpec extends BaseClientSpec with AsyncMockFactory {
       .getMetadataForKey(_: Aux)(_: CramKey, _: Boolean))
       .expects(CramIndex, theKey, false)
       .returning(Source.single(metadata))
+
+    (ioUtil.isGoogleDirectory _).expects(prodStoragePath).returning(true)
 
     val executor = new UndeliverExecutor(command.copy(force = force))
     executor.checkPreconditions(ioUtil, webClient).runWith(Sink.head).map { m =>
