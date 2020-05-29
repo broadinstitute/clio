@@ -272,10 +272,12 @@ class ClioClient(webClient: ClioWebClient, ioUtil: IoUtil)(
     } yield {
       val executor = command match {
         case deliverCommand: DeliverCommand[_] => new DeliverExecutor(deliverCommand)
-        case addCommand: AddCommand[_]         => new AddExecutor(addCommand)
-        case moveCommand: MoveCommand[_]       => new MoveExecutor(moveCommand)
-        case deleteCommand: DeleteCommand[_]   => new DeleteExecutor(deleteCommand)
-        case patchCommand: PatchCommand[_]     => new PatchExecutor(patchCommand)
+        case undeliverCommand: UndeliverCommand[_] =>
+          new UndeliverExecutor(undeliverCommand)
+        case addCommand: AddCommand[_]       => new AddExecutor(addCommand)
+        case moveCommand: MoveCommand[_]     => new MoveExecutor(moveCommand)
+        case deleteCommand: DeleteCommand[_] => new DeleteExecutor(deleteCommand)
+        case patchCommand: PatchCommand[_]   => new PatchExecutor(patchCommand)
         case markExternalCommand: MarkExternalCommand[_] =>
           new MarkExternalExecutor(markExternalCommand)
         case retrieveAndPrint: RetrieveAndPrintCommand =>

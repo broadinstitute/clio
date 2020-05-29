@@ -6,8 +6,7 @@ import better.files.File
 import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, MoveOp, WriteOp}
 import org.broadinstitute.clio.transfer.model.cram.{CramExtensions, CramMetadata}
 
-case class CramUndeliverer(deliverSampleMetrics: Boolean)
-    extends MetadataMover[CramMetadata] {
+class CramUndeliverer extends MetadataMover[CramMetadata] {
   override protected def moveMetadata(
     src: CramMetadata,
     destination: URI,
@@ -38,7 +37,11 @@ case class CramUndeliverer(deliverSampleMetrics: Boolean)
       writeMd5Op.toIterable
     ).flatten
 
-    val undeliverSampleMetrics: Boolean = src.cramPath.map(_.getHost).exists(cramHost => src.alignmentSummaryMetricsPath.exists(_.getHost.equals(cramHost)))
+    val undeliverSampleMetrics: Boolean = src.cramPath
+      .map(_.getHost)
+      .exists(
+        cramHost => src.alignmentSummaryMetricsPath.exists(_.getHost.equals(cramHost))
+      )
 
     if (undeliverSampleMetrics) {
       if (src.regulatoryDesignation.exists(_.isClinical)) {

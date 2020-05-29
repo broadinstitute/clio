@@ -2,7 +2,7 @@ package org.broadinstitute.clio.client.metadata
 
 import java.net.URI
 
-import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, IoOp, MoveOp}
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, MoveOp}
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysMetadata}
 
 class ArrayUndeliverer extends MetadataMover[ArraysMetadata] {
