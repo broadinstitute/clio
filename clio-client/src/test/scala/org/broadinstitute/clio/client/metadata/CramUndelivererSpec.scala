@@ -57,9 +57,9 @@ class CramUndelivererSpec extends FlatSpec with Matchers {
     )
   private val destination = URI.create("gs://the-destination/")
 
-  private val undeliverer = new CramUndeliverer
+  private val undeliverer = new CramDeliverer(deliverSampleMetrics = false)
 
-  it should "generate ops to move the cram & crai, write the cram md5 and copy metrics files" in {
+  it should "generate ops to move the cram & crai, write the cram md5 and move metrics files" in {
     val (delivered, ops) = undeliverer.moveInto(metadata, destination)
 
     delivered.cramPath should be(Some(destination.resolve(cramName)))
@@ -103,6 +103,41 @@ class CramUndelivererSpec extends FlatSpec with Matchers {
         fingerprintingSummaryMetricsPath,
         destination.resolve(fingerprintingSummaryMetricsName)
       ),
+      WriteOp(
+        cramMd5.name,
+        destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
+      )
+    )
+
+    ops should not contain MoveOp(
+      fingerprintingDetailMetricsPath,
+      destination.resolve(fingerprintingDetailMetricsName)
+    )
+  }
+
+  it should "not move metrics files if they already exist in the destination bucket" in {
+    val noMetricsMoveMetadata =
+      CramMetadata(
+        workspaceName = Some(workspaceName),
+        billingProject = Some(billingProject),
+        cramPath = Some(cramPath),
+        craiPath = Some(craiPath),
+        cramMd5 = Some(cramMd5),
+        alignmentSummaryMetricsPath =
+          Some(destination.resolve(alignmentSummaryMetricsName))
+      )
+
+    val (delivered, ops) = undeliverer.moveInto(noMetricsMoveMetadata, destination)
+
+    delivered.cramPath should be(Some(destination.resolve(cramName)))
+    delivered.craiPath should be(Some(destination.resolve(craiName)))
+    delivered.alignmentSummaryMetricsPath should be(
+      Some(destination.resolve(alignmentSummaryMetricsName))
+    )
+
+    ops should contain theSameElementsAs Seq(
+      MoveOp(cramPath, destination.resolve(cramName)),
+      MoveOp(craiPath, destination.resolve(craiName)),
       WriteOp(
         cramMd5.name,
         destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")

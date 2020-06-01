@@ -8,6 +8,7 @@ import org.broadinstitute.clio.transfer.model.cram.{CramExtensions, CramMetadata
 
 case class CramDeliverer(deliverSampleMetrics: Boolean)
     extends MetadataMover[CramMetadata] {
+
   override protected def moveMetadata(
     src: CramMetadata,
     destination: URI,
@@ -38,10 +39,16 @@ case class CramDeliverer(deliverSampleMetrics: Boolean)
       writeMd5Op.toIterable
     ).flatten
 
-    if (deliverSampleMetrics) {
+    val undeliverSampleMetrics: Boolean = src.cramPath
+      .map(_.getHost)
+      .exists(
+        cramHost => src.alignmentSummaryMetricsPath.exists(_.getHost.equals(cramHost))
+      )
+
+    if (deliverSampleMetrics || undeliverSampleMetrics) {
       if (src.regulatoryDesignation.exists(_.isClinical)) {
         throw new RuntimeException(
-          s"Cannot delivery sample level metrics for clinical sample $src"
+          s"Cannot ${if (undeliverSampleMetrics) "un" else ""} deliver sample level metrics for clinical sample $src"
         )
       }
       lazy val oldBaseName =

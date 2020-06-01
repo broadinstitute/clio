@@ -41,6 +41,7 @@ class ArrayDeliverer extends MetadataMover[ArraysMetadata] {
     )
 
     // If the Array has already been delivered, we want to move the idats instead of copying them.
+    // This also covers the "undeliver" case
     val idatOp = if (src.workspaceName.forall(_.isEmpty)) {
       CopyOp.tupled
     } else {

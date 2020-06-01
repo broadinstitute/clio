@@ -35,9 +35,9 @@ class ArrayUndelivererSpec extends FlatSpec with Matchers {
   )
   private val destination = URI.create("gs://the-destination/")
 
-  private val undeliverer = new ArrayUndeliverer
+  private val undeliverer = new ArrayDeliverer
 
-  it should "generate ops to move the vcf, index, and gtc + copy the idats" in {
+  it should "generate ops to move the vcf, index, and gtc + move the idats" in {
     val (delivered, ops) = undeliverer.moveInto(metadata, destination)
 
     val idatDestination = destination.resolve(ArrayDeliverer.IdatsDir)
