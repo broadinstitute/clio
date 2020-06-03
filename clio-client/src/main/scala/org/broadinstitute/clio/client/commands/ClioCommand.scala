@@ -70,6 +70,14 @@ sealed abstract class DeliverCommand[+CI <: DeliverableIndex](override val index
   def force: Boolean
 }
 
+sealed abstract class UndeliverCommand[+CI <: DeliverableIndex](override val index: CI)
+    extends MoveCommand(index) {
+  def key: index.KeyType
+  def note: String
+  def force: Boolean
+  def destination: URI
+}
+
 sealed abstract class PatchCommand[CI <: ClioIndex](val index: CI) extends ClioCommand {
   def metadataLocation: URI
   def maxParallelUpserts: Int
@@ -250,6 +258,17 @@ final case class DeliverCram(
   override val metadataMover = CramDeliverer(deliverSampleMetrics)
 }
 
+@CommandName(ClioCommand.undeliverCramName)
+final case class UndeliverCram(
+  @Recurse key: CramKey,
+  destination: URI,
+  force: Boolean = false,
+  newBasename: Option[String] = None,
+  note: String
+) extends UndeliverCommand(CramIndex) {
+  override val metadataMover = CramDeliverer(deliverSampleMetrics = false)
+}
+
 @CommandName(ClioCommand.patchCramName)
 final case class PatchCram(
   metadataLocation: URI,
@@ -360,6 +379,17 @@ final case class DeliverArrays(
   override val metadataMover = new ArrayDeliverer
 }
 
+@CommandName(ClioCommand.undeliverArraysName)
+final case class UndeliverArrays(
+  @Recurse key: ArraysKey,
+  destination: URI,
+  note: String,
+  newBasename: Option[String] = None,
+  force: Boolean = false
+) extends UndeliverCommand(ArraysIndex) {
+  override val metadataMover = new ArrayDeliverer
+}
+
 @CommandName(ClioCommand.patchArraysName)
 final case class PatchArrays(
   metadataLocation: URI,
@@ -384,6 +414,7 @@ object ClioCommand extends ClioParsers {
   val movePrefix = "move-"
   val deletePrefix = "delete-"
   val deliverPrefix = "deliver-"
+  val undeliverPrefix = "undeliver-"
   val patchPrefix = "patch-"
   val markExternalPrefix = "mark-external-"
 
@@ -413,6 +444,7 @@ object ClioCommand extends ClioParsers {
   val moveCramName: String = movePrefix + CramIndex.commandName
   val deleteCramName: String = deletePrefix + CramIndex.commandName
   val deliverCramName: String = deliverPrefix + CramIndex.commandName
+  val undeliverCramName: String = undeliverPrefix + CramIndex.commandName
   val patchCramName: String = patchPrefix + CramIndex.commandName
   val markExternalCramName: String = markExternalPrefix + CramIndex.commandName
 
@@ -432,6 +464,7 @@ object ClioCommand extends ClioParsers {
   val moveArraysName: String = movePrefix + ArraysIndex.commandName
   val deleteArraysName: String = deletePrefix + ArraysIndex.commandName
   val deliverArraysName: String = deliverPrefix + ArraysIndex.commandName
+  val undeliverArraysName: String = undeliverPrefix + ArraysIndex.commandName
   val patchArraysName: String = patchPrefix + ArraysIndex.commandName
   val markExternalArraysName: String = markExternalPrefix + ArraysIndex.commandName
 
