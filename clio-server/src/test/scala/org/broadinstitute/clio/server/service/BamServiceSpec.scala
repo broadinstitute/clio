@@ -19,7 +19,7 @@ class BamServiceSpec extends IndexServiceSpec[BamIndex.type]("BamService") {
   val elasticsearchIndex: ElasticsearchIndex[BamIndex.type] =
     ElasticsearchIndex.Bam
 
-  val dummyKey = BamKey(Location.GCP, "project1", DataType.WGS, "sample1", 1)
+  val dummyKey = BamKey(Location.GCP, "project1", DataType.RNA, "sample1", 1)
 
   val dummyInput = BamQueryInput(project = Option("testProject"))
 
