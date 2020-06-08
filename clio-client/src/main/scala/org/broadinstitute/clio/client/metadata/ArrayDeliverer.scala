@@ -5,6 +5,9 @@ import org.broadinstitute.clio.client.dispatch.MoveExecutor.{CopyOp, IoOp, MoveO
 import org.broadinstitute.clio.transfer.model.arrays.{ArraysExtensions, ArraysMetadata}
 
 class ArrayDeliverer extends MetadataMover[ArraysMetadata] {
+
+  def idatsDir: String = "idats/"
+
   override protected def moveMetadata(
     src: ArraysMetadata,
     destination: URI,
@@ -13,11 +16,7 @@ class ArrayDeliverer extends MetadataMover[ArraysMetadata] {
   ): (ArraysMetadata, Iterable[IoOp]) = {
     import MetadataMover.buildFilePath
 
-    val idatDestination = if (undeliver) {
-      destination.resolve("../").resolve(ArrayDeliverer.IdatsDir)
-    } else {
-      destination.resolve(ArrayDeliverer.IdatsDir)
-    }
+    val idatDestination = destination.resolve(idatsDir)
 
     val dest = src.copy(
       vcfPath = src.vcfPath.map(
@@ -62,8 +61,4 @@ class ArrayDeliverer extends MetadataMover[ArraysMetadata] {
 
     (dest, ops)
   }
-}
-
-object ArrayDeliverer {
-  val IdatsDir = "idats/"
 }

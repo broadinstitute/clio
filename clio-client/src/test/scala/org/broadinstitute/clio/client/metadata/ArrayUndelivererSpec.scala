@@ -34,14 +34,13 @@ class ArrayUndelivererSpec extends FlatSpec with Matchers {
     billingProject = Some(billingProject)
   )
   private val destination = URI.create("gs://the-destination/chipwell_barcode/version/")
-  private val idatBaseDestination = URI.create("gs://the-destination/chipwell_barcode/")
 
-  private val undeliverer = new ArrayDeliverer
+  private val undeliverer = new ArrayUndeliverer
 
   it should "generate ops to move the vcf, index, and gtc + move the idats" in {
     val (delivered, ops) = undeliverer.moveInto(metadata, destination, undeliver = true)
 
-    val idatDestination = idatBaseDestination.resolve(ArrayDeliverer.IdatsDir)
+    val idatDestination = destination.resolve(undeliverer.idatsDir)
 
     delivered.vcfPath should be(Some(destination.resolve(vcfName)))
     delivered.vcfIndexPath should be(Some(destination.resolve(vcfIndexName)))
@@ -62,7 +61,7 @@ class ArrayUndelivererSpec extends FlatSpec with Matchers {
     val deliveredMetadata = metadata.copy(workspaceName = Some("firecloud-workspace"))
     val (delivered, ops) = undeliverer.moveInto(deliveredMetadata, destination, undeliver = true)
 
-    val idatDestination = idatBaseDestination.resolve(ArrayDeliverer.IdatsDir)
+    val idatDestination = destination.resolve(undeliverer.idatsDir)
 
     delivered.vcfPath should be(Some(destination.resolve(vcfName)))
     delivered.vcfIndexPath should be(Some(destination.resolve(vcfIndexName)))

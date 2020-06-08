@@ -35,7 +35,7 @@ class ArrayDelivererSpec extends FlatSpec with Matchers {
   it should "generate ops to move the vcf, index, and gtc + copy the idats" in {
     val (delivered, ops) = deliverer.moveInto(metadata, destination)
 
-    val idatDestination = destination.resolve(ArrayDeliverer.IdatsDir)
+    val idatDestination = destination.resolve(deliverer.idatsDir)
 
     delivered.vcfPath should be(Some(destination.resolve(vcfName)))
     delivered.vcfIndexPath should be(Some(destination.resolve(vcfIndexName)))
@@ -56,7 +56,7 @@ class ArrayDelivererSpec extends FlatSpec with Matchers {
     val deliveredMetadata = metadata.copy(workspaceName = Some("firecloud-workspace"))
     val (delivered, ops) = deliverer.moveInto(deliveredMetadata, destination)
 
-    val idatDestination = destination.resolve(ArrayDeliverer.IdatsDir)
+    val idatDestination = destination.resolve(deliverer.idatsDir)
 
     delivered.vcfPath should be(Some(destination.resolve(vcfName)))
     delivered.vcfIndexPath should be(Some(destination.resolve(vcfIndexName)))
@@ -77,7 +77,7 @@ class ArrayDelivererSpec extends FlatSpec with Matchers {
     val deliveredMetadata = metadata.copy(workspaceName = Some(""))
     val (delivered, ops) = deliverer.moveInto(deliveredMetadata, destination)
 
-    val idatDestination = destination.resolve(ArrayDeliverer.IdatsDir)
+    val idatDestination = destination.resolve(deliverer.idatsDir)
 
     delivered.vcfPath should be(Some(destination.resolve(vcfName)))
     delivered.vcfIndexPath should be(Some(destination.resolve(vcfIndexName)))

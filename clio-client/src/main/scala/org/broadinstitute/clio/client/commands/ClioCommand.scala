@@ -387,7 +387,7 @@ final case class UndeliverArrays(
   newBasename: Option[String] = None,
   force: Boolean = false
 ) extends UndeliverCommand(ArraysIndex) {
-  override val metadataMover = new ArrayDeliverer
+  override val metadataMover = new ArrayUndeliverer
 }
 
 @CommandName(ClioCommand.patchArraysName)
