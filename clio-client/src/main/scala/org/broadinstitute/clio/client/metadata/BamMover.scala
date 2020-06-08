@@ -8,7 +8,8 @@ class BamMover extends MetadataMover[BamMetadata] {
   override protected def moveMetadata(
     src: BamMetadata,
     destination: URI,
-    newBasename: Option[String]
+    newBasename: Option[String],
+    undeliver: Boolean
   ): (BamMetadata, Iterable[MoveOp]) = {
     import MetadataMover.buildFilePath
 

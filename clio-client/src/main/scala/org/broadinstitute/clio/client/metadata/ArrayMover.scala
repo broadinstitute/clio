@@ -8,7 +8,8 @@ class ArrayMover extends MetadataMover[ArraysMetadata] {
   override protected def moveMetadata(
     src: ArraysMetadata,
     destination: URI,
-    newBasename: Option[String]
+    newBasename: Option[String],
+    undeliver: Boolean
   ): (ArraysMetadata, Iterable[MoveOp]) = {
     import MetadataMover.buildFilePath
 

@@ -12,7 +12,8 @@ case class CramDeliverer(deliverSampleMetrics: Boolean)
   override protected def moveMetadata(
     src: CramMetadata,
     destination: URI,
-    newBasename: Option[String]
+    newBasename: Option[String],
+    undeliver: Boolean
   ): (CramMetadata, Iterable[IoOp]) = {
     val movedCram = src.cramPath.map(
       MetadataMover

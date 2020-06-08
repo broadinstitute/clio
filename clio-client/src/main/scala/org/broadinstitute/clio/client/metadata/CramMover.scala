@@ -8,7 +8,8 @@ class CramMover extends MetadataMover[CramMetadata] {
   override protected def moveMetadata(
     src: CramMetadata,
     destination: URI,
-    newBasename: Option[String]
+    newBasename: Option[String],
+    undeliver: Boolean
   ): (CramMetadata, Iterable[MoveOp]) = {
     import MetadataMover.buildFilePath
 

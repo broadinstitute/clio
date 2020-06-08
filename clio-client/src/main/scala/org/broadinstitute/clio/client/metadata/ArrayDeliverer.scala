@@ -8,11 +8,16 @@ class ArrayDeliverer extends MetadataMover[ArraysMetadata] {
   override protected def moveMetadata(
     src: ArraysMetadata,
     destination: URI,
-    newBasename: Option[String]
+    newBasename: Option[String],
+    undeliver: Boolean
   ): (ArraysMetadata, Iterable[IoOp]) = {
     import MetadataMover.buildFilePath
 
-    val idatDestination = destination.resolve(ArrayDeliverer.IdatsDir)
+    val idatDestination = if (undeliver) {
+      destination.resolve("../").resolve(ArrayDeliverer.IdatsDir)
+    } else {
+      destination.resolve(ArrayDeliverer.IdatsDir)
+    }
 
     val dest = src.copy(
       vcfPath = src.vcfPath.map(

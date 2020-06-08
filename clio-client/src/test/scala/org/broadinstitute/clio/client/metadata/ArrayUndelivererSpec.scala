@@ -33,14 +33,15 @@ class ArrayUndelivererSpec extends FlatSpec with Matchers {
     workspaceName = Some(workspaceName),
     billingProject = Some(billingProject)
   )
-  private val destination = URI.create("gs://the-destination/")
+  private val destination = URI.create("gs://the-destination/chipwell_barcode/version/")
+  private val idatBaseDestination = URI.create("gs://the-destination/chipwell_barcode/")
 
   private val undeliverer = new ArrayDeliverer
 
   it should "generate ops to move the vcf, index, and gtc + move the idats" in {
-    val (delivered, ops) = undeliverer.moveInto(metadata, destination)
+    val (delivered, ops) = undeliverer.moveInto(metadata, destination, undeliver = true)
 
-    val idatDestination = destination.resolve(ArrayDeliverer.IdatsDir)
+    val idatDestination = idatBaseDestination.resolve(ArrayDeliverer.IdatsDir)
 
     delivered.vcfPath should be(Some(destination.resolve(vcfName)))
     delivered.vcfIndexPath should be(Some(destination.resolve(vcfIndexName)))
@@ -59,9 +60,9 @@ class ArrayUndelivererSpec extends FlatSpec with Matchers {
 
   it should "move the idats when undelivering from an existing workspace" in {
     val deliveredMetadata = metadata.copy(workspaceName = Some("firecloud-workspace"))
-    val (delivered, ops) = undeliverer.moveInto(deliveredMetadata, destination)
+    val (delivered, ops) = undeliverer.moveInto(deliveredMetadata, destination, undeliver = true)
 
-    val idatDestination = destination.resolve(ArrayDeliverer.IdatsDir)
+    val idatDestination = idatBaseDestination.resolve(ArrayDeliverer.IdatsDir)
 
     delivered.vcfPath should be(Some(destination.resolve(vcfName)))
     delivered.vcfIndexPath should be(Some(destination.resolve(vcfIndexName)))
