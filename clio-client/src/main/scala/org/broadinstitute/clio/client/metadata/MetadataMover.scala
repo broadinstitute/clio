@@ -12,8 +12,7 @@ trait MetadataMover[M <: Metadata[M]] {
   final def moveInto(
     src: M,
     destination: URI,
-    newBasename: Option[String] = None,
-    undeliver: Boolean = false
+    newBasename: Option[String] = None
   ): (M, immutable.Seq[IoOp]) = {
     if (!destination.getPath.endsWith("/")) {
       throw new IllegalArgumentException(
@@ -21,7 +20,7 @@ trait MetadataMover[M <: Metadata[M]] {
       )
     }
 
-    moveMetadata(src, destination, newBasename, undeliver) match {
+    moveMetadata(src, destination, newBasename) match {
       case (metadata, ops) => (metadata, ops.to[immutable.Seq])
     }
   }
@@ -29,8 +28,7 @@ trait MetadataMover[M <: Metadata[M]] {
   protected def moveMetadata(
     src: M,
     destination: URI,
-    newBasename: Option[String],
-    undeliver: Boolean
+    newBasename: Option[String]
   ): (M, Iterable[IoOp])
 
   protected def extractMoves(

@@ -8,8 +8,7 @@ class UbamMover extends MetadataMover[UbamMetadata] {
   override protected def moveMetadata(
     src: UbamMetadata,
     destination: URI,
-    newBasename: Option[String],
-    undeliver: Boolean
+    newBasename: Option[String]
   ): (UbamMetadata, Iterable[MoveOp]) = {
     val dest = src.copy(
       ubamPath = src.ubamPath.map(

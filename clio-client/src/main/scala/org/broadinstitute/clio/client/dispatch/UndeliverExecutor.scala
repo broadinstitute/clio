@@ -45,10 +45,9 @@ class UndeliverExecutor[CI <: DeliverableIndex](
   }
 
   override protected[dispatch] def buildMove(
-    metadata: moveCommand.index.MetadataType,
-    undeliver: Boolean = true
+    metadata: moveCommand.index.MetadataType
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
-    super.buildMove(metadata, undeliver).map {
+    super.buildMove(metadata).map {
       case (m, ops) =>
         (
           m.withWorkspace("", ""),

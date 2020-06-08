@@ -38,7 +38,7 @@ class ArrayUndelivererSpec extends FlatSpec with Matchers {
   private val undeliverer = new ArrayUndeliverer
 
   it should "generate ops to move the vcf, index, and gtc + move the idats" in {
-    val (delivered, ops) = undeliverer.moveInto(metadata, destination, undeliver = true)
+    val (delivered, ops) = undeliverer.moveInto(metadata, destination)
 
     val idatDestination = destination.resolve(undeliverer.idatsDir)
 
@@ -59,7 +59,7 @@ class ArrayUndelivererSpec extends FlatSpec with Matchers {
 
   it should "move the idats when undelivering from an existing workspace" in {
     val deliveredMetadata = metadata.copy(workspaceName = Some("firecloud-workspace"))
-    val (delivered, ops) = undeliverer.moveInto(deliveredMetadata, destination, undeliver = true)
+    val (delivered, ops) = undeliverer.moveInto(deliveredMetadata, destination)
 
     val idatDestination = destination.resolve(undeliverer.idatsDir)
 

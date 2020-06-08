@@ -9,8 +9,7 @@ case class BamDeliverer() extends MetadataMover[BamMetadata] {
   override protected def moveMetadata(
     src: BamMetadata,
     destination: URI,
-    newBasename: Option[String],
-    undeliver: Boolean
+    newBasename: Option[String]
   ): (BamMetadata, Iterable[IoOp]) = {
     val movedBam = src.bamPath.map(
       MetadataMover

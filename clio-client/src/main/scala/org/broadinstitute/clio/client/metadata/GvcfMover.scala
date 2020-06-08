@@ -8,8 +8,7 @@ class GvcfMover extends MetadataMover[GvcfMetadata] {
   override protected def moveMetadata(
     src: GvcfMetadata,
     destination: URI,
-    newBasename: Option[String],
-    undeliver: Boolean
+    newBasename: Option[String]
   ): (GvcfMetadata, Iterable[MoveOp]) = {
     val dest = src.copy(
       gvcfPath = src.gvcfPath.map(
