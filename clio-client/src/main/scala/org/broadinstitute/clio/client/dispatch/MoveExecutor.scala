@@ -146,7 +146,12 @@ class MoveExecutor[CI <: ClioIndex](protected val moveCommand: MoveCommand[CI])(
     undeliver: Boolean = false
   ): Source[(moveCommand.index.MetadataType, immutable.Seq[IoOp]), NotUsed] = {
     val (moved, ops) =
-      moveCommand.metadataMover.moveInto(metadata, destination, moveCommand.newBasename, undeliver)
+      moveCommand.metadataMover.moveInto(
+        metadata,
+        destination,
+        moveCommand.newBasename,
+        undeliver
+      )
     if (ops.isEmpty) {
       Source.failed(
         new IllegalStateException(
