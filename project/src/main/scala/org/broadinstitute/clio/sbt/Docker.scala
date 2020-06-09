@@ -41,7 +41,7 @@ object Docker {
 
       // Run this first so it's more likely to cache, since we won't be changing the version that often.
       runRaw(
-        s"wget -q https://download-keycdn.ej-technologies.com/jprofiler/$JProfilerVersion.tar.gz -P /tmp/ && " +
+        s"wget -q https://download-gcdn.ej-technologies.com/jprofiler/$JProfilerVersion.tar.gz -P /tmp/ && " +
           s"tar -xzf /tmp/$JProfilerVersion.tar.gz -C /usr/local &&" +
           s" rm /tmp/$JProfilerVersion.tar.gz"
       )
