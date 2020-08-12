@@ -19,7 +19,8 @@ class CramServiceSpec extends IndexServiceSpec[CramIndex.type]("CramService") {
   val elasticsearchIndex: ElasticsearchIndex[CramIndex.type] =
     ElasticsearchIndex.Cram
 
-  val dummyKey = CramKey(Location.GCP, "project1", DataType.Custom_Selection, "sample1", 1)
+  val dummyKey =
+    CramKey(Location.GCP, "project1", DataType.Custom_Selection, "sample1", 1)
 
   val dummyInput = CramQueryInput(project = Option("testProject"))
 
