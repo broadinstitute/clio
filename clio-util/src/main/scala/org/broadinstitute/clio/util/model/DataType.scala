@@ -11,5 +11,5 @@ object DataType extends Enum[DataType] {
   case object WGS extends DataType
   case object Exome extends DataType
   case object RNA extends DataType
-  case object CustomSelection extends DataType
+  case object Custom_Selection extends DataType
 }
