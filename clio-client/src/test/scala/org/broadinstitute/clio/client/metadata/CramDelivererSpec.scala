@@ -2,12 +2,11 @@ package org.broadinstitute.clio.client.metadata
 
 import java.net.URI
 
-import org.broadinstitute.clio.client.dispatch.MoveExecutor.{MoveOp, WriteOp}
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.MoveOp
 import org.broadinstitute.clio.transfer.model.cram.{CramExtensions, CramMetadata}
 import org.broadinstitute.clio.util.model.RegulatoryDesignation
-import org.scalatest.{FlatSpec, Ignore, Matchers}
+import org.scalatest.{FlatSpec, Matchers}
 
-@Ignore
 class CramDelivererSpec extends FlatSpec with Matchers {
   behavior of "CramDeliverer"
 
@@ -59,8 +58,8 @@ class CramDelivererSpec extends FlatSpec with Matchers {
   it should "generate ops to move the cram & crai, write the cram md5 and copy metrics files" in {
     val (delivered, ops) = delivererWithMetrics.moveInto(metadata, destination)
 
-    delivered.cramPath should be(Some(destination.resolve(cramName)))
-    delivered.craiPath should be(Some(destination.resolve(craiName)))
+    delivered.cramPath should be(Some(cramPath))
+    delivered.craiPath should be(Some(craiPath))
     delivered.preAdapterSummaryMetricsPath should be(
       Some(destination.resolve(preAdapterSummaryMetricsName))
     )
@@ -81,8 +80,6 @@ class CramDelivererSpec extends FlatSpec with Matchers {
     )
 
     ops should contain theSameElementsAs Seq(
-      MoveOp(cramPath, destination.resolve(cramName)),
-      MoveOp(craiPath, destination.resolve(craiName)),
       MoveOp(
         preAdapterSummaryMetricsPath,
         destination.resolve(preAdapterSummaryMetricsName)
@@ -99,10 +96,6 @@ class CramDelivererSpec extends FlatSpec with Matchers {
       MoveOp(
         fingerprintingSummaryMetricsPath,
         destination.resolve(fingerprintingSummaryMetricsName)
-      ),
-      WriteOp(
-        cramMd5.name,
-        destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
       )
     )
 
@@ -118,19 +111,10 @@ class CramDelivererSpec extends FlatSpec with Matchers {
     val (delivered, ops) =
       delivererWithMetrics.moveInto(metadata, destination, Some(basename))
 
-    val cramName = s"$basename${CramExtensions.CramExtension}"
-    val craiName = s"$cramName${CramExtensions.CraiExtensionAddition}"
-
-    delivered.cramPath should be(Some(destination.resolve(cramName)))
-    delivered.craiPath should be(Some(destination.resolve(craiName)))
+    delivered.cramPath should be(Some(cramPath))
+    delivered.craiPath should be(Some(craiPath))
 
     ops should contain theSameElementsAs Seq(
-      MoveOp(cramPath, destination.resolve(cramName)),
-      MoveOp(craiPath, destination.resolve(craiName)),
-      WriteOp(
-        cramMd5.name,
-        destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
-      ),
       MoveOp(
         preAdapterSummaryMetricsPath,
         destination.resolve(preAdapterSummaryMetricsName)
@@ -153,17 +137,10 @@ class CramDelivererSpec extends FlatSpec with Matchers {
   it should "generate ops to move the cram & crai, and write the cram md5" in {
     val (delivered, ops) = delivererNoMetrics.moveInto(metadata, destination)
 
-    delivered.cramPath should be(Some(destination.resolve(cramName)))
-    delivered.craiPath should be(Some(destination.resolve(craiName)))
+    delivered.cramPath should be(Some(cramPath))
+    delivered.craiPath should be(Some(craiPath))
 
-    ops should contain theSameElementsAs Seq(
-      MoveOp(cramPath, destination.resolve(cramName)),
-      MoveOp(craiPath, destination.resolve(craiName)),
-      WriteOp(
-        cramMd5.name,
-        destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
-      )
-    )
+    ops should contain theSameElementsAs Seq()
   }
 
   it should "use the new basename for the md5 file, if given" in {
@@ -172,20 +149,10 @@ class CramDelivererSpec extends FlatSpec with Matchers {
     val (delivered, ops) =
       delivererNoMetrics.moveInto(metadata, destination, Some(basename))
 
-    val cramName = s"$basename${CramExtensions.CramExtension}"
-    val craiName = s"$cramName${CramExtensions.CraiExtensionAddition}"
+    delivered.cramPath should be(Some(cramPath))
+    delivered.craiPath should be(Some(craiPath))
 
-    delivered.cramPath should be(Some(destination.resolve(cramName)))
-    delivered.craiPath should be(Some(destination.resolve(craiName)))
-
-    ops should contain theSameElementsAs Seq(
-      MoveOp(cramPath, destination.resolve(cramName)),
-      MoveOp(craiPath, destination.resolve(craiName)),
-      WriteOp(
-        cramMd5.name,
-        destination.resolve(s"$cramName${CramExtensions.Md5ExtensionAddition}")
-      )
-    )
+    ops should contain theSameElementsAs Seq()
   }
 
 }

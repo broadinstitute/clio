@@ -3,7 +3,7 @@ package org.broadinstitute.clio.client.metadata
 import java.net.URI
 
 import better.files.File
-import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, MoveOp, WriteOp}
+import org.broadinstitute.clio.client.dispatch.MoveExecutor.{IoOp, MoveOp}
 import org.broadinstitute.clio.transfer.model.cram.{CramExtensions, CramMetadata}
 
 case class CramDeliverer(deliverSampleMetrics: Boolean)
@@ -14,30 +14,6 @@ case class CramDeliverer(deliverSampleMetrics: Boolean)
     destination: URI,
     newBasename: Option[String]
   ): (CramMetadata, Iterable[IoOp]) = {
-    val movedCram = src.cramPath.map(
-      MetadataMover
-        .buildFilePath(_, destination, newBasename.map(_ + CramExtensions.CramExtension))
-    )
-
-    val movedCramsDest = src.copy(
-      cramPath = movedCram,
-      craiPath = movedCram.map(
-        cramUri => URI.create(s"$cramUri${CramExtensions.CraiExtensionAddition}")
-      )
-    )
-
-    val writeMd5Op = for {
-      md5 <- src.cramMd5
-      cram <- movedCram
-    } yield {
-      WriteOp(md5.name, URI.create(s"$cram${CramExtensions.Md5ExtensionAddition}"))
-    }
-
-    val ops = Iterable(
-      extractMoves(src, movedCramsDest, _.cramPath),
-      extractMoves(src, movedCramsDest, _.craiPath),
-      writeMd5Op.toIterable
-    ).flatten
 
     if (deliverSampleMetrics) {
       if (src.regulatoryDesignation.exists(_.isClinical)) {
@@ -68,7 +44,7 @@ case class CramDeliverer(deliverSampleMetrics: Boolean)
           .zip(src.sampleLevelMetrics.flatMap(makeDestMetrics))
           .map(MoveOp.tupled)
 
-      val movedMetricsDest = movedCramsDest.copy(
+      val movedMetricsDest = src.copy(
         preAdapterSummaryMetricsPath = makeDestMetrics(src.preAdapterSummaryMetricsPath),
         preAdapterDetailMetricsPath = makeDestMetrics(src.preAdapterDetailMetricsPath),
         alignmentSummaryMetricsPath = makeDestMetrics(src.alignmentSummaryMetricsPath),
@@ -93,9 +69,9 @@ case class CramDeliverer(deliverSampleMetrics: Boolean)
         wgsMetricsPath = makeDestMetrics(src.wgsMetricsPath),
         crosscheckPath = makeDestMetrics(src.crosscheckPath)
       )
-      (movedMetricsDest, ops ++ moveMetricsOps)
+      (movedMetricsDest, moveMetricsOps)
     } else {
-      (movedCramsDest, ops)
+      (src, Iterable.empty)
     }
   }
 }
