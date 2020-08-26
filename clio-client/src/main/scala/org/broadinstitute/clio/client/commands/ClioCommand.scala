@@ -266,7 +266,7 @@ final case class UndeliverCram(
   newBasename: Option[String] = None,
   note: String
 ) extends UndeliverCommand(CramIndex) {
-  override val metadataMover = CramDeliverer(deliverSampleMetrics = false)
+  override val metadataMover = CramDeliverer(deliverSampleMetrics = true)
 }
 
 @CommandName(ClioCommand.patchCramName)
