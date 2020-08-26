@@ -39,16 +39,10 @@ case class CramDeliverer(deliverSampleMetrics: Boolean)
       writeMd5Op.toIterable
     ).flatten
 
-    val undeliverSampleMetrics: Boolean = src.cramPath
-      .map(_.getHost)
-      .exists(
-        cramHost => src.alignmentSummaryMetricsPath.exists(_.getHost.equals(cramHost))
-      )
-
-    if (deliverSampleMetrics || undeliverSampleMetrics) {
+    if (deliverSampleMetrics) {
       if (src.regulatoryDesignation.exists(_.isClinical)) {
         throw new RuntimeException(
-          s"Cannot ${if (undeliverSampleMetrics) "un" else ""} deliver sample level metrics for clinical sample $src"
+          s"Cannot (un)deliver sample level metrics for clinical sample $src"
         )
       }
       lazy val oldBaseName =
