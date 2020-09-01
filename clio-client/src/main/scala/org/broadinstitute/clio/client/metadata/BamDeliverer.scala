@@ -18,9 +18,7 @@ case class BamDeliverer() extends MetadataMover[BamMetadata] {
 
     val movedBamsDest = src.copy(
       bamPath = movedBam,
-      baiPath = movedBam.map(
-        bamUri => URI.create(s"$bamUri${BamExtensions.BaiExtensionAddition}")
-      )
+      baiPath = movedBam.map(BamExtensions.replaceBamExtensionWithBaiExtension)
     )
 
     val writeMd5Op = for {

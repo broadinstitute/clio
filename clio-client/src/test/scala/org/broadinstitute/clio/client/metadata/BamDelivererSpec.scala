@@ -11,7 +11,7 @@ class BamDelivererSpec extends FlatSpec with Matchers {
   behavior of "BamDeliverer"
 
   private val bamName = s"the-bam${BamExtensions.BamExtension}"
-  private val baiName = s"$bamName${BamExtensions.BaiExtensionAddition}"
+  private val baiName = s"$bamName${BamExtensions.BaiExtension}"
 
   private val bamPath = URI.create(s"gs://bucket/$bamName")
   private val baiPath = URI.create(s"gs://bucket/$baiName")
@@ -50,7 +50,7 @@ class BamDelivererSpec extends FlatSpec with Matchers {
       deliverer.moveInto(metadata, destination, Some(basename))
 
     val bamName = s"$basename${BamExtensions.BamExtension}"
-    val baiName = s"$bamName${BamExtensions.BaiExtensionAddition}"
+    val baiName = s"$bamName${BamExtensions.BaiExtension}"
 
     delivered.bamPath should be(Some(destination.resolve(bamName)))
     delivered.baiPath should be(Some(destination.resolve(baiName)))

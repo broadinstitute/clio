@@ -445,7 +445,7 @@ trait BamTests { self: BaseIntegrationSpec =>
     val (bamSrc, bamContents) =
       createMockFile(rootSrc, sample, BamExtensions.BamExtension)
     val (baiSrc, baiContents) =
-      createMockFile(rootSrc, baiName, BamExtensions.BaiExtensionAddition)
+      createMockFile(rootSrc, baiName, BamExtensions.BaiExtension)
 
     val endBasename = if (changeBasename) randomId else sample
 
@@ -593,7 +593,7 @@ trait BamTests { self: BaseIntegrationSpec =>
 
     val storageDir = rootTestStorageDir / s"bam/$project/$sample/v$version/"
     val bamPath = storageDir / s"$randomId${BamExtensions.BamExtension}"
-    val baiPath = storageDir / s"$randomId${BamExtensions.BaiExtensionAddition}"
+    val baiPath = storageDir / s"$randomId${BamExtensions.BaiExtension}"
     val key = BamKey(Location.GCP, project, DataType.WGS, sample, version)
     val metadata = BamMetadata(
       bamPath = Some(bamPath.uri),
@@ -707,7 +707,7 @@ trait BamTests { self: BaseIntegrationSpec =>
 
     val storageDir = rootTestStorageDir / s"bam/$project/$sample/v$version/"
     val bamPath = storageDir / s"$randomId${BamExtensions.BamExtension}"
-    val baiPath = storageDir / s"$randomId${BamExtensions.BaiExtensionAddition}"
+    val baiPath = storageDir / s"$randomId${BamExtensions.BaiExtension}"
 
     val key = BamKey(Location.GCP, project, DataType.WGS, sample, version)
     val metadata = BamMetadata(
@@ -835,7 +835,7 @@ trait BamTests { self: BaseIntegrationSpec =>
     val md5Contents = randomId
 
     val bamName = s"$sample${BamExtensions.BamExtension}"
-    val baiName = s"$bamName${BamExtensions.BaiExtensionAddition}"
+    val baiName = s"$sample${BamExtensions.BaiExtension}"
     val md5Name = s"$bamName${BamExtensions.Md5ExtensionAddition}"
 
     val rootSource = rootTestStorageDir / s"bam/$project/$sample/v$version/"
@@ -918,7 +918,7 @@ trait BamTests { self: BaseIntegrationSpec =>
     val md5Contents = randomId
 
     val bamName = s"$sample${BamExtensions.BamExtension}"
-    val baiName = s"$bamName${BamExtensions.BaiExtensionAddition}"
+    val baiName = s"$bamName${BamExtensions.BaiExtension}"
 
     val rootSource = rootTestStorageDir / s"bam/$project/$sample/v$version/"
     val bamSource = rootSource / bamName

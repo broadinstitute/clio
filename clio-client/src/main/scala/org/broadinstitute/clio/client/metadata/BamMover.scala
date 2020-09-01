@@ -18,10 +18,7 @@ class BamMover extends MetadataMover[BamMetadata] {
 
     val dest = src.copy(
       bamPath = movedBam,
-      baiPath = movedBam.map { bamUri =>
-        // Do for the bam like we do for the cram
-        URI.create(s"$bamUri${BamExtensions.BaiExtensionAddition}")
-      }
+      baiPath = movedBam.map(BamExtensions.replaceBamExtensionWithBaiExtension)
     )
 
     val ops = Seq[BamMetadata => Iterable[URI]](
