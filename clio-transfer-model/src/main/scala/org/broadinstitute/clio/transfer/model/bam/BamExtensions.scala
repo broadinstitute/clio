@@ -17,9 +17,7 @@ object BamExtensions {
   val Md5Extension = s"$BamExtension$Md5ExtensionAddition"
 
   def replaceBamExtensionWithBaiExtension(bamUri: URI): URI = {
-    URI.create(
-      s"${bamUri.toString.replace(BamExtensions.BamExtension, BamExtensions.BaiExtension)}"
-    )
+    URI.create(bamUri.toString.replaceAll(BamExtension + "$", BaiExtension))
   }
 
 }
