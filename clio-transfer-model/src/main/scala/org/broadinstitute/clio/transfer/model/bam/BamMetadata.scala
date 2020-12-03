@@ -11,6 +11,7 @@ case class BamMetadata(
   bamSize: Option[Long] = None,
   bamPath: Option[URI] = None,
   baiPath: Option[URI] = None,
+  insertSizeMetricsPath: Option[URI] = None,
   workspaceName: Option[String] = None,
   billingProject: Option[String] = None,
   notes: Option[String] = None,
