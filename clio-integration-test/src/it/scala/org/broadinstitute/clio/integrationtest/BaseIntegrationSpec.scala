@@ -149,7 +149,7 @@ abstract class BaseIntegrationSpec(clioDescription: String)
     */
   def rootPathForReferencesBucket: File = {
     val gcs: FileSystem = CloudStorageFileSystem.forBucket(
-      s"broad-references",
+      "gcp-public-data--broad-references",
       CloudStorageConfiguration.DEFAULT,
       StorageOptions
         .newBuilder()
