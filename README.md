@@ -4,6 +4,14 @@ Metadata Manager
 
 ## Getting Started
 
+Clio requires Java 8 or version 1.8 of the Java JDK to run.
+
+We suggest [OpenJDK](https://openjdk.java.net/).
+
+Build Clio with [sbt](https://www.scala-sbt.org/).
+
+The `sbt` script must support version `0.13.17` to build Clio.
+
 ### Build
 
 `sbt compile`
