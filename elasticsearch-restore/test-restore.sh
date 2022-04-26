@@ -2,13 +2,18 @@
 
 set -e -o pipefail
 
-# HACK: No -r to work around local readonly variable in trap!
+# HACK: Work around local readonly variable in trap!
 # I probably don't understand some scoping subtlety. =tbl
+#
+declare AV0                     # the name of this program
+declare CONTEXT                 # Restore this k8s context.
+declare NAMESPACE               # Manage this k8s namespace.
+declare SERVER                  # Run this Clio server jar.
 
 # Fail when Java's needed but do not have version 1.8.
 #
 function java_ok() {
-    local -r av0=$1 environment=$2 server=$3 client=$4
+    local -r environment=$1 server=$2 client=$3
     local jars version
     test "$server" != "${server%.jar}" &&
         test "$client" != "${client%.jar}" &&
@@ -23,41 +28,41 @@ function java_ok() {
             parse=($(echo ${java[2]} | xargs)) && version="${parse%.*}"
         if test 1.8 != "$version"
         then
-            1>&2 echo $av0: Need java -version 1.8 to run Clio.
-            1>&2 echo $av0: You are running: $version
+            1>&2 echo $AV0: Need java -version 1.8 to run Clio.
+            1>&2 echo $AV0: You are running: $version
         fi
     fi
-    test "$jars" || 1>&2 echo $av0: Need 2 .jar files: $server $client
+    test "$jars" || 1>&2 echo $AV0: Need 2 .jar files: $server $client
     test no = "$jars" || test 1.8 = "$version"
 }
 
-# Validate the command line arguments for the $av0 script.
+# Validate the command line arguments.
 #
 function usage() {
-    local -r av0=$1 environment=$2
+    local -r environment=$1
     local -r -a the_environments=(dev prod)
     local -r -a the_tools=(base64 cat curl date gcloud grep gsutil helm
                            jar java jq kubectl lsof mktemp sleep vault)
     local -r -a help=(
         ''
-        "$av0:    Deploy a temporary Elasticsearch cluster,"
+        "$AV0:    Deploy a temporary Elasticsearch cluster,"
         '         restore a snapshot from some deployment'
         '         environment to it, then run representative'
         '         Clio queries against that cluster.'
         ''
-        "Usage:   $av0 <env> [<server> <client>]"
+        "Usage:   $AV0 <env> [<server> <client>]"
         ''
         'Where:   <env>    is the deployment environment,'
         "                  one of: ${the_environments[*]}"
         '         <server> is a clio-server.jar file.'
         '         <client> is a clio-client.jar file.'
         ''
-        "Example: $av0 dev"
-        "         $av0 dev ./server.jar ./client.jar"
+        "Example: $AV0 dev"
+        "         $AV0 dev ./server.jar ./client.jar"
         ''
         'Note:    Debug this in dev before trying in prod.'
         ''
-        "Note:    $av0 needs the following tools on PATH."
+        "Note:    $AV0 needs the following tools on PATH."
         "         ${the_tools[*]}"
         ''
         'Note:    Clio requires a 1.8 JDK to run.'
@@ -70,12 +75,12 @@ function usage() {
     do
         &>/dev/null type $tool || missing="$missing $tool"
     done
-    test "$missing" && 1>&2 echo $av0: Missing tools: $missing
+    test "$missing" && 1>&2 echo $AV0: Missing tools: $missing
     for env in "${the_environments[@]}"
     do
         test X$env = X$environment && found=env
     done
-    test "$found" || 1>&2 echo $av0: Not an environment: "'$environment'"
+    test "$found" || 1>&2 echo $AV0: Not an environment: "'$environment'"
     if ! java_ok "$@" || test "$missing" || test ! "$found"
     then
         for line in "${help[@]}"; do 1>&2 echo "$line"; done
@@ -83,28 +88,25 @@ function usage() {
     fi
 }
 
-# Echo $av0 and the rest of arguments as a 'safe' command line.
+# Echo the arguments as a 'safe' command line.
 #
 function show() {
-    local -r av0=$1 ; shift
     local -a command
     local arg
     for arg in "$@"; do command+=("'$arg'"); done
-    1>&2 echo $av0: "${command[@]}"
+    1>&2 echo $AV0: "${command[@]}"
 }
 
-# Report that $av0 is running the rest of arguments as a command line.
-# Then run that command line.
+# Report the arguments as a command line, then run it.
 #
 function run() {
-    local -r av0=$1 ; shift
     local result status
-    show "$av0" "$@"
+    show "$@"
     set +e
     result=$("$@")
     status=$?
     set -e
-    test 0 -eq $status || 1>&2 echo $av0: Returned status: $status
+    test 0 -eq $status || 1>&2 echo $AV0: Returned status: $status
     echo "$result"
     return $status
 }
@@ -112,13 +114,12 @@ function run() {
 # Clean up the Kubernetes $namespace made by setup_k8s().
 #
 function cleanup_k8s() {
-    local av0=$1 context=$2 namespace=$3 # HACK
-    run "$av0" kubectl delete secret -n $namespace elasticsearch-gcs-sa ||
+    run kubectl delete secret -n $NAMESPACE elasticsearch-gcs-sa ||
         true
-    run "$av0" kubectl delete namespace $namespace || true
-    if test "$context"
+    run kubectl delete namespace $NAMESPACE || true
+    if test "$CONTEXT"
     then
-        run "$av0" kubectl config set current-context $context || true
+        run kubectl config set current-context $CONTEXT || true
     fi
 }
 
@@ -126,50 +127,49 @@ function cleanup_k8s() {
 # for $environment using $creds.
 #
 function setup_k8s() {
-    local -r av0=$1 environment=$2 namespace=$3 creds=${4##*/}
+    local -r environment=$1 namespace=$2 creds=${3##*/}
     local -r zone=us-central1-a project=broad-gotc-$environment
     local -r cluster=gotc-$environment-shared-$zone
     local context=gke_${project}_${zone}_${cluster} # HACK
-    run "$av0" kubectl config set current-context $context
-    run "$av0" kubectl get svc --request-timeout=3s ||
-        1>&2 echo $av0: Use the non-split Broad VPN.
-    run "$av0" gcloud container clusters get-credentials $cluster \
+    run kubectl config set current-context $context
+    run kubectl get svc --request-timeout=3s ||
+        1>&2 echo $AV0: Use the non-split Broad VPN.
+    run gcloud container clusters get-credentials $cluster \
         --zone $zone --project $project
-    run "$av0" kubectl create namespace $namespace
+    run kubectl create namespace $namespace
     local -r -a vault=(vault read -field=sa.json.b64
                        -address=https://clotho.broadinstitute.org:8200
                        secret/dsde/gotc/$environment/clio/elasticsearch-restore)
-    >/dev/null run "$av0" "${vault[@]}"
-    run "$av0" kubectl create secret generic -n $namespace \
+    >/dev/null run "${vault[@]}"
+    run kubectl create secret generic -n $namespace \
         elasticsearch-gcs-sa --from-file=$creds=<("${vault[@]}" | base64 -d)
 }
 
 # Clean up the temporary Elasticsearch cluster made by setup_es().
 #
 function cleanup_es() {
-    local -r av0=$1 namespace=$2
-    local pid=$(lsof -t -i:9200 || true) # HACK
+    local -r pid=$(lsof -t -i:9200 || true)
     if test "$pid" && test 0 != "$pid"
     then
-        run "$av0" lsof -i tcp:9200
-        run "$av0" kill $pid || true
+        run lsof -i tcp:9200
+        run kill $pid || true
     fi
-    run "$av0" helm uninstall -n $namespace test-elasticsearch || true
+    run helm uninstall -n $NAMESPACE test-elasticsearch || true
 }
 
 # Wait for a green status on the scratch Elasticsearch cluster.
 # Return 0 when result is green and not timed out.
 #
 function wait_for_green() {
-    local -r av0=$1 port=$2
+    local -r port=$1
     local -r -a health=(curl -s http://localhost:$port/_cluster/health)
-    run "$av0" curl -s ${health[@]} | jq .status
+    run curl -s ${health[@]} | jq .status
     local -i n=9
     until let 0==n || test green = $(${health[@]} | jq -r .status)
     do
         sleep 1
     done
-    run "$av0" ${health[@]} | jq .
+    run ${health[@]} | jq .
     let n
 }
 
@@ -179,23 +179,23 @@ function wait_for_green() {
 # healthy.
 #
 function setup_es() {
-    local -r av0=$1 environment=$2 namespace=$3 snapshots=$4 values=$5 port=9200
-    if run "$av0" helm install --debug --wait --timeout 5m -n $namespace \
+    local -r environment=$1 namespace=$2 snapshots=$3 values=$4 port=9200
+    if run helm install --debug --wait --timeout 5m -n $namespace \
            -f "$values" test-elasticsearch terra-helm/elasticsearch
     then
         local -i pid=$(lsof -t -i:$port || true) # HACK
         if test "$pid" && test 0 -ne $pid
         then
-            1>&2 echo $av0: Killing proceess found on port $port.
-            run "$av0" lsof -i tcp:$port
-            run "$av0" kill $pid
+            1>&2 echo $AV0: Killing proceess found on port $port.
+            run lsof -i tcp:$port
+            run kill $pid
         fi
-        run "$av0" kubectl port-forward -n $namespace svc/clio-master $port:$port &
+        run kubectl port-forward -n $namespace svc/clio-master $port:$port &
         until >/dev/null lsof -t -i:$port; do sleep 1; done
-        run "$av0" lsof -i tcp:$port
-        wait_for_green "$av0" $port
+        run lsof -i tcp:$port
+        wait_for_green $port
     else
-        run "$av0" kubectl --namespace $namespace get pods
+        run kubectl --namespace $namespace get pods
         exit 4
     fi
 }
@@ -203,15 +203,14 @@ function setup_es() {
 # Maybe kill the server and clean up the state established by setup().
 #
 function cleanup() {
-    local av0=$1 context=$2 namespace=$3 server=$4 # HACK
-    if test "$server"
+    if test "$SERVER"
     then
-        local -r ps=$(ps -x | grep -e "java .* -jar $server" | grep -v grep)
+        local -r ps=$(ps -x | grep -e "java .* -jar $SERVER" | grep -v grep)
         local -r -a pid=($ps)
-        test "$pid" && test 0 -ne "$pid" && run "$av0" kill "$pid"
+        test "$pid" && test 0 -ne "$pid" && run kill "$pid"
     fi
-    cleanup_es  "$av0" $namespace
-    cleanup_k8s "$av0" $context $namespace
+    cleanup_es
+    cleanup_k8s
 }
 
 # Set up a scratch Elasticsearch cluster for $environment in a new
@@ -219,52 +218,51 @@ function cleanup() {
 # cluster's snapshot repo and print the most recent snapshot there.
 #
 function setup() {
-    local -r av0=$1 environment=$2 namespace=$3 creds=$4 snapshots=$5 values=$6
+    local -r environment=$1 namespace=$2 creds=$3 snapshots=$4 values=$5
     local -r terra=https://terra-helm.storage.googleapis.com/
-    run "$av0" helm version
-    run "$av0" helm repo add terra-helm $terra
-    run "$av0" helm repo update
-    setup_k8s "$av0" $environment $namespace $creds
-    setup_es  "$av0" $environment $namespace $snapshots "$values"
+    run helm version
+    run helm repo add terra-helm $terra
+    run helm repo update
+    setup_k8s $environment $namespace $creds
+    setup_es  $environment $namespace $snapshots "$values"
 }
 
 # Use $creds to make $snapshots the snapshot repository of the scratch cluster.
 #
  function make_snapshot_repository() {
-    local -r av0=$1 snapshots=$2 creds=$3
+    local -r snapshots=$1 creds=$2
     local -r data='{"type": "gcs",
                     "settings": {"application_name": "clio-elasticsearch",
                                  "bucket":           "'$snapshots'",
                                  "compress":         true,
                                  "service_account":  "'$creds'"}}'
     local -r url=http://localhost:9200/_snapshot/$snapshots
-    run "$av0" curl -X PUT -s --data "$data" "$url?verify=false"
+    run curl -X PUT -s --data "$data" "$url?verify=false"
 }
-
 
 # Print the name of the most recent snapshot in $snapshots.
 #
 function most_recent_snapshot() {
-    local -r av0=$1 snapshots=$2 prefix="clio-$(date "+%Y-%m-%d")"
+    local -r snapshots=$1 prefix="clio-$(date "+%Y-%m-%d")"
     local -r url=http://localhost:9200/_snapshot/$snapshots
-    run "$av0" curl -s "$url/$prefix*" | 1>&2 jq .
+    run curl -s "$url/$prefix*" | 1>&2 jq .
     curl -s "$url/$prefix*" | jq -r .snapshots[-1].snapshot
 }
 
 # Restore snapshot $snap from $snapshots to the scratch cluster.
 #
 function restore_snapshot() {
-    local -r av0=$1 snapshots=$2 snap=$3 es=http://localhost:9200
-    1>&2 echo $av0: Restoring snapshot $snap to $es.
+    local -r snapshots=$1 snap=$2 es=http://localhost:9200
+    1>&2 echo $AV0: Restoring snapshot $snap to $es.
     let -i n=9
     until curl -s $es/_cat/recovery || let 0==n--
     do
-        run "$av0" curl -s $es/_cat/recovery || sleep 5
+        run curl -s $es/_cat/recovery || sleep 5
     done
     local -r url=$es/_snapshot/$snapshots/$snap/_restore
-    run "$av0" curl -X POST -s "$url?wait_for_completion=true"
-    wait_for_green "$av0" ${es##*:}
-    run "$av0" curl -s $es/_cat/indices
+    run curl -X POST -s "$url?wait_for_completion=true"
+    wait_for_green ${es##*:}
+    run curl -s $es/_cat/indices
 }
 
 # Map an Elasticsearch index to a Clio client query command.
@@ -304,12 +302,12 @@ function query_to_fields() {
 # Pass rest arguments to Clio client after setting up $environment.
 #
 function run_client() {
-    local -r av0=$1 environment=$2 client=$3; shift 3
+    local -r environment=$1 client=$2; shift 2
     local -r secret=secret/dsde/gotc/$environment/clio/clio-account.json
     local -r -a config=(-Dclio.server.hostname=localhost
                         -Dclio.server.use-https=false)
-    show "$av0" vault read -format json -field data $secret
-    show "$av0" java "${config[@]}" -jar "$client" "$@"
+    show vault read -format json -field data $secret
+    show java "${config[@]}" -jar "$client" "$@"
     java "${config[@]}" -Dclio.client.service-account-json=<(
         vault read -format json -field data $secret
     ) -jar "$client" "$@"
@@ -322,9 +320,9 @@ function run_client() {
 # clio-util/src/main/scala/org/broadinstitute/clio/util/model/DocumentStatus.scala
 #
 function make_query() {
-    local -r av0=$1 environment=$2 client=$3 index=$4 record=$5
+    local -r environment=$1 client=$2 index=$3 record=$4
     local -r query=$(index_to_query $index)
-    local -r json=$(run "$av0" gsutil cat "$record")
+    local -r json=$(run gsutil cat "$record")
     local -a args=($query)
     local key value
     for key in $(query_to_fields $query)
@@ -333,19 +331,19 @@ function make_query() {
         test null = "$value" || args+=(--$(echo $key | tr _ -) "$value")
     done
     args+=(--include-all)
-    run_client "$av0" $environment "$client" "${args[@]}"
-    local -r result=$(run_client "$av0" $environment "$client" "${args[@]}")
+    run_client $environment "$client" "${args[@]}"
+    local -r result=$(run_client $environment "$client" "${args[@]}")
     if test '[]' == "$result"
     then
-        1>&2 echo $av0: '[]' from: "${args[@]}"
-        1>&2 echo $av0: FAILED
+        1>&2 echo $AV0: '[]' from: "${args[@]}"
+        1>&2 echo $AV0: FAILED
         false
     fi
     if echo "$result" | jq .
     then
-        1>&2 echo $av0: SUCCEEDED
+        1>&2 echo $AV0: SUCCEEDED
     else
-        1>&2 echo $av0: FAILED bad JSON from: "${args[@]}"
+        1>&2 echo $AV0: FAILED bad JSON from: "${args[@]}"
         false
     fi
 }
@@ -355,8 +353,8 @@ function make_query() {
 # $environment.
 #
 function run_bookend_queries() {
-    local -r av0=$1 environment=$2 bucket=$3 client=$4
-    local -r -a ls=(run "$av0" gsutil ls)
+    local -r environment=$1 bucket=$2 client=$3
+    local -r -a ls=(run gsutil ls)
     local -a years month0 monthN days records
     local index day0 dayN n
     for index in $(index_to_query)
@@ -372,14 +370,14 @@ function run_bookend_queries() {
         let n=${#days[@]}    || true; let --n || true
         dayN="${days[$n]}"
         records=($("${ls[@]}" "$day0"))
-        1>&2 echo $av0: Looking at "${records[0]}"
+        1>&2 echo $AV0: Looking at "${records[0]}"
         gsutil cat "${records[0]}" | jq .
-        make_query "$av0" $environment "$client" $index "${records[0]}"
+        make_query $environment "$client" $index "${records[0]}"
         records=($("${ls[@]}" "$dayN"))
         let n=${#records[@]} || true; let --n || true
-        1>&2 echo $av0: Looking at "${records[$n]}"
+        1>&2 echo $AV0: Looking at "${records[$n]}"
         gsutil cat "${records[$n]}" | jq .
-        make_query "$av0" $environment "$client" $index "${records[$n]}"
+        make_query $environment "$client" $index "${records[$n]}"
     done
 }
 
@@ -387,29 +385,29 @@ function run_bookend_queries() {
 # the currently deployed Clio server wrote in $bucket.
 #
 function assert_clio_version_ok() {
-    local -r av0=$1 bucket=$2 jar=$3
+    local -r bucket=$1 jar=$2
     local -r current=gs://$bucket/current-clio-version.txt
-    local -r pwd=$(pwd) version=$(run "$av0" gsutil cat $current)
+    local -r pwd=$(pwd) version=$(run gsutil cat $current)
     local -a bad files=($(jar -tf "$jar" | grep '^clio-.*-version\.conf$'))
     if test "${#files[@]}" -lt 3
     then
-        1>&2 echo $av0: Not enough version resources in "$jar"
-        1>&2 echo $av0: Found only these: "${files[@]}"
+        1>&2 echo $AV0: Not enough version resources in "$jar"
+        1>&2 echo $AV0: Found only these: "${files[@]}"
         exit 2
     fi
     local -r dir=$(mktemp -d)
-    run "$av0" cd "$dir"
-    run "$av0" jar -xf "$jar" "${files[@]}"
+    run cd "$dir"
+    run jar -xf "$jar" "${files[@]}"
     local file
     for file in "${files[@]}"
     do
-        run "$av0" grep -q -e ": $version" "$file" || bad+=("$file")
+        run grep -q -e ": $version" "$file" || bad+=("$file")
     done
-    run "$av0" cd "$pwd"
-    run "$av0" rm -rf "$dir"
+    run cd "$pwd"
+    run rm -rf "$dir"
     if test "${#bad[@]}" -gt 0
     then
-        1>&2 echo $av0: Wrong version here: "${bad[@]}"
+        1>&2 echo $AV0: Wrong version here: "${bad[@]}"
         exit 3
     fi
 }
@@ -418,72 +416,71 @@ function assert_clio_version_ok() {
 # 'Started'.
 #
 function wait_for_clio_server_started() {
-    local -r av0=$1 environment=$2 client=$3
-    1>&2 echo $av0: Waiting for Clio server to finish Recovering.
-    until run_client "$av0" $environment $client get-server-health
+    local -r environment=$1 client=$2
+    1>&2 echo $AV0: Waiting for Clio server to finish Recovering.
+    until run_client $environment $client get-server-health
     do
         sleep 1
     done
-    run_client "$av0" $environment $client get-server-health
-    local json=$(run_client "$av0" $environment $client get-server-health)
+    run_client $environment $client get-server-health
+    local json=$(run_client $environment $client get-server-health)
     until test Started = $(echo "$json" | jq -r .clio)
     do
         sleep 1
-        json=$(run_client "$av0" $environment $client get-server-health)
+        json=$(run_client $environment $client get-server-health)
     done
-    run_client "$av0" $environment $client get-server-health
+    run_client $environment $client get-server-health
 }
 
 # Test Clio in $environment using $server and $client .jar files.
 #
 function test_clio() {
-    local -r av0=$1 environment=$2 server=$3 client=$4
+    local -r environment=$1 server=$2 client=$3
     local -r bucket=broad-gotc-$environment-clio
-    assert_clio_version_ok "$av0" $bucket "$server"
-    assert_clio_version_ok "$av0" $bucket "$client"
+    assert_clio_version_ok $bucket "$server"
+    assert_clio_version_ok $bucket "$client"
     local -r secret=secret/dsde/gotc/$environment/clio/clio-account.json
     local -r version=gs://$bucket/current-clio-version.txt
     local -r -a java=(java -Dclio.server.persistence.type=GCP
-                      -Dclio.server.persistence.project-id=$av0
+                      -Dclio.server.persistence.project-id=$AV0
                       -Dclio.server.persistence.bucket=$bucket)
-    1>&2 echo $av0 Starting: "${java[@]}"
+    1>&2 echo $AV0 Starting: "${java[@]}"
     "${java[@]}" -Dclio.server.persistence.service-account-json=<(
         vault read -format json -field data $secret
     ) -jar "$server" &
-    local pid=$!                # HACK
+    local -r pid=$!
     1>&2 echo Clio server PID = $pid
-    wait_for_clio_server_started "$av0" $environment "$client"
-    run_bookend_queries "$av0" $environment $bucket "$client"
-    run "$av0" kill $pid
+    wait_for_clio_server_started $environment "$client"
+    run_bookend_queries $environment $bucket "$client"
+    run kill $pid
 }
 
 function main() {
-    local av0=${0##*/}                                         # HACK
-    usage "$av0" "$@"
-    local context environment=$1 server=$2 client=$3           # HACK
-    if run "$av0" kubectl config current-context
+    AV0=${0##*/}
+    usage "$@"
+    local -r environment=$1 server=$2 client=$3
+    SERVER="$server"
+    if run kubectl config current-context
     then
-        context=$(run "$av0" kubectl config current-context)
+        CONTEXT=$(run kubectl config current-context)
     fi
-    local namespace=elasticsearch-restore-test-$environment    # HACK
+    NAMESPACE=elasticsearch-restore-test-$environment
     local -r creds=/usr/share/elasticsearch/config/snapshot_credentials.json
     local -r snapshots=broad-gotc-$environment-clio-es-snapshots
     local -r wd=$(&>/dev/null cd $(dirname "${BASH_SOURCE[0]}") &&
                       pwd && >/dev/null cd -)
     local -r values="$wd/helm-values.yaml"
-    local -a -r signals=(ERR EXIT HUP INT TERM)
-    trap 'cleanup '"$av0"' '"$context"' '"$namespace"' '"$server"'; exit' \
-         "${signals[@]}"
-    setup "$av0" $environment $namespace $creds $snapshots "$values"
-    make_snapshot_repository "$av0" $snapshots $creds
-    local -r snap=$(most_recent_snapshot "$av0" $snapshots)
-    1>&2 echo $av0: $snap is the most recent snapshot.
-    restore_snapshot "$av0" $snapshots $snap
+    trap 'cleanup; exit' ERR EXIT HUP INT TERM
+    setup $environment $namespace $creds $snapshots "$values"
+    make_snapshot_repository $snapshots $creds
+    local -r snap=$(most_recent_snapshot $snapshots)
+    1>&2 echo $AV0: $snap is the most recent snapshot.
+    restore_snapshot $snapshots $snap
     if test "$server"
     then
-        test_clio "$av0" $environment "$server" "$client"
+        test_clio $environment "$server" "$client"
     else
-        echo; echo $av0: No server and client .jar files to run.; echo
+        echo; echo $AV0: No server and client .jar files to run.; echo
     fi
 }
 
