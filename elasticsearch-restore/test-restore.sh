@@ -116,7 +116,10 @@ function cleanup_k8s() {
     run "$av0" kubectl delete secret -n $namespace elasticsearch-gcs-sa ||
         true
     run "$av0" kubectl delete namespace $namespace || true
-    run "$av0" kubectl config set current-context $context || true
+    if test "$context"
+    then
+        run "$av0" kubectl config set current-context $context || true
+    fi
 }
 
 # Make a Kubernetes $namespace for an Elasticsearch cluster
@@ -457,9 +460,11 @@ function test_clio() {
 function main() {
     local av0=${0##*/}                                         # HACK
     usage "$av0" "$@"
-    local environment=$1 server=$2 client=$3                   # HACK
-    run "$av0" kubectl config current-context
-    local context=$(run "$av0" kubectl config current-context) # HACK
+    local context environment=$1 server=$2 client=$3           # HACK
+    if run "$av0" kubectl config current-context
+    then
+        context=$(run "$av0" kubectl config current-context)
+    fi
     local namespace=elasticsearch-restore-test-$environment    # HACK
     local -r creds=/usr/share/elasticsearch/config/snapshot_credentials.json
     local -r snapshots=broad-gotc-$environment-clio-es-snapshots
