@@ -429,6 +429,7 @@ function wait_for_clio_server_started() {
     until test Started = $(echo "$json" | jq -r .clio)
     do
         sleep 1
+        run_client $environment $client get-server-health
         json=$(run_client $environment $client get-server-health)
     done
     run_client $environment $client get-server-health
