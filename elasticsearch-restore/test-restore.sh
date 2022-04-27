@@ -15,10 +15,10 @@ declare SERVER                  # Run this Clio server jar.
 function java_ok() {
     local -r environment=$1 server=$2 client=$3
     local jars version
-    test "$server" != "${server%.jar}" &&
+    test "$SERVER" != "${server%.jar}" &&
         test "$client" != "${client%.jar}" &&
         jars=yes
-    test ! "$server" && test ! "$client" && jars=no
+    test ! "$SERVER" && test ! "$client" && jars=no
     if test yes = "$jars"
     then
         local -a -r java=($(2>&1 java -version))
@@ -32,7 +32,7 @@ function java_ok() {
             1>&2 echo $AV0: You are running: $version
         fi
     fi
-    test "$jars" || 1>&2 echo $AV0: Need 2 .jar files: $server $client
+    test "$jars" || 1>&2 echo $AV0: Need 2 .jar files: $SERVER $client
     test no = "$jars" || test 1.8 = "$version"
 }
 
@@ -111,7 +111,8 @@ function run() {
     return $status
 }
 
-# Clean up the Kubernetes $namespace made by setup_k8s().
+# Clean up the Kubernetes $NAMESPACE made by setup_k8s() and restore
+# $CONTEXT if necessary.
 #
 function cleanup_k8s() {
     run kubectl delete secret -n $NAMESPACE elasticsearch-gcs-sa ||
@@ -119,29 +120,30 @@ function cleanup_k8s() {
     run kubectl delete namespace $NAMESPACE || true
     if test "$CONTEXT"
     then
-        run kubectl config set current-context $CONTEXT || true
-    fi
+        run kubectl config set current-context $CONTEXT
+    else
+        run kubectl config unset current-context
+    fi || true
 }
 
-# Make a Kubernetes $namespace for an Elasticsearch cluster
-# for $environment using $creds.
+# Make a Kubernetes $NAMESPACE for $environment using $creds.
 #
 function setup_k8s() {
-    local -r environment=$1 namespace=$2 creds=${3##*/}
+    local -r environment=$1 creds=${2##*/}
     local -r zone=us-central1-a project=broad-gotc-$environment
     local -r cluster=gotc-$environment-shared-$zone
-    local context=gke_${project}_${zone}_${cluster} # HACK
+    local -r context=gke_${project}_${zone}_${cluster}
     run kubectl config set current-context $context
     run kubectl get svc --request-timeout=3s ||
         1>&2 echo $AV0: Use the non-split Broad VPN.
     run gcloud container clusters get-credentials $cluster \
         --zone $zone --project $project
-    run kubectl create namespace $namespace
+    run kubectl create namespace $NAMESPACE
     local -r -a vault=(vault read -field=sa.json.b64
                        -address=https://clotho.broadinstitute.org:8200
                        secret/dsde/gotc/$environment/clio/elasticsearch-restore)
     >/dev/null run "${vault[@]}"
-    run kubectl create secret generic -n $namespace \
+    run kubectl create secret generic -n $NAMESPACE \
         elasticsearch-gcs-sa --from-file=$creds=<("${vault[@]}" | base64 -d)
 }
 
@@ -174,28 +176,28 @@ function wait_for_green() {
 }
 
 # Make a temporary Elasticsearch cluster for $environment in
-# Kubernetes $namespace using the Helm $values file.  Open a local
+# Kubernetes $NAMESPACE using the Helm $values file.  Open a local
 # port to the service and wait for the Elasticsearch cluster to get
 # healthy.
 #
 function setup_es() {
-    local -r environment=$1 namespace=$2 snapshots=$3 values=$4 port=9200
-    if run helm install --debug --wait --timeout 5m -n $namespace \
+    local -r environment=$1 snapshots=$2 values=$3 port=9200
+    if run helm install --debug --wait --timeout 5m -n $NAMESPACE \
            -f "$values" test-elasticsearch terra-helm/elasticsearch
     then
-        local -i pid=$(lsof -t -i:$port || true) # HACK
+        local -i pid=$(lsof -t -i:$port || true)
         if test "$pid" && test 0 -ne $pid
         then
             1>&2 echo $AV0: Killing proceess found on port $port.
             run lsof -i tcp:$port
             run kill $pid
         fi
-        run kubectl port-forward -n $namespace svc/clio-master $port:$port &
+        run kubectl port-forward -n $NAMESPACE svc/clio-master $port:$port &
         until >/dev/null lsof -t -i:$port; do sleep 1; done
         run lsof -i tcp:$port
         wait_for_green $port
     else
-        run kubectl --namespace $namespace get pods
+        run kubectl --namespace $NAMESPACE get pods
         exit 4
     fi
 }
@@ -214,17 +216,17 @@ function cleanup() {
 }
 
 # Set up a scratch Elasticsearch cluster for $environment in a new
-# Kubernetes $namespace using Helm $values.  Make $snapshots the scratch
+# Kubernetes $NAMESPACE using Helm $values.  Make $snapshots the scratch
 # cluster's snapshot repo and print the most recent snapshot there.
 #
 function setup() {
-    local -r environment=$1 namespace=$2 creds=$3 snapshots=$4 values=$5
+    local -r environment=$1 creds=$2 snapshots=$3 values=$4
     local -r terra=https://terra-helm.storage.googleapis.com/
     run helm version
     run helm repo add terra-helm $terra
     run helm repo update
-    setup_k8s $environment $namespace $creds
-    setup_es  $environment $namespace $snapshots "$values"
+    setup_k8s $environment $creds
+    setup_es  $environment $snapshots "$values"
 }
 
 # Use $creds to make $snapshots the snapshot repository of the scratch cluster.
@@ -432,12 +434,12 @@ function wait_for_clio_server_started() {
     run_client $environment $client get-server-health
 }
 
-# Test Clio in $environment using $server and $client .jar files.
+# Test Clio in $environment using $SERVER and $client .jar files.
 #
 function test_clio() {
-    local -r environment=$1 server=$2 client=$3
+    local -r environment=$1 client=$2
     local -r bucket=broad-gotc-$environment-clio
-    assert_clio_version_ok $bucket "$server"
+    assert_clio_version_ok $bucket "$SERVER"
     assert_clio_version_ok $bucket "$client"
     local -r secret=secret/dsde/gotc/$environment/clio/clio-account.json
     local -r version=gs://$bucket/current-clio-version.txt
@@ -447,7 +449,7 @@ function test_clio() {
     1>&2 echo $AV0 Starting: "${java[@]}"
     "${java[@]}" -Dclio.server.persistence.service-account-json=<(
         vault read -format json -field data $secret
-    ) -jar "$server" &
+    ) -jar "$SERVER" &
     local -r pid=$!
     1>&2 echo Clio server PID = $pid
     wait_for_clio_server_started $environment "$client"
@@ -460,10 +462,8 @@ function main() {
     usage "$@"
     local -r environment=$1 server=$2 client=$3
     SERVER="$server"
-    if run kubectl config current-context
-    then
+    run kubectl config current-context &&
         CONTEXT=$(run kubectl config current-context)
-    fi
     NAMESPACE=elasticsearch-restore-test-$environment
     local -r creds=/usr/share/elasticsearch/config/snapshot_credentials.json
     local -r snapshots=broad-gotc-$environment-clio-es-snapshots
@@ -471,14 +471,14 @@ function main() {
                       pwd && >/dev/null cd -)
     local -r values="$wd/helm-values.yaml"
     trap 'cleanup; exit' ERR EXIT HUP INT TERM
-    setup $environment $namespace $creds $snapshots "$values"
+    setup $environment $creds $snapshots "$values"
     make_snapshot_repository $snapshots $creds
     local -r snap=$(most_recent_snapshot $snapshots)
     1>&2 echo $AV0: $snap is the most recent snapshot.
     restore_snapshot $snapshots $snap
-    if test "$server"
+    if test "$SERVER"
     then
-        test_clio $environment "$server" "$client"
+        test_clio $environment "$SERVER" "$client"
     else
         echo; echo $AV0: No server and client .jar files to run.; echo
     fi
