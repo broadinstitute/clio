@@ -479,7 +479,7 @@ function main() {
     restore_snapshot $snapshots $snap
     if test "$SERVER"
     then
-        test_clio $environment "$SERVER" "$client"
+        test_clio $environment "$client"
     else
         echo; echo $AV0: No server and client .jar files to run.; echo
     fi
