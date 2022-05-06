@@ -20,7 +20,9 @@ case class GvcfMetadata(
   gvcfDetailMetricsPath: Option[URI] = None,
   pipelineVersion: Option[Symbol] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
-  notes: Option[String] = None
+  workspaceName: Option[String] = None,
+  billingProject: Option[String] = None,
+  notes: Option[String] = None,
 ) extends Metadata[GvcfMetadata]
     with CromwellWorkflowResultMetadata[GvcfMetadata] {
 
@@ -35,6 +37,13 @@ case class GvcfMetadata(
       documentStatus = Some(documentStatus),
       notes = appendNote(changeNote)
     )
+
+  override def withWorkspace(name: String, billingProject: String): GvcfMetadata = {
+    this.copy(
+      workspaceName = Some(name),
+      billingProject = Some(billingProject)
+    )
+  }
 
   override def withDocumentStatus(
     docStatus: Option[DocumentStatus]
