@@ -38,13 +38,6 @@ case class GvcfMetadata(
       notes = appendNote(changeNote)
     )
 
-  override def withWorkspace(name: String, billingProject: String): GvcfMetadata = {
-    this.copy(
-      workspaceName = Some(name),
-      billingProject = Some(billingProject)
-    )
-  }
-
   override def withDocumentStatus(
     docStatus: Option[DocumentStatus]
   ): GvcfMetadata =
