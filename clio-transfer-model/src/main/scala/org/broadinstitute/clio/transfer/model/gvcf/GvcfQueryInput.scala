@@ -15,7 +15,9 @@ case class GvcfQueryInput(
   dataType: Option[DataType] = None,
   sampleAlias: Option[String] = None,
   version: Option[Int] = None,
-  regulatoryDesignation: Option[RegulatoryDesignation] = None
+  regulatoryDesignation: Option[RegulatoryDesignation] = None,
+  workspaceName: Option[String] = None,
+  billingProject: Option[String] = None
 ) extends QueryInput[GvcfQueryInput] {
 
   def withDocumentStatus(

@@ -20,7 +20,9 @@ case class GvcfMetadata(
   gvcfDetailMetricsPath: Option[URI] = None,
   pipelineVersion: Option[Symbol] = None,
   regulatoryDesignation: Option[RegulatoryDesignation] = None,
-  notes: Option[String] = None
+  workspaceName: Option[String] = None,
+  billingProject: Option[String] = None,
+  notes: Option[String] = None,
 ) extends Metadata[GvcfMetadata]
     with CromwellWorkflowResultMetadata[GvcfMetadata] {
 
