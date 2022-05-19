@@ -1,0 +1,31 @@
+elasticsearch:
+  # don't try to deploy to dedicated ES nodepool
+  # GOTC clusters don't have that
+  image: broadinstitute/elasticsearch
+  clusterName: clio
+
+  nodeSelector: null
+  tolerations: []
+
+  service:
+    type: ClusterIP
+
+  # reccomended default compute resource requests from elastic
+  esJavaOpts: '-Xmx1g -Xms1g -Dlog4j2.formatMsgNoLookups=true'
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+
+  volumeClaimTemplate:
+    accessModes: ["ReadWriteOnce"]
+    resources:
+      requests:
+        # Same as gotc-prod elasticsearch disk size
+        storage: 200Gi
+
+  persistence:
+    enabled: false
