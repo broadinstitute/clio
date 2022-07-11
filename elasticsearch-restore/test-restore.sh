@@ -140,8 +140,7 @@ function setup_k8s() {
     local -r context=gke_${project}_${zone}_${cluster}
     run kubectl config set current-context $context
     run kubectl get svc --request-timeout=3s ||
-        1>&2 echo $AV0: Use the non-split Broad VPN. &&
-            exit 2
+        { 1>&2 echo $AV0: Use the non-split Broad VPN. ; exit 2; }
     run gcloud container clusters get-credentials $cluster \
         --zone $zone --project $project
     run kubectl create namespace $NAMESPACE
@@ -245,7 +244,11 @@ function setup() {
                                  "compress":         true,
                                  "service_account":  "'$creds'"}}'
     local -r url=http://localhost:9200/_snapshot/$snapshots
-    run curl -X PUT -s --data "$data" "$url?verify=false"
+    local -r -a put=(curl -X PUT --data "$data" "$url")
+    run "${put[@]}" | jq .
+    local -r response=$("${put[@]}")
+    local -r result=$(echo "$response" | jq .status)
+    test X2 == X${result%??} || exit 4
 }
 
 # Print the name of the most recent snapshot in $snapshots.
@@ -401,7 +404,7 @@ function assert_clio_version_ok() {
     then
         1>&2 echo $AV0: Not enough version resources in "$jar"
         1>&2 echo $AV0: Found only these: "${files[@]}"
-        exit 4
+        exit 5
     fi
     local -r dir=$(mktemp -d)
     run cd "$dir"
@@ -416,7 +419,7 @@ function assert_clio_version_ok() {
     if test "${#bad[@]}" -gt 0
     then
         1>&2 echo $AV0: Wrong version here: "${bad[@]}"
-        exit 5
+        exit 6
     fi
 }
 
@@ -477,12 +480,12 @@ function main() {
     local -r wd=$(&>/dev/null cd $(dirname "${BASH_SOURCE[0]}") &&
                       pwd && >/dev/null cd -)
     local -r values="$wd/helm-values.yaml"
-    # trap 'cleanup; exit' ERR EXIT HUP INT TERM
+    trap 'echo TRAP; cleanup; exit' ERR EXIT HUP INT TERM
     setup $environment $creds $snapshots "$values"
     make_snapshot_repository $snapshots $creds
+    # exit 23
     local -r snap=$(most_recent_snapshot $snapshots)
     1>&2 echo $AV0: $snap is the most recent snapshot.
-    exit 23
     restore_snapshot $snapshots $snap
     if test "$SERVER"
     then
