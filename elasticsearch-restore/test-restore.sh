@@ -248,7 +248,7 @@ function setup() {
     run "${put[@]}" | jq .
     local -r response=$("${put[@]}")
     local -r result=$(echo "$response" | jq .status)
-    test X2 == X${result%??} || exit 4
+    test X2 = X${result%??} || exit 4
 }
 
 # Print the name of the most recent snapshot in $snapshots.
