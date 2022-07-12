@@ -210,6 +210,7 @@ function setup_es() {
 # Maybe kill the server and clean up the state established by setup().
 #
 function cleanup() {
+    local -r status=$?
     if test "$SERVER"
     then
         local -r ps=$(ps -x | grep -e "java .* -jar $SERVER" | grep -v grep)
@@ -218,6 +219,7 @@ function cleanup() {
     fi
     cleanup_es
     cleanup_k8s
+    exit $status
 }
 
 # Set up a scratch Elasticsearch cluster for $environment in a new
@@ -244,7 +246,7 @@ function setup() {
                                  "compress":         true,
                                  "service_account":  "'$creds'"}}'
     local -r url=http://localhost:9200/_snapshot/$snapshots
-    local -r -a put=(curl -X PUT --data "$data" "$url")
+    local -r -a put=(curl -X PUT --data "$data" "$url?verify=false")
     run "${put[@]}" | jq .
     local -r response=$("${put[@]}")
     local -r result=$(echo "$response" | jq .status)
@@ -480,10 +482,9 @@ function main() {
     local -r wd=$(&>/dev/null cd $(dirname "${BASH_SOURCE[0]}") &&
                       pwd && >/dev/null cd -)
     local -r values="$wd/helm-values.yaml"
-    trap 'echo TRAP; cleanup; exit' ERR EXIT HUP INT TERM
+    trap 'cleanup; exit' ERR EXIT HUP INT TERM
     setup $environment $creds $snapshots "$values"
     make_snapshot_repository $snapshots $creds
-    # exit 23
     local -r snap=$(most_recent_snapshot $snapshots)
     1>&2 echo $AV0: $snap is the most recent snapshot.
     restore_snapshot $snapshots $snap
