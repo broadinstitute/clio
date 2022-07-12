@@ -246,11 +246,7 @@ function setup() {
                                  "compress":         true,
                                  "service_account":  "'$creds'"}}'
     local -r url=http://localhost:9200/_snapshot/$snapshots
-    local -r -a put=(curl -X PUT --data "$data" "$url?verify=false")
-    run "${put[@]}" | jq .
-    local -r response=$("${put[@]}")
-    local -r result=$(echo "$response" | jq .status)
-    test X2 = X${result%??} || exit 4
+    run curl -X PUT -s --data "$data" "$url?verify=false"
 }
 
 # Print the name of the most recent snapshot in $snapshots.
