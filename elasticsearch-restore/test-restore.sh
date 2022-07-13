@@ -10,6 +10,11 @@ declare CONTEXT                 # Restore this k8s context.
 declare NAMESPACE               # Manage this k8s namespace.
 declare SERVER                  # Run this Clio server jar.
 
+# See
+# https://cloud.google.com/blog/products/containers-kubernetes/kubectl-auth-changes-in-gke
+#
+export USE_GKE_GCLOUD_AUTH_PLUGIN=True
+
 # Fail when Java's needed but do not have version 1.8.
 #
 function java_ok() {
@@ -135,7 +140,7 @@ function setup_k8s() {
     local -r context=gke_${project}_${zone}_${cluster}
     run kubectl config set current-context $context
     run kubectl get svc --request-timeout=3s ||
-        1>&2 echo $AV0: Use the non-split Broad VPN.
+        { 1>&2 echo $AV0: Use the non-split Broad VPN. ; exit 2; }
     run gcloud container clusters get-credentials $cluster \
         --zone $zone --project $project
     run kubectl create namespace $NAMESPACE
@@ -198,13 +203,14 @@ function setup_es() {
         wait_for_green $port
     else
         run kubectl --namespace $NAMESPACE get pods
-        exit 4
+        exit 3
     fi
 }
 
 # Maybe kill the server and clean up the state established by setup().
 #
 function cleanup() {
+    local -r status=$?
     if test "$SERVER"
     then
         local -r ps=$(ps -x | grep -e "java .* -jar $SERVER" | grep -v grep)
@@ -213,6 +219,7 @@ function cleanup() {
     fi
     cleanup_es
     cleanup_k8s
+    exit $status
 }
 
 # Set up a scratch Elasticsearch cluster for $environment in a new
@@ -395,7 +402,7 @@ function assert_clio_version_ok() {
     then
         1>&2 echo $AV0: Not enough version resources in "$jar"
         1>&2 echo $AV0: Found only these: "${files[@]}"
-        exit 2
+        exit 5
     fi
     local -r dir=$(mktemp -d)
     run cd "$dir"
@@ -410,7 +417,7 @@ function assert_clio_version_ok() {
     if test "${#bad[@]}" -gt 0
     then
         1>&2 echo $AV0: Wrong version here: "${bad[@]}"
-        exit 3
+        exit 6
     fi
 }
 

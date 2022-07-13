@@ -27,5 +27,15 @@ elasticsearch:
         # Same as gotc-prod elasticsearch disk size
         storage: 200Gi
 
+  extraVolumes:
+    - name: snapshot-sa
+      secret:
+        secretName: elasticsearch-gcs-sa
+  extraVolumeMounts:
+    - mountPath: /usr/share/elasticsearch/config/snapshot_credentials.json
+      subPath: snapshot_credentials.json
+      name: snapshot-sa
+      readOnly: true
+
   persistence:
     enabled: false
